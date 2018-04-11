@@ -1,0 +1,107 @@
+* Chap2
+   + $\boldsymbol{A}\boldsymbol{x}=\boldsymbol{b}=\displaystyle\sum_ix_i\boldsymbol{A}_{:,i,}$ thus matrix can be regarded as a collection of vector
+   + orthogonal matrix ::
+     + rows are mutually orthonormal and columns are mutually orthonormal
+       $\boldsymbol{A}^T\boldsymbol{A}=\boldsymbol{A}\boldsymbol{A}^T=\boldsymbol{I}$
+   + eigendecomposition ::decompose matrix into a set of eigenvectors and eigenvalues
+     + $\boldsymbol{Av}=\lambda\boldsymbol{v}$
+     + If $\boldsymbol{A}$ has n linearly independent eigenvectors, then
+       $\boldsymbol{V=}[\boldsymbol{v}^{(1)}, \dots, \boldsymbol{v}^{(n)}]$
+       $\boldsymbol{\lambda}=[\lambda_1, \dots, \lambda_n]^T$
+       $\boldsymbol{A=V}\text{diag}(\boldsymbol{\lambda})\boldsymbol{V}^{-1}$
+   + Every real symmetric matrix can be decomposed into an expression using only
+     real-valued eigenvectors and eigenvalues
+     $\boldsymbol{A=Q\Lambda Q}^T$
+     where $\boldsymbol{Q}$ is an orthogonal matrix composed of eigenvectors of $\boldsymbol{A}$
+     $\boldsymbol{\Lambda}$ is a diagonal matrix associated with $\boldsymbol{Q}$
+     $f(\boldsymbol{x})=\boldsymbol{x^TAx}$ subject to $||\boldsymbol{x}||_2=1$. Whenever $\boldsymbol{x}$ is equal to an
+     eigenvector of $\boldsymbol{A}$, $f$ takes on the value of the corresponding
+     eigenvalues.
+   + singular :: Matrix is singular if and only if the eigenvalues are 0
+   + positive definite :: all eigenvalues are positive
+   + positive semidefinite ::
+   + positive semidefinite matrices are interesting because they guarantee that
+     $\forall\boldsymbol{x}, \boldsymbol{x^TAx}\ge 0$
+   + Singular value decomposition ::
+     + Every real matrix has a singular value decomposition
+     + $\boldsymbol{A=UDV}^T$
+       $\boldsymbol{A}$ is $m\times n$, $\boldsymbol{U}$ is $m\times m$, $\boldsymbol{D}$ is $m\times n$, $\boldsymbol{V}$ is $n\times n$
+       $\boldsymbol{U,V}$ are orthogonal matrices, $\boldsymbol{D}$ is diagonal matrix and is not necessarily square
+     + The elements along the $\boldsymbol{D}$ are *singular values*. The columns of $\boldsymbol{U}$ are
+       *left-singular vectors*. The columns of $\boldsymbol{V}$ are *right-singular vectors*
+* Chap4
+** Poor condition
+    $f(\boldsymbol{x})=\boldsymbol{A^{-1}x}$. When $\boldsymbol{A}\in \mathbb{R}^{n\times n}$ has an eigenvalue decomposition, its *condition number* is
+    $\displaystyle\text{max}_{i,j}|\frac{\lambda_i}{\lambda_j}|$. When this number is large, matrix inversion is particularly sensitive to
+    error in the input
+** Gradient-based optimization
+    + objective function or criterion :: the function we want to minimize
+         when we are minimizing it, we may also call it *cost function, loss function*
+         or *error function*
+    + We denote the value that minimized or maxmizes with a superscipt *
+*** Jocobian and Hessian matrices
+     + Jocobian matrix :: the matrix containing all partial derivatives of a function
+          whose input and output are vectors
+       + $\boldsymbol{f}:\mathbb{R}^m\to \mathbb{R}^n$, then Jocobian matrix $\boldsymbol{J}$ of $\boldsymbol{f}$ is $\boldsymbol{J}_{i,j}=\frac{\partial}{\partial x_j}f(\boldsymbol{x})_i$
+     + Hessian matrix :: collection of second derivatives
+       + $\boldsymbol{H}(f)(\boldsymbol{x})_{i,j}=\frac{\partial^2}{\partial x_i\partial x_j}f(\boldsymbol{x})$
+       + Hessian is the Jocobian of the gradient
+       + Anywhere that the second partial derivatives are continuous, the differential
+         operators are commutative.$\frac{\partial^2}{\partial x_i\partial x_j}f(\boldsymbol{x})=\frac{\partial^2}{\partial x_j\partial x_i}f(\boldsymbol{x})$
+         Thus Hessian matrix is symmetric
+         Since it's real and symmetric, we can *decompose* it into a set of real eigenvalues
+         and an orthogonal basis of eigenvectors
+       + The second derivative in a specific direction represented by a unit vector $\boldsymbol{d}$
+         is given by $\boldsymbol{d^THd}$. When $\boldsymbol{d}$ is an eigenvector of $\boldsymbol{H}$, the second derivative in that
+         direction is given by the corresponding eigenvalue. For other direction, the
+         directinal second derivative is a weighted average of all of the eigenvalues,
+         with weights between 0 and 1
+       + The second derivative tells us how well we can expect a gradient descent stop to perform
+         We can make a second-order Tayler series approximation to the function $f(\boldsymbol{x})$
+         around the current point $\boldsymbol{x}^{(0)}$:
+         \begin{equation*}
+         f(\boldsymbol{x})\approx f(\boldsymbol{x}^{(0)})+(\boldsymbol{x-x^{(0)}})^T\boldsymbol{g}+
+         \frac{1}{2}(\boldsymbol{x-x^{(0)}})^T\boldsymbol{H(x-x)^{(0)}}
+         \end{equation*}
+         where $\boldsymbol{g, H}$ are at $\boldsymbol{x}^{(0)}$
+         If using a learning rate $\epsilon$, new point $\boldsymbol{x=x}^{(0)}-\epsilon\boldsymbol{g}$
+         \begin{equation*}
+         f(\boldsymbol{x^{(0)}-\epsilon g})\approx f(\boldsymbol{x}^{(0)})-\epsilon\boldsymbol{g^Tg}
+         +\frac{1}{2}\epsilon^2\boldsymbol{g^THg}
+         \end{equation*}
+         When $\boldsymbol{g^THg}$ is positive. then $\epsilon^*=\frac{\boldsymbol{g^Tg}}{\boldsymbol{g^THg}}$, the worst case is $\frac{1}{\lambda_{max}}$
+       + If $f''(x)>0$ and $'f(x)=0$, it's a local minimum
+         In multiple dimensions, we need to examine all of the second derivatives of the function
+         At a critical point where $\bigtriangledown_xf(\boldsymbol{x})=0$, when *Hessian* is positive definite, the point
+         is local minimum.
+         This can be seen that the directional second derivative in any direction must be
+         positive
+       + Newton's method ::
+                           $\boldsymbol{x^*=x^{(0)}-H}(f)(\boldsymbol{x}^{(0)})^-1\triangledown_{\boldsymbol{x}} f(\boldsymbol{x}^{(0)})$
+       + convex optimization algorithms are applicable only to convex functions--functions for
+         which the Hessian is positive semidefinite everywhere
+** Constrained optimization
+   + Some times we wish to find the maximal or minimal value of $f(\boldsymbol{x})$ for values
+     of $\boldsymbol{x}$ in some set $\mathbb{S}$
+   + Karush-Kuhn-Tucker(KKT) ::
+     + generalized Langrangian or generalized Lagerange function ::
+       + $\mathbb{S}$ ::
+         + we want a description of $\mathbb{S}$ in terms of $m$ functions $g^{(i)}$ and
+           n functions $h^{(i)}$ so that $\mathbb{S}=\{\boldsymbol{x}\mid\forall i,g^{(i)}(\boldsymbol{x})=0
+           \quad\text{and}\quad \forall j,h^{(j)}(\boldsymbol{x})\le 0\}$
+           *equality constraints* and *inequality constraints*
+     + $L(\boldsymbol{x,\lambda,\alpha})=f(\boldsymbol{x})+\displaystyle\sum_i\lambda_ig^{i}(\boldsymbol{x})+\displaystyle\sum_j\alpha_jh^{(j)}(\boldsymbol{x})$
+       $\lambda_i,\alpha_j$ are called *KKT multipliers*
+     + So long as at least one feasible point exists and $f(\boldsymbol{x})$ is not permitted to have value $\infty$
+       then $\min_{\boldsymbol{x}}\max_{\boldsymbol{\lambda}}\max_{\boldsymbol{\alpha,\alpha}\ge 0}
+       L(\boldsymbol{x,\lambda,\alpha})$ has the same optimal objective function value and set of
+       optimal points $\boldsymbol{x}$ as $\min_{\boldsymbol{x}\in\mathbb{S}}f(\boldsymbol{x})$
+       Because any time the constraints are satisfied,
+       $\displaystyle\max_{\boldsymbol{\lambda}}\max_{\boldsymbol{\alpha,\alpha}\ge 0}L(
+       \boldsymbol{x,\lambda,\alpha})=f(\boldsymbol{x})$
+       while any time a constraint is violated$\displaystyle\max_{\boldsymbol{\lambda}}\max_{\boldsymbol{\alpha,\alpha}\ge 0}L(
+       \boldsymbol{x,\lambda,\alpha})=\infty$
+     + Inequality constraints ::
+          + We say a constraint $h^{(i)}(\boldsymbol{x})$ is *active* if $h^{(i)}(\boldsymbol{x}^*)=0$
+** Example
+   Find $\boldsymbol{x}$ minimizes $f(\boldsymbol{x})=\frac{1}{2}||\boldsymbol{Ax-b}||_2^2$

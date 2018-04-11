@@ -1,0 +1,623 @@
+#+TITLE:WEEK1
+* Chap1
+** Taught
+1-8, 10, 11-16, 22-23
+** DBMS(database management system)
+*** collection of interrelated data
+** DBMS solution
+*** Commercial/freeware DBMS
+*** Application programs
+** View of data
+*** Levels of Abstraction
+**** physical level
+    how the data are stored
+**** logical level
+    relations among the data
+**** view level
+*** Instances(实例) and schemas(模式)
+    + instance :: the collection of information stored in the
+                  database at a particular moment
+    + schema :: the overal design of the database
+*** Data module
+**** a collections of tools for describing
+     1. Data
+     2. Data relationships
+     3. Data semantics
+     4. Data constraints
+** Relational database
+*** Relational model
+    | ID | name | Dept_name | Salary |
+    | 22 |  112 |       131 |  13131 |
+*** Data definition language(DDL)
+    create table instructor (
+    ID char(5),
+    name varchar(5)
+    )
+    - DDL compiler :: generates a set of table templates
+                      stored in a data dictionary
+    - Data dictionary :: contains metadata
+*** Data manipulation language(DML)
+    Also known as query language(查询语言)
+    Types of access are
+    - Procedural :: user specifyies what data is required
+                    and how to get the data
+    - Declarative(nonprocedural) :: require a user to specify
+                                    what data are needed without
+                                    specifying how to get those data
+    - query :: a statement requesting the retrieval of information
+** SQL
+*** Example
+      Find the name of the instructor with ID 5
+      select name
+      from instructor
+      where instructor.ID = '5'
+*** Database design
+#+TITLE:
+* Chap2
+** Structure of relational databases
+   - domain :: the set of permitted values of each attribute
+   - atomic :: a domain is atomic if elements of the
+               domain are considered to be indivisible units
+   - null :: a null value is a special value that signifies that
+             the value is unknown or does not exist
+** Database schema
+   - database schema :: logical design of the database
+   - database instance :: snapshot of the data in the database
+                          at a given instant in time
+   - relation schema :: consists of a list of attributs and their
+                        conrresponding domains
+     + A₁,..,Aₙ are attributes
+     + R = (A₁,...,Aₙ) is a relation schema
+       e.g. instructor_schema = (ID, name, dept_name)
+     + r(R) denotes a relation r on the relation schema
+       e.g. instructor(instructor_schema)
+     + fiven sets D₁,...,Dₙ, a relation r is a subset of
+       D₁×D₂...×Dₙ
+       Thus a relation is a set of n-tuples (a₁,...,aₙ) where each
+       aᵢ∈Dᵢ
+     + The current values (relation instance) of a relation are specified
+       by a table
+     + An element t of r is a tuple, represented by a row in a table
+
+   - relation instance :: corresponds to the programming language notion
+                          of a value of a varia
+** Keys
+   Let K ⊆ R
+   - superkey :: K is a superkey of R if values for K are suffient to
+                 identify a unique tuple of each possible relation r(R)
+   - {ID} and {ID, name} are both superkeys of instrctor
+   - candidate key :: s superkey K is minimal
+   - {ID} is minimal
+   - primary key :: one of the candidate key is chosen primary key
+   - foreign key :: A relatoin schema may have an attribute that
+                    corresponds to the primary key of another relation.
+                    The attribute is called a foreign key
+** Relational query language
+*** procedural, non-procedural, or declarative
+*** "Pure" language
+    + relational algebra
+    + tuple relational calculus
+    + domain relational calculus
+*** relational algebra
+    + procedural language
+    + six basic operators
+      + selection: σ
+      + projection: Π
+      + union: ∪
+      + natural join: ⋈ //SHEN MI
+      + set different: -
+      + cartesian product: ×
+* DONE
+  Ex 1.8, 1.9, 1.13, 1.15, 2.9, 2.13
+Consider the bank database of Figure 2.15.
+a. What are the appropriate primary keys?
+b. Given your choice of primary keys, identify appropriate foreign keys.
+
+branch(branch name, branch city, assets)
+customer (customer name, customer street, customer city)
+loan (loan number, branch name, amount)
+borrower (customer name, loan number)
+account (account number, branch name, balance)
+depositor (customer name, account number)
+
+Consider the bank database of Figure 2.15. Give an expression in the relational
+algebra for each of the following queries:
+a. Find all loan numbers with a loan value greater than $10,000.
+b. Find the names of all depositors who have an account with a value
+greater than $6,000.
+c. Find the names of all depositors who have an account with a value
+greater than $6,000 at the “Uptown” branch
+#+TITLE:WEEK2
+* Chap6
+** Relational Algebra
+*** selection operation
+    + notation: σ_ρ(r)
+    + selection predicate :: ρ
+    + σ_ρ(r) = {t | t ∈ r and p(t)}
+    + ∧ :: and
+    + ∨ :: or
+*** project operation
+*** union operation
+    must have the same arity
+    the attribute domains must be compatible
+*** set difference operation
+    have same arity
+    attribute domains must be compatible
+*** Cartesian product operation
+    + r × s = {t q | t ∈ r *and* q ∈ s}
+    + assume that r(R) and s(S) are disjoint
+    + If not disjoint, then *renaming* must be used
+*** rename operation
+    ρₓ(E)
+    if E has arity n, then
+    ρₓ₍ₐ₁,...,ₐₙ₎(E)
+*** Additional operations
+    + set intersection ::
+         r ∩ s = r - (r - s)
+    + natural join :: (bowtie)
+                     r ⋈ s
+                     R = (A,B,C,D) S = (B, E, D) R ⋈ S = (A, B, C, D, E)
+                     Cartesian product is renaming
+                     projection of renaming of Cartesian product
+                     natural join is associative and commutative
+    + theta join ::
+                   r ⋈θ s
+    + equijoin ::
+    + semijoin ::
+                 often used to compute natural joins in distributed databases
+    + assignment ::
+                   ←
+    + outer join ::
+      + extension of join operation avoids loss of information
+      + use *null* values:
+        *null* signifies the value is unknown or doesn't exist
+        instructor
+        | ID | name | dept_name |
+        |  1 | A    | Comp      |
+        |  2 | B    | Finance   |
+        |  3 | C    | Miao      |
+        teaches
+        | ID | course_id |
+        |  1 | CS-101    |
+        |  2 | FIN-201   |
+        |  4 | BIO-201   |
+        left outer_join:
+        | ID | name | dept_name | course_id |
+        |  1 | A    | Comp      | CS-101    |
+        |  2 | B    | Finance   | FIN-201   |
+        |  3 | C    | Miao      | *null*    |
+        right outer join
+        | ID | name   | dept_name | course_id |
+        |  1 | A      | Comp      | CS-101    |
+        |  2 | B      | Finance   | FIN-201   |
+        |  4 | *null* | *null*    | BIO-201   |
+        full outer join
+        | ID | name   | dept_name | course_id |
+        |  1 | A      | Comp      | CS-101    |
+        |  2 | B      | Finance   | FIN-201   |
+        |  3 | C      | Miao      | *null*    |
+        |  4 | *null* | *null*    | BIO-201   |
+    + null values ::
+                    three-ordered logic
+                      | or\and | null | true | false |
+                      | null   | null | null | null  |
+                      | true   | null |      |       |
+                      | false  | null |      |       |
+    + division operator ::
+         given relations r(R) and s(S) s.t. S
+*** Logical equivalence of RA plans
+    + σₐ₌₅(Πₐ(R)) = Πₐ(σₐ₌₅(R))
+** extend relational algebra operations
+*** generalized projection
+    + extends the projection operation by allowing arithmetic functions to be
+      used in the projection list
+*** Aggregate functions and operations
+*** Multiset relational algebra
+* DONE
+  6.1 6.13
+Write the following queries in relational algebra, using the university
+schema.
+a. Find the titles of courses in the Comp. Sci. department that have 3
+credits.
+b. Find the IDs of all students who were taught by an instructor named
+Einstein; make sure there are no duplicates in the result.
+c. Find the highest salary of any instructor.
+d. Find all instructors earning the highest salary (there may be more
+e. Find the enrollment of each section that was offered in Autumn 2009.
+f. Find the maximum enrollment, across all sections, in Autumn 2009.
+g. Find the sections that had the maximum enrollment in Autumn 2009.
+
+
+employee (person name, street, city )
+works (person name, company name, salary)
+company (company name, city)
+manages (person name, manager name)
+Consider the relational database of Figure 6.22. Give a relational-algebra
+expression for each of the following queries:
+a. Find the company with the most employees.
+b. Find the company with the smallest payroll.
+c. Find those companies whose employees earn a higher salary, on average, than
+the average salary at First Bank Corporation.
+* Chap3
+** SQL data definition
+*** Basic types
+    char(n): fixed length
+    varchar(n): variable-length
+*** Basic schema definition: table
+*** update to table
+    + insert ::
+    + delete ::
+    + drop table ::
+    + alter ::
+              change the structure of the table
+      + *alter table r add A D*
+        where A is the name of the attribute to be added to relation
+        r and D is the domain of A
+      + *alter table r drop A*
+        A is the name of an attribute
+
+** Foreign key and primary key
+   foreign keys are constraints
+** Basic query structure
+   + select clause ::
+     + to force the elimination of duplicates, insert the keyword *distinct*
+     + *all* specifies that duplicates not to be removed
+     + select * denotes all attributes.
+     + An attribute can be a literal with no from clause
+       *select '437'*
+       results is a table with one column and a single row with value "437"
+     + *select 'A' from instructor
+       result is a table with one column and N rows, each row with value "A"
+     + Can also contain arithmetic expressions
+   + where clause ::
+     + Find the Cartesian product (select * from instructor, teaches)
+       generates every possible *instructor-teacher* pair
+       for common attribute, the attributes in the resulting table are renamed using
+       the relation name
+   + join ::
+     + the comma in from clause
+   + natural join ::
+     + select * from instructor natural join teaches
+   + rename operation ::
+     + *as*
+   + string operation ::
+     + % matches any substring
+     + underscore _ matches any character
+     + e.g. where name like '%dar%'
+     + use %: \%
+     + concatenation ||
+     + converting from upper to lower case
+     + finding string length, extracting substring
+   + ordering the display of tuples ::
+     + select distinct name from instructor order by name
+     + *desc* for descending order *asc* for ascending.
+         e.g. order by name desc
+     + can sort on multiple attributes
+         e.g. order by dept_name, name
+   + where clause predicates ::
+     + *between*
+       e.g. select name from instructor where salary between 90000 and 10000
+     + tuple comparison
+       $(a_1,a_2)\le(b_1,b_2)$ iff $a_1\le b_1$ and $a_2\le b_2$
+   + duplicate ::
+     + Multiset
+   + Set operation ::
+     + union, intersect, except
+       each of the above operations automatically eliminates duplicates
+     + to retain all duplicates, use union all, intersect all, except all
+   + Null value ::
+     + arithmetic expression involving null is null
+     + is null can be used to check for null values
+       select name from instructor where salary is null
+   + Aggregate functions ::
+     + avg, min, max, sum, count
+     + Except count, all aggregations apply to a single attribute
+     + e.g. select avg(salary) from instructor where dept_name='Comp. Sci.';
+       | avg(salary) |
+       | 750000      |
+     + Find the number of tuples in the course relation
+       select count(*) from course;
+     + grouping and aggregation ::
+       + e.g. select product, sum from purchase group by product
+       + 1.compute the from and where clauses
+         2.group by the attributes in the group
+         3.Compute the select clause
+     + Having clause ::
+       + predicates in the *having* clause are applied after the formation of groups
+         whereas predicates in the *where* clause are applied before groups
+     + General form of grouping and aggregation ::
+       + select S from R₁,...,Rₙ where C₁ group by a₁,...,aₙ having C₂
+   + Nested subqueries ::
+     + SQL provides a mechanism for the nesting of subqueries. A subquery is
+       a *select-from-where* expression that is nested within another query.
+   + Set membership ::
+     + in :: tests for set membership
+     + not in ::
+   + set comparison-"some" clause ::
+        > *some*
+        < *some*
+   + set comparison - "all" clasue ::
+        > *all*
+        *select* name
+        *from* instructor
+        *where* salary > *all* (*select* salary
+                            *from* instructor
+                            *where* dept_name = 'Biology');
+   + Test for empty relations ::
+        The *exists* construct returns the value *true* if te argument subquery
+        is nonempty
+   + not exists ::
+   + unique ::
+     + The *unique* construct tests whether a subquery has any duplicate tuples
+       in its result
+     + The *unique* construct evaluates to "true" if a given subquery contains no duplicates
+   + with ::
+     + provides a way of defining a temporary relation whose definition is available only to
+       the query in which the *with* clause occurs
+     + e.g
+       *with* max_budget(value) *as*
+           (*select max* (budget)
+           *from* department)
+       *select* department.name
+       *from* department, max_budget
+       *where* department.budget = max_budget.value;
+     + is very useful for writing complex queries
+     + with dept _total (dept_name, value) as
+          (select dept_name, sum(salary)
+           from instructor
+           group by dept_name),
+       dept_total_avg(value) as
+          (select avg(value)
+           from dept_total)
+       select dept_name
+       from dept_total, dept_total_avg
+       where dept_total.value > dept_total_avg.value;
+   + insertion ::
+     + *insert into ...* *values* ....
+     + *insert into* student
+       *select* ID, name, dept_name, 0
+       *from* instructor
+     + *insert into* table1 *select* * *from* table1
+   + update ::
+     + *update* ... *set* .... *where* ...
+     + *update* ... *set* ... *case* ...
+       *when* ... *then* ...
+       *else* ...
+       *end*
+* DONE
+  CLOSED: [2018-04-02 一 13:15]
+  :LOGBOOK:
+  - State "DONE"       from "NEXT"       [2018-04-02 一 13:15]
+  - State "NEXT"       from "DONE"       [2018-03-26 一 13:25]
+  - State "DONE"       from "TODO"       [2018-03-26 一 12:44]
+  :END:
+first 3.8 3.9
+3.10 3.11 3.15
+4.7 4.9 4.12
+* Chap4
+** Joined relations
+   + Join operation ::
+     + takes two relations and return as a result another relation
+   + outer join ::
+     + an extension of the join operation that avoids loss of information
+     + use *null* values
+     + To distinguish normal joins from outer joins, normal joins are called
+       inter joins in SQL.
+   + inner join ::
+     + equivalent to *join*
+** View
+   + In some cases, it's not desirable for all users to see the entire
+     logical model
+   + A *view* provides a mechanism to hide certain data from the view of certain
+     users
+   + *create view* v *as* <query expression>
+   + once a view is defined, the view name can be used to refer to the
+     virtual relation that the view generates.
+   + view is not a table
+   + Most SQL implementations allow update only on simple views
+   + The *select* contains only attribute names of the relation and doesn't
+     have any expressions, aggregates
+*** Materialized views
+   + Materializing a view ::
+        create a physical table containing all the tuples in the result of the query
+        defining the view
+*** Transaction
+    + Atomic transaction
+      Either fully executed or rolled back as if never occured
+*** Integrated constraints
+    Integrity constraints guard against accidental damage to the database,
+    by ensuring that authorized changes to the database don't result
+    in a loss of data consistency
+*** Referential integrity
+    Ensures that a value that appears in one relation for a given set of attributes
+    also appears for a certain set of attributes in another relation
+** Complex check clause
+   *check*
+** DATATYPE
+*** Built-in data types in SQL
+   + date ::
+            containing a (4 digit) year, month and data
+   + time ::
+            time of day, in hours, minutes
+            *time* '09:00:30'
+   + timestamp :: date plus time of day
+   + interval :: period of time
+                interval '1' day
+*** index creation
+   + *create* *index* studentID_index *on* student(ID)
+   + indices are data structures used to *speed up* access to records with
+     specified values for index attributes
+   + e.g. select *
+          from student
+          where ID = '12345'
+     can be executed by using the index to find the required record
+     without looking at all records of student
+*** User-defined
+   + *create type* Dollars *as numeric* (12, 2) *final*
+   + *create domain* person_name *char* (20) *not null*
+*** large-object types
+    + large object are stored as large object
+      + blob :: binary large object
+                object is a large collection of uninterpreted binary data
+      + clob :: character large object
+** Authorization
+   + Forms of authorization on parts of the database ::
+     + read
+     + insert
+     + update
+     + delete
+   + Forms of authorization to modify the database ::
+     + index
+     + resources
+       allow creation of new relations
+     + alteration
+     + drop
+*** Authorization specification in SQL
+    + *grant* <privilege list>
+      *on* <relation name or view name> *to* <user list>
+    + <user list> is
+      + a user-id
+      + *public* which allows all valid users the privilege granted
+      + a role
+    + granting on a privilege on a view doesn't imply granting any privileges on
+      the underlying relation
+*** privileges in SQL
+    + select ::
+               *grant select on* instrutor *to* $U_1,U_2,U_3$
+    + insert ::
+*** revoking authorization in SQL
+    + the revoke statement is used to revoke authorization
+      *revoke* <privilege list>
+      *on* <relation name or view name> *from* <user list>
+*** role
+    + *create role* instructor
+    + *grant* instructor *to* Amil
+    + *grant select on* takes *to* instructor
+*** Authorization on views
+    + *grant select on* geo_instructor *to* geo_staff
+*** other authorization fearture
+    + *grant reference* (dept_name) *on* department *to* Mariano
+* Chap5
+** Trigger
+   + a statement that the system executes automatically by the system as a side
+     effect of a modification to the database
+   + to design, we must
+     specify the condition
+     specify the action
+*** example
+    time_slot_id is not a primary key, so cannot create a foreign key constraint
+    Alternative we can use trigger
+    *create trigger* timeslot_check1 *after insert on* sectin
+    *referencing new row as* nrow
+    *for each row*
+    *when* (nrow.time_slot_id *not in* (
+        *select* time_slot_id
+        *from* time_slot))
+    *begin*
+        *rollback*
+    *end*
+*** triggering events and action in SQL
+    + triggering event can be *insert, delete* or *update*
+    + triggering on update can be restricted to specific attributes
+      *after update of* takes *on* grade
+    + values of attributes *before and after* an udpate can be referenced
+      *reference old row as*
+      *reference new row as*
+    + triggers can be activated *before an event*
+*** statement level triggers
+    + instead of executing a seperate action for each affectedrow
+      a single action can be executed for all rows affected by a transaction
+      + use *for each statement*
+      + use *referencing old table*
+** Accessing SQL from a programming language
+   + To write an embedded SQL query, we use
+     *declare*
+   + The *open* statment for our example is as follows:
+     *EXEC SQL open c*;
+     This statement causes the database system to execute the query
+     and to save the results within a temporary relatoin
+   + Dynamic SQL ::
+   + Embedded SQL ::
+     + the SQL statements are identified at compile time using a preprocessor
+   + Procedural extensions and stored procedures
+   + Functions
+     + returns ::
+                 indicates the variable-type taht is returned
+     + return ::
+                specifies the values that are to be returned as result of invoking
+                the function
+* DONE
+  CLOSED: [2018-04-09 一 13:16]
+  :LOGBOOK:
+  - State "DONE"       from "TODO"       [2018-04-09 一 13:16]
+  :END:
+  5.15 5.17 5.21
+  employee (employee name, street, city)
+works (employee name, company name, salary)
+
+* Chap7: Entity-relationship model
+** ER model
+   + model ::
+     + A database can be modeled as :
+       a collection of entities
+       relation among entities
+     + An *entity* is an object that is distinguishable from all other objects
+       An *entity* ahs a set of properties, and the values for some set of
+       properties may uniquely identify an entity
+     + entity set ::
+       + a set of entities of the same type that share the same properties,
+         or attributes
+   + relation ::
+     + A mathematical definition ::
+       + Let A = {1, 2, 3}, B = {a, b, c, d}
+       + We define a *relationship* of subset of $A\times B$
+     + A *relationship* is an association among several entities.
+     + relationship set ::
+     + degree of relationship set ::
+       + binary relationship
+         involve two entity sets
+         most relationship sets in a database system are binary
+     + Attributes ::
+     + mapping cardinality ::
+     + redundant attributes ::
+       + suppose we have entity sets
+         instructor, with attributes including dept_name
+         department
+       + and a relationship
+         inst_dept relating instructor and department
+       + Attribute dept_name in entity instructor is redundant since there
+         is an explicit relationship inst_dept which relates instructors
+         to department
+   + E-R diagram ::
+     + Roles ::
+       + Entity sets of a relationship needn't to be distinct
+         Each occurence of an entity set plays a "role" in the relationship
+       + Such as requisite course
+       + The labels "course_id" and "prereq_id" are called roles
+     + Cardinality constraint ::
+          We express cardinality constraints by drawing either a directed
+          line ->, signifying "one", or an undirected line (--), signifying
+          "many"
+       $\to$
+     + one-to-one relationship, one-to-many, many-to-one, many-to-many
+     + total participation ::
+          every entity in the entity set participates in at least one relationship
+          in the relationship set
+     + Min and Max ::
+       + A line may have an associtaed minimum and maximum cardinality, shown
+         in the form l..h, where l is the minimum and h the maximum cardinality
+       + A maximum value of * indicates no limit
+     + Cardinality constraints on ternary relationship ::
+     + Week entity set ::
+       + An entity set that doesn't have a primary key is referred to as *weak*
+         *entity set*
+       + The existence of weak entity set depends on the existence of a
+         *identifying entity set*
+         + It must relate to the identifying entity set *via a total*,
+           *one-to-many* relationship set from the identifying to the weak entity
+           set
+         + *identifying relationship* depicted using a double diamond
+       + The *discriminator* of a weak entity set is the set of attributes that
+         distinguishes among all the entities of a weak entity set
+       + We underline the discriminator of a weak entity set with a dashed
+         lien
