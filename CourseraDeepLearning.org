@@ -121,7 +121,7 @@
      ymin=-1.5, ymax=1.5,
      axis lines=center,
      axis on top=true,
-     domain=-1.5:1.5,
+     domain=-1.5:1.5,p
      ylabel=$a$,
      xlabel=$z$,]
      \draw [purple, thick] (axis cs:-1,-0.2) -- (axis cs:0,0);
@@ -229,7 +229,7 @@
    \draw [->] (n41) -- (y);
    \end{tikzpicture}
    $l$ is the $l$th layer
-   $n^{[l]}=#units$ in layer $l$
+   $n^{[l]}=\#units$ in layer $l$
    $a^{[l]}=g^{[l]}(z^{[l]})$ is activations in l
 ** Circuit theory and deep learning
    Informally: There are functions you can compute with a "small"
@@ -244,6 +244,20 @@
    |                 | high variance | high bias | high bias and variance |  low |
    |                 |               |           |                        |      |
    |-----------------+---------------+-----------+------------------------+------|
+** Basic recipe for machine learning
+      \begin{tikzpicture}[auto]
+   \node (x11) at (0,0)  {Done};
+   \node (x12) at (0,2) [label=below:dev set problem] {High variance};
+   \node (x13) at (0,4) [label=below:training data problem] {High bias};
+   \node (x22) at (6,2) [label=below:{regulation, NN architecture}] {More data};
+   \node (x23) at (6,4) [label=below:{train longer, NN architercture}] {Bigger network};
+   \draw [->] (x13) to [bend right = 10] node {Y}  (x23);
+   \draw [<-] (x13) to [bend left = 10] (x23);
+   \draw [->] (x13) to node {N} (x12);
+   \draw [->] (x12) to node {N} (x11);
+   \draw [->] (x12) to node {Y} (x22);
+   \draw [->] (x22) to (x23);
+   \end{tikzpicture}
 ** Regularization
    + L2 regulation--logistic regression ::
         $\mathcal{J}(w,b)=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathcal{L}(\hat{y}^{(i)}
@@ -326,11 +340,21 @@
        + data augmentation
          i.e. picture : flip, rotate
        + early stopping
-
-#+NAME: np
-#+BEGIN_SRC emacs-lisp :exports results
-(+ 3 4)
-#+END_SRC
-
-#+RESULTS: np
-: None
+** Setting up your optimization problem
+   + normalizing inputs
+   + vanishing / exploding gradients
+   + Weight initialization for deep networks
+     #+BEGIN_SRC python
+       W[l] = np.random.rand(shape) * np.sqrt(1 / n[l - 1])
+     #+END_SRC
+   + Gradient check for a neural network
+     Take $W^{[1]}, b^{[1]},\dots,W^{[L]},b^{[L]}$ and reshape into a big vector $\theta$
+     $\mathcal{J}(W^{[1]}, b^{[1]},\dots,W^{[L]},b^{[L]})=\mathcal{J}(\theta)$
+     Take $dW^{[1]}, db^{[1]},\dots,dW^{[L]},db^{[L]}$ into $d\theta$
+     Now does $d\theta$ is the gradient of $\mathcal{J}(\theta)$
+     + for each i
+       $d\theta_{approx}[i]=\frac{\mathcal{J}(\theta_1,\dots,\theta_i+\epsilon,\dots)-
+       \mathcal{J}(\theta_1,\dots,\theta_i+\epsilon,\dots)}{2\epsilon}\approx\theta[i]$
+     + Check
+       $\frac{||d\theta_{approx}-d\theta||_2}{||d\theta_{approx}||_2-||d\theta||_2}$
+     + don't use in training -- only in debug
