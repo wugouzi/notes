@@ -657,22 +657,36 @@ works (employee name, company name, salary)
    + Atomicity is actually a property of how the elements of the domain are used
 ** Functional dependencies
    + constraints on the set of legal relations
+   + require that the value for a certain set of attributes determines uniquely
+     the value for another set of attributes
    + Let $R$ be a relation scheme
      $\alpha\subseteq R$ and $\beta\subseteq R$
    + the *functional dependency*
      $\alpha\to\beta$
-     holds on $R$ is and only if for any legal relations r($R$), whenever any
+     holds on $R$ if and only if for any legal relations r($R$), whenever any
      two tuples $t_1$ and $t_2$ of r agree on the attributes $\alpha$, they also
      agree on the attributes $\beta$ that is
      $t_1[\alpha]=t_2[\alpha]\Rightarrow t_1[\beta]=t_2[\beta]$
+     | A | B |
+     | 1 | 4 |
+     | 1 | 5 |
+     | 3 | 7 |
+     here, $A\to B$ does *not* hold, but $B\to A$ hold
    + $K$ is a superkey for relation schema $R$ if and only if $K\to R$
      $K$ is a candidate key for $R$ if and only
      $K\to R$ and for no $a\subset K, a\to R$
    + *Functional dependencies* allow us to express constraints that cannot be expressed
-     using superkeys
-   + To test relations to see if they are legal under a given set of functional dependencies
-     + If a relation r is legal under a set F of functional dependencies, we say r
-       *satisfies* F
+     using superkeys. E.g.
+     inst_dept(_ID_,name, salary, _dept_name_, building, budget)
+     We would expect /dept_name/ $\to$ /building/ and /ID/ $\to$ /building/ hold
+     but /dept_name/ $\to$ /salary/ does not hold
+   + usage ::
+     + To test relations to see if they are legal under a given set of functional dependencies
+       + If a relation r is legal under a set F of functional dependencies, we say r
+         *satisfies* F
+     + specify constraints on the set of legal relations
+       + We say /F/ *holds on* /R/ if all legal relations on /R/ satisfy the set of functional dependencies
+         /F/
    + trivial ::
                it is satisfied by all instances of a relation
    + Closure of a set of functional dependencies ::
@@ -681,17 +695,56 @@ works (employee name, company name, salary)
        + e.g. If $A\to B$ and $B\to C$, then $A\to C$
      + The set of *all* functional dependencies logically implied by $F$ is the *closure* of $F$
        denoted by $F^+$
-   + Boyce-Codd normal form ::
-     + A relation schema $R$ is in BCNF w.r.t to a set $F$ of functional
-       dependencies if for all functional dependencies in $F^+$ of the form
-       $\alpha\to\beta$, at least one of the following holds:
-       $\alpha\to\beta$ is trivial
-       $\alpha$ is a superkey of $R$
-     + BCNF and dependency predervation
+** Boyce-Codd normal form ::
+   + A relation schema $R$ is in BCNF w.r.t to a set $F$ of functional
+     dependencies if for all functional dependencies in $F^+$ of the form
+     $\alpha\to\beta$, at least one of the following holds:
+     $\alpha\to\beta$ is trivial
+     $\alpha$ is a superkey of $R$
+   + decomposing a schema into BCNF
+     Supposing we have a schema /R/ and a non-trivial dependency $\alpha\to\beta$ causes
+     a violation of BCNF
+     We decompose /R/ into:
+     ($\alpha\cup\beta$)
+     (R-($\beta-\alpha$))
+   + BCNF and dependency predervation
 ** Third normal form
    + for all $\alpha\to\beta$ in $F^+$, at least one of the following holds
      $\alpha\to\beta$ is trivial
      $\alpha$ is a superkey for R
      Each attribute A in $\beta - \alpha$ is contained in a candidate key for R
+   + Goals of normalization ::
+     + Let /R/ be a relation scheme with a set /F/ of functional dependencies
+     + Decide whether a relation /R/ is in "good" form
+     + In the case that a relation scheme /R/ is not in "good" form,
+       decompose it into the set of relation scheme $\{R_1,\dots,R_n\}$ such that
+       + each relation scheme is in good form
+       + the decomposition is a lossless-join decomposition
+       + the decomposition should be denpendency preserving
    + minimal relaxiation of BCNF
+** How good is BCNF
+   + consider a relation ::
+     + inst_info(ID, child_name, phone)
+     +
+        |    ID | child_name |        phone |
+        | 99999 | David      | 512-555-1234 |
+        | 99999 | David      | 512-555-4321 |
+        | 99999 | William    | 512-555-1234 |
+        | 99999 | William    | 512-555-4321 |
+   + problem ::
+     + there are no non-trivial functional dependencies and therefore
+       the relation in BCNF
+     + insertion anomalies -- if we add a phone 981-992-3443 to 99999,
+       we need to add two tupples
+       (99999, David, 981-992-3443)
+       (99999, William, 981-992-3443)
+   + solution ::
+                decompose /inst_info/ into two tables
 ** Closure of attributes sets
+   + Armstrong's axioms ::
+     + reflexivity :: if $\beta\subseteq\alpha$, then $\alpha\to\beta$
+     + augmentation :: if $\alpha\to\beta$, then $\gamma\alpha\to\gamma\beta$
+     + transitivity :: if $\alpha\to\beta$ and $\beta\to\gamma$, then $\alpha\to\gamma$
+     + these rules are
+       + *sound* (generate only functional dependencies that actually hold)
+       + *complete* (generate all functional dependencies that hold)
