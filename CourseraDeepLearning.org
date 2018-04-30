@@ -369,4 +369,59 @@
            A[t] = g[t](z[t])
            ...
        J = 1 / 1000 * sum(cost) + regularization
+     #+BEGIN_SRC python :results file
+       import matplotlib.pyplot as plt
+       import numpy as np
+       import math
+       t = np.arange(0., 5., 0.2)
+       plt.title('Batch cost')
+       plt.xlabel('iteration')
+       plt.ylabel('cost')
+       plt.plot(t, 1 / (np.power(t, 0.0001)))
+       plt.savefig('images/1.png')
+       return 'images/1.png'
      #+END_SRC
+
+     #+RESULTS:
+     [[file:images/1.png]]
+   + Choose mini-batch size
+     + if mini-batch size = 1 : stochastic descent
+       can be extremely noisy
+** Exponentially weighted averages
+   + $v_t=\beta v_{t-1}+(1-\beta)\theta_t$
+   + for $\beta=0.9$, $\beta^{10}\approx0.35\approx\frac{1}{e}$
+     Note $(1-\epsilon)^{1/\epsilon}=\frac{1}{e}$, thus we say that it we need 10 times
+   + Bias correction
+     Since $v_0=0$, which is not very good
+     Thus we take $\frac{v_t}{1-\beta^t}$
+** Gradient descent with momentum
+   on iteration t:
+   compute dW, db on mini-batch
+   $v_{dW}=\beta v_{dW}+(1-\beta)dW$
+   $W=W-\alpha v_{dW}$
+** RMSprop (root mean square)
+   on iteration t:
+   compute dW, db
+   $S_{dW}=\beta S_{dW}+(1-\beta)dW^2}$
+   $S_{db}=\beta S_{db}+(1-\beta)db^2$
+   $W:=W-\alpha\frac{dW}{\sqrt{S_{dW}}}$
+   We want SdW be relatively small, Sdb be relatively large
+   Usually we add $\epsilon$ to Sdx in sure $\sqrt{S_{dW}}$ won't be too small
+** Adam optimization algorithm
+   Adapative moment estimation
+   $V_{dW}=0,S_{dW}=0$
+   on iteration t:
+   compute dW, db using current mini-batch
+   $v_{dW}=\beta_1v_{dW}+(1-\beta_1)dW$
+   $S_{dW}=\beta_2S_{dW}+(1-\beta_2)dW^2$
+   $v_{dW}^{corrected}=\frac{v_{dW}}{1-\beta_1^t}$
+   $S_{dW}^{corrected}=\frac{S_{dW}}{1-\beta_2^t}$
+   $W:=W-\alpha\frac{v_{dW}^{corrected}}{\sqrt{S_{dW}}^{corrected}}$
+   $\beta_1=0.9,\beta_2=0.999,\epsilon=10^{-8}$ varing $\alpha$
+** Rate decay
+   1 epoch = 1 pass through the data
+   $\alpha=\frac{1}{1+\text{decay-rate}\times\text{epoch-num}}\alpha_0$
+   $\alpha=0.95^{\text{epoch-num}}\alpha_0$
+   $\alpha=\frac{k}{\sqrt{\text{epoch-num}}}\alpha_0$
+** Local optima
+   plateau
