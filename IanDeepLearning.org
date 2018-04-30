@@ -267,3 +267,74 @@
          when $p(\lim_{m\to\infty}\bl{x}^{(m)}=\bl{x})=1$
 ** Maximum likelihood estimation
 ** Bayesian statistics
+   consider all possible values of $\bl{\theta}$ when making a prediction
+   + Bayesian inference ::
+     + Prior distribution ::
+          what you know about parameter $\beta$, excluding the information in
+          the data - denoted $\pi(\beta)$
+     + Likelihood ::
+                    based on modeling assumptions, how (relatively) likely the data $Y$
+                    are if the truth is $\beta$ - denoted $f(Y\mid\beta)$
+     +
+       \begin{align*}
+       p(\bl{\beta\mid Y})\quad\propto\quad f(\bl{Y\mid\beta})\times\pi(\bl{\beta})\\
+       \text{Posterior}\quad\propto\quad \text{Likelihood}\times\text{Prior}
+       \end{align*}
+   + Before observing the data, we represent our knowledge of $\bl{\theta}$ using
+     *prior probability distribution*, $p(\bl{\theta})$
+   + A data samples $\{x^{(1)},\dots,x^{(m)}\}$, we can recover the effect of data on our belief
+     about $\bl{\theta}$ by combining the data likelihood $p(x^{(1)},\dots,x^{(m)}\mid\bl{\theta})$ with the prior
+     $p(\bl{\theta}\mid x^{(1)},\dots,x^{(m)})=\frac{p(x^{(1)},\dots,x^{(m)}\mid\bl{\theta})
+     p(\bl{\theta})}{p^{(1)},\dots,p^{(m)}}$
+   + Unlike maximum likelihood approach, *Bayesian* make predictions using a full
+     distribution over $\bl{\theta}$. For example, after observing $m$ examples,
+     $p(x^{(m+1)}\mid x^{(1)},\dots,x^{(m)})=\displaystyle\int p(x^{(m+1)}\mid\bl{\theta})p(\bl{\theta}\mid
+     x^{(1)},\dots,x^{(m)})d\bl{\theta}$
+*** Basic knowledge
+    + Covariance matrix $\Sigma$ ::
+      + a matrix whose element in the i,j position is the covariance between
+        $i^{th}$ and $j^{th}$ elements of a random vector
+    + Multivariate normal distribution ::
+      + A random vector $\bl{X}=(X_1,\dots,X_k)$ has multivariate normal distribution if it
+        satisfies the following equivalent conditions
+        * Every linear combination of its components $Y=a_1X_1+\dots+a_kX_k$ is normally
+          distributed. $Y=\bl{a^TX}$
+        * There exists a random $l$-vector $\bl{Z}$, whose components are independent
+          standard normal random variables, a $k$-vector $\bl{\mu}$ and a $k\times l$
+          matrix $\bl{A}$ s.t. $\bl{X=AZ+\mu}$
+      + When $\Sigma$ is *positive definite*
+        $f_{\bl{X}}(x_1,\dots,x_k)=\frac{\exp(-\frac{1}{2}\bl{(x-\mu)^T\sum^{-1}(x-\mu)})}
+        {\sqrt{(2\pi)^k|\bl{\sum}|}}$
+        $|\Sigma|\equiv \bl{\text{det}\Sigma}$
+*** Example: Bayesian Linear regression
+    Consider the Bayesian estimation approach to learn the linear regression
+    parameters
+    + $\hat{y}=\bl{w^Tx}$
+    + Given a set of $m$ training samples $(\bl{X}^{(\text{train})},\bl{y}^{(\text{train})})$
+      $\hat{\bl{y}}^{(\text{train})}=\bl{X}^{(\text{train})}\bl{w}$
+    + Guassian distribution ::
+         $f(x\mid\mu,\sigma^2)=\frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{(x-\mu)^2}{2\sigma^2}}$
+    + Expressed as a Gaussian conditional distribution on $\bl{y}^{(\text{train})}$
+      $p(\bl{y}^{(\text{train})}\mid\bl{X}^{(\text{train})},\bl{w})=\mathcal{N}(\bl{y}^{(train)};
+      \bl{X}^{(\text{train})}\bl{w,I})\propto\exp{(-\frac{1}{2}(\bl{y}^{(\text{train})}-\bl{X}^{(\text{train})}\bl{w})^T(
+      \bl{y}^{(\text{train})}-\bl{X}^{(\text{train})}\bl{w}))}$
+    + For real-valued parameters it's common to use a Gaussian as a prior distribution
+      $p(\bl{w})=\mathcal{N}(\bl{w;\mu_0,\Lambda_o})\propto(-\frac{1}{2}(\bl{w-\mu_0})^T
+      \Lambda_0^{-1}(\bl{w-\mu_0}))$
+      where $\bl{\mu_0}$ and $\bl{\Lambda}_0$ are the prior distribution mean vector and covariance matrix
+      $\bl{\Lambda}_0=\text{diag}(\bl{\lambda})_0$
+    + w
+      \begin{align*}
+      p(\bl{w\mid X,y})&\propto p(\bl{y\mid X, w})p(\bl{w})\\
+      &\propto\exp(-\frac{1}{2}(\bl{y-Xw}^T(\bl{y-Xw})))\exp(-\frac{1}{2}(\bl{w-\mu_0})^T
+      \bl{\Lambda}_0^{-1}(\bl{w-\mu_0}))\\
+      &\propto(-\frac{1}{2}(-2\bl{y^TXw+w^TX^TXw+w^T\Lambda_0^{-1}w-2\mu^T_0\Lambda_0^{-1}w}))
+      \end{align*}
+      then define $\bl{\Lambda}_m=(\bl{X^TX+\Lambda_0^{-1}})^{-1}$, and $\bl{\mu_m}=\bl{\Lambda_m(X^Ty+\Lambda_0^{-1}\mu_o)}$
+      \begin{align*}
+      p(\bl{w\mid X,y})&\propto \exp(-\frac{1}{2}\bl{(w-\mu_m)^T\Lambda_m^{-1}(w-\mu_m)
+      +\frac{1}{2}\mu_m^T\Lambda_m^{-1}\mu_m})\\
+      &\propto(-\frac{1}{2}\bl{(w-\mu_m)^T\Lambda_m^{-1}(w-\mu_m)}
+      \end{align*}
+** Supervised learning algorithms
+*** Probabilistic supervised learning
