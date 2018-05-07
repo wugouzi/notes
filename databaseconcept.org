@@ -1,3 +1,4 @@
+#+LATEX_HEADER: \usepackage{amssymb}
 * Chap1
 ** Taught
 1-8, 10, 11-16, 22-23
@@ -748,3 +749,178 @@ works (employee name, company name, salary)
      + these rules are
        + *sound* (generate only functional dependencies that actually hold)
        + *complete* (generate all functional dependencies that hold)
+   + Another rule ::
+     + Union rule :: if $\alpha\to\beta$ and $\alpha\to\gamma$, then $\alpha\to\beta\gamma$
+     + Decomposition rule :: if $\alpha\to\beta\gamma$, then $\alpha\to\beta,\alpha\to\gamma$
+     + Pseudotransitivity rule :: If $\alpha\to\beta$ and $\gamma\beta\to\delta$, then $\alpha\gamma\to\delta$
+   + Canonical Cover
+     + If we perform a update on the relation, the system must ensure the
+       update doesn't violate any functional dependencies. We need the reduce
+       the check time
+     + extraneous attributes ::
+       + Consider a set F of functional dependencies and the functional
+         dependency $\alpha\to\beta$ in F
+       + A is extraneous in $\alpha$ if $A\in\alpha,F\to(F-\{\alpha\to\beta\})\cup\{(\alpha-A)\to\beta\}$
+       + A is extraneous in $\beta$ if $A\in\beta, (F-\{\alpha\to\beta\})\cup\{\alpha\to(\beta-A)\}\to F$
+       + For example, if we have $AB\to C, A\to C$, then B is extraneous in $AB\to C$
+       + If $A\in\beta$, consider the set $F'=(F-\{\alpha\to\beta\})\cup\{\alpha\to(\beta-A)\}$
+         check if $\alpha\to A$ can be inferred from $F'$. Compute $\alpha^+$ under $F'$, if $\alpha^+$
+         includes A, then A is extraneous in $\beta$
+       + If $A\in\alpha$, let $\gamma=\alpha-\{A\}$ and check if $\gamma\to\beta$ can be inferred from F.
+         To do so, compute $\gamma^+$ under F, if $\gamma^+$ includes all attributes in $\beta$
+         then A is extraneous
+       + Canonical cover $F_c$'s properties ::
+         + $F_c\Leftrightarrow F$
+         + No functional dependency in $F_c$ contains an extraneous attribute
+         + Each left side of a functional dependency in $F_c$ is unique.
+           $\forall \alpha_1\to\beta_1, \alpha_2\to\beta_2\inF_c,\alpha_1\neq\alpha_2$
+   + Lossless decomposition ::
+     + We say that decomposition is a lossless decomposition if there is no loss
+       of information by replacing $r(R)$ with two relation schemas $r_1(R_1),r_2(R_2)$
+       Or $\Pi_{R_1}(r)\bowtie\Pi_{R_2}(r)=r$
+     + we can use functional dependencies to show when certain decompositions are lossless.
+       If at least one of the following functional dependencies is in $F^+$:
+       $R_1\cap R_2\to R_1$
+       $R_1\cap R_2\to R_2$
+   + Dependency preservation ::
+     + Let F be a set of functional dependencies on a schema R, and let $R_1, \dots,R_n$ be
+       a decomposition of R. The *restriction* of F to $R_i$ is the set $F_i$ of all functional
+       dependencies in $F^+$ that include /only/ attributes of $R_i$
+     + Let $F'=F_1\cup\dots\cup F_n$, $F'^+=F^+$ is a *dependency-preserving decomposition*
+** Algorithms for decomposition
+*** BCNF
+    + BCNF testing ::
+      For every subset $\alpha$ of attributes in $R_i$, check that $\alpha^+$ either includes no
+      attribute of $R_i-\alpha$ or includes all attributes of $R_i$
+    + BCNF decomposition ::
+         + pseudocode
+           #+BEGIN_SRC python
+             result = {R}
+             done = False
+             F+=...
+             while not done:
+                 if Ri is not BCNF
+                     alphatobeta = nontrivial functional dependency hold on Ri and alphatoRi not in F+
+                     and alphacapbeta = None
+                     result = (result - Ri) cup (Ri - beta) cup (alpha, beta)
+                 else
+                     done = True
+           #+END_SRC
+*** 3NF decomposition
+#+BEGIN_SRC python
+  F_c = canonical cover for F
+  i = 0
+  for $\alpha\to\beta$ in F_c:
+      i = i + 1
+      R_i = $\alpha\beta$
+  if none of R_i contains a candidate keys:
+      i = i + 1
+      R_i = any candidate key of R
+  while R_j can be deleted(contains in another R):
+      R_j = R_i
+      i = i - 1
+  return (R_1, R_2, ..., R_i)
+#+END_SRC
+** Decomposition using multivalued dependencies
+   + Multivalued dependencies
+     + Multivalued dependencies, on the other hand, do not rule out the existence of
+       certain tuples. Instead, theyrequire that other tuples of a certain form be present in
+       the relation.
+     + Let r(R) be a relation schema and let $\alpha\subseteq R$ and $\beta\subseteq R$. The *multivalued dependency*
+       $\alpha\twoheadrightarrow\beta$
+       holds on R if in any legal instance of relation r(R), for pairs of tuples $t_1, t_2$ in r
+       such that $t_1[\alpha]=t_2[\alpha]$, there exist tuples $t_3,t_4$ s.t.
+       $t_1[\alpha]=t_2[\alpha]=t_3[\alpha]=t_4[\alpha]$
+       $t_3[\beta]=t_1[\beta]$
+       $t_3[R-\beta]=t_2[R-\beta]$
+       $t_4[\beta]=t_2[\beta]
+       $t_4[R-\beta]=t_1[R-\beta]$
+       |     | \alpha    | \beta         | R-\alpha-\beta |
+       | t_1 | a_1...a_i | a_{i+1}...a_j | a_{j+1}...a_n  |
+       | t_2 | a_1...a_i | b_{i+1}...b_j | b_{j+1}...b_n  |
+       | t_3 | a_1...a_i | a_{i+1}...a_j | b_{j+1}...b_n  |
+       | t_4 | a_1...a_i | b_{i+1}...b_j | a_{j+1}...a_n  |
+     + If $\alpha\to\beta$, then $\alpha\twoheadrightarrow\beta$
+       If $\alpha\twoheadrightarrow\beta$, then $\alpha\twoheadrightarrow R-\alpha-\beta$
+   + Fourth normal form
+     + for all multivalued dependencies in $D^+$, at least one of the following holds
+       + $\alpha\twoheadrightarrow\beta$ is a trivial multivalued dependency
+       + $\alpha$ is a superkey for R
+     + Every 4NF schema is in BCNF
+     + *restriction* of D to $R_i$ is the set $D_i$ consisting of:
+       + All functional dependencies in $D^+$ that include only attributes of $R_i$
+       + All multivalued dependencies of the form:
+         $\alpha\twoheadrightarrow\beta\cap R_i$
+         where $\alpha\subseteq R_i$ and $\alpha\twoheadrightarrow\beta$ is in $D^+$
+     + Decomposition ::
+                       + really same to BCNF
+* Chap10
+** Overview
+** Magnetic disk and flash storage
+*** Performance measures of disks
+    + Access time ::
+      + the time it takes *from* when a read or write request is issued *to* when
+        data transfer begins. Consist of:
+        + Seek time(寻道时间) ::
+          + time it takes to reposition the arm over the correct track
+        + Rotational latency ::
+          + time it takes for the *sector* to be accessed to appear under the head
+    + Data-transfer rate ::
+      + the rate at which data can be retrived from or stored to the disk
+    + Mean time to failure(MTTF)(平均故障间隔期) ::
+         + the average time the disk is expected to run continuously without any
+           failure
+*** optimization of disk-block access
+    + Block ::
+      + a contiguous sequence of sectors from a single track
+      + data is transfered between disk and main memory in blocks
+    + Disk-arm-scheduling ::
+      + algorithms order pending accesses to tracks so that disk arm movement
+        is minimized
+      + elevator algorithm
+    + File organization ::
+** RAID(Redundant arrays of independent disks)
+   + redundancy ::
+     + store extra information that can be used to rebuild information
+       lost in a disk failure
+     + E.g. *Mirroring*
+   + Mean time to failure
+*** improvement in performance via parallelism
+*** Raid level
+* TODO
+10.8 10.14 10.17
+* Chap 11
+** Basic concepts
+   + index file ::
+     + consist of records of the form
+       | search-key | pointer |
+     + two kinds of indices
+       + ordered indices
+       + hash indices
+     + index evaluation metrics
+       + access types
+       + access time
+       + insertion time
+       + deletion time
+       + space overhead
+** Ordered indices
+   + index entities are stored sorted on the search key value
+   + primary index(clustering index)主索引 ::
+     + not primary key
+     + the index whose search key specifies the sequential order of the file
+   + secondary index(non-clustring index) ::
+     + an index whose search key specifies an order different from
+       the sequential order of the file
+     + e.g.
+   + dense index ::
+     + index record appears for every search-key value
+   + sparse index files ::
+     + contains index records for only some search-key
+     + compared to dense indices
+       + less space and less maintenance
+       + generally slower than dense index
+     + good tradeoff
+       + sparse index with an index entry for every block in file, corresponding
+         to least search-key value in the block
+   + multilevel index ::
+** B+-tree index files
