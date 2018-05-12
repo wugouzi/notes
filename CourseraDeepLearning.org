@@ -440,3 +440,26 @@
      $\sigma^2=\frac{1}{m}\sum_i(z_i-\mu)^2$
      $z_{\text{norm}}^{(i)}=\frac{z^{(i)}-\mu}{\sqrt{\sigma^2+\epsilon}}$
      $\hat{z}^{(i)}=\gamma z_{\text{norm}}^{(i)}+\beta$, $\gamma,\beta$ are learnable
+   + working with mini-batch
+     + can eliminate $b$ since we minus the result by $\mu$
+   + Why
+     + covariant shift
+     + each layer's z's distributions' mean and variance remain
+     + Batch norm as regularization
+       + each mini-batch is scaled by the mean/variance computed on just that mini-batch
+       + this adds some noise to the values $z^{[l]}$ within that minibatch.
+         So similar to dropout, it adds some noise to each hidden layer's activations
+       + this has slight regularization effect
+   + At test time
+     $\mu,\sigma^2$:estimate using exponentially weighted average(across mini-batch)
+** Softmax regression
+   C=#classes
+   in layer L, $n^{[L]}=C$,each denote $P(some\mid x)$, they need to sum to 1
+   $Z^{[L]}=W^{[L]}a^{[L-1]}+b^{[L]}$
+   $t=e^{z^{[L]}}$
+   $a^{[L]}=\frac{t}{\sum t_i}$
+   + train ::
+     + loss function ::
+                       $y=\begin{bmatrix} 0 \\ 1 \\ 0 \\ 0 \end{bmatrix}$,$\hat{y}=\begin{bmatrix}0.3\\0.2\\0.1\\0.4\end{bmatrix}$,$\mathcal{L}(\hat{y},y)=-\displaystyle\sum_{j=1}^4y_j\text{log}\hat{y}_j$
+     + cost $J=\frac{1}{m}\displaystyle\sum_{i=1}^m\mathcal{L}(\hat{y},y)$
+     + gradient descent
