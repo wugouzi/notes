@@ -1,0 +1,215 @@
+* Introduction
+** Get_Line
+   + inputs
+     + a prompt string
+     + a buffer to accept the input, at least 2 character long
+     + an indication of the buffer length
+   + outputs
+     + a success/fail status
+     + success : the input is stored in the supplied buffer, the end of the
+       input is marked with NUL character
+     + fail : the buffer may have been modified but won't contain valid input
+#+BEGIN_SRC c
+  FLAG Get_Line (char *prompt, char *buffer, int len, char *default) {
+    char *cptr = buffer;
+    Flag isinsert = TRUE;
+    FLAG waskey = TRUE;
+    int key;
+
+    if (len < 2) //safety check
+      return FALSE;
+
+    strcpy(buffer, default);
+    for (;;) {
+      ToStartOfLine();
+      ClearLine();
+      printf("%s: %s", prompt, buffer);
+      PositionCursor(strlen(prompt) + 2 + (cptr - buffer));
+
+      key = KeyGet();
+      if (isprint(key)) {
+        if (!waskey){
+          cptr = buffer;
+          ,*cptr = NUL;
+          waskey = TRUE;
+        }
+        if (isinsert) {
+          if (buffer + strlen(buffer) >= len - 1) Beep();
+          else {
+            memmove(cptr + 1, cptr, strlen(cptr) + 1);
+            ,*cptr++ = key;
+            ,*cptr = NUL;
+          }
+        }
+        else {
+          if (*cptr == NUL) {
+            //end of input, so append to buffer
+            if (buffer + strlen(buffer) >= len - 1)
+              Beep();
+            else {
+              ,*cptr++ = key;
+              ,*cptr = NUL;
+            }
+          }
+          else
+            ,*cptr++ = key;//replace
+        }
+      }
+      else {
+        switch (key) {
+        case KEYBACK:
+          if (!waskey) {
+            cptr = buffer;
+            ,*cptr = BUL;
+            waskey = TRUE;
+          }
+          if (cptr > buffer) {
+            xstrcpy(cptr - 1, cptr);
+            cptr--;
+            ,*cptr = NUL;
+          }
+          break;
+        case KEYDEL: //delete the following char
+          if (cptr < buffer + strlen(buffer))
+            xstrcpy(cptr, cptr + 1);
+          else Beep();
+          break;
+        case KEYENTER:
+          printf("\n");
+          return (TRUE);
+        case KEYLEFT:
+          if (cptr > buffer) cptr--;
+          waskey = TRUE;
+          break;
+        case KEYRIGHT:
+          if (cptr < buffer + strlen(buffer)) cptr++;
+          waskey = TRUE;
+          break;
+        case KEYSTART: //move to start of response
+          cptr = buffer;
+          waskey = TRUE;
+          break;
+        case KEYEND: //move to end of response
+          cptr = buffer + strlen(buffer);
+          waskey = TRUE;
+          break;
+        case KEYQUOTE: //insert the next character, even if it's a control char
+          if (!waskey) {
+            cptr = buffer;
+            ,*cptr = NUL;
+            waskey = TRUE;
+          }
+          key = KeyGet();
+          if (isinsert) {
+            if (buffer + strlen(buffer) >= len -  1)
+              Beep();
+            else { //move rest of line and insert
+              memmove(cptr + 1, cptr, strlen(cptr) + 1);
+              ,*cptr++ = key;
+              ,*cptr = NUL;
+            }
+          }
+          else {
+            if (*cptr == NUL) { //end of input, so append
+              if (buffer + strlen(buffer) >= len - 1)
+                Beep();
+              else {
+                ,*cptr++ = key;
+                ,*cptr = NUL;
+              }
+            }
+            else
+              ,*cptr++ = key; //replace
+          }
+          break;
+        case KEYCLEAR: //erase response
+          cptr = buffer;
+          ,*cptr = NUL;
+          waskey = TRUE;
+          break;
+        case KEYDEFAULT: //restore default response
+          strcpy(buffer, default);
+          cptr = buffer;
+          waskey = FALSE;
+          break;
+        case KEYCANCEL: //abort out of editing
+          return (FALSE);
+        case KEYREDISPLAY: //redisplay the prompt and resp
+          break;
+        case KEYINSERT: //set insert mode
+          isinsert = TRUE;
+          break;
+        case KEYREPLACE: //set replace mode
+          isinsert = FALSE;
+        default:
+          Beep();
+          break;
+        }
+      }
+    }
+  }
+#+END_SRC
+** Forest
+   + What characteristics of the display and keyboard affect text editing
+   + How should the program cope with presenting output on different way
+   + What view of the text should be presented to the user
+   + How should the text be managed so that large amounts of text could be
+     edited efficiently
+   + How should display updating occur so that editing changes are efficiently
+     presented to the user
+   + How should the command set be designed? What should the meanings of the
+     various commands be?
+   + How should the program be designed so that the user can change how it operates
+* Chap1: Users
+* Chap3 Implementation Language
+** General consideration
+*** Text handle power
+    + waiting for user input
+    + parsing that input
+    + setting up to execute the commands
+    + executing the commands
+    + determining the effect of those commands on the screen
+    + update the screen
+*** support for extensibility
+    + late binding of names to procedures through indirect calls, dynamic linking,
+      or other techniques
+    + retaining and using the symbol table information at run time so that the user
+      can think of changes in terms of names, not address
+    + internal error and consistency checking under program control so that users
+      can be protected from their mistakes
+    + the ability to add code to the executing editor
+*** Large project support
+    + division of the program into separate modules
+    + division of the program into separate files
+    + separate compilation
+    + a way to organize the global name space
+    + a way to keep objects out of the global name space
+    + automatic verification of procedure call/declaration compatibility
+    + conditional compilation
+    + compilation constraint
+    + a way of constructing "data abstraction" that package procedures and private state
+      information
+    + a way of dynamically allocating memory
+* chap4 Editing models
+** one-dimensional array
+** two-dimensional array
+** list of lines
+** paged models
+** objects
+** dealing with real text
+   + text ::
+     + characters
+     + words
+     + phrases
+     + sentences
+     + paragraphs
+     + subsections
+     + sections
+     + chapters
+     + documents
+* chap5 file formats
+* chap6 the internal sub-editor
+** Basic concepts and definition
+   + Buffer ::
+     + one file to many buffer
+   + write, read, insert
