@@ -239,6 +239,7 @@
    + character :: basic unit of change within a buffer
 ** internal data structures
    + world ::
+#+NAME: buffer
 #+BEGIN_SRC c
   struct world {
     struct buffer *buffer_chain;
@@ -246,6 +247,7 @@
   };
 #+END_SRC
    + buffer ::
+#+NAME: buffer
 #+BEGIN_SRC c
   struct buffer {
     //mechanism used for implementing the circular list of buffers
@@ -271,6 +273,7 @@
   }
 #+END_SRC
    + mark ::
+#+NAME: mark
 #+BEGIN_SRC c
   struct mark {
     struct mark *next_mark; //NULL indicateds the end of the chain
@@ -280,6 +283,7 @@
   }
 #+END_SRC
    + mode ::
+#+NAME: mode
 #+BEGIN_SRC c
   struct mode {
     struct mode *next_mode;
@@ -289,6 +293,7 @@
 #+END_SRC
 ** Procedure interface definition
    + assume callee allocate data structures.
+#+NAME: world
 #+BEGIN_SRC c++
   //basic set-up-housekeeping call. It should perform all required one-time
   //initialization operations. No other sub-editor procedure except for
@@ -301,6 +306,7 @@
 #+END_SRC
    + If you are creating a "stripped down" editor, the *World_Save* and *World_Load*
      routines wouldn't do anything.
+#+NAME: buffer
 #+BEGIN_SRC c
   status Buffer_Create(char *buffer_name);
   status Buffer_Clear(char *buffer_name);
@@ -314,6 +320,7 @@
   status Buffer_Set_Name(char *buffer_name);
   char *Buffer_Get_Name(void);
 #+END_SRC
+#+NAME: point
 #+BEGIN_SRC c
   status Point_Set(location loc);
   //moves the point forward(if count is positive) or backward(if negative) by
@@ -327,6 +334,7 @@
   location Buffer_Start(void);
   location Buffer_End(void);
 #+END_SRC
+#+NAME: location
 #+BEGIN_SRC c
   //returns 1 if loc1 is after loc2
   int Compare_Locations(location loc1, location loc2);
@@ -338,6 +346,7 @@
   //accepts a non-negative count and converts it to the corresponding location
   location Count_To_Location(int count);
 #+END_SRC
+#+NAME: mark
 #+BEGIN_SRC c
   Point_Set(Count_To_Location(count));
 
@@ -354,7 +363,7 @@
   //swaps the locations of the point and the specified mark
   status Swap_Point_And_Mark(mark_name);
 #+END_SRC
-   + example
+#+NAME: example
 #+BEGIN_SRC c
   status Do_Something_Over_Region(mark_name name) {
     FLAG was_before = Is_Point_Before_Mark(name);
@@ -387,6 +396,7 @@
     return stat;
   }
 #+END_SRC
+#+NAME: get
 #+BEGIN_SRC c
   //return the character after the point. Its result are undefined if the point
   //is at the end of the buffer
@@ -398,6 +408,7 @@
   int Get_Num_Chars(void);
   int Get_Num_Lines(void);
 #+END_SRC
+#+NAME: file
 #+BEGIN_SRC c
   void Get_File_Name(char *file_name, int size);
   status Set_File_Name(char *file_name);
@@ -411,7 +422,60 @@
   //returns the modification flag
   FLAG Get_Modified(void);
 #+END_SRC
+#+NAME: mode
 #+BEGIN_SRC c
+  //If is_front is True, the new mode is added to the front of the mode list
+  //else it's added at the end.
   status Mode_Append(char *mode_name, status (*add_proc)(), FLAG is_front);
-  status Mode_Delete
+  status Mode_Delete(char *mode_name);
+  status Mode_Invoke(void);
+#+END_SRC
+#+NAME: insert_delete
+#+BEGIN_SRC c
+  //inserts one character at the point. The point is placed after the inserted
+  //character
+  void Insert_Char(char c);
+  void Insert_String(char *string);
+  void Replace_Char(char c);
+  void Replace_String(char *string);
+  //removes the specified number of characters from the buffer. The specified
+  //number of characters are removed after the point if count is positive or
+  //before the point if count negative. If the specified count extends beyond the
+  //start or end of the buffer, the excess is ignored.
+  status Delete(int count);
+  //removes all characters between the point and the mark
+  status Delete_Region(mark_name name);
+  //copies all characters between the point and the mark to the mark to the specified
+  //buffer, inserting them at the point.
+  status Copy_Region(char *buffer_name, mark_name name);
+#+END_SRC
+#+NAME: search
+#+BEGIN_SRC c
+  //searches forward for the first occurance of string after the point and,
+  //if found, leaves the point at the end of the found string.
+  status Search_Forward(char *string);
+  status Search_Backward(char *string);
+  //returns True if the string matches the contents of the buffer starting at
+  //the point
+  FLAG Is_A_Match(char *string);
+  //searches the buffer starting from the point for the first occurence of
+  //any character in the supplied string
+  status Find_First_In_Forward(char *string);
+  status Find_First_In_Backward(char *string);
+  status Find_First_Not_In_Forward(char *string);
+  status Find_First_Not_In_Backward(char *string);
+  //To find
+#+END_SRC
+#+NAME: column
+#+BEGIN_SRC c
+  //returns the zero-origin column that the point is in, after taking into account
+  //tab stops, varaible-width characters, and other special cases, but not taking
+  //into account the screen width
+  int Get_Column(void);
+  //moves the point to the desired column, stopping at the end of a line if the line
+  //is not long enough. If the specified column cannot be reached exactly(due to tab
+  //stops or other special cases), it uses the round flag. If the flag is set, the
+  //point is "rounded" to the nearest available column position. If the flag is clear,
+  //the point is moved to the next highest available column position.
+  void Set_Column(int column, FLAG round);
 #+END_SRC
