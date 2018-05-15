@@ -479,3 +479,198 @@
   //the point is moved to the next highest available column position.
   void Set_Column(int column, FLAG round);
 #+END_SRC
+** Characteristics of implementation methods
+   + assume storing the buffers in the equivalent of main memory
+   + first level
+     one character
+     a small number of characters
+     a line
+     a large number of characters
+     the entire buffer
+   + second level(how pieces are managed)
+     no management
+     extra space at the end
+     buffer gap
+*** No management
+    + length of the piece is the only "overhead" information
+#+NAME: no management
+#+BEGIN_SRC c
+  struct piece{
+    int length;
+    char data[1];//length of the character
+  };
+
+  struct piece *Delete_From_Piece(struct piece *pptr, int start, int len) {
+    struct piece *newptr;
+    int newlen = pptr->length - len;
+
+    //allocate new piece
+    newptr = (struct piece *)malloc(sizeof(struct piece) + newlen - 1);
+    if (newptr == NULL)
+      return NULL;
+
+    //copy non-deleted part
+    memmove(&newptr->data[0], &pptr->data[0], start);
+    memmove(&newptr->data[0],
+            &pptr->data[start + len],
+            pptr->length - (start + len));
+    newptr->length = newlen;
+
+    free(pptr);
+    return newptr;
+  }
+
+  struct piece *Insert_Into_Piece(struct piece *pptr, int start,
+                                  int len, char *chrs) {
+    struct piece *newptr;
+    int newlen = pptr->length + len;
+
+    //allocate new piece
+    newptr = (struct piece *)malloc(sizeof(struct piece) + newlen - 1);
+    if (newptr == NULL)
+      return NULL;
+
+    memmove(&newptr->data[0], &pptr->data[0], start);
+    memmove(&newptr->data[start + len], &pptr->data[start], pptr->length - start);
+    newptr->length = newlen;
+    memmove(&newptr->data[start], chrs, len);
+    free(pptr);
+
+    return newptr;
+  }
+#+END_SRC
+*** Extra space at the end
+    + the length of the piece and the amount of the piece currently
+      in use are kept as overhead information
+    + deletion never require a re-allocation
+    + insertion will require a re-allocation only when the free space is used up
+#+NAME: extra space at the end
+#+BEGIN_SRC c
+  struct piece {
+    int length;
+    int used;
+    char data[1];
+  };
+
+  struct piece *Delete_From_Piece(struct piece *pptr, int start, int len) {
+    memmove(&pptr->data[start], &pptr->data[start + len],
+            pptr->used - (start + len));
+    pptr->used -= len;
+    return pptr;
+  }
+
+  struct piece *Insert_Into_Piece(struct piece *pptr, int start, int len, char *chrs) {
+    struct piece *newptr;
+    int newlen;
+    int amt = min(pptr->length - pptr->used, len);
+    memmove(&pptr->data[start + amt], &pptr->data[start],
+            pptr->used - (start + amt));
+    memmove(&pptr->data[start], chrs, amt);
+    pptr->used += amt;
+    len -= amt;
+    if (len <= 0) return pptr; //done
+
+    start += amt;
+    chrs += amt;
+    newlen = Round_Up_To_Block_Size(pptr->length + len);
+
+    //allocate new piece
+    newptr = (struct piece *)malloc(sizeof(struct piece) + newlen - 1);
+    if (newptr == NULL) return NULL;
+
+    //construct new contents
+    memmove(&newptr->data[0], &pptr->data[0], start);
+    memmove(&newptr->data[start], chrs, len);
+    memmove(&newptr->data[start + len],
+            &pptr->data[start],
+            pptr->length - start);
+
+    newptr->length = newlen;
+    newptr->used = pptr->used + len;
+
+    free(pptr);
+    return newptr;
+  }
+#+END_SRC
+*** Buffer gap
+**** introduction
+    + stores the text as two contiguous sequences of characters with a gap between them.
+      Changes are amde to the buffer by first moving the gap to the location to be
+      changesd and then inserting or deleting characters by changeing pointers.
+    + e.g. Minneapolis
+      0   1   2   3   4   5   6   7   8                       9   10  11
+      | M | i | n | n | e | a | p | o |   |   |   |   |   | l | i | s |
+      ------------------------------------------------------------------
+      0   1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16
+       30  31  32  33  34  35  36  37  38  39  40  41  42  43  44  45
+                      P               GS                  GE
+
+      + first is the user coordinate system. The gap is *invisible* in this system.
+        coordinates label the positions between the characters and not the characters
+        themselves.
+      + second is the gap coordinate system. It's under the line. The internal
+        arithmetic of the buffer manager is done in this coordinate system. *GS* is
+        the start of the gap, *GE* is the end of the gap
+      + If a location is after the start of the gap, it's corresponding location
+        in the gap coordinate system is (GapEnd - GapStart) + the location in the
+        user coordinate.
+      + third coordinate system is the storage coordinate system. It's the means whereby
+        the underlying memory locations are referenced. It is labeled from X to X +
+        the amount of memory that is available
+    + This technique has a very low overhead for examining the buffer. The user coordinate
+      location is first converted to the gap coordinate system. The memory location is
+      then looked up and its contents returned.
+    + There are three cases :
+      + the gap is at the point already. No motion
+      + The gap is before the point. The gap must be moved to the point. The characters
+        after the gap but before the point must be moved before the insertion or deletion
+        can take place.
+      + The gap is after the point. The gap must be moved to the point. The characters after
+        the point but before the gap must be moved before the insertion or deletion can take
+        place
+    + After the gap has been moved to the point, insertions or deletions are performed
+      by moving the GapStart pointer. A deletion is a decrementing of the GapStart pointer.
+      An insertion is an incrementing of the GapStart pointer followed by placing the inserted
+      character in the memory location that was just incremented over.
+    + the gap is only moved when an insertion or deletion is about to take place and
+      the last modification was at a different location
+**** multiple gaps and why they don't work
+     1. the conversion from the user to the gap coordinate system would be more complex
+        and take longer.
+     2. the average amount of shuffling will go down, but not by anywhere near a factor
+        of ten.
+     3. ...
+**** hidden second gap
+     + a second gap at the end of the buffer
+*** Linked line
+#+NAME: linked line
+#+BEGIN_SRC c
+  struct line {
+    struct line *next;
+    struct line *previous;
+    struct piece *theline;
+    int version; //optional
+    struct marks *mark_lists;
+  }
+#+END_SRC
+    + a buffer location in this method is typically represented as a (line pointer, offset)
+      pair. *Marks* are always asscociated with a line. *Marks* can thus be efficiently
+      implemented by a per-line mark list.
+*** Paged buffer gap
+    + buffer is divided into "pages" of one to two KB each while the file is read in.
+    + two point of favor
+      1. Since each page is small, the gap need never be moved very far.
+      2. Since all pages are the same size, memory management is kept simple.
+** Method comparison
+*** Efficiency of buffer/file I/O
+    * read a file
+      * determine the file's length
+      * allocate enough memory to hold the file, plus some extra for growth
+      * read the file in
+    * improve
+      map the file into the address space of your process
+      no actual data motion takes place until you modify one of the pages
+      at that time, the page is copies and the modifications are written to
+      the new copy
+    * writing the file out can take two calls(one to cover the text in front of the gap
+      and the other to cover the text after the gap)

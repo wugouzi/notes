@@ -856,7 +856,20 @@ works (employee name, company name, salary)
                        + really same to BCNF
 * Chap10
 ** Overview
+   cache
+   main memory
+   flash memory
+   magnetic disk
+   optical disk
+   magnetic tapes
 ** Magnetic disk and flash storage
+*** physical characteristics of disks
+    + a disk contains many *platter*
+    + each disk *platter* has a flat, circular shape
+    + the disk surface is logically divided into *tracks*, which are subdivided into
+      *sectors*. A *sector* is the smalles unit of information
+    + ith tracks of all the platters together are called the ith *cylinder*
+    + *disk controller*
 *** Performance measures of disks
     + Access time ::
       + the time it takes *from* when a read or write request is issued *to* when
@@ -868,8 +881,9 @@ works (employee name, company name, salary)
     + Data-transfer rate ::
       + the rate at which data can be retrived from or stored to the disk
     + Mean time to failure(MTTF)(平均故障间隔期) ::
-         + the average time the disk is expected to run continuously without any
-           failure
+      + the average time the disk is expected to run continuously without any
+        failure
+      + 总磁盘越多，随机的磁盘发生故障成为常态
 *** optimization of disk-block access
     + Block ::
       + a contiguous sequence of sectors from a single track
@@ -879,16 +893,71 @@ works (employee name, company name, salary)
         is minimized
       + elevator algorithm
     + File organization ::
+      + optimize block access time by organizing the blocks to correspend to
+        how data will be accessed
+      + e.g. store related information on the same nearby cylinders
+    + Nonvolatile write buffers ::
+      + speed up disk writes by writing blocks to a non-volatile RAM buffer
+        immediately
+      + controller then writes to disk whenever the disk has no other requests
+        or request has been pending for some time
+    + Log disk ::
+      + a disk devoted to writing a sequential log of block updates
+      + used like nonvolatile RAM
+*** flash storage
+    + NAND flash ::
+      + requires page-at-a-time read
+      + ssd (solid state disks) use multiple flash storage
+      + erase is slow
 ** RAID(Redundant arrays of independent disks)
+   + high capacity and high speed by using multiple disks in parallel.
+     high reliability by storing data redundantly
    + redundancy ::
      + store extra information that can be used to rebuild information
        lost in a disk failure
      + E.g. *Mirroring*
    + Mean time to failure
 *** improvement in performance via parallelism
+    + two main goals of parallelism in a disk system
+      + load balance multiple small accesses to increase throughput
+      + parallelize large accesses to reduce response time
+    + bit-level striping :: split the bits of each byte across multiple disks
+    + block-level striping :: with n disks, block i goes to disk (i mod n) + 1
 *** Raid level
+** File organization
+*** fixed-length records
+    + store record i starting from byte n * (i - 1), where n is the size of each record
+    + deletion
+      + free list
+        store the address of the first deleted record in the file header
+*** varaible-length record
+    + arise in several ways
+      + storage of multiple record types in a file
+      + record types that allow variable lengths for one or more fields such as strings
+      + record types that allow repeating fields
+    + variable length attributes represented by fixed szie, with actual data stored after
+      all fixed length attributes
+    + null values represented by null-value bitmap
+    + slotted page structure ::
+      + contains
+        number of record entries
+        end of free space in the block
+        location and size of each record
+      + records can be moved around within a page to keep them contiguous with no empty space
+        between them
+      + pointers shouldn't point directly to record--instead they should point to the entry
+        for the record in header
+*** organization of records in files
+    + sequential file organization
+    + multitable clustering file organization
+** data dictionary storage
+   + data dictionary stores *metadata*
+   + information about relations
+   + user and accouting information
+   + statistical and descriptive data
+   + physical file organization
 * TODO
-10.8 10.14 10.17
+  10.8 10.14 10.17
 * Chap 11
 ** Basic concepts
    + index file ::
@@ -924,3 +993,59 @@ works (employee name, company name, salary)
          to least search-key value in the block
    + multilevel index ::
 ** B+-tree index files
+** B+-tree file organization
+   + leaf nodes store records
+** Bulk loading and bottom-up build
+   + problem
+     inserting entries one-at-a-time into a B+-tree requires >= 1 IO per entry
+   + efficient alternative 1
+     sort entries first
+   + efficient alternative 2: bottom-up B+-tree construction
+     starting with leaf level
+** Multiple-key access
+   +
+#+BEGIN_SRC sql
+  select ID
+  from instructor
+  where dept_name = "Finance" and salary = 80000
+#+END_SRC
+* TODO
+11.3a 11.4
+* chap12
+** Measure of query cost
+   + factors ::
+     + disk accesses
+     + CPU
+     + number of seeks
+     + number of blocks read
+     + number of blocks written
+   + $t_T$ time to transfer one block
+     $t_S$ time for one seek
+   + use worst case estimates
+** selectoin operation
+*** file scan
+    + A1 (linear search) ::
+      + cost = $b_r$ block transfers + 1 seek
+        $b_r$ denotes number of blocks containing records from relation r
+*** index scan
+    + A2 (primary index, equality on key) ::
+      + retrieve a single record taht satisfy the corresponding equality condition
+      + cost = $(h_i+1)*(t_T+t_s)$
+    + A3 (primary index, equality on nonkey) ::
+    + A4 (secondary index, equality on nonkey) ::
+      + retrieve a single record if the search-key is a candidate key
+      + cost = $(h_i+1)*(t_T+t_S)$
+      + retrieve multiple records if search-key is not a candidate key
+*** selection involving comparisons
+    + can implement selections of the form $\sigma_{A\le V}(r)$ or $\sigma_{A\ge V}(r)$
+    + A5 (primary index, comparison) ::
+      + relation sorted on A
+    + A6 (secondary index
+*** implementation of complex selections
+    + conjunction $\sigma_{\theta_1}\cap\dots\sigma_{\theta_n}(r)$
+    + A7 (conjunctive selection using one index) ::
+      + select a combination of $\theta_i$ and algorithms A1 through A7 that
+        results in the least cost for $\sigma_{\theta_i}(r)$
+    + A8 (conjunctive sleelction using composite index) ::
+    + A9 (conjunctive selection by intersection of identifiers) ::
+** external sort-merge
