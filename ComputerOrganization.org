@@ -1,3 +1,66 @@
-观察什么跑到Loop1
-怎样判断ALU是否正常工作，那段指令是否正确
-如何判断load是体现的
+* chap7
+** introduction
+   + principle of locality ::
+     + programs access a relatively small portion of their address space at any
+       instant of time.
+   + temporal locality (locality in time) ::
+     + If an item is referenced, it will tend to be referenced again soon
+   + spatial locality (locality in space) ::
+     + If an item is referenced, items whose addresses are close by will tend to be
+       referenced soon.
+   + memory hierarchy ::
+     + main memory is implemented from DRAM, caches use SRAM, largest and slowest
+       level uses magnetic disk.
+   + miss rate ::
+     + the fraction of memory accesses not found in a level of the momory
+       hierarchy
+   + hit time ::
+     + the time required to access a level of the memory hierarchy, including the time
+       needed to determine whether the access is a hit or a mass
+   + miss penalty ::
+     + the time required to fetch a block into a level of the memory hierarchy from the lower
+       including the time to access the block, transmit it from one level to the other,
+       and insert it in the level that experienced the miss
+** basics of caches
+   + tag ::
+     + a fieldin a table used for a memory hierarchy that contains the adress information
+       required to identify whether the associated block in the hierarchy corresponds
+       to a requested word.
+   + valid bit
+   + larger block size, the miss rate decrease but the miss penalty increase
+   + steps to be taken on an instruction cache miss
+     1. send the original PC value (current PC - 4) to the memory
+     2. instruct main memory to perform a read wait for the memory to complete its access
+     3. write the cache entry, putting the data from the memory in the data portion of the
+        entry, writing the upper bits of the address into the tag field, and turning
+        the valid bit on
+     4. restart the instruction execution at the first step, which will refetch the instruction
+        this time finding it in the cache
+
+   + write-through ::
+     + always write the data into both the memory and the cache.
+     + write buffer ::
+       + stores the data while it's waiting to be written to memory, after writing the data
+         into the cache and into the write buffer, the processor can continue execution.
+         When a write to main memory completes, the entry in the write buffer is freed
+   + write-back ::
+     + when a write occurs, the new value is written only to the block in the cache.
+       the modified block is written to the lower level of the hierarchy when it's replaced.
+** measuring and improving cache performance
+   + CPU time = (CPU execution clock cycles + Memory-stall clock cycles) *
+                Clock cycle time
+   + Memory-stall clock cycles = Read-stall cycles + Write-stall cycles
+   + Read-stall cycles = Reads / Program * Read miss rate * Read miss penalty
+   + Write-stall cycles = Writes / Program * Write miss rate * Write miss penalty +
+                          Write buffer stalls
+   + If write buffer stalls are negligible
+     Memory-stall clock cycles = Memory accesses / Program * Miss rate * Miss penalty
+   + fuly associative ::
+     + a block in memory may be associated with any entry in the cache
+     + to find a given block in a fully associative cache, all the entries in the cache
+       must be searched
+   + set asscociative ::
+     + n-way set-associative cache
+     + block may be placed in any element of the set, all the tags of all the elements of their
+       set must be searched.
+   + least recently used(LRU) ::
