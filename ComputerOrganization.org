@@ -39,6 +39,11 @@
 
    + write-through ::
      + always write the data into both the memory and the cache.
+     + write miss ::
+       + first fetch the words of the block from memory. After block is fetched and placed into
+         the cache, we can overwrite the word that caused the miss into the cache block, we
+         can also write the word to main memory using the full address.
+       +
      + write buffer ::
        + stores the data while it's waiting to be written to memory, after writing the data
          into the cache and into the write buffer, the processor can continue execution.
@@ -46,6 +51,7 @@
    + write-back ::
      + when a write occurs, the new value is written only to the block in the cache.
        the modified block is written to the lower level of the hierarchy when it's replaced.
+     + write a block
 ** measuring and improving cache performance
    + CPU time = (CPU execution clock cycles + Memory-stall clock cycles) *
                 Clock cycle time
@@ -64,3 +70,31 @@
      + block may be placed in any element of the set, all the tags of all the elements of their
        set must be searched.
    + least recently used(LRU) ::
+** virtual memory
+   + page :: virtual memory block
+   + page fault :: virtual memory miss
+   + virtual address ::
+     + an address that corresponds to a location in virtual space and is translated by address
+       mapping to a physical address when memory is accessed
+   + relocation ::
+     + relocation maps the virtual addresses used by a program to different physical
+       addresses before the addresses are used to access memory.
+   + key decisions ::
+     + pages should be large enough to try to amortize the high access time.
+     + organizations that reduce page fault rate are attractive. Fully associative
+       placement of pages in memory
+     + page faults can be handled in software because the overhead will be small compared
+       to the disk acess time. Use algorithm for choosing how to place pages.
+     + write-through won't work since writes take too long
+   + locate pages by using a table that indexes the memory, called *page table*. Indexed
+     with the page number from the virtual address to discover the corresponding physical
+     page number.
+     Each program has its own page table.
+   + page table register :: points to the start of the page table, physical address.
+   + Because we don't know ahead of time when a page in memory will be chosen to be replaced,
+     the operating system usually creates the space on disk for all the pages of a process when
+     it creates the process. This is called *swap space*
+   + reference bit \ use bit ::
+     + a field that is set whenever a page is accessed and that is used to implement LRU or other
+       replacement schemes.
+     +
