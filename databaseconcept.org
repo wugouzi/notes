@@ -773,7 +773,7 @@ works (employee name, company name, salary)
          + $F_c\Leftrightarrow F$
          + No functional dependency in $F_c$ contains an extraneous attribute
          + Each left side of a functional dependency in $F_c$ is unique.
-           $\forall \alpha_1\to\beta_1, \alpha_2\to\beta_2\inF_c,\alpha_1\neq\alpha_2$
+           $\forall \alpha_1\to\beta_1, \alpha_2\to\beta_2\in F_c,\alpha_1\neq\alpha_2$
    + Lossless decomposition ::
      + We say that decomposition is a lossless decomposition if there is no loss
        of information by replacing $r(R)$ with two relation schemas $r_1(R_1),r_2(R_2)$
@@ -965,6 +965,10 @@ works (employee name, company name, salary)
        | search-key | pointer |
      + two kinds of indices
        + ordered indices
+         + primary index
+           + the index whose search key specifies the sequential order of the file
+         + secondary index
+           + the index whose search key specifies the sequential order of the file
        + hash indices
      + index evaluation metrics
        + access types
@@ -1009,7 +1013,11 @@ works (employee name, company name, salary)
   from instructor
   where dept_name = "Finance" and salary = 80000
 #+END_SRC
-* TODO
+* DONE
+  CLOSED: [2018-05-21 一 13:15]
+  :LOGBOOK:
+  - State "DONE"       from "TODO"       [2018-05-21 一 13:15]
+  :END:
 11.3a 11.4
 * chap12
 ** Measure of query cost
@@ -1049,3 +1057,75 @@ works (employee name, company name, salary)
     + A8 (conjunctive sleelction using composite index) ::
     + A9 (conjunctive selection by intersection of identifiers) ::
 ** external sort-merge
+** Join
+*** nested-loop join
+    + $r\bowtie_{\theta} s$
+    + worst
+      $n_r\times b_s + b_r$
+*** block nested-loop join
+*** indexed nested-loop join
+    + for each tuple in the outer relation $r$, a lookup is performed on the index
+      for $s$, and the relevant tuples are retrieved.
+    + in the worst case, $b_r$ I/O operations are needed to read relation $r$
+      $b_r(t_T+t_S)+n_r\times c$
+*** merge join
+    + w
+      1. sort both relations on their join attribute
+      2. merge the sorted relations
+*** hash join
+** evaluation of expression
+*** materialization
+    + evaluate one operation at a time, starting at the lowest-level. Use intermediate
+      results materialized into temporary relations to evaluate next-level operations
+    + double buffering ::
+         + use two output buffers for each operation, when one is ful
+*** pipeline
+    + evaluate several operations simultaneously, passing the results of one operation
+      on to the next
+* TODO
+  12.2 12.3b
+* chap13
+** overview
+   + evalutaion plan :: defines exactly what algorithm is used for each operation and
+        how the execution of the operations is coordinate.
+   + cost-based query optimization ::
+     + generate logically equivalent expressions using *equivalence rules*
+     + annotate resultant expressions to get alternative query plans
+     + choose the cheapest plan based on *estimated cost*
+** transformation
+   + equivalent rules ::
+     1. conjunctive selection operations
+        $\sigma_{\theta_1\cap\theta_2}(E)=\sigma_{\theta_1}(\sigma_{\theta_2}(E))$
+     2. commutative
+        $\sigma_{\theta_1}(\sigma_{\theta_2}(E))=\sigma_{\theta_2}(\sigma_{\theta_1}(E))$
+     3. only the last in a sequence of projection operations is needed
+        $\prod_{L_1}(\prod_{L_2}(\dots(\prod_{L_n}(E))\dots))=\prod_{L_1}(E)$
+     4. $\sigma_\theta(E_1\times E_2)=E_1\bowtie_\theta E_2$
+        $\sigma_{\theta_1}(E_1\bowtie_{\theta_2} E_2)=E_1\bowtie_{\theta_1\wedge\theta_2} E_2$
+     5. theta-join operations are commutative
+     6. associative
+     7. the selection operation distributes over the theta-join operation under the following
+        two conditions
+        $\sigma_{\theta_0}(E_1\bowtie_\theta E_2)=(\sigma_{\theta_0}(E_1))\bowtie_\theta E_2$
+        $\sigma_{\theta_1\wedge\theta_2}(E_1\bowtie_\theta E_2)=(\sigma_{\theta_1}(E_1))\bowtie_\theta(\sigma_{\theta_2}(E_2))$
+     8. $\prod_{L_1\cup L_2}(E_1\bowtie_\theta E_2)=(\prod_{L_1}(E_1))\bowtie_\theta(\prod_{L_2}(E_2))$
+        + let $L_3$ are attributes of $E_1$ that are involved in join condition $\theta$
+          $\prod_{L_1\cup L_2}(E_1\bowtie_\theta E_2)=\prod_{L_1\cup L_2}((\prod_{L_1\cup L_3(E_1)}))
+          \bowtie_\theta(\prod_{L_2\cup L_4}(E_2))$
+     9. $\sigma_P(E_1-E_2)=\sigma_P(E_1)-\sigma_P(E_2)$
+   + enumeration of equivalent
+** statistics for cost estimation
+   + $n_r$, the number of tuples in the relation $r$
+     $b_r$, number of blocks containing tuples of relation $r$
+     $l_r$, size of a tuple of relation $r$ in bytes
+     $f_r$, the blocking factor of ralation $r$ (the number of tuples of $r$ that fit into
+     one block)
+     $V(A,r)$, the number of distinct values that appear in the relation $r$ for attribute
+     $A$.
+   + $b_r=\lceil\frac{n_r}{f_r}\rceil$
+   + selectivity ::
+     + probability that a tuple in the relation $r$ satisfies $\theta_i$
+     + If $s_i$ is the number of satisfying tuples in $r$, the selectivity of $\theta_i$
+   + join size estimation ::
+* TODO
+  13.4 13.15
