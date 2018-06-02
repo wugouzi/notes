@@ -1,4 +1,7 @@
 #+LATEX_HEADER: \usepackage{amssymb}
+#+LATEX_HEADER: \usepackage{tikz}
+#+LATEX_HEADER: \usepackage[UTF8]{ctex}
+#+LATEX_HEADER: \usepackage{tikz-qtree}
 * Chap1
 ** Taught
 1-8, 10, 11-16, 22-23
@@ -1037,13 +1040,18 @@ works (employee name, company name, salary)
         $b_r$ denotes number of blocks containing records from relation r
 *** index scan
     + primary index ::
-      + an index allows the records of a file to be read in an order that
-        corresponding closely to physical order
+      + A primary index is an index on a set of fields that includes the unique
+        primary key for the field and is guaranteed not to contain duplicates.
+        Also Called a Clustered index. eg. Employee ID can be Example of it.
+    + secondary index ::
+      + A Secondary index is an index that is not a primary index and may have duplicates
     + A2 (primary index, equality on key) ::
       + retrieve a single record taht satisfy the corresponding equality condition
       + cost = $(h_i+1)*(t_T+t_s)$
       + $h_i$ is the height of B+-tree
     + A3 (primary index, equality on nonkey) ::
+      + retrieve multiple records by using a primary index when the selection condition
+        specifies an equality comparison on a nonkey attribute
     + A4 (secondary index, equality on nonkey) ::
       + retrieve a single record if the search-key is a candidate key
       + cost = $(h_i+1)*(t_T+t_S)$
@@ -1060,14 +1068,23 @@ works (employee name, company name, salary)
         results in the least cost for $\sigma_{\theta_i}(r)$
     + A8 (conjunctive sleelction using composite index) ::
     + A9 (conjunctive selection by intersection of identifiers) ::
+    + A10 (disjunctive selection by union identifiers) ::
 ** external sort-merge
 ** Join
+   + equi-join :: $r\bowtie_{r.A=s.B}s$
 *** nested-loop join
     + $r\bowtie_{\theta} s$
     + worst
       $n_r\times b_s + b_r$
 *** block nested-loop join
+    + preferable
+    + first iterate block then iterate tuples
 *** indexed nested-loop join
+    + index lookups can replace file scans if
+      + join is an equi-join or natural join
+      + an index is available on the inner relation's join attribute
+    + for each tuple $t_r$ in the outer relation r, use the index to look up
+      tuples in s that satisfy the join condition with tuple $t_r$
     + for each tuple in the outer relation $r$, a lookup is performed on the index
       for $s$, and the relevant tuples are retrieved.
     + in the worst case, $b_r$ I/O operations are needed to read relation $r$
@@ -1077,6 +1094,22 @@ works (employee name, company name, salary)
       1. sort both relations on their join attribute
       2. merge the sorted relations
 *** hash join
+    + hash function is used to partition tuple of both relations
+    + h maps JoinAttrs to $\{0,1,\dots,n\}$, where JoinAttrs denotes the common
+      attributes of r and s used in the natural join
+      + $r_0,\dots,r_n$ denote partition of r tuples
+        each tuple $t_r\in r$ is put in partition $r_i$ where $i=h(t_r[JoinAttrs])$
+      + $r_0,\dots,r_n$ denotes partitions of s tuples
+      + r is build input and r is probe input
+    + r tuples in $r_i$ need only to be compared with s tuples in $s_i$, needn't
+      to be compared with s tuples in any partitions
+    + partitioning is said to be skewed if some partitions have significantly more
+      tuples than some others
+*** hybrid hash join
+    + useful when memory sized are relatively large
+    + *keep the first partition of the bulld relation in memory*
+*** complex joins
+    $r\bowtie_{\theta_1\wedge\dots\wedge\theta_n}s$
 ** evaluation of expression
 *** materialization
     + evaluate one operation at a time, starting at the lowest-level. Use intermediate
@@ -1086,6 +1119,8 @@ works (employee name, company name, salary)
 *** pipeline
     + evaluate several operations simultaneously, passing the results of one operation
       on to the next
+    + lazy
+    + eager
 * TODO
   12.2 12.3b
 * chap13
@@ -1108,16 +1143,32 @@ works (employee name, company name, salary)
         $\sigma_{\theta_1}(E_1\bowtie_{\theta_2} E_2)=E_1\bowtie_{\theta_1\wedge\theta_2} E_2$
      5. theta-join operations are commutative
      6. associative
+        $(E_1\bowtie E_2)\bowtie E_3=E_1\bowtie(E_2\bowtie E_3)$
+        $(E_1\bowtie_{\theta_1} E_2)\bowtie_{\theta_2\wedge\theta_3}=
+        E_1\bowtie_{\theta_1\wedge\theta_3}(E_2\bowtie_{\theta_2}E_3)$
      7. the selection operation distributes over the theta-join operation under the following
         two conditions
         $\sigma_{\theta_0}(E_1\bowtie_\theta E_2)=(\sigma_{\theta_0}(E_1))\bowtie_\theta E_2$
+        \begin{tikzpicture}
+        \Tree [.$\sigma_\theta$ [.$\bowtie$ E1 E2 ] ]
+        \end{tikzpicture}
+        \begin{tikzpicture}
+        \Tree [.$\bowtie$ [.$\sigma_\theta$ E1 ] [.E2 ] ]
+        \end{tikzpicture}
         $\sigma_{\theta_1\wedge\theta_2}(E_1\bowtie_\theta E_2)=(\sigma_{\theta_1}(E_1))\bowtie_\theta(\sigma_{\theta_2}(E_2))$
      8. $\prod_{L_1\cup L_2}(E_1\bowtie_\theta E_2)=(\prod_{L_1}(E_1))\bowtie_\theta(\prod_{L_2}(E_2))$
         + let $L_3$ are attributes of $E_1$ that are involved in join condition $\theta$
           $\prod_{L_1\cup L_2}(E_1\bowtie_\theta E_2)=\prod_{L_1\cup L_2}((\prod_{L_1\cup L_3(E_1)}))
           \bowtie_\theta(\prod_{L_2\cup L_4}(E_2))$
      9. $\sigma_P(E_1-E_2)=\sigma_P(E_1)-\sigma_P(E_2)$
+     10. $E_1\bowtie_\theta(E_2-E_3)=(E_1\bowtie_\theta E_2-E_1\bowtie_\theta E_3)$
    + enumeration of equivalent
+   + heuristic optimization
+     + transforms the query tree by using a set of rules that typically improve
+       execution performance
+       + perform selection early
+       + perform projection early
+       + perform most restrictive selection and join operations before other similar operations
 ** statistics for cost estimation
    + $n_r$, the number of tuples in the relation $r$
      $b_r$, number of blocks containing tuples of relation $r$
@@ -1127,9 +1178,22 @@ works (employee name, company name, salary)
      $V(A,r)$, the number of distinct values that appear in the relation $r$ for attribute
      $A$.
    + $b_r=\lceil\frac{n_r}{f_r}\rceil$
+   + selection size estimation
+     + $\sigma_{A=v}(r)$ ::
+       + $n_r/V(A,r)$ : the number of records that will satisfy the selection
+     + $\sigma_{A\le V}(r)$ ::
+       + let c denote the estimated number of tuples satisfying the condition
+       + c = 0 if $v<min(A,r)$
+         $c = n_r\cdot\frac{V-\min(A,r)}{\max(A,r)-\min(A,r)}$
    + selectivity ::
-     + probability that a tuple in the relation $r$ satisfies $\theta_i$
+     + of a condition $\theta_i$ probability that a tuple in the relation $r$ satisfies $\theta_i$
      + If $s_i$ is the number of satisfying tuples in $r$, the selectivity of $\theta_i$
+   + conjunction ::
+     + $P(\sigma_{\theta_1\wedge\dots\wedge\theta_n}(r))=n_r\cdot\frac{S_1\cdot S_2\dots
+       \cdot S_n}{n_r^n}$
+   + disjunction ::
+     + $P(\sigma_{\theta_1\lor\dots\lor\theta_n}(r))=n_r\cdot(1-(1-\frac{S_1}{n_r})\cdot
+       (1-\frac{S_n}{n_r}))$
    + join size estimation ::
 * TODO
   13.4 13.15
