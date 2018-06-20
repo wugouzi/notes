@@ -1121,7 +1121,11 @@ works (employee name, company name, salary)
       on to the next
     + lazy
     + eager
-* TODO
+* DONE
+  CLOSED: [2018-06-04 一 12:41]
+  :LOGBOOK:
+  - State "DONE"       from "TODO"       [2018-06-04 一 12:41]
+  :END:
   12.2 12.3b
 * chap13
 ** overview
@@ -1195,5 +1199,164 @@ works (employee name, company name, salary)
      + $P(\sigma_{\theta_1\lor\dots\lor\theta_n}(r))=n_r\cdot(1-(1-\frac{S_1}{n_r})\cdot
        (1-\frac{S_n}{n_r}))$
    + join size estimation ::
-* TODO
+* DONE
+  CLOSED: [2018-06-04 一 12:46]
+  :LOGBOOK:
+  - State "DONE"       from "TODO"       [2018-06-04 一 12:46]
+  :END:
   13.4 13.15
+* chap14
+** Transaction concepts
+   + a *transaction* is a unit of program execution that accesses and possibly
+     updates various data items
+   + atomicity requirement
+     + Either all operations of the transaction are properly reflected in the database or none are.
+   + durability requirement
+     + After a transaction completes successfully, the changes it has made to the database
+       persist, even if there are system failures.
+   + consistency requirement
+     + Execution of a transaction in isolation preserves the consistency of the database
+   + isolation requirement
+     + each transaction must be unaware of other concurrently executing transactions.
+** Transaction State
+   + active
+   + partially committed
+     + final statment has been executed
+   + failed
+   + aborted
+     + transaction has been rolled back
+   + committed
+** Concurrent Executions
+   + concurrency control schemes
+   + schedules ::
+     + *a sequences of instructions* that specify the chronological order
+       in which instructions of concurrent transactions are executed
+   + A transaction that successfully completes its execution will have a
+     commit instructions as the last statement
+   + A transaction that fails to successfully complete its execution will
+     have an abort instruction as the last statement
+** Serializability
+   + each transaction preserves database consistency
+   + let $I_I, I_J$ be two instructions of transaction $T_I, T_J$, instructions $I_I,I_J$ *conflict*
+     iff there existed some item $Q$ accessed by both $I_I,I_J$, and at least one of
+     these instructions wrote $Q$
+   + if a schedule $S$ can be transformed into a schedule $S'$ by a series of swap
+     of non-conflicting instructions, we say that $S$ and $S'$ are *conflict equivalent*
+   + $S$ is *conflict serializable* if it's conflict equivalent to a serial schedule
+** Testing for conflict Serializability
+   + precedence graph ::
+     + a direct graph where the vertices are the transactions.
+     + we draw an arc from $T_I,T_J$ if the two transaction conflict, and $T_I$ accessed
+       the data item on which the conflict arose earlier.
+     + We may label the arc by the item that was accessed
+   + a schedule is conflict serializable iff its precedence graph is *acyclic*
+   + If precedence graph is acyclic, the serializability order can be obtained by a
+     topological sorting of the graph
+** Recoverability
+   + recoverable schedule ::
+     + if a transaction $T_J$ reads a data item previously written by a transaction
+       $T_I$, then the commit operation of $T_I$ must appear before the commit operation
+       $T_J$
+   + cascading rollback ::
+     + a single transaction failure leads to a series of transaction rollbacks.
+   + cascadeless schedules(无级联调度)
+     + for each pair of transactions $T_I, T_J$ such that $T_J$ reads a data item previously
+       written by $T_I$, the commit operation of $T_I$ appears before the read operation of $T_J$
+** Implementation of Isolation
+** Transaction Definition in SQL
+   + Data manipulation language must include a construct for specifying the set of
+     actions that comprise a transaction.
+   + a transaction in SQL ends by
+     + *commit work*
+     + *rollback work*
+* DONE
+  CLOSED: [2018-06-11 一 12:06]
+  :LOGBOOK:
+  - State "DONE"       from "TODO"       [2018-06-11 一 12:06]
+  :END:
+  14.6 14.7
+* chap15 concurrency control
+** Lock-Based Protocols
+   + data items can be locked in two modes
+     + *exclusive*, data item can be read as well as written
+     + *shared*, data item can only be read
+   + lock compatibility matrix
+     |-------------------+-------+-------|
+     | state of the lock | S     | X     |
+     | S                 | true  | false |
+     | X                 | false | false |
+     | -------->         | ----- | ----- |
+   + a transaction may be granted a lock on an item if the requested lock is compatible with locks
+     already held on the item by other transactions
+   + any number of transactions can hold shared locks on an item
+   + *locking protocls* is a set of rules followed by all transactions while requesting
+     and releasing locks
+   + two-phase locking protocal ::
+     + This protocol ensures conflict-serializable schedules
+       Transactions can be serialized in the order of their *lock points*
+     + phase1: growing phase ::
+       + Transaction may obtain locks
+       + Transaction may not release locks
+     + phase2: shrinking phase ::
+       + Transaction may release locks
+       + Transaction may not obtain locks
+     + There are schedules that are serializable but would not be allowed by 2PL.
+     + lock conversions
+       + First Phase:
+         can acquire a lock-S on item
+         can acquire a lock-X on item
+         can convert a lock-S to a lock-X (upgrade)
+       + Second Phase:
+         can release a lock-S
+         can release a lock-X
+         can convert a lock-X to a lock-S  (downgrade)
+   + strict two-phase locking ::
+     + a schedule is *strict* is a value written by a transaction is _not read or_
+       _overwritten by other transactions_ until that transaction finishes
+     + advantages
+       + Does not incur cascading aborts
+       + Aborted txns can be undone by just restoring original values of modified tuples.
+** deadlock
+   | T_3       | T_4       |
+   | lock-x(B) |           |
+   | read(B)   |           |
+   | B:=B-50   |           |
+   | write(B)  |           |
+   |           | lock-s(A) |
+   |           | read(A)   |
+   |           | lock-s(B) |
+   | lock-x(A) |           |
+*** deadlock detection
+    + DBMS creates a *waits-for* graph
+    + system periodically check for cycles in *waits-for* graph
+*** deadlock prevention
+    + When a txn tries to acquire a lock that is held by another
+      txn, kill one of them to prevent a deadlock.
+    + assign priority based on timestamp
+      older -> higher priority
+    + wait-die scheme ::
+      + older transaction may wait for younger one to release data item.
+        (older means smaller timestamp)  Younger transactions never wait for older
+        ones; they are rolled back instead.
+      + if $T_1$ has higher priority, $T_1$ wiats for $T_2$
+    + wound-wait scheme ::
+      + older transaction wounds (forces rollback) of younger transaction instead
+        of waiting for it. Younger transactions may wait for older ones.
+      + if $T_1$ has higher priority, $T_2$ aborts
+*** deadlock handling
+    + starvation ::
+      + A transaction may be waiting for an X-lock on an item, while a sequence
+        of other transactions request and are granted an S-lock on the same item.
+      + The same transaction is repeatedly rolled back due to deadlocks.
+** Timestamp-Based Protocols
+** Validation-Based Protocols
+** Multiple Granularity
+   + Allow  data items to be of various sizes and define a hierarchy of data
+     granularities, where the small granularities are nested within larger ones
+** Multiversion Schemes
+** Insert and Delete Operations
+** Concurrency in Index Structures
+* TODO
+  15.10 15.21
+* TODO
+  16.2 16.10 16.18 16.22
