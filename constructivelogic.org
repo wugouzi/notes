@@ -207,5 +207,155 @@
    + disjunction ::
      + w
        \begin{prooftree}
-     +
-     +
+       \AxiomC{$A\uparrow$}
+       \RightLabel{$\lor I_L$}
+       \UnaryInfC{$A\lor B\uparrow$}
+       \end{prooftree}
+       \begin{prooftree}
+       \AxiomC{$A\lor B\downarrow$}
+       \AxiomC{}
+       \RightLabel{$u$}
+       \UnaryInfC{$A\downarrow$}
+       \noLine
+       \UnaryInfC{$\vdots$}
+       \noLine
+       \UnaryInfC{$C\uparrow$}
+       \AxiomC{}
+       \RightLabel{$w$}
+       \UnaryInfC{$B\downarrow$}
+       \noLine
+       \UnaryInfC{$\vdots$}
+       \noLine
+       \UnaryInfC{$C\uparrow$}
+       \RightLabel{$\lor E^{u,w}$}
+       \TrinaryInfC{$C\downarrow$}
+       \end{prooftree}
+   + truth ::
+     + the only verification of truth is the trivial one
+       \begin{prooftree}
+       \AxiomC{}
+       \RightLabel{$\top I$}
+       \UnaryInfC{$\top\uparrow$}
+       \end{prooftree}
+       hypothesis $\top\downarrow$ cannot be used because the is no elimination rule for $\top$
+   + falsehood ::
+     + there is no verification of falsehood because we have no introduction rule.
+       \begin{prooftree}
+       \AxiomC{$\perp\downarrow$}
+       \RightLabel{$\perp E$}
+       \UnaryInfC{$C\uparrow$}
+       \end{prooftree}
+   + Atomic propositions ::
+     + _judgement rule_
+       \begin{prooftree}
+       \AxiomC{$P\downarrow$}
+       \RightLabel{$\downarrow\uparrow$}
+       \UnaryInfC{$P\uparrow$}
+       \end{prooftree}
+       represents a change in judgement
+   + Global soundness ::
+     + local soundness asserts that the elimination rules for it are not too strong
+       given the introduction rules. Global soundness is its counterpart for the whole
+       system of inference rules.
+       If an arbitrary proposition _A_ has a verification then we may use _A_ without gaining
+       any information. That is, for arbitrary propositions _A_ and _C_:
+       \begin{tabular}{c}
+       $A\downarrow$\\
+       $\vdots$\\
+       If $A\uparrow$ and $C\uparrow$ then $C\uparrow$\\
+       \end{tabular}
+   + Global completeness ::
+     + Local completeness asserts that the elimination rules are not too weak.
+       Global completeness is that if we may use _A_ then we can construct from this a
+       verification of _A_. That is, for arbitrary propositions _A_:
+       \begin{prooftree}
+       \AxiomC{$A\downarrow$}
+       \noLine
+       \UnaryInfC{$\vdots$}
+       \noLine
+       \UnaryInfC{$A\uparrow$}
+       \end{prooftree}
+       Global completeness follows from local completeness rather directly by induction on
+       the structure of _A_
+       we allow
+       \begin{prooftree}
+       \AxiomC{$A\downarrow$}
+       \RightLabel{$\uparrow\downarrow$}
+       \UnaryInfC{$A\uparrow$}
+       \end{prooftree}
+** A counterexample
+   If
+   \begin{prooftree}
+   \AxiomC{$A\supset B\downarrow\quad A\downarrow$}
+   \RightLabel{$\supset E?$}
+   \UnaryInfC{$B\downarrow$}
+   \end{prooftree}
+   Then the verification $((A\supset A)\supset B)\supset B\uparrow$ would be stuck
+   \begin{prooftree}
+   \AxiomC{}
+   \RightLabel{$u$}
+   \UnaryInfC{$(A\supset A)\supset B\downarrow$}
+   \AxiomC{$A\supset A\downarrow$}
+   \RightLabel{$\supset E?$}
+   \BinaryInfC{$B\downarrow$}
+   \RightLabel{$\uparrow\downarrow$}
+   \UnaryInfC{$B\uparrow$}
+   \RightLabel{$\supset I^u$}
+   \UnaryInfC{$((A\supset A)\supset B)\supset B\uparrow$}
+   \end{prooftree}
+** Normal and neutral proof terms
+   + any verification is a proof.
+   + proof terms ::
+     + $N:A\uparrow$ (N is a *verification* of _A_) N called *normal*
+     + $R:A\downarrow$ (R is a *justification* for the use of _A_) R called *neutral*
+   +
+   +
+   +
+* Quantification
+** Universal quantification
+   + $\forall x:\tau. A(x)$ for all $x$ of type $\tau, A(x)$
+   + introduction
+     \begin{prooftree}
+     \AxiomC{}
+     \UnaryInfC{$a:\tau$}
+     \noLine
+     \UnaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$A(a)\; true$}
+     \RightLabel{$\forall I^a$}
+     \UnaryInfC{$\forall x:\tau. A(x) \;true$}
+     \end{prooftree}
+     _a_ is a *new* parameter.
+   + verification
+     \begin{prooftree}
+     \AxiomC{$\forall x:\tau.A(x)\;true\quad t:\tau$}
+     \RightLabel{$\forall E$}
+     \UnaryInfC{$A(t)\; true$}
+     \end{prooftree}
+** Existential quantification
+   + introduction
+     \begin{prooftree}
+     \AxiomC{$t:\tau\quad A(t)\; true$}
+     \RightLabel{$\exists I$}
+     \UnaryInfC{$\exists x:\tau.\; A(x)\; true$}
+     \end{prooftree}
+   + elimination
+     \begin{prooftree}
+     \AxiomC{$\exists x:\tau.\;A(x)\;true$}
+     \AxiomC{}
+     \UnaryInfC{$a:\tau$}
+     \noLine
+     \UnaryInfC{$\;$}
+     \noLine
+     \UnaryInfC{$\;$}
+     \AxiomC{}
+     \RightLabel{$u$}
+     \UnaryInfC{$A(a)\; true$}
+     \noLine
+     \UnaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$C\; true$}
+     \RightLabel{$\exists E^{a,u}$}
+     \TrinaryInfC{$C\; true$}
+     \end{prooftree}
+** Verification and uses
