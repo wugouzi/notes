@@ -444,5 +444,93 @@
      \noLine
      \UnaryInfC{$N:C\uparrow$}
      \RightLabel{$\exists E^{a,u}$}
-     \TrinaryInfC{$(\textsf{let}(a,u)=(t,M)\; \textsf{in}\; N):C\uparrow$}
+     \TrinaryInfC{$(\textsf{let}(a,u)=(t,Mc)\; \textsf{in}\; N):C\uparrow$}
+     \end{prooftree} c x
+* induction and recursion
+** Example: Integer square root
+   + $\forall x:\textsf{nat}. \exists y:\textsf{nat}. y^2=x$
+     $\forall x:\textsf{nat}.\exists y:\textsf{nat}. y^2\le x\wedge x<(y+1)^2$
+     proof by mathematical induction
+** Example: Exponential
+   + $\forall b:\textsf{nat}. \forall n:\textsf{nat}.\exists y = b^n$
+   + base ::
+     + n=0,pick y = 1
+   + step ::
+     + $\exists y:\textsf{nat}. y=b^n$. Show $\exists y:\textsf{nat}. y = b^{n+1}$
+** Example: Warshall's algorithm for graph reachability
+   + $\textsf{path}(x,y)$ when there is a path connecting x and y
+     hence we can specify graph reachability as
+     $\forall x:N. \forall y:N. \textsf{path}(x,y)\lor \neg\textsf{path}(x,y)$
+   + Constructively, a proof will have to show whether given an x and y, there is a path
+     connecting them or not.
+   + Consider a fixed enumeration of the vertices in the graph and proceed by induction over
+     the structure of this list
+     Given some list V of vertices, we write $\textsf{path}_V(x,y)$ if there is a path
+     connecting x and y using only vertices from V as interior nodes.
+   + $\forall V:N \textsf{list}. \forall x:N. \forall y:N. \textsf{path}_V(x,y)\lor\neg
+     \textsf{path}_V(x,y)$
+** Example: Tail-recursive integer square root
+   + $\forall x. \forall c. c^2\le x\supset\exists y.y^2 \le x\wedge x\le(y+1)^2$
+     $\forall x.\forall d.\forall c.c^2\le x\wedge d=x-c^2\supset\exists y.y^2\le x\wedge x\le(y+1)^2$
+* Heyting arithmetic
+** induction
+   + $\textsf{nat}$ is a _type_
+   + w
+     \begin{prooftree}
+     \AxiomC{}
+     \RightLabel{$\textsf{nat}I_0$}
+     \UnaryInfC{$0:\textsf{nat}$}
      \end{prooftree}
+
+     \begin{prooftree}
+     \AxiomC{$n:\textsf{nat}$}
+     \RightLabel{$\textsf{nat}I_s$}
+     \UnaryInfC{$\textsf{s}n:\textsf{nat}$}
+     \end{prooftree}
+     the definition is not circular
+     In (verificationist) constructive logic truth is defined by the introduction rules.
+     Hence nothing else is a natural number.
+     \begin{prooftree}
+     \AxiomC{$n:\textsf{nat}$}
+     \AxiomC{$C(\textsf{0})\;true$}
+     \AxiomC{}
+     \UnaryInfC{$x:\textsf{nat}$}
+     \AxiomC{}
+     \RightLabel{$u$}
+     \UnaryInfC{$C(x)\;true$}
+     \noLine
+     \BinaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$C(\textsf{s}x)\;true$}
+     \RightLabel{$\textsf{nat}E^{x,u}$}
+     \TrinaryInfC{$C(n)\;true$}
+     \end{prooftree}
+     This corresponds exactly to proof by induction
+   + $\forall n:\textsf{nat}.C(\textsf{0})\supset(\forall x:\textsf{nat}.C(x)\supset C(\textsf{s}x))\supset C(n)$
+   + *All natural numbers are zero or successors*
+     + *every natural number is either 0 or has a predecessor*
+       $\forall x:\textsf{nat}.x=0\lor\exists y:\textsf{nat}.x=\textsf{s}y$
+       x only have two cases.
+       \begin{prooftree}
+       \AxiomC{}
+       \UnaryInfC{$x:\textsf{nat}$}
+       \AxiomC{}
+       \RightLabel{$\textsf{refl}$}
+       \UnaryInfC{$\textsf{0 = 0}\;true$}
+       \RightLabel{$\lor I_1$}
+       \UnaryInfC{$\textsf{0 = 0}\;\lor\;\exists y:\textsf{nat}. \textsf{0 = s}y\;true$}
+       \AxiomC{}
+       \UnaryInfC{$x':\textsf{nat}$}
+       \AxiomC{}
+       \RightLabel{$\textsf{refl}$}
+       \UnaryInfC{$\textsf{s}x'=\textsf{s}x'\;true$}
+       \RightLabel{$\exists I$}
+       \BinaryInfC{$\exists y:\textsf{nat. s}x'=\textsf{s}y\;true$}
+       \RightLabel{$\lor I_2$}
+       \UnaryInfC{$\textsf{s}x'=\textsf{0}\lor\exists y:\textsf{nat. s}x'=\textsf{s}y\;true$}
+       \RightLabel{$\textsf{nat}E^{x',u}$}
+       \TrinaryInfC{$x=\textsf{0}\lor\exists y:\textsf{nat}.x=\textsf{s}y\;true$}
+       \RightLabel{$\forall I^x$}
+       \UnaryInfC{$\forall x:\textsf{nat}.x=\textsf{0}\lor\exists y:\textsf{nat}.x=\textsf{s}y\;true$}
+       \end{prooftree}
+       $\textsf{refl}$ is reflexivity on natural numbers
