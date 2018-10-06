@@ -534,3 +534,160 @@
        \UnaryInfC{$\forall x:\textsf{nat}.x=\textsf{0}\lor\exists y:\textsf{nat}.x=\textsf{s}y\;true$}
        \end{prooftree}
        $\textsf{refl}$ is reflexivity on natural numbers
+       $C(x)=(x=\textsf{0}\lor\exists y:\textsf{nat}.x=\textsf{s}y)$
+** Equality
+   + introduction
+     \begin{prooftree}
+     \AxiomC{}
+     \RightLabel{$=I_{00}$}
+     \UnaryInfC{$\textsf{0 = 0}\;true$}
+     \end{prooftree}
+
+     \begin{prooftree}
+     \AxiomC{$x=y\;true$}
+     \RightLabel{$=I{ss}$}
+     \UnaryInfC{$\textsf{s}x=\textsf{s}y\;true$}
+     \end{prooftree}
+   + elimination
+     no rule for $E_{00}$
+
+     \begin{prooftree}
+     \AxiomC{$0=\textsf{s}x\;true$}
+     \RightLabel{$=E_{0s}$}
+     \UnaryInfC{$C\;true$}
+     \end{prooftree}
+
+     \begin{prooftree}
+     \AxiomC{$\textsf{s}x=0\;true$}
+     \RightLabel{$=E_{s0}$}
+     \UnaryInfC{$C\;true$}
+     \end{prooftree}
+
+     \begin{prooftree}
+     \AxiomC{$\textsf{s}x=\textsf{s}y\;true$}
+     \RightLabel{$=E_{ss}$}
+     \UnaryInfC{$x=y\;true$}
+     \end{prooftree}
+** Equality is reflexive
+   + $\forall x:\textsf{nat}.x=x$
+   + base
+     0=0 by $I_{00}$
+   + step
+     Assume x = x
+     \begin{prooftree}
+     \AxiomC{}
+     \UnaryInfC{$n:\textsf{nat}$}
+     \AxiomC{}
+     \RightLabel{$=I_{00}$}
+     \UnaryInfC{$0=0\;true$}
+     \AxiomC{}
+     \RightLabel{$u$}
+     \UnaryInfC{$x=x\;true$}
+     \RightLabel{$=I_{ss}$}
+     \UnaryInfC{$\textsf{s}x=\textsf{s}x\;true$}
+     \RightLabel{$\textsf{nat}E^{x,u}$}
+     \TrinaryInfC{$n=n\;true$}
+     \RightLabel{$\forall I^n$}
+     \UnaryInfC{$\forall x:\textsf{nat}.x=x\;true$}
+     \end{prooftree}
+   + Hence
+     \begin{prooftree}
+     \AxiomC{$x:\textsf{nat}$}
+     \RightLabel{$\textsf{refl}$}
+     \UnaryInfC{$x=x\;true$}
+     \end{prooftree}
+** Primitive recursion
+   + *rule of primitive recursion* for _nat_
+     \begin{prooftree}
+     \AxiomC{$n:\textsf{nat}$}
+     \AxiomC{$t_0:\tau$}
+     \AxiomC{}
+     \UnaryInfC{$x:\textsf{nat}$}
+     \AxiomC{}
+     \UnaryInfC{$r:\tau$}
+     \noLine
+     \BinaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$t_s:\tau$}
+     \RightLabel{$\textsf{nat}E^{x,r}$}
+     \TrinaryInfC{$R(n,t_0,x.r.t_s):\tau$}
+     \end{prooftree}
+     R is a new term constructor
+     t₀ is the zero case
+     tₛ captures the successor case where n=sn'. x is a new parameter introduced
+     that stands for n'
+     r stands for the result of the function R applied to n'
+     x.r.tₛ indicates that occurrences of x and r in tₛ are bound with scope tₛ
+     \begin{tabular}{l c l}
+     $R(\textsf{0},t_0,x.r.t_s)$&$\Rightarrow_R$&$t_0$\\
+     $R(\textsf{s}n',t_0,x.r.t_s)$&$\Rightarrow_R$&$[R(n',t_0,x.r.t_s)/r][n'/x]t_s$\\
+     \end{tabular}
+     x=>n',r=>R(n')
+   + *schema of primitive recursion*
+     \begin{tabular}{l c l}
+     $f(0)$&=&$t_0$\\
+     $f(s\;x)$&=&$t_s(x,f(x))\\
+     \end{tabular}
+     hence
+     $f=\textsf{fn}\;n\Rightarrow R(n,t_0,x.r.t_s(x,r))$
+     since
+     \begin{tabular}{l c l}
+     $f(\textsf{s}\;n)$&$\Rightarrow_R$&$R(\textsf{s}n,t_0,x.r.t_s(x,r))$\\
+     &$\Rightarrow_R$&$t_s(n,R(n,t_0,x.r.t_s(x,r)))$\\
+     &=&$t_s(n,f(n))$
+     \end{tabular}
+   + w
+     \begin{prooftree}
+     \AxiomC{}
+     \UnaryInfC{$x:\tau$}
+     \noLine
+     \UnaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$s:\sigma$}
+     \RightLabel{$\to I$}
+     \UnaryInfC{$\lambda x:\tau.s:\tau\to\sigma$}
+     \end{prooftree}
+
+     \begin{prooftree}
+     \AxiomC{$s:\tau\to\sigma\;t:\tau$}
+     \RightLabel{$\to E$}
+     \UnaryInfC{$st:\tau$}
+     \end{prooftree}
+     local reduction
+     $(\lambda x:\tau.s)t\Rightarrow_R[t/x]s$
+   + Hence
+     \begin{tabular}{l c l}
+     $\textsf{double}(0)$&=&$0$\\
+     $\textsf{double}(\textsf{s}x)$&=&$\textsf{s}(\textsf{s}(\textsf{double} x))$\\
+     $\textsf{double}$&=&$\lambda n.R(n,\textsf{0},x.r.\textsf{s}(\textsf{s} r))$
+     \end{tabular}
+     \begin{tabular}{l c l}
+     $\textsf{plus}(\textsf{0})$&=&$\lambda y.y$\\
+     $\textsf{plus}(\textsf{s} x)$&=&$\lambda y.\textsf{s}((\textsf{plus } x)y)
+     \end{tabular}
+     $\textsf{nat}\to(\textsf{nat}\to\textsf{nat})$
+** Proof terms
+   + w
+     \begin{prooftree}
+     \AxiomC{$n:\textsf{nat}$}
+     \AxiomC{$M_0:C(\textsf{0})$}
+     \AxiomC{}
+     \UnaryInfC{$x:\textsf{nat}$}
+     \AxiomC{}
+     \RightLabel{$u$}
+     \UnaryInfC{$u:C(x)$}
+     \noLine
+     \BinaryInfC{$\vdots$}
+     \noLine
+     \UnaryInfC{$M_s:C(\textsf{s}x)$}
+     \RightLabel{$\textsf{nat}E^{x,u}$}
+     \TrinaryInfC{$R(n,M_0,x.u.M_s):C(n)$}
+     \end{prooftree}
+     \begin{tabular}{l c l}
+     $R(\textsf{0},M_0,x.u.M_s)$&$\Rightarrow_R$&$M_0$\\
+     $R(\textsf{s}n',M_0,x.u.M_s)$&$\Rightarrow_R$&$[R(n',M_0,x.u.M_s)/u][n'/x]M_s$
+     \end{tabular}
+   + Theorem :: $\forall x:\textsf{nat}.x=0\lor\exists y:\textsf{nat}.x=\textsf{nat}y$
+     + case x = 0. left disjunct is true
+     + case x = sx'. Then right disjunct is true.
+     + $\textsf{pred}=\lambda x:\textsf{nat}. R(x,\textsf{inl}\_,x.r.\textsf{inr}\langle x,\_\rangle)$
