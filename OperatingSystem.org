@@ -112,3 +112,119 @@
 ** virtual machine
    + a virtual machine takes the layered approach to its logical conclusion
      it treats hardware and the operating system kernel as though they were all hardware
+* Chap3 Process
+** Interprocess Communication(IPC)
+   + mechanism for processes to communicate and to synchronize their actions
+   + two models *message passing* and *shared memory*
+   + If P and Q wish to communicate, they need to
+     + establish a *communication link* between them
+     + exchange messages via *send/receive*
+   + Direct communicate ::
+     + links are eatablished *automatically*
+     + a link is associated with *exactly one pair* of communicating processes.
+     + between each pair there exists *exactly one link*
+   + indirect communication ::
+     + mesages are directed and received from *mailboxes(ports)*
+     + a link may be associated with *many processes*
+     + each pair of processes may share *several communication links*
+   + synchronization ::
+     + message passing may be either blocking or non-blocking
+     + *blocking* is *synchronous*
+       + *blocking send* has the sender block until the message is received.
+       + *blocking reveive* has the receiver block until a message is available
+     + *non-blocking* is *asynchronous*
+       + *non-blocking* send has the sender send the message and continue
+       + *non-blocking* receive has the receiver receive a valid message or null
+* Chap4 Threads
+** Multithreading model
+   + many(user thread)-to-one(kernel thread) model
+     only one thread can access the kernel at a time. They may be blocked.
+     simpler
+   + one-to-one model
+     more concurrency thant the many-to-one
+     large number of kernel threads may burden the performance of a system
+   + many-to-many(≤) model
+     can create many user threads and corresponding kernel threads can run in parallel
+   + two-level model
+     allow many-to-many and one-to-one
+** Thread pools
+   + create a number of threads in a pool where they await work
+* Chap5 CPU scheduling
+** Basic concepts
+   + Maximum CPU utilization obtained with multiprogramming
+   + *CPU-I/O burst cycle* - Process execution consists of a _cycle_ of CPU execution and I/O wait
+     Process begins with a *CPU burst*, which is followed by an *I/O burst*
+** CPU scheduler
+   short-term scheduler
+   select from among the processes in memory that are ready to execute, and allocates the CPU
+   to two of them
+   1. switches from running to waiting
+   2. switches from running to ready
+   3. switches from waiting to ready
+   4. terminates
+   scheduling under 1 and 4 is *nonpreemptive*
+   all other scheduling is *preemptive* (kernel can take back the CPU)
+** Scheduling criteria
+   + CPU utilization
+   + throughput吞吐率: the number of processes that are completed per time unit
+   + turnaround time周转时间
+   + waiting time
+   + response time
+** Scheduling algorithm
+*** First-come, First-served scheduling(FCFS)
+    + Gantt chart :: bar chart that illustrates a project schedule
+    + Example
+      | Process | Burst time |
+      | P₁      |         24 |
+      | P₂      |          3 |
+      | P₃      |          3 |
+
+      | ___P₁________ | __P₂__ | __P₃__ |
+      0               24       27       30
+
+      waiting time: P₁=24, P₂=3, P₃=3
+      CPU utilization: 100%
+      waiting time: P₁=0, P₂=24, P₃=27
+      turnaround time: P₁=24, P₂=27, P₃=30
+
+      *convoy effect*: all the other processes wait for the one big process to get off the CPU
+*** Shortes-Job-First scheduling(SJF)
+    + example non-preemptive SJF
+      | Process | Arrival time | burst time |
+      | P₁      |            0 |          7 |
+      | P₂      |            2 |          4 |
+      | P₃      |            4 |          1 |
+      | P₄      |            5 |          4 |
+
+      |_____P₁_____|__P₃__|___P₂___|___P₄___|
+      0            7      8        12       16
+    + preemptive SJF
+      |___P₁___|___P₂___|__P₃__|___P₂___|____P₄____|_____P₁_____|
+      0        2        4      5        7          11           16
+      average waiting time = (9 + 1 + 0 + 2) / 4 = 3
+    + SJF is optimal - gives minimum average waiting time
+    + can be done by using the length of previous CPU bursts using exponential averaging
+      1. tₙ=actual length of n-th CPU burst
+      2. τₙ₊₁=predicted value for the next CPUs
+      3. α, 0≤α≤1
+      4. τₙ₊₁=αtₙ+(1-α)τₙ
+*** Priority scheduling
+    + each process has a priority number
+    + CPU is allocated to the process with the highest priority
+    + starvation - low priority processes may never be execute
+    + solution - as time progresses increase the priority
+*** Round-Robin scheduling (RR)
+    + each process get a small unit of CPU time(time quantum), usually 10-100 milliseconds.
+      After this time has elapsed, the process is preempted and added to the end of the ready
+      queue
+    + example
+      | Process | Burst time |
+      | P₁      |         53 |
+      | P₂      |         17 |
+      | P₃      |         68 |
+      | p₄      |         24 |
+
+      | __P₁__ | __P₂__ | __P₃__ | __P₄__ | ..
+*** Multilevel queue
+    + several queue
+      each queue has its own schduling algorithm
