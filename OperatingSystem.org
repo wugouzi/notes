@@ -113,6 +113,22 @@
    + a virtual machine takes the layered approach to its logical conclusion
      it treats hardware and the operating system kernel as though they were all hardware
 * Chap3 Process
+** Process concept
+   + a *process* is a program in execution
+   + process state ::
+     + new
+       running
+       waiting
+       ready
+       terminated
+   + *Process control block(PCB)*
+** Process scheduling
+   + *process scheduler*
+   + job queue
+     ready queue
+     device queue
+** Operations on Processes
+   + *process identifie(pid)*
 ** Interprocess Communication(IPC)
    + mechanism for processes to communicate and to synchronize their actions
    + two models *message passing* and *shared memory*
@@ -228,3 +244,60 @@
 *** Multilevel queue
     + several queue
       each queue has its own schduling algorithm
+** Multi-processor scheduling
+   + *asymmetirc multiprocessing*:
+     only one processor accesses the system data structures, alleviating the need for
+     data sharing; others execute only user code
+   + *symmetric multiprocessing(SMP)*
+     each processor is self-scheduling. Multiple processors might access and update a
+     common data structure
+** Real-time scheduling
+   + *Hard real-time systems*:
+     required to complete a critical task within a guaranteed amout of time
+   + *Soft real-time computing*:
+     requires that critical processes receive priority over less fortunate ones
+** Thread scheduling
+   + *local scheduling*:
+     how the threads library decides which thread to put onto an available LWP
+   + *global scheduling*:
+     how the kernel decides which kernel thread to run next
+* Chap6 Process synchronization
+** Background
+   + concurrent access to shared data may result in data inconsistency
+   + maintaining data consistency requires mechanisms to ensure the *orderly* execution
+     of cooperating processes
+   + Suppose that we wanted to provide a solution to the consumer-producer problem
+     that fills all the buffers. We can do so by having an integer count that keeps
+     track of the number of full buffers.  Initially, count is set to 0. It is incremented
+     by the producer after it produces a new buffer and is decremented by the consumer
+     after it consumes a buffer.
+** Critical-section problem
+#+BEGIN_SRC c
+  do {
+    ENTRY SECION;
+    Critical section;
+    EXIT SECTION;
+    Remainder section
+  }while(true)
+#+END_SRC
+   + solution
+     + Mutual exclusion ::
+       + if process Pᵢ is executing in its critical section, then no other processes can be
+         executing in their critical sections
+     + Progress ::
+       + If no process is executing in its critical section and there exist some
+         processes that wish to enter their critical section, then the selection of the
+         processes that will enter the critical section next cannot be postponed indefinitely
+     + bounded waiting ::
+       + A bound must exist on the number of times that other processes are allowed to
+         enter their critical sections after a process has made a request to enter its
+         critical section and before that request is granted
+       + Assume that each process executes at a nonzero speed
+** Peterson's solution
+   + two process solution
+   + assume LOAD and STORE instructions are atomic
+   + two processes share two variables
+     int *turn*;
+     boolean *flag[2]*
+   + the variable *turn* indicates whose turn it is to enter the critical section
+   + *flag* array is used to indicate if a process is ready to enter the critical section
