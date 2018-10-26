@@ -11,7 +11,9 @@
      | 1km                     | campus                     | /                         |
      | 10km                    | city                       | metropolitan area network |
      | 100km                   | country                    | \                         |
-     | 1000km                  | continent                  | --wide area network       |
+     | 1000km                  | continent                  | --wies] [Search in Spacemacs]
+
+de area network       |
      | 10000km                 | planet                     | internet                  |
 ** Broadcast networks
    + broadcast links
@@ -31,16 +33,26 @@
      -> presentation(表示，统一格式，像int在不同环境里有不同的大小，从统一格式到本地格式) -> application
    + TCP/IP
      host-to-network(data link & physical) -> internet -> transport -> application
-   + hybrid model
+   + Spacemacs divides its configuration into self-contained units called configuration layers. These layers are stacked on top of each other to achieve a custom configuration.
+
+By default Spacemacs uses a dotfile called ~/.spacemacs to control which layers to load. Within this file you can also configure certain features.
+
+A configuration layer is a directory containing at least a packages.el file which defines and configures packages to be downloaded from Emacs package repositories using the package.el built-in feature of Emacs.
+
+If you already have your own Emacs configuration you can move it to your own layer.
+
+The following command creates a layer in the private directory:
+
+hybrid model
      physical -> data link -> network -> transport -> application
 ** services type
-   |                        | service                 | example              |
-   | //                     | reliable message stream | sequence of page     |
-   | connection oriented [] | reliable byte stream    | remote login         |
-   | \\                     | unreliable connection   | digitized voice      |
-   | //                     | unreliable datagram     | electronic junk mail |
-   | connectionless []      | acknowledged datagram   | registered mail      |
-   | \\                     | request-reply           | database query       |
+   |                              | service                 | example              |
+   | //                           | reliable message stream | sequence of page     |
+   | connection oriented []       | reliable byte stream    | remote login         |
+   | \\                           | unreliable connection   | digitized voice      |
+   | //                           | unreliable datagram     | electronic junk mail |
+   | connectionless []            | acknowledged datagram   | registered mail      |
+   | \\       configure spacemacs | request-reply           | database query       |
 Ru5,!91$?J7}+txG
 * Physical layer
 ** theoretical basis
@@ -100,7 +112,7 @@ Ru5,!91$?J7}+txG
     + PSK(phase shift keying): the carrier wave is systematically shifted 0 or 180 degrees at
       each symbol period
     + QPSK(quadrature phase shift keying)
-    + frequency division multiplexing ::
+    + frequency division multiplexing(FDM) ::
       + it divides the spectrum into frequency bands with each user having exclusive
         possession of some band in which to send their signal
       + OFDM(orthogonal FDM) the channel bandwidth is divided into many subcarriers
@@ -141,8 +153,142 @@ Ru5,!91$?J7}+txG
      + character count
      + starting and end
    + error control
-     + error
+     + error correcting
+     + error detecting, with retransmission
+     + duplicate
+     + lost
+     + error control
+       + bit stuffing (USB)
+         Whenever the sender’s data link layer encounters five consecutive 1s 
+         in the data, it automatically stuffs a 0 bit into the outgoing bit stream
+         when the receiver sees five consecutive incoming 1 bits, followed by 0 bit,
+         then it automatically destuffs the 0 bit.
+         original 01111110
+         on the line 011111010
+         receiver 01111110
+         011110111110 1111110
+         011110111110011111010
+** error detection and correction
+   + error-correcting codes
+     single error: 错一个
+     burst error: 一错错好多个
+     + hamming distance
+       detect d bits error, need d+1 distance coding
+       如果错一位，而从一个正常的变成一个正常的需要变2位
+       correct d bits error, need 2d+1 distance coding
+     parity check
+     + hamming code
+       at most 1 bit
+     + CRC(cyclic redundancy check)
+** Elementary data link protocols
+** siding window protocol
+* medium access sublayer
+** intro
+   + deals with broadcast links
+   + *broadcast channels/multiaccess channels/random access channels*
+   + *MAC(Medium access control)*: determine who goes next on a multiaccess channel
+     belong to a sublayer of the data link layer
+** channel allocation
+*** channel type
+    + point-to-point connection
+    + broadcast channel
+    + medium access control sublayer
+*** static channel allocation
+    + *simple and efficient* when small and fixed number of users, heavy load of traffic
+    + *spectrum wasted, inefficient* when large and varying number of users, bursty traffic
+    + key assumptions
+      1. independent traffic: N station, generate frame, send frame
+      2. single channel assumption: all station using same one
+      3. observable collisions: frame overlap in time will be garbled
+      4. continuous time or slotted time
+      5. carrier sense or no carrier sense
+         + stations can tell if the channel is in use before trying to use
+         + stations cannot sense the channel before trying to use it
+** Multiple access protocol
+*** ALOHA
+    cannot tell if the channel is in use
+**** purse ALOHA
+     + frames send at arbitrary times
+     + not require global time synchronization
+     + efficiency of pure ALOHA
+       $S=Ge^{-2G}$
+       - frame time T: time needed to send frame
+       - throughput S: frames sended successful per T
+       - load G: frames generated (new + resend) per T
+**** slotted ALOHA
+     在时间片里开始发送
+     can improve Sτ
+*** CSMA
+    + listen to the channel before send data
+      if collision, wait a random time and try again
+    + *1-persistent CSMA*
+      - if channel idel, send data
+      - if channel busy, wait until channel idel
+    + *nonpersisten CSMA*
+      - if channel idle, send data
+      - if channel busy, wait random time and try again
+    + *p-persistent CSMA: for slotted channel*
+      - if channel idel, send data with probability p, or defer
+        until next slot with probability 1-p, and try again
+      - if channel busy, wait next slot and try again
+    + *CSMA/CD*
+      - CSMA with collision detected
+        - detect collision when sending
+        - if collision detected, abort transmission, wait random time, and try again
+      - states: contention, transmission, idle
+*** collision-free protocols
+**** bit map
+**** token ring
+     有token再发
+**** binary countdown
+     要同步
+*** limited-contention protocol
+    + use contention at low load to provide low delay
+    + use collision-free technique at high load to provide channel efficiency
+**** adaptive tree walk protocol
+*** wireless LAN protocols
+**** MACA(multiple access with collision avoidance)
+** Ethernet
+   + 1-persistent CSMA/CD
+   + DIX Ethernet: by DEC, Intel, Xerox
+   + difference between 802.3 and DIX Ethernet
+     - 802.3 is a whole family 1-persistent CSMA/CD running at speeds from 1-10Mbps on various medias
+     - the 802.3 length field is used for packet type in Ethernet
+*** binary exponential backoff algorithm
+    + longest path allowed in 802.3
+    + after collision, time is divided into slot time
+    + after i collision, random number slot time is chosen between {0 ~ 2ⁱ-1}
+      after 10 collision, 0 ~ 2013
+      after 16 collision, failed and report
+*** switched ethernet
+    + each station has a dedicated cable running to a central hub
+    + in a hub, all stations are in the same *collision domain*, they use CSMA/CD algorithm
+      to schedule their transmissions
+    + how the LAN switch works
+      retransmission according table
+      establish the table via auto-learn
+      cut-through
+      whole buffered
+*** fast ethernet
+    + backward compatible with existing Ethernet LANs
+    + using CSMA/CD as 802.3
+    + encoding scheme: 4B/5B, signal rate needed is 100M*5/4=125M
+    + auto negotiation
+*** gigabit ethernet
+    + two configuration(point-to-point)
+      a two-station ethernet
+      a multisation ethernet
+    + two operation mode
+** Wireless LANs
+*** 802.11 services
+    + association: connected to APs
+      - data rates, security, power saving, QoS
+    + reassociation: change preferred APs
+    + authentication
+      - WPA2(wifi protected access 2)
+      - WEP
+    + distribution
+** data link layer switching
 * Answer
-1.80 2.S/N= 124.64 3.34100 4.(+1,-1,-1,+1,-1,+1,+1,-1) 5.1 -1 0 1
-6.64 32 8 DPCM delta modulation 7.13 6.25 8 51200 9 bit
-10 infinite 11
+1. 011110111110011111010
+1.544Mbps=Bits / (100*1000 / 2*10^8)

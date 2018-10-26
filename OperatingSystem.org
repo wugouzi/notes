@@ -23,7 +23,23 @@
      4. user
    + trap ::
      + either an *error* or a *user request*
-     +
+ . 0.105.4
+loa. 0.105.4
+load themes on start up
+
+(setq-default dotspacemacs-themes '(list-themes-here))
+switch themes are user-level threads
+
+(2) If the threads are kernel (OS) supported threads.s
+
+<SPC> T h
+d themes on start up
+
+(setq-default dotspacemacs-themes '(list-themes-here))
+switch themes
+
+<SPC> T h
+    +
    + Direct Memory access structure ::
      + without CPU intervention
      + only one interrupt is generated *per block*
@@ -163,8 +179,11 @@
      can create many user threads and corresponding kernel threads can run in parallel
    + two-level model
      allow many-to-many and one-to-one
-** Thread pools
-   + create a number of threads in a pool where they await work
+** Implicit threading
+*** thread pools
+    creates a number of threads at start-up and place them into a pool
+*** fork join
+    
 * Chap5 CPU scheduling
 ** Basic concepts
    + Maximum CPU utilization obtained with multiprogramming
@@ -197,7 +216,8 @@
 
       | ___P₁________ | __P₂__ | __P₃__ |
       0               24       27       30
-
+      | _____P₁_____ | _P₂_ | __P₃__ | _P₄_ | ___P₅___ |
+      0              10     11       13     14         19
       waiting time: P₁=24, P₂=3, P₃=3
       CPU utilization: 100%
       waiting time: P₁=0, P₂=24, P₃=27
@@ -214,6 +234,9 @@
 
       |_____P₁_____|__P₃__|___P₂___|___P₄___|
       0            7      8        12       16
+
+      | _P₂_ | _P₄_ | __P₃__ | ___P₅___ | _____P₁_____ |
+      0      1      2        4          9              19
     + preemptive SJF
       |___P₁___|___P₂___|__P₃__|___P₂___|____P₄____|_____P₁_____|
       0        2        4      5        7          11           16
@@ -229,6 +252,8 @@
     + CPU is allocated to the process with the highest priority
     + starvation - low priority processes may never be execute
     + solution - as time progresses increase the priority
+      | _P₂_ | ____P₅____ | _____P₁_____ | __P₃__ | _P₄_ |
+      0      1            6              16       18     19
 *** Round-Robin scheduling (RR)
     + each process get a small unit of CPU time(time quantum), usually 10-100 milliseconds.
       After this time has elapsed, the process is preempted and added to the end of the ready
@@ -241,6 +266,10 @@
       | p₄      |         24 |
 
       | __P₁__ | __P₂__ | __P₃__ | __P₄__ | ..
+
+
+      | _P₁_ | _P₂_ | _P₃_ | _P₄_ | _P₅_ | _P₁_ | _P₃_ | _P₅_ | _P₁_ | _P₅_ | _P₁_ | _P₅_ | _P₁_ | _P₅_ | ___P₁___ |
+      0      1      2      3      4      5      6      7      8      9      10     11     12     13     14         19
 *** Multilevel queue
     + several queue
       each queue has its own schduling algorithm
@@ -257,10 +286,21 @@
    + *Soft real-time computing*:
      requires that critical processes receive priority over less fortunate ones
 ** Thread scheduling
-   + *local scheduling*:
-     how the threads library decides which thread to put onto an available LWP
-   + *global scheduling*:
-     how the kernel decides which kernel thread to run next
+   kernel-level threads are managed by a thread library, and user-level threads by thread library
+   to run on a CPU, user-level threads must ultimately be mapped to an associated kernel-level
+   thread
+   lightweighted process(LWP)
+*** contention scope
+    + Process-contention scope(PCS) ::
+      + the thread library schedules user-level threads to run on an available LWP
+    + System-contention scope(SCS) ::
+      + kernel decides which kernel-level thread to schedule onto a CPU
+    + 
+*** wef
+  + *local scheduling*:
+    how the threads library decides which thread to put onto an available LWP
+  + *global scheduling*:
+    how the kernel decides which kernel thread to run next
 * Chap6 Process synchronization
 ** Background
    + concurrent access to shared data may result in data inconsistency
@@ -301,3 +341,366 @@
      boolean *flag[2]*
    + the variable *turn* indicates whose turn it is to enter the critical section
    + *flag* array is used to indicate if a process is ready to enter the critical section
+** Synchronization Hardware
+   + uniprocessors
+*** *atomic hardware instructions*
+   Atomic = non-interruptable
+   + TestAndSet instruction
+#+BEGIN_SRC c
+  boolean TestAndSet(boolean *target) {
+    boolean rv = *target;
+    *target = TRUE;
+    return rv;
+  }
+#+END_SRC
+#+NAME: solution using TestAndset
+#+BEGIN_SRC c
+  while (true) {
+  //first guy use TestAndSet would do things
+    while ( TestAndSet (&lock ))
+  // do nothing
+  //    critical section
+      lock = FALSE;
+  //      remainder section
+  }
+
+#+END_SRC
+   + Swap instruction
+#+NAME: swap
+#+BEGIN_SRC c
+  void Swap (boolean *a, boolean *b)
+  {
+    boolean temp = *a;
+    *a = *b;
+    *b = temp:
+  }
+#+END_SRC
+#+NAME: solution using swap
+#+BEGIN_SRC c
+  while (true){
+    key = TRUE;
+    while ( key == TRUE)
+      Swap (&lock, &key );
+    //    critical section
+    lock = FALSE;
+    //      remainder section
+   }
+#+END_SRC
+** Semaphore
+   + synchronization tool that is less complicated
+   + semaphore *S* - integer variable
+   + two *atomic* standard operations modify *S*: *wait()* and *signal()*
+     originally *P()* and *V()*
+   + 
+#+BEGIN_SRC c
+  wait (S) {
+    while (S <= 0); // no-op
+    S--;
+  }
+
+  signal (S) {
+          S++;
+  }
+#+END_SRC
+*** Usage as general synchronization tool
+   + *counting* semaphore - integer value can rage over an unrestricted domain
+   + *binary* semaphore - integer value can range only between 0 and 1
+     also known as *mutex locks*
+   + provide mutual exclusion
+#+BEGIN_SRC c
+  Semaphore S;
+  wait(S);
+  //Critical section
+  signal(S);
+#+END_SRC
+   + P₁ has a statement S₁, P₂ has S₂
+     P₁    S₁;
+           Signal(S);
+
+     P₂    Wait(S);
+           S₂;
+*** Semaphore implementation
+    + must guarantee that no two processes can execute *wait()* and *signal()* on
+      the same semaphore at the same time
+    + implementation without busy waiting ::
+      + with each semaphore there is an associated waiting queue.
+        Each semaphore has two data items
+        1. value
+        2. pointer to a linked-list of PCBs.
+      + two operations
+        1. *block* - place the process invoking the operation on the appropiate waiting
+           queue
+        2. *wakeup* - remove one of processes in the waiting queue and place it in the
+           ready queue
+      + implementation
+#+BEGIN_SRC c
+  wait (S){
+    value--;
+    if (value < 0) {
+      //add this process to waiting queue
+      block();  }
+  }
+
+  Signal (S){
+    value++;
+    if (value <= 0) {
+      //remove a process P from the waiting queue
+      wakeup(P);  }
+  }
+#+END_SRC
+*** problems with semaphores
+    + correct use of semaphore operations
+      1. signal(mutex) ... wait(mutex)
+      2. wait(mutex) ... wait(mutex)
+      3. omitting of wait(mutex) or signal(mutex)
+** Deadlock and starvation
+   + *Deadlock* – two or more processes are waiting indefinitely for an event that
+     can be caused by only one of the waiting processes
+   + *starvation* - indefinite blocking.  A process may never be removed from the
+     semaphore queue in which it is suspended
+
+** Classical problems of synchronization
+*** Bounded-buffer problem
+    + N buffers, each can hold one item
+    + semahpore *mutex(binary)* initialized to 1 (exclusive)
+    + semaphore *full* initialized to 0, counting full items
+    + semaphore *empty* initialized to N, counting empty items
+#+NAME: producer
+#+BEGIN_SRC c
+  while (true)  {
+    //   produce an item
+    wait (empty);
+    wait (mutex);
+    //  add the item to the  buffer
+    signal (mutex);
+    signal (full);
+   }
+#+END_SRC
+#+NAME: consumer
+#+BEGIN_SRC c
+  while (true) {
+    wait (full);
+    wait (mutex);
+    //  remove an item from  buffer
+    signal (mutex);
+    signal (empty);
+    //  consume the removed item
+   }
+#+END_SRC
+*** readers and writers problem
+    + A data set is shared among a number of concurrent processes
+      1. reader - only read the data set, they don't perform any updates
+      2. writers - can both read and write
+    + *problem* - allow multiple readers to read at the same time.
+      only one single writer can access the shared data at the same time
+    + shared data ::
+      + data set
+        semaphore *mutex* initialized to 1, to ensure mutual exclusion when
+        *readcount* is updated
+        semaphore *wrt* initialized to 1
+        integer *readcount* initialized to 0
+#+BEGIN_SRC c
+  //writer
+  while(true) {
+    wait(wrt);
+    //writing is performed
+    signal(wrt);
+   }
+  //reader
+  while (true) {
+    wait (mutex) ;
+    readcount ++ ;
+    //if current reader is the only reader, it's the writer
+    if (readcount == 1)  wait (wrt) ;
+    signal (mutex);
+    // reading is performed
+    wait (mutex) ;
+    readcount -- ;
+    if (readcount  == 0)  signal (wrt) ;
+    signal (mutex) ;
+   }
+
+#+END_SRC
+*** dining-philosophers problem
+    + shared data
+      bowl of rice (data set)
+      each needs 2 chopsticks to eat
+      semaphore *chopstick[5]* initialized to 1
+#+BEGIN_SRC c
+  //philosopher i
+  While (true)  { 
+    wait ( chopstick[i] );
+    wait ( chopStick[ (i + 1) % 5] );
+    //  eat
+    signal ( chopstick[i] );
+    signal (chopstick[ (i + 1) % 5] );
+    //  think
+  }
+
+#+END_SRC
+** Monitor
+   + a high-level abstraction that provides a convenient and effective *mechanism* for
+     process synchronization
+   + only *one* process may be active within the monitor at a time
+     #+NAME: monitor
+     #+BEGIN_SRC c
+       monitor monitor-name
+       {
+         // shared variable declarations
+         procedure P1 (…) { …. }
+         …;
+         procedure Pn (…) {……}
+         Initialization code ( ….) { … }
+         …
+       }
+     #+END_SRC
+   + condition variables ::
+     + _condition x,y_
+     + two operations on a condition variables
+       1. _x.wait()_ - a process that invokes the operation is suspended
+       2. _s.signal()_ - resumes one of processes that invoked _x.wait()_
+*** solution to dining philosophers
+    #+BEGIN_SRC c
+      monitor DP
+      { 
+        enum { THINKING; HUNGRY, EATING} state [5] ;
+        condition self [5];  //philosopher i can delay herself when unable to get chopsticks
+
+        void pickup (int i) { 
+          state[i] = HUNGRY;
+          test(i);
+          if (state[i] != EATING) self [i].wait;
+        }
+
+        void putdown (int i) { 
+          state[i] = THINKING;
+          // test left and right neighbors
+          test((i + 4) % 5);
+          test((i + 1) % 5);
+        }
+
+        void test (int i) { 
+          if ( (state[(i + 4) % 5] != EATING) &&
+               (state[i] == HUNGRY) &&
+               (state[(i + 1) % 5] != EATING) ) { 
+            state[i] = EATING ;
+            self[i].signal () ;
+          }
+        }
+
+        initialization_code() { 
+          for (int i = 0; i < 5; i++)
+            state[i] = THINKING;
+        }
+      }
+
+    #+END_SRC
+    + each philosopher i invokes the operation _pickup()_ and _putdown()_ in the following
+      sequence
+      dp.pickup(i)
+      EAT
+      dp.putdown(i)
+*** monitor implementation using semaphores
+    + variables
+      *semaphore mutex* (initially 1, entry protection, only one process)
+      *semaphore next* (initially 0, signalling process may suspend themselves)
+      *int next-count=0*
+    + procedure *F*
+      #+BEGIN_SRC c
+        wait(mutex);
+        …;			 
+        body of F;
+        …;
+        if (next-count > 0)
+          signal(next)
+        else 
+          signal(mutex);
+      #+END_SRC
+    + _x_
+      #+BEGIN_SRC c
+        semaphore x-sem; // (initially  = 0)
+        int x-count = 0;
+      #+END_SRC
+    + _x.wait_
+      #+BEGIN_SRC c
+        x-count++; //number of process waiting
+        if (next-count > 0)
+          signal(next); //if someone has been waiting, wake her up because I'll be
+                        //entering the waiting state
+        else
+          signal(mutex);//no one else waiting in the monitor. I'm going to block
+        wait(x-sem);    //block myself
+        x-count--;
+      #+END_SRC
+    + _x.signal_
+      #+BEGIN_SRC c
+        if (x-count > 0) {
+          next-count++;
+          signal(x-sem);//wait on the "next" semaphore
+          wait(next);
+          next-count--;
+        }
+      #+END_SRC
+** Synchronization
+*** pthreads synchronization
+    + mutex example
+      #+BEGIN_SRC c
+                void reader_function ( void );
+                void writer_function ( void ); 
+                char buffer;
+                int buffer_has_item=0;
+                pthread_mutex_t mutex;
+                struct timespec delay;
+                void main ( void )
+                {
+                  pthread_t reader;
+                  delay.tv_sec = 2;
+                  delay.tv_nec = 0;
+                  pthread_mutex_init (&mutex,NULL);
+                  pthread_create(&reader, pthread_attr_default, (void *)&reader_function, NULL);
+                  writer_function( );
+                }
+                void writer_function (void){
+                  while(1){
+                    pthread_mutex_lock (&mutex);
+                    if (buffer_has_item==0){
+                      buffer=make_new_item( );
+                      buffer_has_item=1;}
+                    pthread_mutex_unlock(&mutex);
+                    pthread_delay_np(&delay);
+                  }
+                } 
+        void reader_function(void){
+          while(1){pthread_mutex_lock(&mutex);
+            if(buffer_has_item==1){
+              consume_item(buffer);
+              buffer_has_item=0;}
+            pthread_mutex_unlock(&mutex);
+            pthread_delay_np(&delay);
+          }
+        }
+
+      #+END_SRC
+* Chap7 Deadlocks
+** the deadlock problem
+   + A set of blocked processes each holding a resource and waiting to acquire
+     a resource held by another process in the set.
+** system model
+   + resource types R₁,R₂,...,Rₘ
+   + each resource type Rᵢ has Wᵢ instances
+   + each process utilizes a resource as follows
+     1. request
+     2. use
+     3. release
+** Deadlock characterization
+   + mutual exclusion ::
+     + only one process at a time can use a resource
+   + hold and wait ::
+     + a process holding at least one resource is waiting to acquire
+       additional resources held by other process
+   + no preemptive ::
+     + a resource can be released only voluntarily by the process holding it, after
+       that process has completed its task
+   + circular wait ::
+     + wait circular
+     + 
