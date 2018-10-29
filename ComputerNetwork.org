@@ -218,7 +218,7 @@ Ru5,!91$?J7}+txG
 **** slotted ALOHA
      在时间片里开始发送
      can improve Sτ
-*** CSMA
+*** CSMA(carrier sense multiple access protocol)
     + listen to the channel before send data
       if collision, wait a random time and try again
     + *1-persistent CSMA*
@@ -228,14 +228,20 @@ Ru5,!91$?J7}+txG
       - if channel idle, send data
       - if channel busy, wait random time and try again
     + *p-persistent CSMA: for slotted channel*
-      - if channel idel, send data with probability p, or defer
+      - if channel idle, send data with probability p, or defer
         until next slot with probability 1-p, and try again
       - if channel busy, wait next slot and try again
-    + *CSMA/CD*
+    + *CSMA/CD(CSMA with collision detected)*
       - CSMA with collision detected
         - detect collision when sending
+          if the signal it read back is different from the signal it putting out, collision
+          occurs
         - if collision detected, abort transmission, wait random time, and try again
       - states: contention, transmission, idle
+      - collision detecting
+        * seize: when a station sending, others wait
+        * collision detect: read back to check if different form what sended
+        * to detect collision, sending time must > 2τ
 *** collision-free protocols
 **** bit map
 **** token ring
@@ -247,7 +253,14 @@ Ru5,!91$?J7}+txG
     + use collision-free technique at high load to provide channel efficiency
 **** adaptive tree walk protocol
 *** wireless LAN protocols
+    + *access points(AP)*
+    + *hidden terminal problem*: a station is not able to detect a potential competior
+    + *exposed terminal problem*:
 **** MACA(multiple access with collision avoidance)
+     + A starts by sending an *RTS(request to send)* frame to B
+       B replies with a *CTS(clear to send)* frame to A
+       Any station hearing RTS remain silent for the CTS to be transmitted back to A(close to A)
+       Any station hearing CTS is close to B and remain silent during the upcoming data transmission
 ** Ethernet
    + 1-persistent CSMA/CD
    + DIX Ethernet: by DEC, Intel, Xerox
@@ -261,14 +274,21 @@ Ru5,!91$?J7}+txG
       after 10 collision, 0 ~ 2013
       after 16 collision, failed and report
 *** switched ethernet
-    + each station has a dedicated cable running to a central hub
+    + each station has a dedicated cable running to a central *hub*
+    + *switch* containing a high-speed backplane that connects all of the ports.
+      only output frames to the ports for which those frames are destined
     + in a hub, all stations are in the same *collision domain*, they use CSMA/CD algorithm
       to schedule their transmissions
+      in a switch, each port is its own independent collision domain. The cable is full duplex,
+      both the station and the port can send a frame at the same time
+    + *promiscuous mode*: all frames are given to each computer, not just those addressed to it
     + how the LAN switch works
       retransmission according table
       establish the table via auto-learn
-      cut-through
-      whole buffered
+      + cut-through
+        only check destination address
+      + whole buffered
+        check frame length, checksum
 *** fast ethernet
     + backward compatible with existing Ethernet LANs
     + using CSMA/CD as 802.3
@@ -288,6 +308,9 @@ Ru5,!91$?J7}+txG
       - WPA2(wifi protected access 2)
       - WEP
     + distribution
+**** the 802.11 mac sublayer protocol
+     + *CSMA/CA(CSMA with collision avoidance)*
+       start backoffs helps to avoid collisions
 ** data link layer switching
 * Answer
 1. 011110111110011111010

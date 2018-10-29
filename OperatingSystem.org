@@ -703,4 +703,138 @@ switch themes
        that process has completed its task
    + circular wait ::
      + wait circular
-     + 
+*** resource-allocation graph
+    + basic facts ::
+      + if graph contains no cycle -> no dead lock
+      + if graph contains a cycle ->
+        + if only one instance per resource type, then deadlock
+        + if several instances per resource type, possibility of deadlock
+** Methods for handling deadlocks
+   + ignore the problem and pretend that deadlocks never occur in the system;
+     used by most operating systems, including UNIX
+** Deadlock prevention
+   + mutual exclusion ::
+     + not required for sharable resources; must hold for nonsharable resources
+   + Hold and wait ::
+     + must guarantee that whenever a process requests a resource, it does not hold any
+       other resources
+     + Require process to request and be allocated all its resources before it begins
+       execution, or allow process to request resources only when the process has none
+       (release all current resources before requesting any additional ones).
+     + Low resource utilization; starvation possible. (example: copy data from DVD drive
+       to a disk file, sorts the file, then prints the results to a printer.)
+   + no preemption ::
+     + If a process that is holding some resources requests another resource that cannot
+       be immediately allocated to it, then all resources currently being held are released.
+     + Process will be restarted only when it can regain its old resources, as well as the
+       new ones that it is requesting.
+   + circular wait ::
+     + impose a total ordering of all resource types, and require that each process
+       requests resources in an increasing order of enumeration.
+** Deadlock avoidance
+   + require system having additional a priori information
+   + simple: each process declares the *maximum number* of resources of each type that it may need.
+   + The deadlock-avoidance algorithm *dynamically* examines the resource-allocation state to
+     ensure that there can never be a circular-wait condition.
+   + Resource-allocation *state* is defined by the number of available and allocated resources,
+     and the maximum demands of the processes.
+*** safe state
+    + system is in *safe state* if there exists a sequence <P₁,P₂,...,Pₙ> of all the processes,
+      is the systems s.t. for each Pᵢ, the resources that Pᵢ can still request can be
+      satisfied by currently available resources + resources held by all the Pⱼ, j<i
+    + facts
+      safe state => no deadlocks
+      unsafe state => possible deadlock
+      avoidance => never enter an unsafe state
+*** avoidance algorithms
+    + single instance of a resource type : resource-allocation graph
+    + multiple instances of a resource type : banker's algorithm
+*** banker's algorithm
+    + assumptions
+      * multiple instances
+      * each process must a priori claim maximum used
+      * when a process requests a resource it may have to wait
+      * when a process gets all its resources it must return them in a finite amout of time
+    + example
+      P₀ P₁ P₂ P₃ P₄
+      3 source types: A(10), B(5), C(7)
+      |    | Allocation | Max     | Available |
+      |    | A  B  C    | A  B  C | A  B  C   |
+      | P₀ | 0  1  0    | 7  5  3 | 3  3  2   |
+      | P₁ | 2  0  0    | 3  2  2 |           |
+      | P₂ | 3  0  2    | 9  0  2 |           |
+      | P₃ | 2  1  1    | 2  2  2 |           |
+      | P₄ | 0  0  2    | 4  3  3 |           |
+
+      if each need MAX
+      |    | Need  |
+      |    | A B C |
+      | P₀ | 7 4 3 |
+      | P₁ | 1 2 2 |
+      | P₂ | 6 0 0 |
+      | P₃ | 0 1 1 |
+      | P₄ | 4 3 1 |
+      hence a sequence <P₁,P₃,P₄,P₂,P₀>
+* PThread library
+  + int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+    pthread_cond_wait() is used to block on a condition variable
+    It's called with _mutex_ locked by the calling thread or undefined behaviour will result.
+    the function atomically releases mutex and caused the calling thread to block on the condition
+    variable
+  + int pthread_cond_signal(pthread_cond_t *cond);
+    int pthread_cond_broadcast(pthread_cond_t *cond);
+#+NAME: condition variable
+#+BEGIN_SRC c
+  pthread_mutex_t count_lock;
+  pthread_cond_t count_nonzero;
+
+  void decrement_count() {
+    pthread_mutex_lock(&count_lock);
+    while(count == 0)
+      //why count_locked is needed
+      //count_locked is unlocked and locked
+      pthread_cond_wait(&count_nonzero, &count_locked);
+    count--;
+    pthread_mutex_unlock(&count_lock);
+  }
+
+  void increment_count() {
+    pthread_mutex_lock(&count_lock);
+    if (count == 0)
+      pthread_cond_signal(&count_nonzero);
+    count++;
+    pthread_mutex_unlock(&count_lock);
+  }
+#+END_SRC
+  + Can we call cond pthread_cond_signal without locking mutex?
+  + the *pthread_cond_signal()* routine is used to signal another thread which is waiting
+    on the condition variable. It should be called after mutex is locked, and must
+    unlock mutex in order for *pthread_cond_wait()*
+#+NAME: example
+#+BEGIN_SRC c
+  //A
+  pthread_mutex_lock(&mutex)
+  while(condition == FALSE)
+    pthread_cond_wait(&cond, &wait);
+  pthread_mutex_unlock(&mutex);
+
+
+  //B
+  condition = TRUE;
+  pthread_cond_signal(&cond)
+
+
+
+  //////////A
+  pthread_mutex_lock(&mutex)
+  while(condition == FALSE)
+    ///////B
+    condition = TRUE;
+  pthread_cond_signal(&cond)
+  /////////A
+  pthread_mutex_unlock(&mutex);
+
+
+  //The signal will miss, then be blocked forever
+#+END_SRC
+
