@@ -1,0 +1,351 @@
+* Introduction
+** Docker components
+*** docker client and server/docker engine
+    [[./images/dockerbook/dockerarchitecture.png]]
+*** docker images
+    + images are the building blocks of the docker.
+    + launch your containers from images
+*** registries
+    + docker stores the images in registries
+    + two types: *public* and *private*
+*** containers
+    + launched from images
+    + a docker container is:
+      * an image format
+      * a set of standard operations
+      * an execution environment
+    + each container contains a software image -- its ’cargo’ -- and, like its sudo add-apt-repository ppa:longsleep/golang-backportsphysical
+      counterpart, allows a sehttps://pcs.baidu.com/file/22932b6fbd08a7a87d101c7f359d65b0?fid=86214459-250528-483685352376608&dstime=1541077594&rt=sh&sign=FDtAERV-DCb740ccc5511e5e8fedcff06b081203-lxbmxRV4PaYHAZqDjN4K6SeMefI%3D&expires=8h&chkv=1&chkbd=0&chkpc=&dp-logid=7071017991264453702&dp-callid=0&shareid=1322279718&r=413990630t of operations to be perfopurewhite
+      rmed. For example, it can be
+      created, started, stopped, restarted, and destroyed.
+** Docker's technical components
+   + a native linux container format that docker calls *libcontainer*
+   + *Linux kernel namespaces*, which provide isolation for filesystems, processes and networks
+   + Filesystem isolation: each container runs in its own process environment
+   + network isolation: separate virtual interfaces and IP addressing between containers
+   + Resource isolation and grouping: resources like CPU and memory are allocated individually
+     to each Docker container using the *cgroups*, or contrl groups, kernel feature
+   + *copy-on-write*: filesystems are created with copy-on-write, meaning they are layered
+     and fast and require limited disk usage
+   + logging: *STDOUT*, *STDERR*, and *STDIN* from the container are collected, logged, and available
+     for analysis or trouble-shooting
+   + interactive shell: you can create a pseudo-tty and attach to *STDIN* to provide an interactive
+     shell to your container
+* Docker introduction
+** Running a process inside a container
+   + we can run additional processes inside containers using *docker exec*
+   + two types we can run in container:
+     1. background
+        run inside the container without interaction
+        *exec -d* 
+     2. interactive
+        remain in the foreground
+        *exec -t -i* running create TTY and *STDIN*
+* working with docker images  
+** Docker image
+   + a docker image is made up of filesystems layered over each other
+     1. boot filesystem: *bootfs*, which resembles the typical linux/unix boot filesystem
+        boot filesystem is unmounted to free up the RAM used by the *initrd* disk image
+     2. root filesystem: *rootfs*, on top of the boot filesystem. can be one or more OS
+   + In a more traditional Linux boot, the root filesystem is mounted _read-only_ and
+     then switched to _read-write_ after boot and an integrity check is conducted. 
+     In the Docker world, however, the root filesystem stays in _read-only_ mode, and Docker
+     takes advantage of a *union mount* to add more _read-only_ filesystems onto the
+     root filesystem. 
+     A *union mount* is a mount that allows several filesystems to be
+     mounted at one time but appear to be one filesystem. The union mount *overlays*
+     the filesystems on top of one another so that the resulting filesystem may contain
+     files and subdirectories from any or all of the underlying filesystems.
+   + Docker calls each of these filesystem *images*. Images can be layered on top of
+     one another. The image below is called the *parent image* and you can traverse
+     each layer until you reach the bottom of the image stack where the final image
+     is called the *base image*. Finally, when a container is launched from an image,
+     Docker mounts a _read-write_ filesystem on top of any layers below. This is where
+     whatever processes we want our Docker container to run will execute
+     [[./images/dockerbook/DockerFilesystemLayers.png]]
+     
+     + When Docker first starts a container, the initial read-write layer is empty. As
+       changes occur, they are applied to this layer; for example, if you want to change
+       a file, then that file will be copied from the read-only layer below into the readwrite layer. The read-only version of the file will still exist but is now hidden
+       underneath the copy.
+     + This pattern is traditionally called ”copy on write” and is one of the features that
+       makes Docker so powerful. Each read-only image layer is read-only; this image
+       never changes. When a container is created, Docker builds from the stack of images and then adds the read-write layer on top. That layer, combined with the
+       knowledge of the image layers below it and some configuration data, form the container. As we discovered in the last chapter, containers can be changed, they have
+       state, and they can be started and stopped. This, and the image-layering framework, allows us to quickly build images and run containers with our applications
+       and services.
+** Building own image
+*** Dockerfile
+    + Each instructions adds a new layer to the image and then commits the image
+    + Docker executing instructions roughly follow a workflow:
+      - Docker runs a container from the images
+      - An instruction executes and makes a change to the container
+      - Docker runs the equivalent of *docker commit* to commit a new layer
+      - Docker then runs a new container from this new image
+      - The next instruction in the file is executed, and the process repeats until all
+        instructions have been executed
+    + This means that if your *Dockerfile* stops for some reason (for example, if an
+      instruction fails to complete), you will be left with an image you can use.
+    + first instruction must be *FROM*
+      This specifies an existing image that the following instructions will operate on
+      called *base image*
+    + Next is *MAINTAINER* instruction.
+    + *RUN* instruction executes command on the current image
+      by default, *RUN* executes inside a shell using the command wrapper */bin/sh -c*
+      If it runs on a platform without a shell or you wish to execute without a shell,
+      we can specify the instruction in *exec* format
+      *RUN [ "apt-get", " install", "-y", "nginx" ]*
+    + *EXPOSE* tells Docker that the application in this container will use this specific port
+      on the container
+    + *ENV* sets environment
+    + *CMD* specifies the command to run when a container is launched
+* Testing with docker
+  + *-v* create a volume in container from a directory on the host
+    *Volumes* are specially designated directories within one or more containers that
+    bypass the layered Union File System to provide persistent or shared data for Docker
+    
+    The *-v* option works by specifying a directory or mount on the local host separated
+    from the directory on the container with a *:*. If the container directory doesn’t
+    exist Docker will create it.
+    We can also specify the read/write status of the container directory by adding
+    either *rw* or *ro* after that directory
+  + This means that changes to a volume are made directly and bypass the image
+    They won't be included when we commit or build an image
+    advantages:
+    1. we want to work on and test it simultaneously
+    2. it changes frequently, and we don't want to rebuild the image during our development
+       process
+    3. we want to share the code between multiple containers.
+
+
+sudo docker run -d -p 80 --name website \
+-v $PWD/website:/var/www/html/website \
+sample nginx
+* 容器与开发语言
+** Docker
+   + docker容器将一系列软件包装在一个完整的文件系统中，这个文件系统包含应用程序运行所需要的一切：
+     代码、运行时工具、系统工具、系统依赖。保证了容器内应用程序运行环境的稳定性
+   + 特点
+     1. 轻量级：在同一宿主机上的容器共享系统kernel，使得它们可以迅速启动而且占用内存极少。
+        镜像是以分层文件系统构造的，这可以让它们共享相同的文件，使得磁盘使用率和镜像下载速度提高
+     2. 开放
+     3. 安全：容器将各个应用程序隔离开来
+* 基础技术
+** Linux Namespace
+   + Linux Namespace是kernel的一个功能，可以隔离一些烈的系统资源，比如PID，UID，network
+     可以虚拟User namespace，PID
+   + 六种Namespace
+     1. Mount Namespace
+     2. UTS Namepsace
+     3. IPC(interprocess communication)
+     4. PID
+     5. Network
+     6. User
+   + 使用
+     * _clone()_ 创建新进程。根据系统调用参数来判断那些类型的Namespace，而且它们的子进程也会被包含到
+       这些Namespace中
+     * _unshare()_ 将进程移出Namespace
+     * _setns()_ 将进程加入到Namespace中
+*** UTS namespace ::
+    + 用来隔离nodename和domainname两个系统标识。每个namespace允许有自己的hostname
+    + example
+      #+BEGIN_SRC go
+        package main
+
+        import (
+          "os/exec"
+          "syscall"
+          "os"
+          "log"
+        )
+
+        func main() {
+          //指定被fork出来的新进程的初始命令
+          cmd := exec.Command("sh")
+          cmd.SysProcAttr = &syscall.SysProcAttr(
+            Cloneflags: syscall.CLONE_NEWUTS,
+          )
+          cmd.Stdin = os.Stdin
+          cmd.Stdout = os.Stdout
+          cmd.Stderr = os.Stderr
+
+          if err := cmd.Run(); err != nil (
+            log.Fatal(err)
+          )
+        }
+
+       #+END_SRC
+    + UTS Namespace对hostname做了隔离，所以在这个环境内修改hostname不影响外部主机
+*** IPC namespace ::
+    + 用来隔离System V IPC和POSIX message queues。每个IPC namespace都有自己的system V IPC和POSIX
+       message queue
+    + example
+      #+BEGIN_SRC go
+        package main
+
+        import (
+          "log"
+          "os"
+          "os/exec"
+          "syscall"
+        )
+
+        func main() {
+          cmd := exec.Command("sh")
+          cmd.SysProcAttr = &syscall.SysProcAttr{
+            Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC,
+          }
+
+          cmd.Stdin = os.Stdin
+          cmd.Stdout = os.Stdout
+          cmd.Stderr = os.Stderr
+
+          if err := cmd.Run(); err != nil {
+            log.Fatal(err)
+          }
+        }
+      #+END_SRC
+**** quick facts: system V ipc
+     + Linux supports three types of interprocess communication mechanisms which first
+       appeared in Unix System V (1983). These are message queues, semaphores and shared memory.
+       These System V IPC mechanisms all share common authentication methods. Processes
+       may access these resources only by passing a unique reference identifier to the
+       kernel via system calls. Access to these System V IPC objects is checked using
+       access permissions, much like accesses to files are checked. The access rights
+       to the System V IPC object is set by the creator of the object via system calls.
+       The object's reference identifier is used by each mechanism as an index into a
+       table of resources. It is not a straight forward index but requires some
+       manipulation to generate the index.
+     + All Linux data structures representing System V IPC objects in the system include an
+       *ipc_perm*
+     + structure which contains the owner and creator processes user and group
+       identifiers. the access mode for this object (owner, group and other) and
+       the IPC object's key. The key is used as a way of locating the System V IPC
+       object's reference identifier. Two sets of key are supported: public and private.
+       If the key is public then any process in the system, subject to rights checking,
+       can find the reference identifier for the System V IPC object. System V IPC
+       objects can never be referenced with a key, only by their reference identifier.
+**** quick facts: POSIX vmessage queues
+*** PID namespace
+    + 隔离进程ID
+    + example
+      #+BEGIN_SRC go
+        package main
+
+        import (
+          "log"
+          "os"
+          "os/exec"
+          "syscall"
+        )
+
+        func main() {
+          cmd := exec.Command("sh")
+          cmd.SysProcAttr = &syscall.SysProcAttr{
+            Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC | syscall.CLONE_NEWPID,
+          }
+
+          cmd.Stdin = os.Stdin
+          cmd.Stdout = os.Stdout
+          cmd.Stderr = os.Stderr
+
+          if err := cmd.Run(); err != nil {
+            log.Fatal(err)
+          }
+        }
+      #+END_SRC
+      + *pstree -pl*
+*** Mount namespace
+    + 隔离各个进程看到的挂载点视图。在不同namespace进程中，看到的文件系统层次不一样。
+      在mount namespace中调用 _mount()_ 和 _umount()_ 仅仅影响当前namespace内的文件系统
+    + linux第一个实现的namespace
+    + *NEWNS*
+*** User namespace
+    + 隔离用户的用户组。
+    + *NEW_USER*
+** Linux cgroups
+*** introduction
+    + Linux Cgroups(Control Groups)提供了对一组进程及将来子进程的资源限制、控制和统计的能力，
+      这些资源包括CPU、内存、存储、网络
+    + 3个组件
+**** cgroup
+     + cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并可以在这个cgroup上增加Linux
+       subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联
+**** subsystem
+     + 是一组资源控制的模块
+       * blkio设置对块设备输入输出的访问控制
+       * cpu设置cgroup中进程的cpu被调度的策略
+       * cpuacct可以统计cgroup中进程的CPU调用
+       * cpuset在多核机器上设置cgroup中可以使用的CPU和内存
+       * devices控制cgroup中进程对设备的访问
+       * freezer用于suspend和resume cgroup中的进程
+       * memory用于控制cgroup中进程的内存占用
+       * net_cls用于将cgroup中进程产生的网络包分类，以便linux的tc(traffic controller)可以根据
+         分类区分出来自某个cgroup的包并做限流或监控
+     + 每个subsystem会关联的定义了相应限制的cgroup上，并对这个cgroup中的进程做相应的限制。
+       这些subsystem是逐步合并到内核中的
+     + *lssubsys*
+**** hierarchy
+     + 把一组cgroup串成一个树状的结构，使得cgroups可以继承
+*** 相互关系
+    + 创建新的hierarchy后，所有进程都会加入这个hierarchy的cgroup的根节点，这个cgroup
+      根节点是hierarchy默认创建的
+    + 一个subsystem只能副到一个hierarchy上
+    + 一个hierarchy可以有多个subsystem
+    + 一个进程可作为多个cgroup的成员，但cgroup需在不同的hierarchy中
+    + 一个进程fork出子进程时，子进程是和父进程在同一个cgroup中，
+*** kernel接口
+*** go
+    #+BEGIN_SRC go
+      package main
+
+      import (
+        "os/exec"
+        "path"
+        "os"
+        "fmt"
+        "io/ioutil"
+        "syscall"
+        "strconv"
+      )
+
+      //挂载了memory subsystem的hierarchy的根目录位置
+      const cgroupMemoryHierarchyMount = "/sys/fs/cgroup/memory"
+
+      func main() {
+        if os.Args[0] == "/proc/self/exe" {
+          fmt.Printf("current pid %d", syscall.Getpid())
+          fmt.Println()
+          cmd := exec.Command("sh", "-c", `stress --vm-bytes 200m --vm-keep -m 1`)
+          cmd.SysProcAttr = &syscall.SysProcAttr{
+          }
+          cmd.Stdin = os.Stdin
+          cmd.Stdout = os.Stdout
+          cmd.Stderr = os.Stderr
+          if err := cmd.Run(); err != nil {
+            fmt.Println(err)
+            os.Exit(1)
+          }
+        }
+        cmd := exec.Command("/proc/self/exe")
+        cmd.SysProcAttr = &syscall.SysProcAttr{
+          Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID | syscall.CLONE_NEWNS,
+        }
+        cmd.Stdin = os.Stdin
+        cmd.Stdout = os.Stdout
+        cmd.Stderr = os.Stderr
+
+        if err := cmd.Start(); err != nil {
+          fmt.Println("ERROR", err)
+          os.Exit(1)
+        } else {
+          //得到fork出来进程映射在外部namespace的pid
+          fmt.Printf("%v", cmd.Process.Pid)
+
+          //在系统默认创建挂载了memory subsystem的heirarchy上创建cgroup
+          os.Mkdir(path.Join(cgroupMemoryHierarchyMount, "testmemorylimit"), 0755)
+          ioutil.WriteFile(path.Join(cgroupMemoryHierarchyMount, "testmemorylimit", "tasks"), []byte(strconv.Itoa(cmd.Process.Pid)), 0644)
+        }
+        cmd.Process.Wait()
+      }
+    #+END_SRC
