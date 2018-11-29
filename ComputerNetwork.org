@@ -1,10 +1,13 @@
+:PROPERTIES:
+:ATTACH_DIR: /media/wu/file/stuuudy/notes/images/ComputerNetwork/
+:END:
 * Introduction
   + Client server (C/S) model
   + P2P
 ** Network hardware
 ** Network scale
    +
-     | interprocessor distance | processors located in same | examples                  |
+     | inter processor distance | processors located in same | examplesf                 |
      | 1m                      | square meter               | personal area network     |
      | 10m                     | room                       | \                         |
      | 100m                    | building                   | --local area network      |
@@ -53,7 +56,7 @@ hybrid model
    | //                           | unreliable datagram     | electronic junk mail |
    | connectionless []            | acknowledged datagram   | registered mail      |
    | \\       configure spacemacs | request-reply           | database query       |
-Ru5,!91$?J7}+txG
+
 * Physical layer
 ** theoretical basis
 *** Bandwidth-limited signals
@@ -313,7 +316,55 @@ Ru5,!91$?J7}+txG
        start backoffs helps to avoid collisions
 ** data link layer switching
 * Network layer
+  + 解决跨节点后数据沿着规定的路线走
+** Network layer design issues
+*** store-and-forward switching
+*** implementation of connectionless service
+    + packets are called *datagrams*
+*** implementation of connection-oriented service
+*** comparison of virtual-circuit and datagram network
+** Routing algorithm
+*** the optimality principle
+*** shortest path algorithm
+    + djkstra
+*** distance vector routing
+*** link state routing
+    1. discover its neighbors, learn their network address
+    2. measure the delay or cost to each of its neighbors
+    3. construct a packet telling all it has just learned
+    4. send this packet to all other routers
+    5. compute the shortest path to every other router
+*** routing in the Internet
+    + AS: autonomous system
+    + AGP: Interior gateway protocol within an AS
+      + RIP:
+    + EGP: Exterior gateway protocol between ASes
 ** Network layer
+*** IPv4
+    + 32 bit
+       +---------+-----+---------------+--------------------------+
+       | Version | IHL | Differentiated| Total length             |
+       |         |     | services      |                          |
+       +---------+-----+---------------+-----+-----+-----+--------+
+       | Identification                |     |DF   |DM   |Fragment|
+       |                               |     |     |     |offset  |
+       +---------------+---------------+-----+-----+-----+--------+
+       |Time to live   |Protocol       |Header checksum           |
+       +---------------+---------------+--------------------------+
+       |Source address                                            |
+       +----------------------------------------------------------+
+       |Destination address                                       |
+       +----------------------------------------------------------+
+       |Opetions(0 or more words                                  |
+       +----------------------------------------------------------+
+    + IHL: how long the header is
+    + Identification: allow the destination host to determine which packet a newly arrived
+      fragment belongs to
+    + DF: don't fragment
+    + MF: more fragments. All fragments except the last one have this
+      bit set. It is needed to know when all fragments of a datagram have arrived.
+    + fragment offset: where in the current packet this fragment belongs
+      All fragments except the last one in a datagram must be a multiple of 8 byte
 *** IP address
 **** IP routing
     + routing table
@@ -323,7 +374,22 @@ Ru5,!91$?J7}+txG
       if not found, use default router
     + display routing table in windows
 **** CIDR - classless interdomain routing
+     + *route aggregation*: combine multiple small prefixes into a single larger prefix
+     | Universiy   | First address |  Last address | how many | prefix         |
+     | cambridge   |    194.24.0.0 |  194.24.7.255 |     2018 | 192.24.0.0/21  |
+     | edinburge   |    194.24.8.0 | 194.24.11.255 |     1024 | 194.24.8.0/22  |
+     | (available) |   194.24.12.0 | 194.24.15.255 |     1024 | 194.24.12.0/22 |
+     | oxford      |   194.24.16.0 | 194.24.31.255 |     4096 | 194.24.16.0/20 |
+**** classful and special addressing
 **** NAT - network address translation
+
+     + Within the customer network, every computer gets a unique IP address, which is used for
+       routing intramural traffic
+       However, just before a packet exits the customer network and goes to the ISP, an address
+       translation from the unique internal IP address to the shared public IP address takes place.
+     + 
+       [[file:images/ComputerNetwork/NAT.png]]
+     + *source port* and *destination port*
 *** Internet control protocols
 **** ICMP - Internet Control Message Protocol
      + message type
@@ -337,6 +403,34 @@ Ru5,!91$?J7}+txG
        | timestamp request/reply           | same as echo, but with timestamp |
        | router advertisement/solicitation | find a nearby router             |
 **** ARP - address resolution protocol
+     :PROPERTIES:
+     :ATTACH_DIR: /media/wu/file/stuuudy/notes/images/ComputerNetwork/
+     :END:
+     + 
+       [[file:images/ComputerNetwork/ARP.png]]
+     + Router is the *default gateway*
+**** DHCP dynamic host configuration protocol
+     + 可以跨路由器
+* Transport layer
+** transmission control protocol(TCP)
+*** the tcp sevice model
+    + TCP service is obtained by both the sender and the receiver creating end
+      points, called *sockets*
+      Each *socket* consisting of the IP address of the host and a 16-bit number
+      local to that host, called *port*
+    + port numbers below 1024 are *well-known ports*, reserved for privileged users
+    + a TCP connection is a byte stream
+*** the tcp segment header
+    + sequence number
+    + window size - how many bytes may be sent starting at the byte acknowledged
+      For flow control
+      0 - 阻止发送
+    + SYN - 
+    + FIN -
+    + ACK - acknowledgement number
+*** TCP connection establishment
+    + [[./images/ComputerNetwork/TCPEstablish.png]]
+    + [[./images/ComputerNetwork/TCPWindow.png]]
 * Answer
 1. 011110111110011111010
 1.544Mbps=Bits / (100*1000 / 2*10^8)
