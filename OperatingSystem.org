@@ -1174,10 +1174,143 @@
      [[./images/OperatingSystem/LayeredFileSystem.png]]
    + *file control block* - storage structure consisting of information about a file
      [[./images/OperatingSystem/FileControlBlock.png]]
+   + *virtual file system*:
+     * provide an object-oriented way of implementing file system
+     * [[./images/OperatingSystem/VFS.png]]
+     * allows the same system call interface (the API) to be used for different 
+       types of file systems
+     * Defines a network-wide unique structure called *vnode*
 ** file system implementation
+   + data structure
+*** Linear list
+*** Hash table
+*** Disk structure
+    + Boot control block
+    + volume control block
+    + directory structure per file system
+    + per-file FCB
+*** in-memory structure
+    + in-memory structures
+    + directory cache
+    + system-wide open-file table
+    + per-process open-file table
+    + [[./images/OperatingSystem/InMemoryFS.png]]
 ** directory implementation
 ** allocation methods
+*** contiguous allocation
+    + each file occupies a set of contiguous blocks on the disk
+    + random access supported
+    + wasteful of space
+    + file cannot grow
+    + mapping
+      LA/512 - Q, R
+      displacement into block = R
+*** linked allocation
+    + each file is a linked list of disk blocks: blocks may be scattered anywhere on
+      the disk
+    + *no random access*
+    + mapping
+      LA/511 - Q, R(final block)
+      displacement into block = R + 1(have a pointer)
+    + *file-allocation table(FAT)* - disk-space allocation used by MS-DOS and OS/2
+      [[./images/OperatingSystem/FAT.png]]
+*** indexed allocation
+    + brings all pointers together into the *index block*
+    + [[./images/OperatingSystem/IndexedAllocation.png]]
+    + [[./images/OperatingSystem/LinkedScheme.png]]
+*** inode
 ** free space management
+   + bit vector
+     requires extra space
+   + linked list
+   + grouping
+   + counting
+** Performance
+   + a *page cache* caches pages rather than disk blocks using *virtual memory* techs
+   + memory-mapped I/O uses a page cache
+   + routine I/O through the file system uses the buffer(disk) cache
+   + *unified buffer cache*
+* Chap 12 Mass-storage systems
+** Disk structure
+   
+** Disk attachment
+** Disk scheduling
+   + minimize seek time
+   + seek time ≈ seek distance
+*** FCFS
+*** SSTF
+*** SCAN(elevator algorithm)
+** Disk management
+** Swap-space management
+** RAID
+   + Disk *striping* uses a group of disks as one storage unit
+* Chap 13 I/O systems
+** I/O hardware
+   + common concepts
+     * *port* : hardware interface
+     * *bus(daisy chain)*
+     * *controller(host adapter)*: adpating between bus and device
+   + [[./images/OperatingSystem/PCBus.png]]
+   + device have addresses
+     * special I/O instructions
+     * *memory-mapped* I/O
+*** I/O port registers
+    + *Data-in*
+    + *Data-out*
+    + *Status*
+    + *Control*
+*** polling
+    + determines state of device
+      + command-ready
+      + busy
+      + error
+*** interrupt
+    + CPU *Interrupt-request* line triggered by I/O device
+    + *Interrupt handler* receives interrupts
+    + *Maskable* to ignore or delay some interrupts
+    + various interrupt processing
+      + page fault: saves the state of the process, moves it to the waiting queue,
+        schedules another process to resume execution, then returns
+      + trap:  saves the state of user code, switches to supervisor mode. Low priority
+      + low priority interrupt
+*** Direct memory access(DMA)
+    + used to avoid *programmed I/O* for large data movement
+    + requires *DMA* controller
+    + Bypasses CPU to transfer data directly between I/O device and memory 
+    + [[./images/OperatingSystem/DMA.png]]
+      when DMA controller seizes mem bus, CPU is prevented from accessing memory
+** Application I/O interface
+   + I/O system calls encapsulate device behaviors in generic classes
+   + device-driver layer hides differences among I/O controllers from kernel
+*** block and character devices
+    + block devices include disk drives
+      - command include read, write, seek
+*** network devices
+*** Blocking and nonblocking I/O
+    + *blocking*
+    + *nonblocking* : I/O call returns as much as available
+      + returns quickly with count of bytes read or writtern(unpredictable)
+    + *asynchronous* 
+      select
+** Kernel I/O subsystem
+   + *scheduling*
+     - some I/O request ordering via per-device queue
+   + *buffering*
+   + *caching* - fast memory holding copy of data of the device
+   + *spooling* - hold output for a device
+     print
+   + *device reservation*
+** transforming I/O requests to hardware operations
+   + reading a file from disk
+     1. Determine device holding file 
+        MS-DOS uses the c: disk id; Unix uses the mount table
+     2. Translate name to device representation
+     3. Physically read data from disk into buffer
+     4. Make data available to requesting process
+     5. Return control to process
+   + [[./images/OperatingSystem/ReadFile.png]]
+** streams
+** performance
 * Linux kernel: chap1
 ** OS kernel
 *** component
@@ -1206,6 +1339,41 @@
 ** Subsystem
 * Linux: chap2
 ** Kernel images
+* Linux: chap4 process scheduling
+** Multitasking developments
+   + *cooperative multitasking* vs *preemptive multitasking*
+   + constant-time scheduler O(1)
+   + completely fair scheduler(CFS)
+** scheduling policy
+   + policy attempts to balance *fast process reponse time* and *maximal system utilization*
+   + linux aims at good interactive response, favors I/O-bound processes
+   + priority-based scheduling: higher priority run before lower priority
+     + nice value [-20, 19], default 0 lower with higher priority
+     + real-time priority
+** time slice
+   + time a process can run
+   + I/O bound processes don't need longer TS
+   + CPU-bound processes crave long TS(to keep their caches hot)
+   + 
+            Normal priority         Lowest priority
+     Nice value   0                        +20 
+     Time slice 100ms                      5ms
+   + low process tends to go background
+   + hard to decide absolute TS to allot each nice value
+   + relative nice values are poorly mapped
+** CFS
+   + calculate how long each process should run as a function of the total # of
+     runnable processes
+   + CFS uses the nice value to weight the proportion of processor
+   + CFS sets a *target latency* for the actual TS
+     + is tl is 20ms, 2 tasks, each 10ms
+     + 20 tasks, each 1ms
+   + floor on target latency as *minimum granularity* for TS
+   + Process selection
+     + the *virtual runtime* is the actual runtime weighted by the # of runnable processes
+     + when selecting a process to run next, it finds the process with the
+       *smallest vruntime* from a red-black tree of processes
+** 
 * PThread library
   + int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     pthread_cond_wait() is used to block on a condition variable
@@ -1280,3 +1448,12 @@
     | 100K | 500K | 200K | 300K | 600K |
     |      | 417K |      |      | 212K |
     |      |      |      |      | 112K |
+  +
+    | 1 | 2 | 3 | 4 | 6
+    |   |   | 1 | 1 |
+    1, 2, 3, 4, 5, 3, 4, 1, 6, 7, 8, 7, 8, 9, 7, 8, 9, 5, 4, 5, 4, 2.
+                5        6                             16    
+    | 7 | 5 | 8 | 4 | 10 |
+    |   |   |   |   |   |
+    
+    

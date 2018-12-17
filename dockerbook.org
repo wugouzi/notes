@@ -268,7 +268,7 @@ sample nginx
     + Linux Cgroups(Control Groups)提供了对一组进程及将来子进程的资源限制、控制和统计的能力，
       这些资源包括CPU、内存、存储、网络
     + 3个组件
-**** cgroup
+**** cgroup(control group)/linux/include/cgroup-defs.h
      + cgroup是对进程分组管理的一种机制，一个cgroup包含一组进程，并可以在这个cgroup上增加Linux
        subsystem的各种参数配置，将一组进程和一组subsystem的系统参数关联
 **** subsystem
@@ -349,3 +349,44 @@ sample nginx
         cmd.Process.Wait()
       }
     #+END_SRC
+** Union file system
+*** intro
+    使用branch把不同文件系统的文件和目录覆盖，形成一个单一一致的文件系统
+    copy-on-write写时复制，隐式共享
+    knoppix
+*** AUFS
+    advanced multi-layered unification filesystem
+*** Docker使用AUFS
+* 构造容器
+** 构造实现run命令版本的容器
+*** exe
+    * //proc/self//exe 自己调用自己
+    这里是父进程，也就是当前进程执行的内容，根据上一章介绍的内容，应该比较容易明白。
+    1. 这里的／ proc/self/exe 调用中，／ proc/self ／指的是当前运行进程自己的环境， exec 其实就是自己
+    调用了自己，使用这种方式对创建出来的进程进行初始化
+    2 . 后面的 args 是参数，其中 init 是传递给本进程的第一个参数，在本例中，其实就是会去调用 initCornmand
+    去初始化进程的一些环境和资源
+    3. 下面的 clone 参数就是去 fork 出来一个新进程，并且使用了 name space 隔离新创建的进程和外部环境 。
+    4. 如果用户指定了－ ti 参数，就需要把当前进程的输入输出导入到标准输入输出上
+    func NewParentProcess(tty bool , command string) *exec.Cmd {
+    args := []str 工 ng （ ” init ”， command}
+    ／食
+    cmd := exec.Command ( ” / proc/self/exe” , args ... )
+    cmd.SysProcAttr = &syscall.SysProcAttr{
+    Cloneflags : syscall.CLONE_NEWUTS I syscall . CLONE_NEWPID I syscall.CLONE
+    NEWNS I syscall . CLONE NEWNET I syscall.CLONE NEWIPC,
+    J.f tty {
+    cmd . Stdin = os . Stdin
+    cmd.Stdout = os . Stdout
+    cmd . Stderr = os . Stderr
+    return cmd
+    这里的 Start 方法是真正开始前面创建好的 command 的调用，它首先会 clone 出来一个 name space 隔离的
+    进程，然后在子进程中，调用／ proc/self/exe ，也就是调用自己，发送 in it 参数，调用我们写的工 nit 方法，
+    去初始化容器的一些资源。
+    */
+    func Run (tty bool , command string) {
+    parent : = conta 工 ner . NewParentProcess(tty, command)
+    if err : = parent.Start(); err!= nil {
+    log.Error(err)
+    parent. Wait ()
+    os.Ex 工 t (-1)
