@@ -1,3 +1,4 @@
+
 * grade
   exam 50
   assignment 10
@@ -1374,6 +1375,203 @@
      + when selecting a process to run next, it finds the process with the
        *smallest vruntime* from a red-black tree of processes
 ** 
+* Linux: chap5 system calls
+** syscall layer
+   + provides an abstracted hardware interface for userspace
+   + ensures system security and stability
+   + allows for the virtualized system provided to processes
+   + [[./images/OperatingSystem/Syscall.png]]
+** syscall handler
+   + user space application signals the kernel via a *software interrupt(exception)*
+     and the system will switch to *kernel mode* and excute the *exception handler(syscall handler)*
+     _int $0x80_
+   + function *system_call()* implemented in entry_64.S
+   + the syscall number is fed into the kernel via the *eax* register
+   + return value sent via *eax*
+   + parameters passed ria *register* ebx, ecx, edx, esi, edi
+     more arguments are passed via *pointer*
+** syscall implementation
+   + defining its purpose, arguments, return value, error codes
+** system call context
+   + kernel is in *process context* during the excution of a syscall
+   + kernel is capable of *sleeping* and is *preemptible* in process context
+   + interrupt cannot sleep
+     + sleepable means syscalls can make use of the majority of the kernel functionality
+     + preemptible means the system calls must be reentrant(可以反复用，每个调用的人有自己的context)
+** steps in binding a system call
+   + add an *entry* to the end of the system call table
+   + for each supported arch, define the *syscall number* in <asm/unistd.h>
+* linux: chap6 kernel data structure
+** Kernel data structure
+   + linked lists
+   + queues
+   + maps
+   + binary trees
+* Linux: chap7 Interrupts
+** Interrupts
+   + polling
+   + interrupt handler/interrupt service routine. The interrupt handler for a device is
+     *part of device's driver*
+   + kernel invokes interrupt handlers in an *interrupt context* - the kernel code that menages
+     the devices
+** Top halves and bottom halves
+   + goals of interrupt handler
+     1. execute quickly
+     2. do a large amount of work
+   + the interrupt handler is the *top half.* The top half is running immediately upon receipt of
+     the interrupt
+   + work can be later performed until the *bottom half*
+   + a driver can register an interrupt handler
+     _request_irq()_
+     _free_irq()_
+** Interrupt handler
+   + declared by
+     *static irqreturn_t intr_handler(int irq, void *dev)*
+   + return value is *IRQ_NONE*, *IRQ_HANDLED*
+   + if all the handlers on a given interrupt line return *IRQ_NONE*, the kernel
+     will detect the problem
+   + interrupt handlers in Linux need not be reentrant. When one handler is
+     executing, the same line is masked out on all processors
+     中断线不能复用
+** Interrupt context
+   + *interrupt context*
+   + syscall - *process context* (macro *current* points to the associated task)
+   + in interrupt context, the current macro is not relevant, thus it *cannot sleep* 
+     (there is nothing to hang)
+** Interrupt control
+   + the kernel provides interfaces for disablign all interrupt
+   + masking out an interrupt line
+* Linux: chap8 bottom halves and deferring work
+** Things interrupt handlers do not handle
+   + interrupt handlers can form only the *first half* of any interrupt processing
+     due to their limitation:
+     1. They must be quick
+     2. they cannot block
+   + thus they are executed by the kernel asynchronously in immediate response to a
+     h/w interrupt
+** Bottom halves
+   + The top halves - *perform as little work as possible*
+   + the bottom halves - *take care of the rest*
+   + device driver author split them
+** Why bottom halves
+   + need to defer work until any point in the future
+   + bottom haves are run when
+     1. system is less busy
+     2. interrupts are again enabled
+** real world bottom halves
+   + softirqs :: 
+   + tasklets
+   + work queues
+* Linux: kernel memory management
+** Physical memory management
+   + kernel treats *phisical pages* as the basic unit of management
+   + an instance of the *page* structure is allocated for each frame
+     #+BEGIN_SRC c
+       struct page {
+           unsigned long flags;
+           atomic_t _count;
+           atomic_t _mapcount;
+           unsigned long private;
+           struct address_space *mapping;
+           pgoff_t index;
+           struct list_head lru;
+           void *virtual;
+       };
+     #+END_SRC
+     physical address在代码中是看不到的
+     virtual address
+** Zone
+   + Due to h/w limitation, pages are not treated equally
+     + ZONE-DMA
+     + ZONE-NORMAL
+     + ZONE-HIGHMEM(pages not permanently mapped into the kernel space) only in 32-bit
+** Allocating kenrel memory
+   + allocating pages: *alloc_page()*, *alloc_pages()*
+   + kmalloc vmalloc
+   + why need contiguous memory
+     on many architectures, hardware devices live on the other size of the memory management
+     unit and don't understand virtual address
+     vmalloc() needs to set up page table entries and have greater TLB thrashing
+** Buddy system allocator
+   + the minimum allocation unit is a *frame*
+   + capable of allocating a contiguous number of frames
+   + two contiguous groups of frames are buddies if they
+     * are equal sized
+     * physically contiguous
+     * size is xⁿ
+   + minimum unit is 1 page/frame
+   + each element of array *free_area[]* manages the free blocks at k-th order
+** Slab allocator
+   + *free lists* are good for frequent allocation/deallocation of data structure
+   + free lists in kernel has no global control, when available memory is low
+   + the *slab layer* (allocator) acts as a generic data structure caching layer
+     * one cache(*kmem_cache*) per object type, e.g. one cache for task_structure, another for
+       inode objects
+     * *kmalloc* interface is built on top of slab layer
+     * caches are divided into slabs
+     * slabs are composed of one or more physically contiguous frames
+     * each slab contains a number of objects
+* Linux: Virtual memory areas
+** virtual memory areas(VMA)
+   + each VMA has properties and a set of operations
+   + *vm_area_struct*
+   + {vm_start, vm_end} is the contiguous range for the VMA
+   + if two separate processes map the same file to their respective address space,
+     each has a *unique* vm_area_struct to identify its unique memory area
+   + two threads sharing an address space also share all the VMA structures
+** 
+** 
+** 
+** 
+* Linux
+** Process address spaces
+   + Each process is given a flat 32 or 64 bit address space
+   + processes can choose to share their address space with others: there are threads
+   + process can address up to 4GB, but it doesn't have permission to access all of it
+** Kernel space stroed in physical memory
+   + kernel space cannot be swapped out
+   + the kernel space is mapped to the physical memory starting from 0x00000000
+   + the kernel image is stored at 0x00100000
+** The memory descriptor
+   + A process's address space is described in a *mm_struct* defined in <linux/mm_types.h>
+   + memory management information
+   + *mm* field of *task_struct*
+   + *copy_mm()* function copies the parent's *mm_struct* to its child during *fork*
+   + *CLONE_VM*
+** Kernel threads
+   + kernel threads don't have a process address space. *mm* is NULL
+   + This is the *definition* of a kernel thread - processes that have no user context
+   + kernel threads don't access any *user-space memory*
+* Linux: the linux filesystem
+** Linux FCB
+   + Linux filesystems(ext2, ext3 and ext4) separate storage for filename & FCB info.
+     An FCB is stored as an inode. Each inode has a unique ID
+   + Directory contains filename and inode info. Directory entry contains the filename
+     and the inode ID
+** File types
+   + normal files
+   + directories are files
+   + Device files
+   + FIFO files
+   + symbolic links
+   + sockets
+** File system types
+** /proc file system
+* Linux: virtual file system
+** vfs
+   + vfs is not a disk filesystem
+   + interoperate between various file systems
+   + *filesystem abstraction layer*
+     + abstracts file operations an APIs
+** objects and data structures
+   + superblock objet - super_operations
+   + inode object - inode_operations
+   + dentry object - dentry_operations
+   + file object - file_operations
+** superblock object
+   + corresponds to the filesystem superblock or FCB
+** Inode
+   + 
 * PThread library
   + int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
     pthread_cond_wait() is used to block on a condition variable
@@ -1448,12 +1646,31 @@
     | 100K | 500K | 200K | 300K | 600K |
     |      | 417K |      |      | 212K |
     |      |      |      |      | 112K |
-  +
-    | 1 | 2 | 3 | 4 | 6
-    |   |   | 1 | 1 |
-    1, 2, 3, 4, 5, 3, 4, 1, 6, 7, 8, 7, 8, 9, 7, 8, 9, 5, 4, 5, 4, 2.
-                5        6                             16    
-    | 7 | 5 | 8 | 4 | 10 |
-    |   |   |   |   |   |
-    
-    
+  + 
+     | 1 | 2 | 3 | 4 | 6
+     |   |   | 1 | 1 |
+     1, 2, 3, 4, 5, 3, 4, 1, 6, 7, 8, 7, 8, 9, 7, 8, 9, 5, 4, 5, 4, 2.
+                 5        6                             16    
+     | 7 | 5 | 8 | 4 | 10 |
+     |   |   |   |   |   |
+  + 
+    (125-86)+(1470-86)+(1470-913)+(1774-913)+(1774-948)+(1509-948)+(1509-1022)+(1750-1022)+(1750-130)
+    (913-143)+(948-913)+(1022-948)+(1470-1022)+(1509-1470)+(1750-1509)+(1774-1750)+(1774-130)+(130-86)
+    (913-143)+(948-913)+(1022-948)+(1470-1022)+(1509-1470)+(1750-1509)+(1774-1750)+(4999-1774)+4999+86+(130-86)
+* Review
+** chap1
+   + OS definition, kernel
+   + interrupt 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 
+** 

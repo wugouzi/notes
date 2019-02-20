@@ -1,0 +1,96 @@
+#+TITLE: The Art of Prolog notes
+#+AUTHOR: gouziwu
+* Chap 1: Basic constructs
+** 1.1 Facts
+   The simplest kind of statement is called a *fact*
+   #+BEGIN_SRC prolog
+     father(abraham, issac).
+   #+END_SRC
+   Names of individuals are *atoms*.
+   a finite set of facts constitutes a *program*
+** 1.2 Queries
+   a means of retriving information from a logic program. A query asks whether a
+   certain relation holds between objects.
+
+   Entity without the period or question mark is a *goal*. A fact *P.* states that
+   the goal *P* is true. A query *P?* asks whether the goal is true
+** 1.3 The logical variable, substitutions, and instances
+   *variables* are a means of summarizing many queries
+   #+BEGIN_SRC prolog
+     father(abraham, X)?
+   #+END_SRC
+
+   A query containing a variable asks whether there is a value for the variable
+   that makes the query a logical consequence of the program, as explained
+   later.
+
+   *Variables* stand for an unspecified but single entity
+
+   *Term* is the single data structure in logic programs. Constants and variables
+    are terms. A *compound term* comprises a functor and a sequence of one or more
+    arguments, which are terms. A *functor* is characterized by its _name_, which is
+    an atom, and its _arity_, number of arguments. E.g. $f(t_1,t_2,\dots,t_n)$
+
+   Queires, goals, terms where varaibles don't occur are *ground*. Otherwise
+   *nonground*.
+   
+   A *substitution* is a finite set(or empty) of pairs of the form $X_i=t_i$,
+   where $X_i$ is a variable and $t_i$ is a term, and $X_i\neq X_j$ for every
+   $i\neq j$ and $X_i$ doesn't occur in $t_j$ for any $i$ and $j$.
+
+   The result of applying a substitution Θ to a term A, denoted by AΘ is the
+   term obtained by replacing every occurence of X by t in A, for every pair
+   $X=t$ in Θ
+
+   A is an *instance* of B if there is a substitution Θ such that $A=B\theta$
+** 1.4 Existential queries
+   Variables in queries are existentially quantified.
+** 1.5 Universal facts
+   =times(0,X,0)=
+   *Instantiation*. From a universally quantified statement P, deduce an instance
+   of it, $P\theta$, for any substitution
+
+   C is a *common instance* of A and B if it's an instance of A and an instance of
+   B.
+** 1.6 Conjunctive queires and shared variables
+   $Q_1,Q_2,\dots,Q_n$
+   ={X=w,Y=z}.=
+** 1.7 Rules
+   $A\gets B_1,B_2,\dots,B_n.\quad n\ge 0$
+   
+   Goal A is the *head* of the rule. Conjunction of goals $B_1,\dots,B_n$ is the
+   *body* of the rule. Rules, facts and queires are also called *Horn clauses*.
+   Facts is n=0, *unit clauses*. n=1, *iterative clause*
+   
+   =son(X,Y) ← father(Y,X), male(X).=
+
+   Rules are a means of expressing new or complex queires in terms of simple
+   queires =son(X,Y)?=
+
+   Rules are logical axiom.
+
+   Variable in head: universal. Variable in body: existential
+
+   The law of *universal modus ponens* says that from the rule 
+   $R=(A\gets B_1,B_2,\dots,B_N)$ and facts $B_1'.B_2'.\dots\dot B_n'$, 
+   A' can be deduced if $A'\gets B_1',\dots,B_n'$ is an instance of R
+
+   A *logical program* is a finite set of rules.
+
+   An existentially quantified goal G is a logical consequence of a program P
+   if there is a clause in P with a ground instance A ← B1,. . . ,Bn, n≥O such
+   that B1.....Bn are logical consequences of P, and A is an instance of G. 
+
+   A collection of rules with the same predicate in the head, such as the pair
+   of parent rules is called a *procedure*
+** 1.8 A simple abstract interpreter
+   The current goal at any stage of the computation is called the *resolvent*
+   
+   A *trace* of the interpreter is the sequence of resolvents produced during the
+   computation
+
+   A *reduction* of a goal G by a program P is the replacement of G by the body of
+   an instance of a clause in P, whose head is identical to the chosen goal
+** 1.9 The meaning of a logic program
+   The *meaning* of a logic program $P,M(P)$ is the set of ground goals deducible
+   from P
