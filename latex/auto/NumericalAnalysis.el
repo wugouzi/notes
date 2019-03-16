@@ -31,11 +31,24 @@
     "amssymb"
     "capt-of"
     "hyperref"
-    "xcolor")
+    "xcolor"
+    "amsthm"
+    "mathabx"
+    "mathtools"
+    "pgfplots")
    (LaTeX-add-labels
-    "sec:orgbf4170b"
-    "sec:org6c0ba58")
-   (LaTeX-add-environments
-    "theorem"))
+    "sec:orgadaa5ae"
+    "sec:org66fc21f"
+    "sec:orge305da8"
+    "sec:org9fffab1"
+    "sec:org28d94a5"
+    "sec:orgc1c25b9"
+    "sec:org71f216c"
+    "sec:org5e8070d"
+    "sec:org0f3563a")
+   (LaTeX-add-amsthm-newtheorems
+    "theorem"
+    "definition"
+    "corollary"))
  :latex)
 

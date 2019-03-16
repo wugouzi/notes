@@ -13,7 +13,9 @@
 - [[#chap2-solutions-of-equations-in-one-variable][Chap2 Solutions of equations in one variable]]
   - [[#21-bisection-method][2.1 Bisection method]]
   - [[#22-fixed-point-iteration][2.2 Fixed-Point Iteration]]
-  - [[#22-newtons-method][2.2 Newton's method]]
+  - [[#23-newtons-method][2.3 Newton's method]]
+  - [[#24-error-analysis-for-iterative-methods][2.4 Error analysis for iterative methods]]
+- [[#chap6][Chap6]]
 
 * Chap1 Mathematical Preliminaries
 ** 1.2 Roundoff Errors and Computer Arithmetic
@@ -110,7 +112,7 @@
    $|p_n-p|\le\frac{1}{1-k}|p_{n+1}-p_n|$ and
    $|p_n-p|\le\frac{k^n}{1-k}|p_1-p_0|$
    \end{corollary}
-** 2.2 Newton's method
+** 2.3 Newton's method
    Linearize a nonlinear function using *Taylor's expansion*
 
    Let $p_0\in [a,b]$ be an approximation to $p$ s.t. $f'(p_0)\neq 0$, hence 
@@ -122,6 +124,77 @@
    \begin{theorem}
    Let $f\in C^2[a,b]$. If $p\in[a,b]$ is s.t. $f(p)=0,f'(p)\neq0$, then there
    exists a $\delta>0$ s.t. Newton's method generates a sequence $\{p_n\},
-   n\in\mathbb{N}\{0}$ converging to $p$ for any initial approximation
+   n\in\mathbb{N}\setminus\{0\}$ converging to $p$ for any initial approximation
    $p\in[p-\delta,p+\delta]$.
    \end{theorem}
+** 2.4 Error analysis for iterative methods
+   \begin{definition}
+   Suppose $\{p_n\}(n=0,1,\dots)$ is a sequence that converges to $p$ with
+   $p_n\neq p$ for all $n$. If positive constants $\alpha$ and $\lambda$ exist
+   with
+   \begin{equation*}
+   \lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|^\alpha}=\lambda
+   \end{equation*}
+   then $\{p_n\}(n=0,1,\dots)$ \textcolor{red}{converges to p of order
+   $\alpha$, with asymptotic error constant $\lambda$}
+   \end{definition}
+
+   \begin{theorem}
+   Let $p$ be a fixed point of $g(x)$. If there exists some constant $\alpha\ge
+   2$ s.t. $g\in C^\alpha[p-\delta,p+\delta]$,
+   \textcolor{red}{$g'(p)=\dots=g^{\alpha-1}(p)=0$} and \textcolor{red}{$g^\alpha(p)\neq 0$}.
+   Then the iterations with $p_n=g(p_{n-1})$, $n\ge1$ is of \textcolor{red}{order $\alpha$}
+   \end{theorem}
+
+   \begin{equation*}
+   p_{n+1}=g(p_n)=g(p)+g'(p)(p_n-p)+\dots+\frac{g^\alpha(\xi_n)}{\alpha!}(p_n-p)^\alpha
+   \end{equation*}
+
+   \begin{theorem}
+   Let $g\in C[a,b]$ be s.t. $g(x)\in[a,b]$ for all $x\in[a,b]$. Suppose in
+   addition that $g'$ is continuous on $(a,b)$ and a positive constant $k<1$
+   exists with
+   \begin{equation*}
+   |g'(x)|\le k, \quad \text{for all } x\in(a,b)
+   \end{equation*}
+   If $g'(p)\neq0$, then for any number $p_0\neq p$ in $[a,b]$, the sequence
+   \begin{equation*}
+   p_n=g(p_{n-1}),\quad\text{for }n\ge 1
+   \end{equation*}
+   converges only linearly to the unique fixed point in $[a,b]$
+   \end{theorem}
+   
+   \begin{proof}
+   \begin{align*}
+   \lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|}&=
+   \lim\limits_{n\to\infty}\frac{|g(p_n)-p|}{|p_n-p|}\\
+   &=\lim\limits_{n\to\infty}\frac{|g'(\xi)(p_n-p)|}{|p_n-p|}\\
+   &=|g'(p)|
+   \end{align*}
+   \end{proof}
+
+   \begin{theorem}
+   Let $p$ be a solution of the equation $x=g(x)$. Suppose that $g'(p)=0$ and
+   g'' is continuous with $|g''(x)|<M$ on an open interval $I$ containing $p$.
+   Then there exists a $\delta>0$ s.t. for $p_0\in[p-\delta,p+\delta]$, the
+   sequence defined by $p_n=g(p_{n-1})$, when $n\ge 1$ converges at least
+   quadratically to $p$. Moreover, for sufficiently large values of $n$,
+   \begin{equation*}
+   |p_{n+1}-p|<\frac{M}{2}|p_n-p|^2
+   \end{equation*}
+   \end{theorem}
+   
+   \begin{proof}
+   Choose $k\in(0,1),\delta>0$ s.t. $[p-\delta,p+\delta]\subseteq I$ and
+   $|g'(x)|<k$ and $g''$ is continuous.
+   \begin{equation*}
+   g(x)=g(p)+g'(p)(x-p)+\frac{g''(\xi)}{2}(x-p)^2
+   \end{equation*}
+   Hence $g(x)=p+\frac{g''(\xi)}{2}(x-p)^2$.
+   $p_{n+1}=g(p_n)=p+\frac{g''(\xi_n)}{2}(p_n-p)^2$. Thus
+   $p_{n+1}-p=\frac{g''(\xi_n)}{2}(p_n-p)^2$. We get
+   \begin{equation*}
+   \lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|^2}=\frac{g''(p)}{2}
+   \end{equation*}
+   \end{proof}
+* Chap6 

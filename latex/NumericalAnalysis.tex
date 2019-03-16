@@ -1,4 +1,4 @@
-% Created 2019-03-03 日 13:54
+% Created 2019-03-16 六 20:36
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -14,8 +14,10 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
-\usepackage{xcolor}
-\newtheorem{theorem}{Theorem}
+\usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{definition}{Definition}[section]
+\newtheorem{corollary}{Corollary}[section]
 \author{gouziwu}
 \date{\today}
 \title{Numerical Analysis}
@@ -31,27 +33,188 @@
 \maketitle
 \tableofcontents
 
-Analysis
+
+
 
 
 \section{Chap1 Mathematical Preliminaries}
-\label{sec:orgbf4170b}
+\label{sec:orgadaa5ae}
 \subsection{1.2 Roundoff Errors and Computer Arithmetic}
-\label{sec:org6c0ba58}
+\label{sec:org66fc21f}
 \textbf{Truncation Error} : the error involved in using a truncated, or finite, summation to
 approximate the sum of an infinite series 
 
 \textbf{Roundoff Error}: the error produced when performing real number calculations.
- It occurs because the arithmetic performed in a machine involves numbers
- with only a finite number of digits. 
+It occurs because the arithmetic performed in a machine involves numbers
+with only a finite number of digits. 
 
 
 Suppose \(y=\textcolor{blue}{0.d_1d_2\dots
-    d_k}d_{k+1}d_{k+2}\dots\textcolor{blue}{\times 10^n{}}\) \par
+   d_k}d_{k+1}d_{k+2}\dots\textcolor{blue}{\times 10^n{}}\), then
+
 \(fl(y)=\begin{cases} 0.d_1d_2\dots d_k\times 10^n&\quad\text{chopping}\\
-    chop(y+5\times 10^{n-(k+1)})=0.\delta_1\delta_2\dots \delta_k\times
-    10^n&\quad\text{Rounding}\\\end{cases}\)
+   chop(y+5\times 10^{n-(k+1)})=0.\delta_1\delta_2\dots \delta_k\times
+   10^n&\quad\text{Rounding}\\\end{cases}\)
 
 
-\begin{theorem} weafewf \end{theorem}
+\begin{definition}
+If $p*$ is an approximation to $p$, the \textcolor{red}{absolute error} is $|p-p*|$,
+and the \textcolor{red}{relative error} is $\frac{|p-p*|}{|p|}$, provided that $p\neq 0$
+\end{definition}
+
+\begin{definition}
+The number $p*$ is said to approximate $p$ to $t$
+\textcolor{red}{significant digits} if $t$ is the largest nonnegative
+integer for which $\frac{|p-p*|}{|p|}<5\times 10^{-t}$
+\end{definition}
+
+\begin{description}
+\item[{chopping}] \(|\frac{y-fl(y)}{y}|=|\frac{0.d_1d_2\dots d_kd_{k+1}\dots
+                 \times 10^n-0.d_1d_2\dots d_k\times 10^n}{0.d_1d_2\dots
+                 d_kd_{k+1}\times
+                 10^n}|=|\frac{0.d_{k+1}\dots}{0.d_1d_2\dots}|\times 10^{-k}\le
+                 \frac{1}{0.1}\times 10^{-k}=10^{-k+1}\)
+\item[{rounding}] \(|\frac{y-fl(y)}{y}|\le \frac{0.5}{0.1}\times 10^{-k}=0.5\times
+                 10^{-k+1}\)
+\end{description}
+
+\textbf{Finite digit arithmetic}
+
+\begin{itemize}
+\item \(x\oplus y=fl(fl(x)+fl(y))\)
+\item \(x\otimes y=fl(fl(x)\times fl(y))\)
+\item \(x\ominus y=fl(fl(x)-fl(y))\)
+\item \(x\odiv y=fl(fl(x)\div fl(y))\)
+\end{itemize}
+
+\subsection{1.3 ALgorithms and Convergence}
+\label{sec:orge305da8}
+An algorithm that satisfies that small changes in the initial data produce
+correspondingly small changes in the final results is called \textbf{stable};
+otherwise it is \textbf{unstable}. An algorithm is called \textbf{conditionally stable} if it
+is stable only for certain choices of initial data. 
+
+Suppose that E₀ > 0 denotes an initial error and En represents the magnitude
+of an error after n subsequent operations. If \(E_n\approx CnE_0\), where C is a
+constant independent of n, then the growth of error is said to be \textbf{linear}. If
+\(E_n\approx C^nE_0\), for some C > 1, then the growth of error is called \textbf{exponential} 
+
+Suppose \(\{\beta_n\}_{n=1}^\infty, \lim\limits_{n \to \infty}\beta_n=0,
+   \{\alpha_n\}_{n=1}^\infty, \lim\limits_{n\to\infty}\alpha_n=\alpha\).
+If a positive constant K exists with \(|\alpha_n-\alpha|\le K|\beta_n|\) for
+large n, then \(\{\alpha_n\}_{n=1}^\infty\) converges to α with \textbf{rate, or}
+\textbf{order, of convergence} \(O(\beta_n)\)
+
+Suppose \(\lim\limits_{h\to 0}G(h)=0, \lim\limits_{h\to 0}F(h)=L\) and
+\(|F(h)-L|\le K|G(h)|\) for sufficiently small h, then we write
+\(F(h)=L+O(G(h))\)
+\section{Chap2 Solutions of equations in one variable}
+\label{sec:org9fffab1}
+\subsection{2.1 Bisection method}
+\label{sec:org28d94a5}
+\begin{theorem}{Intermediate Value Theorem}
+If $f\in C[a,b]$, $K\in(f(a), f(b))$, then there exists a number $p\in(a,b)$
+for which $f(p)=K$
+\end{theorem}
+
+\begin{theorem}
+Suppose that $f\in C[a,b]$ and $f(a)\cdot f(b)<0$. The bisection method
+generates a sequence $\{p_n\},n=0,1,\dots$ approximating a zero $p$ of $f$ with
+\begin{equation*}
+|p_n-p|\le\frac{b-a}{2^n}, \quad\text{when } n\ge 1
+\end{equation*}
+\end{theorem}
+\subsection{2.2 Fixed-Point Iteration}
+\label{sec:orgc1c25b9}
+\(f(x)=0\xleftrightarrow{\text{equivalent}} x=f(x)+x=g(x)\)
+
+\begin{theorem}{Fixed-Point Theorem}
+Let $g\in C[a,b]$ be s.t. $g(x)\in[a,b]$ for all $x\in[a,b]$. Suppose that
+$g'$ exists on $(a,b)$ and that a constant $0<k<1$ exists with $|g'(x)|\le k$
+for all $x\in(a,b)$ (hence $g'$ can't converge to 1). Then for any number
+$p_0$ in $[a,b]$, the sequence defined by $p_n=g(p_{n-1}), n\ge 1$ converges
+to the unique point $p$ in $[a,b]$
+\end{theorem}
+
+\begin{corollary}
+$|p_n-p|\le\frac{1}{1-k}|p_{n+1}-p_n|$ and
+$|p_n-p|\le\frac{k^n}{1-k}|p_1-p_0|$
+\end{corollary}
+\subsection{2.3 Newton's method}
+\label{sec:org71f216c}
+Linearize a nonlinear function using \textbf{Taylor's expansion}
+
+Let \(p_0\in [a,b]\) be an approximation to \(p\) s.t. \(f'(p_0)\neq 0\), hence 
+\(f(x)=f(p_0)+f'(p_0)(x-p_0)+\frac{f''(\xi_x)}{2!}(x-p_0)^2\), then
+\(0=f(p)\approx f(p_0)+f'(p_0)(p-p0)\rightarrow p\approx
+   p_0-\frac{f(p_0)}{f'(p_0)}\)
+\(p_n=p_{n-1}-\frac{f(p_{n-1})}{f'(p_{n-1})},\quad\text{for} n\ge 1\)
+
+\begin{theorem}
+Let $f\in C^2[a,b]$. If $p\in[a,b]$ is s.t. $f(p)=0,f'(p)\neq0$, then there
+exists a $\delta>0$ s.t. Newton's method generates a sequence $\{p_n\},
+n\in\mathbb{N}\setminus\{0\}$ converging to $p$ for any initial approximation
+$p\in[p-\delta,p+\delta]$.
+\end{theorem}
+\subsection{2.4 Error analysis for iterative methods}
+\label{sec:org5e8070d}
+\begin{definition}
+Suppose $\{p_n\}(n=0,1,\dots)$ is a sequence that converges to $p$ with
+$p_n\neq p$ for all $n$. If positive constants $\alpha$ and $\lambda$ exist
+with
+\begin{equation*}
+\lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|^\alpha}=\lambda
+\end{equation*}
+then $\{p_n\}(n=0,1,\dots)$ \textcolor{red}{converges to p of order
+$\alpha$, with asymptotic error constant $\lambda$}
+\end{definition}
+
+\begin{theorem}
+Let $p$ be a fixed point of $g(x)$. If there exists some constant $\alpha\ge
+2$ s.t. $g\in C^\alpha[p-\delta,p+\delta]$,
+\textcolor{red}{$g'(p)=\dots=g^{\alpha-1}(p)=0$} and \textcolor{red}{$g^\alpha(p)\neq 0$}.
+Then the iterations with $p_n=g(p_{n-1})$, $n\ge1$ is of \textcolor{red}{order $\alpha$}
+\end{theorem}
+
+\begin{equation*}
+p_{n+1}=g(p_n)=g(p)+g'(p)(p_n-p)+\dots+\frac{g^\alpha(\xi_n)}{\alpha!}(p_n-p)^\alpha
+\end{equation*}
+
+\begin{theorem}
+Let $g\in C[a,b]$ be s.t. $g(x)\in[a,b]$ for all $x\in[a,b]$. Suppose in
+addition that $g'$ is continuous on $(a,b)$ and a positive constant $k<1$
+exists with
+\begin{equation*}
+|g'(x)|\le k, \quad \text{for all } x\in(a,b)
+\end{equation*}
+If $g'(p)\neq0$, then for any number $p_0\neq p$ in $[a,b]$, the sequence
+\begin{equation*}
+p_n=g(p_{n-1}),\quad\text{for }n\ge 1
+\end{equation*}
+converges only linearly to the unique fixed point in $[a,b]$
+\end{theorem}
+
+\begin{proof}
+\begin{align*}
+\lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|}&=
+\lim\limits_{n\to\infty}\frac{|g(p_n)-p|}{|p_n-p|}\\
+&=\lim\limits_{n\to\infty}\frac{|g'(\xi)(p_n-p)|}{|p_n-p|}\\
+&=|g'(p)|
+\end{align*}
+\end{proof}
+\begin{theorem}
+Let $p$ be a solution of the equation $x=g(x)$. Suppose that $g'(p)=0$ and
+g'' is continuous with $|g''(x)|<M$ on an open interval $I$ containing $p$.
+Then there exists a $\delta>0$ s.t. for $p_0\in[p-\delta,p+\delta]$, the
+sequence defined by $p_n=g(p_{n-1})$, when $n\ge 1$ converges at least
+quadratically to $p$. Moreover, for sufficiently large values of $n$,
+\begin{equation*}
+|p_{n+1}-p|<\frac{M}{2}|p_n-p|^2
+\end{equation*}
+\end{theorem}
+
+
+
+\section{Chap6}
+\label{sec:org0f3563a}
 \end{document}
