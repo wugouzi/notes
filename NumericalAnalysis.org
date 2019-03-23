@@ -1,4 +1,6 @@
-#+TITLE: Numerical Analysis
+#+TITLE: 
+Numerical
+ Analysis
 #+AUTHOR: gouziwu
 #+LATEX_HEADER: \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots}
 #+LATEX_HEADER: \newtheorem{theorem}{Theorem}[section]
@@ -15,7 +17,11 @@
   - [[#22-fixed-point-iteration][2.2 Fixed-Point Iteration]]
   - [[#23-newtons-method][2.3 Newton's method]]
   - [[#24-error-analysis-for-iterative-methods][2.4 Error analysis for iterative methods]]
-- [[#chap6][Chap6]]
+- [[#chap6-direct-methods-for-solving-linear-systems][Chap6 Direct Methods for Solving Linear Systems]]
+  - [[#61-linear-systems-of-equations][6.1 Linear Systems of Equations]]
+  - [[#62-pivoting-strategies][6.2 Pivoting Strategies]]
+  - [[#65-matrix-factorization][6.5 Matrix Factorization]]
+  - [[#66-special-types-of-matrices][6.6 Special Types of Matrices]]
 
 * Chap1 Mathematical Preliminaries
 ** 1.2 Roundoff Errors and Computer Arithmetic
@@ -197,4 +203,97 @@
    \lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|^2}=\frac{g''(p)}{2}
    \end{equation*}
    \end{proof}
-* Chap6 
+
+   \begin{definition}
+   A solution $p$ of $f(x) = 0$ is a \textcolor{red}{zero of multiplicity} $m$
+   of $f$ if for $x\neq p$, $f(x)=(x-p)^mq(x)$ where $\lim\limits_{x\to
+   p}q(x)\neq 0$
+   \end{definition}
+
+   \begin{theorem}
+   The function $f\in C^m[a,b]$ has a zero of multiplicity $m$ at $p$ in $(a,b)$
+   if and only if
+   \begin{equation*}
+   0=f(p)=f'(p)=\dots=f^{(m-1)}(p),\quad\text{but } f^{(m)}(p)\neq 0
+   \end{equation*}
+   \end{theorem}
+
+   To handle the problem of multiple roots of a function $f$ is to define
+   $\mu(x)=\frac{f(x)}{f'(x)}$.
+
+   If p is a zero of f of multiplicity m with $f(x)=(x-p)^mq(x
+)$, then
+   \begin{align*}
+   \mu(x)&=\frac{(x-p)^mq(x)}{m(x-p)^{m-1}q(x)+(x-p)^mq'(x)}\\
+   &=(x-p)\frac{q(x)}{mq(x)+(x-p)q'(x)}
+   \end{align*}
+   And $q(x)\neq 0$.
+
+   Now Newton's method:
+   \begin{align*}
+   g(x)&=x-\frac{\mu(x)}{\mu'(x)}\\
+   &=x-\frac{f(x)/f'(x)}{(f'(x)^2-f(x)f''(x))/f'(x)^2}\\
+   &=x-\frac{f(x)f'(x)}{f'(x)^2-f(x)f''(x)}
+   \end{align*}
+* Chap6 Direct Methods for Solving Linear Systems
+** 6.1 Linear Systems of Equations
+   *Gaussian elimination with backward substitution*
+** 6.2 Pivoting Strategies
+   *Problem*: small pivot element may cause trouble
+   
+   *Paritial Pivoting*: Determine the smallest p≥k s.t.
+    $|a_{pk}^{(k)}|=\displaystyle\max_{k\le j\le n}|a_{ik}^{(k)}|$ and
+    interchange the pth and the kth rows
+    
+    *Scaled Partial Pivoting*:
+    1. Define a scale factor $s_i$ for each row as $s_i=\displaystyle\max_{1\le
+       j\le n}|a_{ij}|$
+    2. Determine the smallest $p\ge k$ s.t.
+       $\frac{|a_{pk}^{(k)}}{s_p}=\displaystyle\max_{k\le i\le
+       n}\frac{|a_{ik}^{(k)}|}{s_i}$
+       and interchange the pth and the kth rows
+
+       
+    *Complete Pivoting*: Search all the entries $a_{ij}$ to find the entry with
+     the largest magnitude
+** 6.5 Matrix Factorization
+   $m_{ik}=a_{ik}/a_{kk}$
+   \begin{equation*}
+   L_k=
+   \begin{pmatrix}
+   1 &            &            &               &  \\
+     & \ddots     &            &\mbox{\Huge 0} &  \\
+     &            & 1          &               &  \\
+     &            & -m_{k+1,k} &               &  \\
+     &            & \vdots     & \ddots        &  \\
+     &            & -m_{n,k}   &               & 1\\
+   \end{pmatrix}
+   \end{equation*}  
+
+
+   Hence 
+   
+   \begin{equation*}
+   L_1^{-1}L_2^{-1}\dots L_{n-1}^{-1}=
+   \begin{pmatrix}
+   1&&&\mbox{\Huge 0}\\
+   &1&&\\
+   &&\ddots&\\
+   \text{\Huge $m_{i,j}$}&&&1\\
+   \end{pmatrix}
+   \end{equation*}
+
+   \begin{equation*}
+   U=
+   \begin{pmatrix}
+   a_{11}&a_{12}&\dots&a_{1n}\\
+   &a_{22}&\dots&a_{2n}\\
+   &&\dots&\vdots\\
+   &&&a_{nn}\\
+   \end{pmatrix}
+   \end{equation*}
+
+   $A=LU$
+** 6.6 Special Types of Matrices
+   *Strictly Diagonally Dominant Matrix*.
+   $|a_{ii}|$
