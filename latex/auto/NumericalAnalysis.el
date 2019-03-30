@@ -37,18 +37,25 @@
     "mathtools"
     "pgfplots")
    (LaTeX-add-labels
-    "sec:orgadaa5ae"
-    "sec:org66fc21f"
-    "sec:orge305da8"
-    "sec:org9fffab1"
-    "sec:org28d94a5"
-    "sec:orgc1c25b9"
-    "sec:org71f216c"
-    "sec:org5e8070d"
-    "sec:org0f3563a")
+    "sec:org0dbbfd3"
+    "sec:orga8282ef"
+    "sec:org8f72cbe"
+    "sec:orgf114877"
+    "sec:org09037e4"
+    "sec:orgd3125ac"
+    "sec:orgbf2d66f"
+    "sec:org1f94b94"
+    "sec:orge54b9da"
+    "sec:orgfb9d6c4"
+    "sec:orgfc4490e"
+    "sec:org7bf2c0d"
+    "sec:orgea19073"
+    "sec:org74c517b"
+    "sec:org00b9e98")
    (LaTeX-add-amsthm-newtheorems
     "theorem"
     "definition"
-    "corollary"))
+    "corollary"
+    "lemma"))
  :latex)
 

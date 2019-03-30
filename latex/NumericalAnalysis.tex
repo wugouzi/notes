@@ -1,4 +1,4 @@
-% Created 2019-03-16 六 20:36
+% Created 2019-03-29 五 14:53
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -12,13 +12,13 @@
 \usepackage{amsmath}
 \usepackage{textcomp}
 \usepackage{amssymb}
-
 \usepackage{capt-of}
-\usepackage{hyperref}
+\usepackage{hyperref, amsmath}
 \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots}
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}{Definition}[section]
 \newtheorem{corollary}{Corollary}[section]
+\newtheorem{lemma}{Lemma}[section]
 \author{gouziwu}
 \date{\today}
 \title{Numerical Analysis}
@@ -37,11 +37,10 @@
 
 
 
-
 \section{Chap1 Mathematical Preliminaries}
-\label{sec:orgadaa5ae}
+\label{sec:org0dbbfd3}
 \subsection{1.2 Roundoff Errors and Computer Arithmetic}
-\label{sec:org66fc21f}
+\label{sec:orga8282ef}
 \textbf{Truncation Error} : the error involved in using a truncated, or finite, summation to
 approximate the sum of an infinite series 
 
@@ -89,7 +88,7 @@ integer for which $\frac{|p-p*|}{|p|}<5\times 10^{-t}$
 \end{itemize}
 
 \subsection{1.3 ALgorithms and Convergence}
-\label{sec:orge305da8}
+\label{sec:org8f72cbe}
 An algorithm that satisfies that small changes in the initial data produce
 correspondingly small changes in the final results is called \textbf{stable};
 otherwise it is \textbf{unstable}. An algorithm is called \textbf{conditionally stable} if it
@@ -110,9 +109,9 @@ Suppose \(\lim\limits_{h\to 0}G(h)=0, \lim\limits_{h\to 0}F(h)=L\) and
 \(|F(h)-L|\le K|G(h)|\) for sufficiently small h, then we write
 \(F(h)=L+O(G(h))\)
 \section{Chap2 Solutions of equations in one variable}
-\label{sec:org9fffab1}
+\label{sec:orgf114877}
 \subsection{2.1 Bisection method}
-\label{sec:org28d94a5}
+\label{sec:org09037e4}
 \begin{theorem}{Intermediate Value Theorem}
 If $f\in C[a,b]$, $K\in(f(a), f(b))$, then there exists a number $p\in(a,b)$
 for which $f(p)=K$
@@ -126,7 +125,7 @@ generates a sequence $\{p_n\},n=0,1,\dots$ approximating a zero $p$ of $f$ with
 \end{equation*}
 \end{theorem}
 \subsection{2.2 Fixed-Point Iteration}
-\label{sec:orgc1c25b9}
+\label{sec:orgd3125ac}
 \(f(x)=0\xleftrightarrow{\text{equivalent}} x=f(x)+x=g(x)\)
 
 \begin{theorem}{Fixed-Point Theorem}
@@ -142,7 +141,7 @@ $|p_n-p|\le\frac{1}{1-k}|p_{n+1}-p_n|$ and
 $|p_n-p|\le\frac{k^n}{1-k}|p_1-p_0|$
 \end{corollary}
 \subsection{2.3 Newton's method}
-\label{sec:org71f216c}
+\label{sec:orgbf2d66f}
 Linearize a nonlinear function using \textbf{Taylor's expansion}
 
 Let \(p_0\in [a,b]\) be an approximation to \(p\) s.t. \(f'(p_0)\neq 0\), hence 
@@ -158,7 +157,7 @@ n\in\mathbb{N}\setminus\{0\}$ converging to $p$ for any initial approximation
 $p\in[p-\delta,p+\delta]$.
 \end{theorem}
 \subsection{2.4 Error analysis for iterative methods}
-\label{sec:org5e8070d}
+\label{sec:org1f94b94}
 \begin{definition}
 Suppose $\{p_n\}(n=0,1,\dots)$ is a sequence that converges to $p$ with
 $p_n\neq p$ for all $n$. If positive constants $\alpha$ and $\lambda$ exist
@@ -203,6 +202,7 @@ converges only linearly to the unique fixed point in $[a,b]$
 &=|g'(p)|
 \end{align*}
 \end{proof}
+
 \begin{theorem}
 Let $p$ be a solution of the equation $x=g(x)$. Suppose that $g'(p)=0$ and
 g'' is continuous with $|g''(x)|<M$ on an open interval $I$ containing $p$.
@@ -214,8 +214,270 @@ quadratically to $p$. Moreover, for sufficiently large values of $n$,
 \end{equation*}
 \end{theorem}
 
+\begin{proof}
+Choose $k\in(0,1),\delta>0$ s.t. $[p-\delta,p+\delta]\subseteq I$ and
+$|g'(x)|<k$ and $g''$ is continuous.
+\begin{equation*}
+g(x)=g(p)+g'(p)(x-p)+\frac{g''(\xi)}{2}(x-p)^2
+\end{equation*}
+Hence $g(x)=p+\frac{g''(\xi)}{2}(x-p)^2$.
+$p_{n+1}=g(p_n)=p+\frac{g''(\xi_n)}{2}(p_n-p)^2$. Thus
+$p_{n+1}-p=\frac{g''(\xi_n)}{2}(p_n-p)^2$. We get
+\begin{equation*}
+\lim\limits_{n\to\infty}\frac{|p_{n+1}-p|}{|p_n-p|^2}=\frac{g''(p)}{2}
+\end{equation*}
+\end{proof}
+
+\begin{definition}
+A solution $p$ of $f(x) = 0$ is a \textcolor{red}{zero of multiplicity} $m$
+of $f$ if for $x\neq p$, $f(x)=(x-p)^mq(x)$ where $\lim\limits_{x\to
+p}q(x)\neq 0$
+\end{definition}
+
+\begin{theorem}
+The function $f\in C^m[a,b]$ has a zero of multiplicity $m$ at $p$ in $(a,b)$
+if and only if
+\begin{equation*}
+0=f(p)=f'(p)=\dots=f^{(m-1)}(p),\quad\text{but } f^{(m)}(p)\neq 0
+\end{equation*}
+\end{theorem}
+
+To handle the problem of multiple roots of a function \(f\) is to define
+\(\mu(x)=\frac{f(x)}{f'(x)}\).
+
+If p is a zero of f of multiplicity m with \(f(x)=(x-p)^mq(x
+)\), then
+\begin{align*}
+\mu(x)&=\frac{(x-p)^mq(x)}{m(x-p)^{m-1}q(x)+(x-p)^mq'(x)}\\
+&=(x-p)\frac{q(x)}{mq(x)+(x-p)q'(x)}
+\end{align*}
+And \(q(x)\neq 0\).
+
+Now Newton's method:
+\begin{align*}
+g(x)&=x-\frac{\mu(x)}{\mu'(x)}\\
+&=x-\frac{f(x)/f'(x)}{(f'(x)^2-f(x)f''(x))/f'(x)^2}\\
+&=x-\frac{f(x)f'(x)}{f'(x)^2-f(x)f''(x)}
+\end{align*}
+\section{Chap6 Direct Methods for Solving Linear Systems}
+\label{sec:orge54b9da}
+\subsection{6.1 Linear Systems of Equations}
+\label{sec:orgfb9d6c4}
+\textbf{Gaussian elimination with backward substitution}
+\subsection{6.2 Pivoting Strategies}
+\label{sec:orgfc4490e}
+\textbf{Problem}: small pivot element may cause trouble
+
+\textbf{Paritial Pivoting}: Determine the smallest p≥k s.t.
+ \(|a_{pk}^{(k)}|=\displaystyle\max_{k\le j\le n}|a_{ik}^{(k)}|\) and
+ interchange the pth and the kth rows
+
+\textbf{Scaled Partial Pivoting}:
+\begin{enumerate}
+\item Define a scale factor \(s_i\) for each row as \(s_i=\displaystyle\max_{1\le
+       j\le n}|a_{ij}|\)
+\item Determine the smallest \(p\ge k\) s.t.
+\(\frac{|a_{pk}^{(k)}}{s_p}=\displaystyle\max_{k\le i\le
+       n}\frac{|a_{ik}^{(k)}|}{s_i}\)
+and interchange the pth and the kth rows
+\end{enumerate}
 
 
-\section{Chap6}
-\label{sec:org0f3563a}
+\textbf{Complete Pivoting}: Search all the entries \(a_{ij}\) to find the entry with
+ the largest magnitude
+\subsection{6.5 Matrix Factorization}
+\label{sec:org7bf2c0d}
+\(m_{ik}=a_{ik}/a_{kk}\)
+\begin{equation*}
+L_k=
+\begin{pmatrix}
+1 &            &            &               &  \\
+  & \ddots     &            &\mbox{\Huge 0} &  \\
+  &            & 1          &               &  \\
+  &            & -m_{k+1,k} &               &  \\
+  &            & \vdots     & \ddots        &  \\
+  &            & -m_{n,k}   &               & 1\\
+\end{pmatrix}
+\end{equation*}  
+
+
+Hence 
+
+\begin{equation*}
+L_1^{-1}L_2^{-1}\dots L_{n-1}^{-1}=
+\begin{pmatrix}
+1&&&\mbox{\Huge 0}\\
+&1&&\\
+&&\ddots&\\
+\text{\Huge $m_{i,j}$}&&&1\\
+\end{pmatrix}
+\end{equation*}
+
+\begin{equation*}
+U=
+\begin{pmatrix}
+a_{11}&a_{12}&\dots&a_{1n}\\
+&a_{22}&\dots&a_{2n}\\
+&&\dots&\vdots\\
+&&&a_{nn}\\
+\end{pmatrix}
+\end{equation*}
+
+\(A=LU\)
+\subsection{6.6 Special Types of Matrices}
+\label{sec:orgea19073}
+\textbf{Strictly Diagonally Dominant Matrix}.
+\(|a_{ii}|>\displaystyle\sum_{\substack{j=1,\\j\neq i}}^n|a_{ij}| \quad
+   \text{for each } i=1,\dots,n\)
+
+\begin{theorem}
+A strictly diagonally dominant matrix A is \textcolor{red}{nonsingular}. Moreover,
+Gaussian elimination can be performed \textcolor{red}{without} row or column
+\textcolor{red}{interchanges}, and the computations will be \textcolor{red}{stable}
+w.r.t. the growth of roundoff errors
+\end{theorem}
+
+\textbf{Choleski's Method for Positive Definite Matrix}:
+\begin{definition}
+A matrix A is \textcolor{red}{positive definite} if ti's symmetric and if    
+$ \mathbf{x}^T \mathbf{A} \mathbf{x}>0$ for every n-dimensional vector $ \mathbf{x}\neq 0$
+\end{definition}
+
+\begin{lemma}
+A is positive definite
+\begin{enumerate}
+\item $A^{-1}$ is positive definite as well, and $a_{ii}>0$
+\item $\sum|a_{ij}|\le\max|a_{kk}|$; $(a_{ij})^2<a_{ii}a_{jj}$ for each i ≠ j
+\item Each of /A's leading principal submatrices $A_k$/ has a positive determinant
+\end{enumerate}
+\end{lemma}
+
+\begin{equation*}
+U =
+\begin{pmatrix}
+&u_{ij}\\
+&&\\
+\end{pmatrix}=
+\begin{pmatrix}
+u_{11}&&\\
+&\ddots&\\
+&&u_{nn}\\
+\end{pmatrix}
+\begin{pmatrix}
+1&&u_{ij}/u_{ii}\\
+&1&\\
+&&1\\
+\end{pmatrix}=D\tilde{U}
+\end{equation*}
+   A is symmetric, hence 
+   \begin{equation*}
+   L=\tilde{U}^t, A=LDL^t
+   \end{equation*}
+   Let 
+   \begin{equation*}
+   D^{1/2}=
+   \begin{pmatrix}
+   \sqrt{u_{11}}&&\\
+   &\ddots&\\
+   &&\sqrt{u_{nn}}\\
+   \end{pmatrix}, \tilde{L}=LD^{1/2/}, A=\tilde{L}\tilde{L}^t
+   \end{equation*}
+
+\textbf{Crout Reduction for tridiagonal Linear System}
+
+\begin{equation*}
+\begin{pmatrix}
+b_1 & c_1    &        &        &\\
+a_2 & b_2    & c_2    &        &\\
+    & \ddots & \ddots & \ddots &\\
+    &        & a_{n-1}& b_{n-1}& c_{n-1} \\
+    &        &        & a_n    & b_n\\
+\end{pmatrix}
+\begin{pmatrix}
+x_1\\
+x_2\\
+\vdots\\
+x_{n-1}\\
+x_n
+\end{pmatrix}=
+\begin{pmatrix}
+f_1\\
+f_2\\
+\vdots\\
+f_{n-1}\\
+f_n
+\end{pmatrix}
+\end{equation*}
+
+\begin{equation*}
+A=
+\begin{pmatrix}
+\alpha_1 &&&\\
+\gamma_2 & \ddots &&\\
+         & \ddots & \ddots   &\\
+         &        & \gamma_n & \alpha_n\\
+\end{pmatrix}
+\begin{pmatrix}
+1 & \beta_1 &&\\
+  & \ddots & \ddots &\\
+  &        & \ddots & \beta_{n-1}\\
+  &        &        & 1\\
+\end{pmatrix}
+\end{equation*}
+\section{Chap7 Iterative techiniques in Matrix algebra}
+\label{sec:org74c517b}
+\subsection{7.1 Norms of vectors and matrices}
+\label{sec:org00b9e98}
+\begin{definition}
+A \textcolor{red}{vector norm} on $R^n$ is a function $||\cdot||: \mathbb{R}^n\to \mathbb{R}$
+with following properties for all $ \mathbf{x,y}\in \mathbb{R}^n, \alpha\in C$
+\begin{enumerate}
+\item $|| \mathbf{x}||\le 0$; $|| \mathbf{x}||=0\Longleftrightarrow \mathbf{x}= \mathbf{0}$
+\item $||\alpha \mathbf{x}||=|\alpha|\cdot|| \mathbf{x}||$
+\item $|| \mathbf{x}+ \mathbf{y}||\le|| \mathbf{x}||+|| \mathbf{y}||$
+\end{enumerate}
+\end{definition}
+
+\(|| \mathbf{x}||_1=\displaystyle\sum_{i=1}^n|x_i|\).
+\(||\mathbf{x}_p||=(\displaystyle\sum_{i=1}^n|x_i|^p)^{1/p}\)
+
+\begin{definition}
+A sequence $\{\mathbf{x}^{(k)}\}_{k=1}^\infty$ of vectors in $R^n$ 
+\textcolor{red}{converge to} $\mathbf{x}$ w.r.t the norm $||\cdot||$ if
+given any $\epsilon>0$ there exists an integer $N(\epsilon)$ s.t.
+$||\mathbf{x}^{(k)}-\mathbf{x}||<\epsilon$ for all $k\ge N(\epsilon)$
+\end{definition}
+
+\begin{theorem}
+The sequence of vectors $\{\mathbf{x}^{(k)}\}$ converges to $ \mathbf{x}\in R^n$
+w.r.t. $||\cdot||$ if and only if $ \lim\limits_{k\to\infty}\mathbf{x}^{(k)}_i=x_i$
+for each $i=1,2,\dots,n$
+\end{theorem}
+
+\begin{definition}
+If there exist positive constants $C_1,C_2$ s.t. $C_1||\mathbf{x}||_B\le||\mathbf{x}||_A
+\le C_2||\mathbf{x}|_B|$. Then $||\cdot||_A,||\cdot||_B$ are \textcolor{red}{equivalent} 
+\end{definition}
+
+\begin{theorem}
+All the vector norm in $R^n$ are equivalent
+\end{theorem}
+
+
+\begin{definition}
+  A \textcolor{red}{matrix norm} on the set of $n\times n$:
+\begin{enumerate}
+\item $||\mathbf{A}||\ge0;||\mathbf{A}||=0\Longleftrightarrow \mathbf{A}=\mathbf{0}$
+\item $||\alpha \mathbf{A}||=|\alpha|\cdot||\mathbf{A}||$
+\item $||\mathbf{A}+\mathbf{B}||\le||\mathbf{A}||+||\mathbf{B}||$
+\item $||\mathbf{AB}||\le||\mathbf{A}||\cdot||\mathbf{B}||$
+\end{enumerate}
+\end{definition}
+
+\textbf{Frobenius Norm}: \(||\mathbf{A}||_F=\sqrt{\displaystyle\sum_{i=1}^n
+   \displaystyle\sum_{j=1}^n}|a_{ij}|^2\)
+
+\textbf{Natural Norm}: \(||\mathbf{A}||_p=\displaystyle\max_{\mathbf{x}\neq
+   \mathbf{0}}\frac{||\mathbf{Ax}||_p}{||\mathbf{x}||}=\displaystyle\max_{\mathbf{z}\neq
+   \mathbf{0}}||\mathbf{A}\frac{\mathbf{z}}{||\mathbf{z}||}||=\displaystyle\max_{||\mathbf{x}||_p=1}||\mathbf{Ax}||_p\)
 \end{document}

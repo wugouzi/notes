@@ -1,14 +1,13 @@
-#+TITLE: 
-Numerical
- Analysis
+#+TITLE: Numerical Analysis
 #+AUTHOR: gouziwu
-#+LATEX_HEADER: \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots}
+#+LATEX_HEADER: \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots,amsmath}
 #+LATEX_HEADER: \newtheorem{theorem}{Theorem}[section]
 #+LATEX_HEADER: \newtheorem{definition}{Definition}[section]
 #+LATEX_HEADER: \newtheorem{corollary}{Corollary}[section]
+#+LATEX_HEADER: \newtheorem{lemma}{Lemma}[section]
 
 
-* Table of Contents                                                     :TOC_2:
+* Table of Contents                                                     :TOC:
 - [[#chap1-mathematical-preliminaries][Chap1 Mathematical Preliminaries]]
   - [[#12-roundoff-errors-and-computer-arithmetic][1.2 Roundoff Errors and Computer Arithmetic]]
   - [[#13-algorithms-and-convergence][1.3 ALgorithms and Convergence]]
@@ -22,6 +21,8 @@ Numerical
   - [[#62-pivoting-strategies][6.2 Pivoting Strategies]]
   - [[#65-matrix-factorization][6.5 Matrix Factorization]]
   - [[#66-special-types-of-matrices][6.6 Special Types of Matrices]]
+- [[#chap7-iterative-techiniques-in-matrix-algebra][Chap7 Iterative techiniques in Matrix algebra]]
+  - [[#71-norms-of-vectors-and-matrices][7.1 Norms of vectors and matrices]]
 
 * Chap1 Mathematical Preliminaries
 ** 1.2 Roundoff Errors and Computer Arithmetic
@@ -296,4 +297,158 @@ Numerical
    $A=LU$
 ** 6.6 Special Types of Matrices
    *Strictly Diagonally Dominant Matrix*.
-   $|a_{ii}|$
+   $|a_{ii}|>\displaystyle\sum_{\substack{j=1,\\j\neq i}}^n|a_{ij}| \quad
+   \text{for each } i=1,\dots,n$
+
+   \begin{theorem}
+   A strictly diagonally dominant matrix A is \textcolor{red}{nonsingular}. Moreover,
+   Gaussian elimination can be performed \textcolor{red}{without} row or column
+   \textcolor{red}{interchanges}, and the computations will be \textcolor{red}{stable}
+   w.r.t. the growth of roundoff errors
+   \end{theorem}
+
+   *Choleski's Method for Positive Definite Matrix*:
+   \begin{definition}
+   A matrix A is \textcolor{red}{positive definite} if ti's symmetric and if    
+   $ \mathbf{x}^T \mathbf{A} \mathbf{x}>0$ for every n-dimensional vector $ \mathbf{x}\neq 0$
+   \end{definition}
+
+   \begin{lemma}
+   A is positive definite
+   \begin{enumerate}
+   \item $A^{-1}$ is positive definite as well, and $a_{ii}>0$
+   \item $\sum|a_{ij}|\le\max|a_{kk}|$; $(a_{ij})^2<a_{ii}a_{jj}$ for each i ≠ j
+   \item Each of /A's leading principal submatrices $A_k$/ has a positive determinant
+   \end{enumerate}
+   \end{lemma}
+
+   \begin{equation*}
+   U =
+   \begin{pmatrix}
+   &u_{ij}\\
+   &&\\
+   \end{pmatrix}=
+   \begin{pmatrix}
+   u_{11}&&\\
+   &\ddots&\\
+   &&u_{nn}\\
+   \end{pmatrix}
+   \begin{pmatrix}
+   1&&u_{ij}/u_{ii}\\
+   &1&\\
+   &&1\\
+   \end{pmatrix}=D\tilde{U}
+   \end{equation*}
+   A is symmetric, hence 
+   \begin{equation*}
+   L=\tilde{U}^t, A=LDL^t
+   \end{equation*}
+   Let 
+   \begin{equation*}
+   D^{1/2}=
+   \begin{pmatrix}
+   \sqrt{u_{11}}&&\\
+   &\ddots&\\
+   &&\sqrt{u_{nn}}\\
+   \end{pmatrix}, \tilde{L}=LD^{1/2/}, A=\tilde{L}\tilde{L}^t
+   \end{equation*}
+   
+   *Crout Reduction for tridiagonal Linear System*
+
+   \begin{equation*}
+   \begin{pmatrix}
+   b_1 & c_1    &        &        &\\
+   a_2 & b_2    & c_2    &        &\\
+       & \ddots & \ddots & \ddots &\\
+       &        & a_{n-1}& b_{n-1}& c_{n-1} \\
+       &        &        & a_n    & b_n\\
+   \end{pmatrix}
+   \begin{pmatrix}
+   x_1\\
+   x_2\\
+   \vdots\\
+   x_{n-1}\\
+   x_n
+   \end{pmatrix}=
+   \begin{pmatrix}
+   f_1\\
+   f_2\\
+   \vdots\\
+   f_{n-1}\\
+   f_n
+   \end{pmatrix}
+   \end{equation*}
+
+   \begin{equation*}
+   A=
+   \begin{pmatrix}
+   \alpha_1 &&&\\
+   \gamma_2 & \ddots &&\\
+            & \ddots & \ddots   &\\
+            &        & \gamma_n & \alpha_n\\
+   \end{pmatrix}
+   \begin{pmatrix}
+   1 & \beta_1 &&\\
+     & \ddots & \ddots &\\
+     &        & \ddots & \beta_{n-1}\\
+     &        &        & 1\\
+   \end{pmatrix}
+   \end{equation*}
+* Chap7 Iterative techiniques in Matrix algebra
+** 7.1 Norms of vectors and matrices
+   \begin{definition}
+   A \textcolor{red}{vector norm} on $R^n$ is a function $||\cdot||: \mathbb{R}^n\to \mathbb{R}$
+   with following properties for all $ \mathbf{x,y}\in \mathbb{R}^n, \alpha\in C$
+   \begin{enumerate}
+   \item $|| \mathbf{x}||\le 0$; $|| \mathbf{x}||=0\Longleftrightarrow \mathbf{x}= \mathbf{0}$
+   \item $||\alpha \mathbf{x}||=|\alpha|\cdot|| \mathbf{x}||$
+   \item $|| \mathbf{x}+ \mathbf{y}||\le|| \mathbf{x}||+|| \mathbf{y}||$
+   \end{enumerate}
+   \end{definition}
+
+   $|| \mathbf{x}||_1=\displaystyle\sum_{i=1}^n|x_i|$.
+   $||\mathbf{x}_p||=(\displaystyle\sum_{i=1}^n|x_i|^p)^{1/p}$
+   
+   \begin{definition}
+   A sequence $\{\mathbf{x}^{(k)}\}_{k=1}^\infty$ of vectors in $R^n$ 
+   \textcolor{red}{converge to} $\mathbf{x}$$ w.r.t the norm $||\cdot||$ if
+   given any $\epsilon>0$ there exists an integer $N(\epsilon)$ s.t.
+   $||\mathbf{x}^{(k)}-\mathbf{x}||<\epsilon$ for all $k\ge N(\epsilon)$
+   \end{definition}
+
+   \begin{theorem}
+   The sequence of vectors $\{\mathbf{x}^{(k)}\}$ converges to $ \mathbf{x}\in R^n$
+   w.r.t. $||\cdot||$ if and only if $ \lim\limits_{k\to\infty}\mathbf{x}^{(k)}_i=x_i$
+   for each $i=1,2,\dots,n$
+   \end{theorem}
+
+   \begin{definition}
+   If there exist positive constants $C_1,C_2$ s.t. $C_1||\mathbf{x}||_B\le||\mathbf{x}||_A
+   \le C_2||\mathbf{x}|_B|$. Then $||\cdot||_A,||\cdot||_B$ are \textcolor{red}{equivalent} 
+   \end{definition}
+
+   \begin{theorem}
+   All the vector norm in $R^n$ are equivalent
+   \end{theorem}
+
+
+   \begin{definition}
+   A \textcolor{red}{matrix norm} on the set of $n\times n$:
+   \begin{enumerate}
+   \item $||\mathbf{A}||\ge0;||\mathbf{A}||=0\Longrightleftarrow \mathbf{A}=\mathbf{0}$
+   \item $||\alpha \mathbf{A}||=|\alpha|\cdot||\mathbf{A}||$
+   \item $||\mathbf{A}+\mathbf{B}||\le||\mathbf{A}||+||\mathbf{B}||$
+   \item $||\mathbf{AB}||\le||\mathbf{A}||\cdot||\mathbf{B}||$
+   \end{enumerate}
+   \end{definition}
+  
+   *Frobenius Norm*: $||\mathbf{A}||_F=\sqrt{\displaystyle\sum_{i=1}^n
+   \displaystyle\sum_{j=1}^n|a_{ij}|^2}$
+
+   *Natural Norm*: $||\mathbf{A}||_p=\displaystyle\max_{\mathbf{x}\neq
+   \mathbf{0}}\frac{||\mathbf{Ax}||_p}{||\mathbf{x}||_p}=\displaystyle\max_{\mathbf{z}\neq
+   \mathbf{0}}||\mathbf{A}\frac{\mathbf{z}}{||\mathbf{z}||}||=\displaystyle\max_{||\mathbf{x}||_p=1}||\mathbf{Ax}||_p$
+
+   $||\mathbf{A}||_\infty=\displaystyle\max_{1\le i\len}\displaystyle\sum_{j=1}^n|a_{ij}|$,
+   $||\mathbf{A}||_1=\displaystyle\max_{1\le j\le n}\displaystyle\sum_{i=1}^n|a_{ij}|$,
+   $||\mathbf{A}||_2=\sqrt{\lambda_\text{max}(\mathbf{A}^T \mathbf{A})}$
