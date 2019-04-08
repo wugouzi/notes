@@ -1,0 +1,210 @@
+% Created 2019-04-01 一 09:51
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{tikz}
+\author{wugouzi}
+\date{\today}
+\title{Compiler}
+\hypersetup{
+ pdfauthor={wugouzi},
+ pdftitle={Compiler},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.1 (Org mode 9.1.14)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Chap5 Bottom-up parsing}
+\label{sec:org6337b5e}
+\subsection{Overview of bottom-up parsing}
+\label{sec:org72eeec2}
+\begin{itemize}
+\item A bottom-up parser uses an \textbf{explicit stack} to perform a parse
+\item The parsing stack will contain both tokens and nonterminals
+\begin{center}
+\begin{tabular}{ll}
+\$ & inputstring \$\\
+\ldots{} & \ldots{}\\
+\$StartSymbol & \$accept\\
+\end{tabular}
+\end{center}
+\item \textbf{right-most} derivation -- backward
+start with the tokens; end with the start symbol
+(1+2+(3+4))+5 ⇐
+(E+2+(3+4))+5 ⇐
+(S+2+(3+4))+5 ⇐
+(S+E+(3+4))+5 ⇐
+(S+(3+4))+5 ⇐
+(S+(E+4))+5 ⇐
+(S+(S+4))+5 ⇐
+(S+(S+E))+5 ⇐
+(S+(S))+5 ⇐
+(S+E)+5 ⇐
+(S)+5 ⇐
+E+5 ⇐
+S+5 ⇐
+S+E ⇐
+S
+\item \textbf{parsing actions}: a sequence of \textbf{shift} and \textbf{reduce} operations
+\textbf{parser state}: a stack of terminals and non-terminals
+\textbf{current derivation step} = always stack + input
+\begin{center}
+\begin{tabular}{llr}
+derivation & step stack & unconsumed input\\
+(1+2+(3+4))+5 ⇐ &  & (1+2+(3+4))+5\\
+ & ( & 1+2+(3+4))+5\\
+(E+2+(3+4))+5 ⇐ & (E & +2+(3+4))+5 ⇐\\
+(S+2+(3+4))+5 ⇐ & (S & +2+(3+4))+5\\
+ & (S+ & 2+(3+4))+5\\
+ & (S+2 & +(3+4))+5\\
+(S+E+(3+4))+5 ⇐ & (S+E & +(3+4))+5\\
+\end{tabular}
+\end{center}
+\item 1. \textbf{shift}: shift a terminal from the front of the input to the top of the
+stack 
+\begin{enumerate}
+\item \textbf{reduce}: reduce a string α at the top of the stack to a nonterminal A,
+given the BNF choice A ⟶ α
+\end{enumerate}
+
+A bottom-up parser: \textbf{shift-reduce parser}
+\item One further feature of bottom-up parsers： grammars are always augmented
+with a \textbf{new start symbol}. if S is the start symbol, a new start symbol S' is
+added to the grammar :  S' →S
+
+\item example
+S'->S
+S ->(S)S|ε
+
+S'=>S=>(S)S=>(S)=>()
+\begin{center}
+\begin{tabular}{rlrl}
+ & Parsing stack & Input & Action\\
+1 & \$ & ( ) \$ & Shift\\
+2 & \$ ( & ) \$ & Reduce  S -> ε\\
+3 & \$ (S & ) \$ & Shift\\
+4 & \$ (S ) & \$ & Reduce  S -> ε\\
+5 & \$ (S ) S & \$ & Reduce S --> (S) S\\
+6 & \$S & \$ & Reduce S'--> S\\
+7 & \$S' & \$ & Accept\\
+\end{tabular}
+\end{center}
+
+\item example
+E'->E
+E->E+n|n
+
+E'=>E=>E+n=>n+n
+\begin{center}
+\begin{tabular}{rlrl}
+ & Parsing stack & Input & Action\\
+1 & \$ & n+n\$ & Shift\\
+2 & \$n & +n\$ & Reduce  E->n\\
+3 & \$E & +n\$ & Shift\\
+4 & \$E+ & n\$ & Shift\\
+5 & \$E+n & \$ & Reduce E->E+n\\
+6 & \$E & \$ & Reduce E'->E\\
+7 & \$E' & \$ & Accept\\
+\end{tabular}
+\end{center}
+\item[{Right sentential form}] \begin{itemize}
+\item A \textbf{sentential} form is any string derivable from the start symbol. Note
+that this includes the forms with non-terminals at intermediate steps as
+well.
+\item A \textbf{right-sentential form} is a sentential form that occurs in a step of
+rightmost derivation (RMD).
+\item A \textbf{sentence} is a sentential form consisting only of terminals
+\end{itemize}
+
+E,E+,E+n are \textbf{viable prefixes} of the right sentential form E+n.
+The sequence of symbols on the parsing stack is called \textbf{viable prefix} of the
+right sentential form
+\end{itemize}
+
+\subsection{Finite automata of LR(0) items and LR(0) parsing}
+\label{sec:orgeb36e07}
+\begin{itemize}
+\item An \textbf{LR(0) item} of a context-free grammar: a production choice with a
+distinguished position in its right-hand side
+\item If \textbf{A → α}, \textbf{βγ = α}, then \textbf{A → β · γ} is an LR(0) item
+\item Example
+S' → S
+S → (S)S | ε
+
+S' → ·S
+S' → S·
+S → ·(S)S
+S → (·S)S
+S → (S·)S
+S → (S)·S
+S → (S)S·
+S → ·
+\end{itemize}
+\subsubsection{Finite automata of items}
+\label{sec:org66b2f99}
+\begin{itemize}
+\item The LR(0) items: as the state of a finite automata
+\item construct the DFA of sets of LR(0) using the subset construction from NFA
+\item If X is a token or a nonterminal
+\begin{tikzpicture}
+[place/.style={circle,minimum size=5mm}]
+\node (x1) at (0,0) [place] {$A\to\alpha\cdot X\eta$};
+\node (x2) at (5,0) [place] {$A\to\alpha X\cdot\eta$};
+\draw [->] (x1) to node [above] {X} (x2);
+\end{tikzpicture}
+\item If X is a token, then this transition corresponds to a shift of X from the
+input to the top of the stack during a parse
+\item if X is a nonterminal
+X will never appear as an input symbol
+\begin{tikzpicture}
+\node (x1) at (0,0) [circle] {$A\to\alpha\cdot X\eta$};
+\node (x2) at (5,0) [circle] {$X\to\cdot\beta$};
+\draw [->] (x1) to node [above] {$\epsilon$} (x2);
+\end{tikzpicture}
+\item The \textbf{start state} of the NFA ↔ the \textbf{initial state} of the parser: the stack is
+empty
+\item the solution is to augment the grammar by a single production S' -> S
+\item \textbf{S'->·S} the \textbf{start state} of the NFA
+\end{itemize}
+\subsubsection{The LR(0) parsing algorithm}
+\label{sec:orgae19f64}
+\begin{itemize}
+\item the parsing stack to store: \textbf{symbols} and \textbf{state numbers}
+\item pushing the new \textbf{state number} onto the parsing stack after each push of \textbf{a
+symbol}
+\item Let s be the current state. Then actions are
+\begin{enumerate}
+\item if state s contains any item of the form \textbf{A -> α·Xβ} (X is a terminal).
+Then the action is to shift the current input token onto the stack
+\item If state s contains any \textbf{complete item} (an item of the form \textbf{A->γ·}),
+then the action is to reduce by the rule \textbf{A->γ·}
+\begin{itemize}
+\item A \textbf{reduction} by the rule \textbf{S'->S} where S' is the start state
+\item \textbf{acceptance} if the input is empty
+\item \textbf{Error} if the input is not empty
+\end{itemize}
+\end{enumerate}
+\item A grammar is \textbf{LR(0)} grammar if the above rules are unambiguous
+\item A grammar is \textbf{LR(0)} iff
+\begin{itemize}
+\item Each state is a shift state
+\item A reduce state containing a single complete item
+\end{itemize}
+\end{itemize}
+\end{document}

@@ -1,5 +1,286 @@
 #+TITLE: Compiler
 #+AUTHOR: wugouzi
-
+#+LATEX_HEADER: \usepackage{tikz}
 * Chap5 Bottom-up parsing
-  
+** Overview of bottom-up parsing  
+   + A bottom-up parser uses an *explicit stack* to perform a parse
+   + The parsing stack will contain both tokens and nonterminals
+     | $            | inputstring $ |
+     | ...          | ...           |
+     | $StartSymbol | $accept       |
+   + *right-most* derivation -- backward
+     start with the tokens; end with the start symbol
+     (1+2+(3+4))+5 ⇐
+     (E+2+(3+4))+5 ⇐
+     (S+2+(3+4))+5 ⇐
+     (S+E+(3+4))+5 ⇐
+     (S+(3+4))+5 ⇐
+     (S+(E+4))+5 ⇐
+     (S+(S+4))+5 ⇐
+     (S+(S+E))+5 ⇐
+     (S+(S))+5 ⇐
+     (S+E)+5 ⇐
+     (S)+5 ⇐
+     E+5 ⇐
+     S+5 ⇐
+     S+E ⇐
+     S
+   + *parsing actions*: a sequence of *shift* and *reduce* operations
+     *parser state*: a stack of terminals and non-terminals
+     *current derivation step* = always stack + input
+     | derivation      | step stack | unconsumed input |
+     |                 |            |              <r> |
+     | (1+2+(3+4))+5 ⇐ |            |    (1+2+(3+4))+5 |
+     |                 | (          |     1+2+(3+4))+5 |
+     | (E+2+(3+4))+5 ⇐ | (E         |    +2+(3+4))+5 ⇐ |
+     | (S+2+(3+4))+5 ⇐ | (S         |      +2+(3+4))+5 |
+     |                 | (S+        |       2+(3+4))+5 |
+     |                 | (S+2       |        +(3+4))+5 |
+     | (S+E+(3+4))+5 ⇐ | (S+E       |        +(3+4))+5 |
+   + 1. *shift*: shift a terminal from the front of the input to the top of the
+     stack 
+     1. *reduce*: reduce a string α at the top of the stack to a nonterminal A,
+        given the BNF choice A ⟶ α
+        
+     A bottom-up parser: *shift-reduce parser*
+   + One further feature of bottom-up parsers： grammars are always augmented
+     with a *new start symbol*. if S is the start symbol, a new start symbol S' is
+     added to the grammar :  S' →S   
+
+   + example
+     S'->S
+     S ->(S)S|ε
+
+     S'=>S=>(S)S=>(S)=>()
+     |   | Parsing stack | Input | Action             |
+     |   |               |   <r> |                    |
+     | 1 | $             | ( ) $ | Shift              |
+     | 2 | $ (           |   ) $ | Reduce  S -> ε    |
+     | 3 | $ (S          |   ) $ | Shift              |
+     | 4 | $ (S )        |     $ | Reduce  S -> ε    |
+     | 5 | $ (S ) S      |     $ | Reduce S --> (S) S |
+     | 6 | $S            |     $ | Reduce S'--> S     |
+     | 7 | $S'           |     $ | Accept             |
+
+   + example
+     E'->E
+     E->E+n|n
+
+     E'=>E=>E+n=>n+n
+     |   | Parsing stack | Input | Action        |
+     |   |               |   <r> |               |
+     | 1 | $             |  n+n$ | Shift         |
+     | 2 | $n            |   +n$ | Reduce  E->n  |
+     | 3 | $E            |   +n$ | Shift         |
+     | 4 | $E+           |    n$ | Shift         |
+     | 5 | $E+n          |     $ | Reduce E->E+n |
+     | 6 | $E            |     $ | Reduce E'->E  |
+     | 7 | $E'           |     $ | Accept        |
+   + Right sentential form ::
+     + A *sentential* form is any string derivable from the start symbol. Note
+       that this includes the forms with non-terminals at intermediate steps as
+       well. 
+     + A *right-sentential form* is a sentential form that occurs in a step of
+       rightmost derivation (RMD). 
+       Each of the intermediate strings of terminals and nonterminals in such
+       a derivation is called a right sentential form
+       Each such sentential form is split between the parsing stack and the input
+       during a shift-reduce parse
+     + A *sentence* is a sentential form consisting only of terminals
+       
+     E,E+,E+n are *viable prefixes* of the right sentential form E+n.
+     The sequence of symbols on the parsing stack is called *viable prefix* of the
+     right sentential form
+   + *handle*
+     This string, together with the *position* in the right sentential form where it
+     occurs, and the production used to reduced it, is called the *handle* of the right
+     sentential form
+
+     _determining the next handle in a parse is the main task of a shift-reduce parser_
+** Finite automata of LR(0) items and LR(0) parsing
+   + An *LR(0) item* of a context-free grammar: a production choice with a
+     distinguished position in its right-hand side
+   + If *A → α*, *βγ = α*, then *A → β · γ* is an LR(0) item
+   + Example
+     S' → S
+     S → (S)S | ε
+     
+     S' → ·S
+     S' → S·
+     S → ·(S)S
+     S → (·S)S
+     S → (S·)S
+     S → (S)·S
+     S → (S)S·
+     S → · 
+*** Finite automata of items
+    + The LR(0) items: as the state of a finite automata
+    + construct the DFA of sets of LR(0) using the subset construction from NFA
+    + If X is a token or a nonterminal
+      \begin{tikzpicture}
+      [place/.style={circle,minimum size=5mm}]
+      \node (x1) at (0,0) [place] {$A\to\alpha\cdot X\eta$};
+      \node (x2) at (5,0) [place] {$A\to\alpha X\cdot\eta$};
+      \draw [->] (x1) to node [above] {X} (x2);
+      \end{tikzpicture}
+    + If X is a token, then this transition corresponds to a shift of X from the
+      input to the top of the stack during a parse
+    + if X is a nonterminal
+      X will never appear as an input symbol
+      \begin{tikzpicture}
+      \node (x1) at (0,0) [circle] {$A\to\alpha\cdot X\eta$};
+      \node (x2) at (5,0) [circle] {$X\to\cdot\beta$};
+      \draw [->] (x1) to node [above] {$\epsilon$} (x2);
+      \end{tikzpicture}
+    + The *start state* of the NFA ↔ the *initial state* of the parser: the stack is
+      empty
+    + the solution is to augment the grammar by a single production S' -> S
+    + *S'->·S* the *start state* of the NFA
+*** The LR(0) parsing algorithm
+    + the parsing stack to store: *symbols* and *state numbers*
+    + pushing the new *state number* onto the parsing stack after each push of *a
+      symbol*
+    + Let s be the current state. Then actions are
+      1. if state s contains any item of the form *A -> α·Xβ* (X is a terminal).
+         Then the action is to shift the current input token onto the stack
+      2. If state s contains any *complete item* (an item of the form *A->γ·*),
+         then the action is to reduce by the rule *A->γ·*
+         * A *reduction* by the rule *S'->S* where S' is the start state
+         * *acceptance* if the input is empty
+         * *Error* if the input is not empty
+    + A grammar is *LR(0)* grammar if the above rules are unambiguous
+    + A grammar is *LR(0)* iff
+      * Each state is a shift state
+      * A reduce state containing a single complete item
+    + table
+      | state | action | rule   | input | input | input | goto |
+      |       |        |        |     ( |     a | )     |    A |
+      |     0 | shift  |        |     3 |     2 |       |    1 |
+      |     1 | reduce | A'->A  |       |       |       |      |
+      |     2 | reduce | A->(A) |       |       |       |      |
+      |     3 | shift  |        |     3 |     2 |       |    4 |
+      |     4 | shift  |        |       |       | 5     |      |
+      |     5 | reduce | A->a   |       |       |       |      |
+** SLR(1) Parsing (simple LR(1))
+    + *definition*
+      1. if state s contains any item of form *A->α·Xβ*, then the action is to
+         shift the current input token onto the stack, and the new state to be
+         pushed on the stack is the state containing the item *A->αX·β*
+      2. if state s contains the complete item *A->γ·*, and _the next token in_
+         _the input string is in Follow(A)_, then the action is to reduce by the
+         rule *A->γ*
+         * A reduction by the rule *S'->S* where S' is the start state, this will
+           happen only if the next input token is $
+         * remove the string γ and all of its corresponding states from the parsing
+           stack
+         * back up in the DFA to the state from which the construction of γ begin
+         * this state must contain an item of the form *B->α·Aβ*. Push A to the stack,
+           and push the state containing the item *B->αA·β*
+      3. if the next input token is s.t. neither of the above two cases applies,
+         an error is declared
+    + A grammar is *SLR(1)* iff for any state s
+      1. for any item *A->α·Xβ* in s with X a terminal, there is no _complete_
+         _item_ *B->γ·* in s with X ∈ Follow(B)
+      2. For any two complete item *A->α·* and *B->β·* in s, Follow(A)∩Follow(B)
+         is empty
+    + right recursion can cause stack overflow
+*** disambiguating rules for parsing conflicts
+     + two kinds of parsing conflicts in SLR(1) parsing
+       *shift-reduce* conflicts
+       *reduce-reduce* conflicts
+     + in the case of shift-reduce conflicts, there is a natural
+       *disambiguaiting rule*: _always prefer shift over the reduce_
+     + 
+*** limits of SLR(1) parsing power
+** General LR(1) and LALR(1) parsing
+
+   + the difficulty with the SLR(1) method:
+     applies lookaheads after the construction of the DFA of LR(0) items
+   + An *LR(1)* item is a pair consisting of an *LR(0)* item and a *lookahead* token
+   + *LR(1)* item as
+     *[A->α·β, a]*
+     A->α·β is LR(0) item, a is a token
+   + *definition of LR(1) transitions* main difference of LR(0) and LR(1)
+     *[A->α·Xγ, a]*, X is any symbol, there is a transition on X to
+     *[A->αX·γ,a]*
+     *[A->α·Bγ,a]*, B nonterminal, there are ε-transitions to items *[B->·β,b]*
+     for every *B->β* and for every token b in *First(γa)*
+*** Finite automata of LR(1) items
+    + *start* state
+      S'->S
+    + start item
+
+      *[S'->·S, $]*
+*** The LR(1) parsing algorithm
+    + the general LR(1) parsing algorithm
+      Let s be the current state.
+      
+      1. s:[A->α·Xβ,a], X terminal, X is the next token in the input string *shift*
+      2. s: [A->α·,a], the next token in the input string is a *reduce*
+      3. otherwise error
+    + A grammar is *LR(1)* iff for any state s
+      1. for any item *[A->α·β,a]* in s with X a terminal, there is no item in s
+         of the form *[B->γ·,X]* (otherwise there is a _shift-reduce_ conflict
+      2. there are no two item in s of the form *[A->α·,a]* and *[B->β·,a]*
+** LALR(1) parsing
+   + the size of the DFA of sets of LR(1) items is too large
+   + first principle of LAIR(1) parsing
+     the core of a state of DFA of LR(1) is a state of the DFA of LR(0) items
+   + second principle of LAIR(1) parsing
+     s₁,s₂ of DFA of LR(1) that have the same core, suppose there is a transition
+     on the symbol X from s₁ to a state t₁, then there is also a transition on X
+     from state s₂ to a state t₂, and the states t₁ and t₂ have the same core
+   + if a grammar is LR(1) then the LALR(1) parsing table cannot have any
+     shift-reduce conflicts, there may be reduce-reduce conflicts
+   + if a grammar is SLR(1), then it's LALR(1)
+   + compute the DFA of LALR(1) items directly from the DFA of LR(0) items through
+     a process of *propagating lookaheads*
+* chap6 semantics analysis
+** Attributes and attribute grammars
+   *binding* of the attribute: the process of computing an attribute and associating its
+   computed value with the language construct in question
+
+   *binding time*: the time during the compilation/execution process when the binding of
+   an attribute occurs
+
+   *static attributes/dynamic attributes*: based on the difference of the binding time
+
+   *type checker*: computes the data type attribute of all language entities for which
+   data types are defined.
+
+   *type checking*: set of rules that ensure the type consistency of different constructs
+   in the program. e.g. operands types and so on
+*** attribute grammars
+    * *X.a*: the value of a associated to X
+      X is a grammar symbol and a is an attribute associated to X
+    * *syntax-directed semantics*: attributes are associated directly with the grammar
+      symbols of the language
+    * given attributes a₁, a₂,...,aₖ for each grammar rule X₀->X₁...Xₙ, the values of
+      the attributes Xᵢ.aⱼ of each grammar symbol Xᵢ are related to the values of the
+      attributes of the other symbols in the rule
+    * an *attribute grammar*
+      Xᵢ.aⱼ=fᵢⱼ(X₀.a₁,...,X₀.aₖ,...,Xₙ.a₁,...,Xₙ.aₖ)
+*** simplifications and extensions to attribute grammars
+    * *metalanguage* for the attribute grammar: the collection of expressions allowable in
+      an attribute equation
+    * *functions* can be added to the metalanguage whose definitions may be given elsewhere
+    * *simplifications*
+      1. using ambiguous grammar
+      2. using abstract syntax tree instead of parse tree
+
+** Algorithms for attribute computation
+   purpose
+   
+   * each grammar rule choice has an *associated dependency graph*
+   * an edge from Xₘ.aₖ to Xᵢ.aⱼ expressing the dependency of Xᵢ.aⱼ on Xₘ.aₖ
+*** dependency graphs and evaluation order
+    + *directed acyclic graphs* DAG
+      topological sort
+*** synthesized and inherited attributes
+    + *synthesized attributes*
+      * an attribute is synthesized if all its dependencies point from child to parent in
+        the parse tree
+      * *S-attributed grammar*
+        an attribute grammar where all the attributes are synthesized
+    + *inherited attributes*
+      inheritance from parent to siblings, from siblings to siblings
