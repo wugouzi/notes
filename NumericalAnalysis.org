@@ -1,6 +1,6 @@
 #+TITLE: Numerical Analysis
 #+AUTHOR: gouziwu
-#+LATEX_HEADER: \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots,amsmath}
+#+LATEX_HEADER: \usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots,amsmath, commath}
 #+LATEX_HEADER: \newtheorem{theorem}{Theorem}[section]
 #+LATEX_HEADER: \newtheorem{definition}{Definition}[section]
 #+LATEX_HEADER: \newtheorem{corollary}{Corollary}[section]
@@ -221,6 +221,69 @@
    &=x-\frac{f(x)/f'(x)}{(f'(x)^2-f(x)f''(x))/f'(x)^2}\\
    &=x-\frac{f(x)f'(x)}{f'(x)^2-f(x)f''(x)}
    \end{align*}
+* Chap3 Interpolation and polynomial approximation
+** 3.1 Interpolation and the Lagrange polynomial
+   $P_n(x)=\displaystyle\sum_{i=0}^nL_{n,i}(x)y_i$. Find $L_{n,i}(x)$ for
+   $i=0,\dots,n$ s.t. $L_{n,j}(x_j)=\delta_{ij}$. $\delta_{ij}$ Kronecker delta.
+   Each $L_{n,i}$ has n roots $x_0,\dots,\hat{x_i},\dots,x_n$.
+   $L_{n,j}(x)=C_i(x-x_0)\dots\hat{(x-x_i)}\dots(x-x_n)=C_i \displaystyle
+   \prod_{\substack{j\neq i\\j=0}}^n(x-x_j)$.
+   $L_{n,j}(x_i)=1\to C_i=\displaystyle\prod_{j\neq i}\frac{1}{x_i-x_j}$.
+   Hence $L_{n,i}(x)=\displaystyle\prod_{\substack{j\neq i\\j=0}}^n
+   \frac{x-x_j}{x_i-x_j}$
+
+   \begin{theorem}
+   If $x_0,x_1,\dots,x_n$ are n+1 distinct numbers and $f$ is a function whose values
+   are given at these numbers, then the n-th Lagrange interpolating polynomial 
+   is unique
+   \end{theorem}
+
+   
+   *Analyze the remainder*. Suppose $a\le x_0<x_1<\dots<x_n\le b$ and $f\in
+   C^{n+1}[a,b]$. Consider $R_n(x)=f(x)-P_n(x)$.
+   $R_n(x)$ has at least n+1 roots =>
+   $R_n(x)=K(x)\displaystyle\prod_{i=1}^n(x-x_i)$.
+   For any $x\neq x_i$. Define
+   $g(t)=R_n(t)-K(x)\displaystyle\prod_{i=0}^n(t-x_i)$. $g(x)$ has n+2 distinct
+   roots $x_0\dots x_n x$. Hence $g^{(n+1)}(\xi_x)=0,\xi_x\in(a,b)$.
+   $f^{(n+1)}(\xi_x)-Pn^{(n+1)}(\xi_x)-K(x)(n+1)!=R_n^{(n+1)}(\xi_x)-K(x)(n+1)!$.
+   Thus
+   $R_n(x)=\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\displaystyle\prod_{i=0}^n(x-x_i)$.
+
+   \begin{definition}
+   Let $f$ be a function defined at $x_0,\dots,x_n$ and suppose $m_1,\dots,m_k$ are
+   k distinct integers with $0\le m_i\le n$ for each i. The Lagrange polynomial that
+   agrees with $f(x)$ at the k points $x_{m_1},\dots,x_{m_k}$ denoted by 
+   $P_{m_1,\dot,m_k}(x)$
+   \end{definition}
+
+   \begin{theorem}
+   Let $f$ be defined at $x_0,\dots,x_k$ and let $x_i$ and $x_j$ be two distinct numbers in
+   this set. Then
+   \begin{equation*}
+   P(x)=\frac{(x-x_j)P_{0,1,\dots,j-1,j+1,\dots,k(x)}-(x-x_i)P_{0,\dots,i-1,i+1,\dots,k(x)}}
+   {x_i-x_j}
+   \end{equation*}
+   describes the k-th Lagrange polynomial that interpolates $f$ at the k+1 points
+   $x_0,\dots,x_k$
+   \end{theorem}
+
+   *Neville's Method*
+   \begin{tabular}{c c c c c c}
+   $x_0$ & $P_0$ &           &             &            \\
+   $x_1$ & $P_1$ & $P_{0,1}$ &             &            \\
+   $x_2$ & $P_2$ & $P_{1,2}$ & $P_{0,1,2}$ &            \\
+   $x_3$ & $P_3$ & $P_{2,3}$ & $P_{1,2,3}$ & $P_{0,1,2,3}\\
+   \end{tabular}
+** 3.2 Divied differences
+   $f[x_i,x_j]=\frac{f(x_i)-f(x_j)}{x_i-x_j}(i\neq j, x_i\neq x_j)$.
+   $f[x_i,x_j,x_k]=\frac{f[x_i,x_j]-f[x_j,x_k]}{x_i-x_k}$.
+** Additional Newton Interpolation
+*** Simple idea
+    Given $x_0,\dots,x_n$
+    \begin{enumerate}
+
+    \end{enumerate}
 * Chap6 Direct Methods for Solving Linear Systems
 ** 6.1 Linear Systems of Equations
    *Gaussian elimination with backward substitution*
@@ -437,6 +500,130 @@
    $||\mathbf{A}||_\infty=\displaystyle\max_{1\le i\le n}\displaystyle\sum_{j=1}^n|a_{ij}|$,
    $||\mathbf{A}||_1=\displaystyle\max_{1\le j\le n}\displaystyle\sum_{i=1}^n|a_{ij}|$,
    $||\mathbf{A}||_2=\sqrt{\lambda_\text{max}(\mathbf{A}^T \mathbf{A})}$
+** 7.2 Eigenvalues and Eigenvectors
+   *spectral radius*.
+   \begin{definition}
+   The \textcolor{red}{spectral radius $\rho(A)$} of a matrix A is defined as
+   $\rho(A)=\max|\lambda|$ where $\lambda$ is an eigenvalue of A
+   \end{definition}
+
+   \begin{theorem}
+   If A is an $n\times n$ matrix, then $\rho(A)\le||A||$ for any natural norm
+   \end{theorem}
+
+   \begin{proof}
+   $|\lambda|\cdot||\bl{x}||=||\lambda\bl{x}||=||A\bl{x}||\le||A||\cdot||\bl{x}||$
+   \end{proof}
+
+   \begin{definition}
+   We call an $n\times n$ matrix A \textcolor{red}{convergent} if for all $i,j=1,\dots,n$
+   $\lim\limits_{k\to\infty}(A^k)_{ij}=0$
+   \end{definition}
+** 7.3 Iterative techniques for solving linear systems
+   *Jacobi iterative method*.
+   \begin{equation*}
+   \begin{cases}
+   a_{11}x_1+a_{12}x_2+\dots+a_{1n}x_n=b_1\\
+   a_{21}x_1+a_{22}x_2+\dots+a_{2n}x_n=b_2\\
+   \dots\\
+   a_{n1}x_1+a_{n2}x_2+\dots+a_{nn}x_n=b_n\\
+   \end{cases}\Longrightarrow
+   \begin{cases}
+   x_1=\frac{1}{a_{11}}(-a_{12}x_2-\dots-a_{1n}x_n+b_1)\\
+   x_2=\frac{1}{a_{22}}(-a_{21}x_1-\dots-a_{2n}x_n+b_2)\\
+   \dots\\
+   x_1=\frac{1}{a_{nn}}(-a_{n2}x_1-\dots-a_{nn-1}x_{n-1}+b_n)\\
+   \end{cases}
+   \end{equation*}
+   In matrix form, 
+   \begin{equation*}
+   A=
+   \begin{pmatrix}
+   D&-U&-U\\
+   -L&D&-U\\
+   -L&-L&D
+   \end{pmatrix}
+   \end{equation*}
+   \begin{align*}
+   A\bl{x}=\bl{b}&\Leftrightarrow(D-L-U)\bl{x}=\bl{b}\\
+   &\Leftrightarrow D\bl{x}=(L+U)\bl{x}+\bl{b}\\
+   &\Leftrightarrow \bl{x}=\underbrace{D^{-1}(L+U)}_{T_j}\bl{x}+\underbrace{D^{-1}}_{\bl{c}_j}\bl{b}
+   \end{align*}.
+   $T_j$ is Jacobi iterative matrix. $\bl{x}^{(k)}=T_j\bl{x}^{(k-1)}+\bl{c}_j$
+
+   
+   *Gauss-Seidel iterative method*
+   \begin{align*}
+   &\bl{x}^{(k)}=D^{-1}(L\bl{x}^{(k)}+U\bl{x}^{(k-1)})+D^{-1}\bl{b}\\
+   \Leftrightarrow&(D-L)\bl{x}^{(k)}=U\bl{x}^{(k-1)}+\bl{b}\\
+   \Leftrightarrow&\bl{x}^{(k)}=\underbrace{(D-L)^{-1}U\bl{x^{(k-1)}}}_{T_g}
+   +\underbrace{(D-L)^{-1}\bl{b}}_{\bl{c}_g}
+   \end{align*}
+
+
+   *convergence of iterative methods*
+   \begin{theorem}
+   the following are equivalent:
+   \begin{enumerate}
+   \item A is a convergent matrix
+   \item $\lim\limits_{n\to\infty}||A^n|| = 0$ for some natural norm
+   \item $\lim\limits_{n\to\infty}||A^n||=0$ for all natural norms
+   \item $\rho(A)<1$
+   \item $\lim\limits_{n\to\infty}A^n\bl{x}=\bl{0}$ for every $\bl{x}$
+   \end{enumerate}
+   \end{theorem}
+
+   $\bl{e}^{(k)}=\bl{x}^{(k)}-\bl{x}^*=(T\bl{x}^{(k-1)}+\bl{c})-(T\bl{x}^*+\bl{c})
+   =T(\bl{x}^{(k-1)}-\bl{x}^*)=T\bl{e}^{(k-1)}\Rightarrow\bl{e}^{(k)}=T^k\bl{e}^{(0)}$.
+   $||\bl{e}^{(k)}\le||T||\cdot||\bl{e}^{(k-1)}||\le\dots\le||T||^k\cdot||bl{e}^{(0)}||$
+
+   \begin{theorem}
+   For any $\bl{x}^{(0)}\in R^n$, the sequence $\{\bl{x}^{(k)}\}_{k=0}^\infty$
+   defined by $\bl{x}^{(k)}=T\bl{x}^{(k-1)}+\bl{c}$ for each k, converges to the
+   unique solution of $\bl{x}=T\bl{x}+\bl{c}$ if and only if $\rho(T)<1$
+   \end{theorem}
+   $\rho(T)<1\Longrightarrow(I-T)^{-1}=\\displaystyle\sum_{j=0}^\infty T^j$
+
+   \begin{theorem}
+   If $\norm{T}<1$ for any natural matrix norm and $\bl{c}$ is a given vector, then the
+   sequence $\{\bl{x}^{(k)}\}_{k=0}^\infty$ defined by $\bl{x}^{(k)}=T\bl{x}^{(k-1)}+\bl{c}$
+   converges for any $\bl{x}^{(0)}\in R^n$ to a vector $\bl{x}$. And the following
+   error bounds hold
+   \begin{enumerate}
+   \item $\norm{\bl{x}-\bl{x}^{(k)}}\le\norm{T}^k\norm{\bl{x}-\bl{x}^{(0)}}$
+   \item $\norm{\bl{x}-\bl{x}^{(k)}}\le\frac{\norm{T}^k}{1-\norm{T}}\norm{\bl{x}^{(1)}
+   -\bl{x}^{(0)}}$
+   \end{enumerate}
+   \end{theorem}
+
+   \begin{theorem}
+   If A is a strictly diagonally dominant, then for any choice of $\bl{x}^{(0)}$, both the
+   Jacobi and Gauss-Seidel methods give sequences $\{\bl{x}^{(k)}}_{k=0}^\infty$
+   that converges to the unique solution
+   \end{theorem}
+
+   *relaxation methods*.
+   $x_i^{(k)}=\frac{1}{a_{ii}}(b_i-\displaystyle\sum_{j=1}^{i-1}a_{ij}x_i^{(k)}-
+   \displaystyle\sum_{j=i+1}^na_{ij}x_j^{(k-1)})=x_i^{(k-1)}+\frac{r_i^{(k)}}{a_{ii}}$
+   and relaxation method is
+   $x_i^{(k)}=x_i^{(k-1)}+\omega\frac{r_i^{(k)}}{a_{ii}}$
+
+   \begin{theorem}{(kahan)}
+   If $a_{ii}\neq 0$ for each i. Then $\rho(T_\omega)\ge\abs{\omega-1}$.
+   \end{theorem}
+   This implies the SOR method can converge only if $0<\omega<2$
+
+   \begin{theorem}{(Ostrowski-Reich)}
+   If A is positive definite and $0<\omega<2$, the SOR converges
+   \end{theorem}
+
+   \begin{theorem}
+   If A is positive definite and tridiagonal, then $\rho(T_g)=(\rho(T_j))^2<1$, and
+   the optimal choice of $\omega$ for the SOR method is
+   $\omega=\frac{2}{1+\sqrt{1-(\rho(\T_j))^2}}$. With this choice of $\omega$, we
+   have $\rho(T_\omega)=\omega-1$
+   \end{theorem}
+
 ** 7.4 Error bounds and iterative refinement
    Assume that A is accurate and $\bl{b}$ has the error $\delta \bl{b}$,
    then $\bl{A}(\bl{x}+\delta \bl{x})=\bl{b}+\delta \bl{b}$
@@ -464,6 +651,92 @@
    \begin{theorem}
    If a matrix B satisfies $||B||<1$ for some natural norm, then
    \begin{enumerate}
-   \item $I\plusmn$
+   \item $I\pm B$ is nonsingular
+   \item $||(I\pm B)^{-1}||\le \frac{1}{1-||B||}$
    \end{enumerate}
    \end{theorem}
+
+   Assume $\bl{b}$ is accurate, A has the error $\delta A$, then
+   $(A+\delta A)(\bl{x}+\delta\bl{x})=\bl{b}$. Hence
+   $\frac{||\delta\bl{x}||}{||\bl{x}||}\le \frac{||A^{-1}||\cdot||\delta
+   A||}{1-||A^{-1}||\cdot||\delta A||}=\frac{||A||\cdot||A^{-1}||}{1
+   -||A||\cdot||A^{-1}||\cdot \frac{||\delta A||}{||A||}}$
+
+   *condition number K(A)* is $||A||\cdot||A^{-1}||$
+
+   \begin{theorem}
+   Suppose A is nonsingular and $||\delta A||\le \frac{1}{||A^{-1}||}$. The solution
+   $\bl{x}+\delta\bl{x}$ to $(A+\delta A)(\bl{x}+\delta\bl{x})$ approximates the solution
+   $\bl{x}$ of $A\bl{x}=\bl{b}$ with the error estimate
+   \begin{equation*}
+   \frac{||\delta\bl{x}||}{||\bl{x}||}\le \frac{K(A)}{1-K(A)||\delta A||/||A||}
+   (\frac{||\delta A||}{||A||}+ \frac{||\delta\bl{b}||}{||\bl{b}||})
+   \end{equation*}
+   \end{theorem}
+
+   note:
+   1. If A is symmetric, then $K(A)_2= \frac{\max|\lambda|}{\min|\lambda|}$
+   2. $K(A)_p\ge1$ for all natural norm
+   3. $K(\alpha A)_=K(A)$ for any $\alpha\in R$
+   4. $K(A)_2=1$ if A is orthogonal
+   5. $K(RA)_2=K(AR)_2=K(A)_2$ for all orthogonal matrix R_
+
+
+   *iterative refinement*:
+   \begin{theorem}
+   Suppose $\bl{x}^*$ is an approximation to the solution of $A\bl{x}=\bl{b}$, A is
+   nonsingular matrix and $\bl{r}=\bl{b}-A\bl{x}$. Then for any natural norm,
+   $||\bl{x-x^*}\le||\bl{r}||\cdot||A^{-1}||$, and if $\bl{x,b}\neq\bl{0}$
+   \begin{equation*}
+   \frac{||\bl{x}-\bl{x}^*||}{||\bl{x}||}\le K(A)\frac{||\bl{r}||}{||\bl{b}||}
+   \end{equation*}
+   \end{theorem}
+
+   *refinement*
+   1. $A\bl{x}=\bl{b}$ => approximation $\bl{x}_1$
+   2. $\bl{r}_1=\bl{b}-A\bl{x}_1$
+   3. $A\bl{d}_1=\bl{r}_1$ => $\bl{d}_1$
+   4. $\bl{x}_2=\bl{x}_1+\bl{d}_1$
+* chap9 Approximating Eigenvalues
+** 9.3 the power method
+   *the original method*
+   Assumptions: A is an $n\times n$ matrix with eigenvalues satisfying
+   $|\lambda_1|>|\lambda_2|\ge\dots\ge|\lambda_n|\ge 0$
+
+   \begin{align*}
+   &\bl{x}^{(0)}=\displaystyle\sum_{j=1}^{n}\beta_j\bl{v}_j,\quad\beta_1\neq 0\\
+   &\bl{x}^{(1)}=A\bl{x}^{(0)}=\displaystyle\sum_{j=1}^n\beta_j\lambda_j\bl{v}_j\\
+   &\bl{x}^{(2)}=A\bl{x}^{(1)}=\displaystyle\sum_{j=1}^n\beta_j\lambda_j^2\bl{v}_j\\
+   &\dots\\
+   &\bl{x}^{(k)}\approx\lambda_1^k\beta_1\bl{v}_1, \quad \lambda_1\approx
+   \frac{\bl{x}^{(k)}_i}{\bl{x}^{(k-1)}_i}
+   \end{align*}
+
+   *Normalization*. Suppose $||\bl{x}||_\infty=1$. Let
+   $||\bl{x}^{(k)}||_\infty=|x_{p_k}^{(k)}|$.Then $\bl{u}^{(k-1)}=
+   \frac{\bl{x}^{(k-1)}}{|x_{p_{k-1}}^{(k-1)}|}$ and
+   $\bl{x}^{(k)}=A\bl{u}^{(k-1)}$.
+   Then $\bl{u}^{(k)}= \frac{\bl{x}^{(k)}}{|x_{p_k}^{(k)}|}\to \bl{v}_1$.
+   $\lambda_1\approx
+   \frac{\bl{x}_i^{(k)}}{\bl{u}_i^{(k-1)}}=\bl{x}_{p_{k-1}}^{(k)}$
+
+   Note:
+   1. the method works for *multiple* eigenvalues
+      $\lambda_1=\lambda_2=\dots=\lambda_r$
+   2. the method fails to converge if $\lambda_1=-\lambda_2$
+   3. Aitken's $\Delta^2$ can be used
+
+     
+   *Rate of convergence*. $\bl{x}^{(k)}=A\bl{x}^{(k-1)}=\lambda_1^k
+   \displaystyle\sum_{j=1}^n\beta_j(\frac{\lambda_j}{\lambda_1})^k\bl{v}_j$.
+   Make $|\lambda_2/\lambda_1|$ as small as possible.
+   Assume $\lambda_1>\lambda_2\ge\dots\ge\lambda_n, |\lambda_2|>|\lambda_n|$.
+   Let $B=A-pI$, then $|\lambda I-A|=|\lambda I-(B+pI)|=|(\lambda-p)I-B|$.
+   Hence $\lambda_A-p=\lambda_B$. Since  $\frac{|\lambda_2-p|}{|\lambda_1-p|}<
+   \frac{|\lambda_2|}{|\lambda_1|}$ . The iteration is fast
+   
+
+   *Inverse power method*. If A has
+    $|\lambda_1|\ge|\lambda_2|\ge\dots>|\lambda_n|$, then $A^{-1}$ has
+    $|\frac{1}{\lambda_n}|>| \frac{1}{\lambda_{n-1}}|\ge\dots\ge|
+    \frac{1}{\lambda_1}|$ 
