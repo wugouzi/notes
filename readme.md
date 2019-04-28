@@ -12,3 +12,6 @@
 
 # TODO
 I find that there is poor introduction resource to org mode, maybe later I will write an Chinese introduction:)
+
+# Note
+1. `preamble.tex` is a hard link of `latex/preamble.tex` for convenience

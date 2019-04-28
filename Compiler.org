@@ -1,42 +1,264 @@
 #+TITLE: Compiler
 #+AUTHOR: wugouzi
-#+LATEX_HEADER: \usepackage{tikz}
+#+LATEX_HEADER: \usepackage{tikz,qtree}
+#+LATEX_HEADER: \usepackage{forest,syntax}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_CLASS: article
+#+EXPORT_FILE_NAME: latex/Compiler/Compiler.tex
+
+* Chap1 introduction
+  source code -> scanner -> [tokens] -> parser -> [syntax tree] -> semantic
+  analyzer -> [annotated tree] -> source code optimizer -> [intermediate code]
+  -> code generator -> [target code] -> target code optimizer -> [target code]
+
+* chap2 scanning
+  source code(*character stream*) -> *token stream*. Use regular expression.
+  a ε R|S RS R* R+=R(R*) R?=(R|ε) [abce]=(a|b|c|e) [a-z] [^az]=anything but
+  one of the listed chars
+
+  comment "/*"([^*/]|[^*]"/"|"*"[^/])*"*/"
+
+  finite automata
+
+  Thompson's construction
+
+
+  Minimizing the number of states in a DFA
+  1. it begins with the most optimistic assumptions possible: it create two sets
+     * one consisting of all the accepting states
+     * the other consisting of all the nonaccepting states
+  2. given this partition of the states of the original DFA, consider the
+     transitions on *each character* a of the alphabet
+     * if all accepting states have transitions on a to accepting states,
+       defines an a-transition from the new accepting state to itself
+     * if all accepting states have transitions on a to nonaccepting states ...
+  3. given this partition of the states of the original DFA, consider the
+     transitions on each character a of the alphabet
+     * if there are two accepting states s and t that have transitions on a that
+       land in different sets, no a-transition can be defined for this grouping
+       of the states. a distinguish the states s and t
+     * if there are two accpeting states s and t s.t. s has an a-transition to
+       another accepting state, while t has no a-transition at all. a
+       distinguish s and t
+
+* Chap3 context-free grammars and parsing
+** context-free grammars
+   A context-free grammar involves recursion rules. 4-tuple $(V,\Sigma,S,\to)$.
+   V nonterminal. Σ terminal. S start symbol. $\to\subset
+   V\times(V\cup\Sigma)*$
+
+   *Left recursive*: the nonterminal A appears as the first symbol on the
+   right-hand side of the rule defining A
+
+   *Right recusive*:
+
+   *ε-production*: empty->ε
+   A grammar that generates a language containing the empty string must have at
+   least one *ε-production*
+** Parse tree and abstract syntax trees
+*** parse tree
+    A *parse tree* corresponding to a derivation is a labeled tree
+      * the interior nodes are labeled by *nonterminals*
+      * the leaf is *terminals*
+
+    *left-most derivation*
+*** abstract symtax tree
+    \begin{forest}
+    [+ [3] [4] ]
+    \end{forest}
+** Ambiguity
+*** ambiguity grammars
+   *ambiguous grammar*: a grammar that generates a string with two distinct parse
+   trees
+
+   Two basic methods:
+   1. A rule: that specifies in each ambiguous case which of the parse trees is
+      the correct one. *disambbiguating rule*
+      * associativity
+   2. change the grammar
+*** precedence and associativity
+    A /left recursive/ rule makes its operators associate on the left
+*** the dangling else problem
+    \begin{grammar}
+    <statement> ::= <if-stmt>
+    \alt `other'
+
+    <if-stmt> ::= `if' `(' <exp> `)' <statement>
+    \alt `if' `(' <exp> `)' <statement> `else' <statement>
+    \end{grammar}
+
+    disambiguating rule is *most closely nested rule*.
+    grammar is
+    \begin{grammar}
+    <statement> -> <matched-stmt>
+    \alt <unmatched-stmt>
+
+    <matched-stmt> -> `if' `(' <exp> `)' <matched-stmt> `else' <matched-stmt>
+    \alt `other'
+
+    <unmatched-stmt> -> `if' `(' <exp> `)' <statement>
+    \alt `if' `(' <exp> `)' <matched-stmt> `else' <unmatched-stmt>
+
+    <exp> -> `0'
+    \alt `1'
+    \end{grammar}
+*** inessential ambiguity
+    sometimes a grammar may be ambiguous and yet always produce unique /abstract/
+    /syntax tree/.
+
+    *inessential ambiguity*: the associated semantics don't depend on what
+     disambiguating rule is used
+*** extended notations: EBNF and syntax diagrams
+    $A\to A\;\alpha\mid\beta\Longrightarrow A\to\beta\;\{\alpha\}$.
+    $A\to\alpha\; A\mid\beta\Longrightarrow A\to\{\alpha\}\;\beta$
+** Formal properties of context-free language
+   A context-free grammar consists of the following
+   1. T terminals
+   2. N nonterminals
+   3. P grammar rules
+   4. S start symbol
+
+   *sentential form* a string a in $(T\cup N)*$
+
+   A grammar G is *ambiguous* if there exists a string $w\in L(G)$ s.t. w has two
+   distinct parse trees
+
+* Chap4 top-down parsing
+** Top-down parsing by recursive-descent
+   not easy and use EBNF
+   \begin{grammar}
+   <if-stmt> ::= `if' `(' <exp> `)' <statement>
+   \alt `if' `(' <exp> `)' <statement> `else' <statement>
+   \end{grammar} to if-stmt -> if (exp) statement [else statement]
+** LL(1) parsing
+   use an explicit stack rather than recursive calls.
+   \begin{grammar}
+   <S> ::= <E> `+' <S>
+   \alt <E>
+
+   <E> ::= `num'
+   \alt `(' <S> `)'
+   \end{grammar}.
+   | partly-derived string | lookahead | parsed part | unparsed part |
+   |-----------------------+-----------+-------------+---------------|
+   | S                     |         ( |             | (1+2+(3+4))+5 |
+   | E+S                   |         ( |             | (1+2+(3+4))+5 |
+   | (S)+S                 |         1 | (           |  1+2+(3+4))+5 |
+   | (E+S)+S               |         1 | (           |  1+2+(3+4))+5 |
+   | (1+S)+S               |         2 | (1+         |    2+(3+4))+5 |
+   | (1+E+S)+S             |         2 | (1+         |    2+(3+4))+5 |
+   | (1+2+S)+S             |         ( | (1+2+(      |      (3+4))+5 |
+
+   For $S\to(S)\; S\mid\epsilon$
+   | step | parsing | input | action  |
+   |------+---------+-------+---------|
+   |    1 | $S      | ()$   | S->(S)S |
+   |    2 | $S)S(   | ()$   | match   |
+   |    3 | $S)S    | )$    | S->e    |
+   |    4 | $S)     | )$    | match   |
+   |    5 | $S      | $     | S->e    |
+   |    6 | $       | $     | match   |
+
+   Two actions:
+   1. generate
+   2. match: match a token on top of the stack with the next input token
+
+   This corresponds to the leftmost derivation. *characteristic of top-down
+   parsing*
+*** LL(1) parsing table
+   parsing table
+   | M[N,T] | (       | )    | $    |
+   |--------+---------+------+------|
+   | S      | S->(S)S | S->e | S->e |
+
+   M is the set of non-terminals.
+   T is the set of terminals or tokens including $
+
+   Table-constructing rule:
+   1. if $A\to\alpha$ is a production choice and there is a derivation
+      $\alpha\Rightarrow*a\beta$ where a is a token then add $A\to\alpha$ to
+      M[A,a]
+   2. if $A\to\alpha$ and
+      $\alpha\Rightarrow*\epsilon,S\textdollar\textsterling\Rightarrow^*\beta
+      Aa\gamma$, where S is the start symbol and a is a token(or $), then add
+      $A\to\alpha$ to M[A,a]
+
+   A grammar is LL(1) if LL(1) parsing table has at most one production in each entry
+*** left recursion removal and left factoring
+    *left recursion removal*
+       * *immediate left recursion*: $exp\to exp\;+\;term|exp\;-\;term|term$
+       * *indirect left recursion*: $A\to Bb$ and $B\to Aa$
+
+
+    1. Simple immediate left recursion.
+       $A\to A\alpha|\beta$ to $A\to\beta\;A'$ and $A'\to\alpha\;A'|\epsilon$
+    2. general immediate left recursion.
+       $A\to A\alpha_1|\dots|A\alpha_n|\beta_1|\dots|\beta_m$ to
+       $A\to\beta_1A'|\dots|\beta_mA'$ and
+       $A'\to\alpha_1A'|\dots|\alpha_nA'|\epsilon$
+    3. general left recursion. grammars with no $\epsilon$-productions and no cycles
+       
+
+    doesn't change language, but changes the grammar and parse tree
+
+    *left factoring*.
+    $A\to\alpha\beta|\alpha\gamma$ to $A\to\alpha A'$ and $A'\to\beta\mid\gamma$
+*** Syntax tree construction in LL(1) parsing
+** First and follow sets
+   X a grammar symbol(a terminal or non-terminal) or $\epsilon$. Then First(X)
+   is 
+   1. if X is a terminal or $\epsilon$, then First(X)={X}
+   2. if X is a non-terminal, for each $X\to X_1X_2\dots X_n$, First(X) contains
+      First(X1) - {e}
+
+   A non-terminal A is *nullable* iff there exists $A\Rightarrow^*\epsilon$ iff
+   First(A) contains $\epsilon$
+
+   Follow(A) is 
+   1. if A is start symbol, $ is in Follow(A)
+   2. if $B\to\alpha A\gamma$, then
+      $\text{First}(\gamma)-\{\epsilon\}\subseteq\text{Follow}(A)$ 
+   3. if $B\to\alpha A\gamma, \epsilon\in\text{First}(\gamma)$, then Follow(A)
+      contains Follow(B)
+** Error recovery in top-down parsers
 * Chap5 Bottom-up parsing
 ** Overview of bottom-up parsing  
    + A bottom-up parser uses an *explicit stack* to perform a parse
    + The parsing stack will contain both tokens and nonterminals
      | $            | inputstring $ |
+     |--------------+---------------|
      | ...          | ...           |
      | $StartSymbol | $accept       |
    + *right-most* derivation -- backward
      start with the tokens; end with the start symbol
-     (1+2+(3+4))+5 ⇐
-     (E+2+(3+4))+5 ⇐
-     (S+2+(3+4))+5 ⇐
-     (S+E+(3+4))+5 ⇐
-     (S+(3+4))+5 ⇐
-     (S+(E+4))+5 ⇐
-     (S+(S+4))+5 ⇐
-     (S+(S+E))+5 ⇐
-     (S+(S))+5 ⇐
-     (S+E)+5 ⇐
-     (S)+5 ⇐
-     E+5 ⇐
-     S+5 ⇐
-     S+E ⇐
-     S
+     | (1+2+(3+4))+5 |
+     | (E+2+(3+4))+5 |
+     | (S+2+(3+4))+5 |
+     | (S+E+(3+4))+5 |
+     | (S+(3+4))+5   |
+     | (S+(E+4))+5   |
+     | (S+(S+4))+5   |
+     | (S+(S+E))+5   |
+     | (S+(S))+5     |
+     | (S+E)+5       |
+     | (S)+5         |
+     | E+5           |
+     | S+5           |
+     | S+E           |
+     | S             |
    + *parsing actions*: a sequence of *shift* and *reduce* operations
      *parser state*: a stack of terminals and non-terminals
      *current derivation step* = always stack + input
-     | derivation      | step stack | unconsumed input |
-     |                 |            |              <r> |
-     | (1+2+(3+4))+5 ⇐ |            |    (1+2+(3+4))+5 |
-     |                 | (          |     1+2+(3+4))+5 |
-     | (E+2+(3+4))+5 ⇐ | (E         |    +2+(3+4))+5 ⇐ |
-     | (S+2+(3+4))+5 ⇐ | (S         |      +2+(3+4))+5 |
-     |                 | (S+        |       2+(3+4))+5 |
-     |                 | (S+2       |        +(3+4))+5 |
-     | (S+E+(3+4))+5 ⇐ | (S+E       |        +(3+4))+5 |
+     | derivation    | step stack | unconsumed input |
+     |---------------+------------+------------------|
+     |               |            |              <r> |
+     | (1+2+(3+4))+5 |            |    (1+2+(3+4))+5 |
+     |               | (          |     1+2+(3+4))+5 |
+     | (E+2+(3+4))+5 | (E         |      +2+(3+4))+5 |
+     | (S+2+(3+4))+5 | (S         |      +2+(3+4))+5 |
+     |               | (S+        |       2+(3+4))+5 |
+     |               | (S+2       |        +(3+4))+5 |
+     | (S+E+(3+4))+5 | (S+E       |        +(3+4))+5 |
    + 1. *shift*: shift a terminal from the front of the input to the top of the
      stack 
      1. *reduce*: reduce a string α at the top of the stack to a nonterminal A,
@@ -48,11 +270,14 @@
      added to the grammar :  S' →S   
 
    + example
+
      S'->S
-     S ->(S)S|ε
+     
+     S ->(S)S|e
 
      S'=>S=>(S)S=>(S)=>()
      |   | Parsing stack | Input | Action             |
+     |---+---------------+-------+--------------------|
      |   |               |   <r> |                    |
      | 1 | $             | ( ) $ | Shift              |
      | 2 | $ (           |   ) $ | Reduce  S -> ε    |
@@ -63,7 +288,9 @@
      | 7 | $S'           |     $ | Accept             |
 
    + example
+
      E'->E
+
      E->E+n|n
 
      E'=>E=>E+n=>n+n
@@ -100,23 +327,23 @@
 ** Finite automata of LR(0) items and LR(0) parsing
    + An *LR(0) item* of a context-free grammar: a production choice with a
      distinguished position in its right-hand side
-   + If *A → α*, *βγ = α*, then *A → β · γ* is an LR(0) item
+   + If *A -> α*, *βγ = α*, then *A -> β · γ* is an LR(0) item
    + Example
-     S' → S
-     S → (S)S | ε
-     
-     S' → ·S
-     S' → S·
-     S → ·(S)S
-     S → (·S)S
-     S → (S·)S
-     S → (S)·S
-     S → (S)S·
-     S → · 
+     | S' -> S       |
+     | S -> (S)S \ e |
+     | S' -> ·S      |
+     | S' -> S·      |
+     | S -> ·(S)S    |
+     | S -> (·S)S    |
+     | S -> (S·)S    |
+     | S -> (S)·S    |
+     | S -> (S)S·    |
+     | S -> ·        |
 *** Finite automata of items
     + The LR(0) items: as the state of a finite automata
     + construct the DFA of sets of LR(0) using the subset construction from NFA
     + If X is a token or a nonterminal
+
       \begin{tikzpicture}
       [place/.style={circle,minimum size=5mm}]
       \node (x1) at (0,0) [place] {$A\to\alpha\cdot X\eta$};
@@ -125,8 +352,9 @@
       \end{tikzpicture}
     + If X is a token, then this transition corresponds to a shift of X from the
       input to the top of the stack during a parse
-    + if X is a nonterminal
+    + if X is a nonterminal,
       X will never appear as an input symbol
+
       \begin{tikzpicture}
       \node (x1) at (0,0) [circle] {$A\to\alpha\cdot X\eta$};
       \node (x2) at (5,0) [circle] {$X\to\cdot\beta$};
@@ -154,6 +382,7 @@
       * A reduce state containing a single complete item
     + table
       | state | action | rule   | input | input | input | goto |
+      |-------+--------+--------+-------+-------+-------+------|
       |       |        |        |     ( |     a | )     |    A |
       |     0 | shift  |        |     3 |     2 |       |    1 |
       |     1 | reduce | A'->A  |       |       |       |      |
@@ -163,26 +392,28 @@
       |     5 | reduce | A->a   |       |       |       |      |
 ** SLR(1) Parsing (simple LR(1))
     + *definition*
-      1. if state s contains any item of form *A->α·Xβ*, then the action is to
-         shift the current input token onto the stack, and the new state to be
-         pushed on the stack is the state containing the item *A->αX·β*
-      2. if state s contains the complete item *A->γ·*, and _the next token in_
+      1. if state s contains any item of form $A\to\alpha\cdot X\beta$, then the
+         action is to shift the current input token onto the stack, and the new
+         state to be pushed on the stack is the state containing the item
+         $A\to\alpha\cdot X\beta$ 
+      2. if state s contains the complete item $A\to\gamma\cdot$, and _the next token in_
          _the input string is in Follow(A)_, then the action is to reduce by the
-         rule *A->γ*
+         rule $A\to\gamma$
          * A reduction by the rule *S'->S* where S' is the start state, this will
            happen only if the next input token is $
          * remove the string γ and all of its corresponding states from the parsing
            stack
          * back up in the DFA to the state from which the construction of γ begin
-         * this state must contain an item of the form *B->α·Aβ*. Push A to the stack,
-           and push the state containing the item *B->αA·β*
+         * this state must contain an item of the form $B\to\alpha\cdot A\beta$.
+           Push A to the stack, and push the state containing the item
+           $B\to\alpha\cdot A\beta$ 
       3. if the next input token is s.t. neither of the above two cases applies,
          an error is declared
     + A grammar is *SLR(1)* iff for any state s
-      1. for any item *A->α·Xβ* in s with X a terminal, there is no _complete_
-         _item_ *B->γ·* in s with X ∈ Follow(B)
-      2. For any two complete item *A->α·* and *B->β·* in s, Follow(A)∩Follow(B)
-         is empty
+      1. for any item $A\to\alpha\cdot X\beta$ in s with X a terminal, there is no _complete_
+         _item_ $B\to\gamma\cdot$ in s with X ∈ Follow(B)
+      2. For any two complete item $A\to\alpha\cdot$ and $B\to\beta\cdot$ in s,
+         $\text{Follow}(A)\cap\text{Follow(B)}=\emptyset$
     + right recursion can cause stack overflow
 *** disambiguating rules for parsing conflicts
      + two kinds of parsing conflicts in SLR(1) parsing
@@ -235,8 +466,13 @@
    + if a grammar is SLR(1), then it's LALR(1)
    + compute the DFA of LALR(1) items directly from the DFA of LR(0) items through
      a process of *propagating lookaheads*
+** Error recovery in Bottom-up parsers
+   A bottom-up parser will detect an error when a blank entry is detected
 * chap6 semantics analysis
 ** Attributes and attribute grammars
+   *attribute*: any property of a programming language constructs. May be fixed prior to
+   the compilation process or be only determinable during program execution
+
    *binding* of the attribute: the process of computing an attribute and associating its
    computed value with the language construct in question
 
@@ -245,21 +481,54 @@
 
    *static attributes/dynamic attributes*: based on the difference of the binding time
 
-   *type checker*: computes the data type attribute of all language entities for which
-   data types are defined.
+   *type checker*: an analyzer.
+   computes the data type attribute of all language entities for which
+   data types are defined. And verifies that these types conform to the type rules of
+   the language
 
    *type checking*: set of rules that ensure the type consistency of different constructs
    in the program. e.g. operands types and so on
 *** attribute grammars
-    * *X.a*: the value of a associated to X
-      X is a grammar symbol and a is an attribute associated to X
+    * $X.a$: the value of a associated to X
+      
+      $X$ is a grammar symbol and $a$ is an attribute associated to $X$
     * *syntax-directed semantics*: attributes are associated directly with the grammar
       symbols of the language
-    * given attributes a₁, a₂,...,aₖ for each grammar rule X₀->X₁...Xₙ, the values of
-      the attributes Xᵢ.aⱼ of each grammar symbol Xᵢ are related to the values of the
+    * given attributes $a_1, a_2,...,a_k$ for each grammar rule 
+      $X_0\to X_1\dots X_n$, the values of
+      the attributes $X_i.a_j$ of each grammar symbol $X_i$ are related to the values of the
       attributes of the other symbols in the rule
     * an *attribute grammar*
-      Xᵢ.aⱼ=fᵢⱼ(X₀.a₁,...,X₀.aₖ,...,Xₙ.a₁,...,Xₙ.aₖ)
+      
+      $X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,\dots,X_n.a_1,\dots,X_n.a_k)$
+    * example
+      
+      For 
+      \begin{grammar}
+      <number> ::= <number> <digit> \alt <digit>
+
+      <digit> ::= `[0123456789]'
+      \end{grammar}
+      | grammar rule                      | semantic rules                               |
+      |-----------------------------------+----------------------------------------------|
+      | $number1 \to number2 \; digit$    | $number1.val=number2.val\times 10+digit.val$ |
+      | $number\to digit$                 | $number.val=digit.val$                       |
+      | $digit\to 0$                      | $digit.val=0$                                |
+      
+      \begin{forest}
+      qtree,
+      [number\\(val=34*10+5=345)
+       [number\\(val=3*10+4=34) 
+        [number\\(val=3) 
+         [digit\\(val=3) 
+          [3]
+         ]
+        ]
+        [digit\\(val=4) [4]]
+       ]
+       [digit\\(val=5) [5]]
+      ]
+      \end{forest}
 *** simplifications and extensions to attribute grammars
     * *metalanguage* for the attribute grammar: the collection of expressions allowable in
       an attribute equation
@@ -284,3 +553,42 @@
         an attribute grammar where all the attributes are synthesized
     + *inherited attributes*
       inheritance from parent to siblings, from siblings to siblings
+*** The use of external data structures to store attributes values
+    + Applicability
+      * Not suitable to the method of *parameters* and *returned values*
+      * particularly when the attribute values have significant structure
+        and may be needed at arbitrary points during translation
+      * Not reasonable to be stored in the syntax tree nodes
+    + Ways:
+      * external data structures: table, graphs and other data structures. One
+        of the prime examples is the symbol table
+      * replace attribute equations by calls to procedures representing
+        operations on the appropriate data structure used to maintain the
+        attribute values
+*** The computation of attributes during parsing
+    + *L-attributed*
+      * An attribute grammar of $a_1,\dots,a_k$ is *L-attributed* if for each
+        inherited attribute $a_j$ and each grammar rule $X_0\to X_1\dots X_n$
+        the associated equations for a_j are
+        $X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,X_1.a_1,\dots,X_1.a_k,\dots,X_{i-1}
+        .a_1,\dots,X_{i-1}.a_k)$
+    + *S-attributed grammar* is L-attributed
+*** The dependence of attributes computation on the syntax
+** The Symbol Table
+   *semantic checks*
+
+   | NAME | KIND | TYPE               | ATTRIBUTES |
+   | foo  | fun  | int * int -> bool  | extern     |
+   
+   1. Linear list
+   2. Various search tree structures
+      AVL, B tree
+   3. hash tables
+      best choice
+*** Declarations
+    * constant declarations
+    * type declarations
+    * variable declarations
+    * procedure/function declarations
+*** Scope rules and block structure
+** Data types and type checking

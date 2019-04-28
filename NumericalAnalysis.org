@@ -282,8 +282,72 @@
 *** Simple idea
     Given $x_0,\dots,x_n$
     \begin{enumerate}
-
+    \item Fitting $x_0$ first: $f(x)\approx f_0, f_0=f(x_0)$
+    \item Add one more point $x_1$, $f_1=f(x_1)$
+    \begin{equation*}
+    f(x) \approx f_0+\alpha_1(x-x_0),\alpha_1=\frac{f_1-f_0}{x_1-x_0}
+    \end{equation*}
+    \item More points $f(x)\approx f_0+\alpha_1(x-x_0)+\alpha_2(x-x_0)(x-x_1)$
     \end{enumerate}
+    
+    *The pattern and coefficients*.
+    $f(x)=\displaystyle\sum_{i=0}^n\alpha_i
+    \displaystyle\prod_{j=0}^{j<i}(x-x_j)
+    =\displaystyle\sum_{i=0}^n\alpha_iN^{(i)}(x)$
+
+    \begin{equation*}
+    \begin{pmatrix}
+    f_0\\
+    f_1\\
+    \vdots\\
+    f_n
+    \end{pmatrix}=
+    \begin{pmatrix}
+    N^{(0)}(x_0) & N^{(1)}(x_0) & \dots & N^{(n)}(x_0)\\
+    N^{(0)}(x_1) & N^{(1)}(x_1) & \dots & N^{(n)}(x_1)\\
+    \vdots & \vdots & \ddots&\vdots\\
+    N^{(0)}(x_n) & N^{(1)}(x_n) & \dots & N^{(n)}(x_n)\\
+    \end{pmatrix}
+    \begin{pmatrix}
+    \alpha_0\\
+    \alpha_1\\
+    \vdots\\
+    \alpha_n
+    \end{pmatrix}
+    \end{equation*}
+
+    $N^{(i)}(x_k)=\begin{cases}
+    0&k<i\\
+    \prod_{j=0}^{j<i}(x_k-x_j)&k\ge i\\
+    \end{cases}$ with $N^{(0)}(x) = 1$.
+    Newton interpolation matrix is lower triangular.
+    Lagrange matrix is identity.
+*** Basis transformation
+    \begin{equation*}
+    \begin{pmatrix}
+    1\\
+    (x-x_0)\\
+    (x-x_0)(x-x_1)\\
+    \vdots
+    \end{pmatrix}=(?)
+    \begin{pmatrix}
+    1\\
+    x\\
+    x^2\\
+    \vdots
+    \end{pmatrix}
+    \end{equation*}
+    Hence $(\Phi_B)^T=(T_A^B)^T(\Phi_A)^T$.
+    $\Phi_B=\Phi_AT_A^B$
+
+    \begin{align*}
+    (\Phi_A)(\alpha_A)=(f)&=(\Phi_B)(\alpha_B)\\
+    &=(\Phi_A)(T_A^B)(\alpha_B)\\
+    &\Rightarrow\\
+    (\alpha_A)&=(T_A^B)(\alpha_B)\\
+    (\alpha_B)&=(T_A^B)^{-1}(\alpha_A)\\
+    &=(T_B^A)(\alpha_A)
+    \end{align*}
 * Chap6 Direct Methods for Solving Linear Systems
 ** 6.1 Linear Systems of Equations
    *Gaussian elimination with backward substitution*

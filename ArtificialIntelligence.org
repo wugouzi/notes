@@ -1,5 +1,10 @@
 #+TITLE: Artificial Intelligence
-
+#+LATEX_HEADER: \usepackage{commath,amsmath}
+#+LATEX_HEADER: \newcommand{\bl}[1] {\boldsymbol{#1}}
+#+EMAIL: gouziwu@gmail.com
+#+AUTHOR: wu
+#+EXPORT_FILE_NAME: latex/ArtificialIntelligence/ArtificialIntelligence.tex
+#+OPTIONS:
 * Inference and Reasoning
 ** Propositional logic
 ** Predicate logic
@@ -7,6 +12,25 @@
    *knowledge graph*: node = entity, edge = relation.
    triplet (head entity, relation, tail entity)
 * Statistical learning and modeling
+** Machine Learning: the concept
+*** Example and concept
+    + Supervised learning problems :: 
+         applications in which the *training data* comprises examples of the input
+         vectors along with their corresponding *target vectors* are known
+
+         classification and regression
+    + Unsupervised learning problems :: 
+         the training data consists of a set of input vectors X *without any
+         corresponding target values*
+         
+         density estimation, clustering, hidden markov models
+    + Reinforcement learning problem :: 
+         finding suitable actions to take in a given situation in order to
+         maximize a reward. Here the learning algorithm is not given examples of
+         optimal outputs, in contrast to supervised learning, but must instead
+         discover them by a process of trial and error. A general feature of
+         reinforcement learning is the trade-off between exploration and exploitation
+
   types of machine learning
   - supervised learning
     * classification: the output is categorical or nominal variable
@@ -15,3 +39,98 @@
   - semi-supervised learning
   - reinforcement learning
   - deep learning
+*** supervised learning: important concepts
+    * Data: labeled instances $<\bl{x}_i,\bl{y}>$
+    * features: attribute-value pairs which characterize each $\bl{x}$
+    * learning a discrete function: *classification*
+    * learning a continuous function: *regression*
+
+    *Classification* - A two-step process
+    * *model construction*
+    * *model usage*
+
+    *regression*
+    * Example: price of a used car
+      
+      $\bl{x}$: car attributes. $\bl{y}=g(\bl{x}\mid\bl{\theta})$: price. $g$:
+      model. $\theta$ parameter set.
+** example: polynomial curve fitting
+** probability theory review and notation
+   rules of probability
+   * *sum rule* $p(X)=\displaystyle\sum_Yp(X,Y)$
+   * *product rule* $p(X,Y)=p(Y|X)p(X)$
+
+   Bayes' Theorem: $p(Y|X)=\frac{p(X|Y)p(Y)}{p(X)}$. Using sum rule
+   $p(X)=\displaystyle\sum_Yp(X|Y)p(Y)$
+
+   probability densities. $p(x\in(a,b))=$
+** information theory
+** model selection
+** decision theory
+* Statistical learning and modeling - Supervised learning
+** Basic concepts
+   + *Linearly separable*
+   + *representation of class labels*
+     * Two classes K = 2
+     * K classes
+       - 1-of-K coding scheme $\bl{t}=(0,0,1,0,0)^T$
+     * Predict discrete class labels
+       - linear model prediction $y(\bl{x})=\bl{w}^T\bl{x}+w_0$
+         w: weight vector, w_0 bias/threshold
+       - nonlinear function $f(.):R\to(0,1)$
+       - generalized linear models
+         $y(\bl{x})=f(\bl{w}^T\bl{x}+w_0)$
+         f:activation function
+       - dicision surface
+         $y(\bl{x})=\text{constant}\to \bl{w}^T\bl{x}+w_0=\text{constant}$
+   + *Three classification approaches*
+     * discriminant function
+       - least squares approach
+       - fisher's linear discriminant
+       - the perceptron algorithm of rosenblatt
+     * use discriminant functions directly and don't compute probabilities
+** discriminant functions
+*** Two classes
+    + Linear discriminant function $y(\bl{x})=\bl{w}^T\bl{x}+w_0$
+      - Dicision surface $\Omega:y(\bl{x})=0$
+      - the normal distant from the origin to the dicision surface
+        $\frac{\bl{w}^T\bl{x}}{\norm{\bl{w}}}=-\frac{w_0}{\norm{\bl{w}}}$
+      - if $x_A,x_B$ lie on the decision surface $y(\bl{x}_A)=y(\bl{x}_B)=0$,
+        then $\bl{w}^T(\bl{x}_A-\bl{x}_B)=0$. hence w is orthogonal to every
+        vector lying within Ω. $\frac{\bl{w}}{\norm{\bl{w}}}$ is the normal
+        vector of Ω
+      - $\bl{x}=\bl{x}_\perp+r\frac{\bl{w}}{\norm{\bl{w}}}$ hence
+        $r=\frac{y(\bl{x})}{\norm{bl{x}}}$. $y(\bl{x}_\perp)=0\to
+        \bl{w}^T\bl{x}=-w_0+r\frac{\bl{w}^T\bl{w}}{\norm{\bl{w}}}$ 
+      - $\tilde{\bl{w}}=(w_0,\bl{w}), \tilde{\bl{x}}=(x_0,\bl{x})$
+*** K-class
+    + One-versus-the-rest classifier
+      K - 1 classifiers each of which solves a two-class problem
+    + One-versus-one classifier
+      K(K-1)/2 binary discriminant functions
+    + single K-class discriminant comprising K linear functions
+      $y_k(\bl{x})=\bl{w}_k^T\bl{x}+w_{k_0}$
+      - assigning a point x to class $\mathcal{C}_k$ if
+        $y_k(\bl{x}>y_j(\bl{x}))$ for all j≠k
+      - dicision boundary between class $\mathcal{C}_k, \mathcal{C}_j$ is given
+        $y_k(\bl{x})=y_j(\bl{x})\to
+        (\bl{w}_k-\bl{w}_j)^T\bl{x}+(w_{k_0}-w_{j_0})=0$
+      - $\mathcal{R}_k$ is singly connected convex
+*** Learning the parameters of linear discriminant functions
+**** Least-squares approach
+     + Problem
+     + Learning
+       - SSE function
+         $SSE=\displaystyle\sum_{i=1}^n(y_i-f(x_i))^2$
+         $E_D(\widetilde{\bl{W}})=1/2\text{Tr}\{(\bl{\widetilde{X}\widetilde{W}-T})^T 
+         (\bl{\widetilde{X}\widetilde{W}-T})\}$
+**** fisher's linear discriminant
+     from the view of dimensionality reduction
+     $y\ge -w_0$ as class $\mathcal{C}_1$
+
+     $m_1=\frac{1}{N_1}\displaystyle\sum_{n\in\mathcal{C}_1}x_n, 
+     m_2=\frac{1}{N_2}\displaystyle\sum_{n\in\mathcal{C}_2}x_n
+     \xrightarrow{y=\bl{w}^T\bl{x}} m_2-m_1=\bl{w}^T(\bl{m}_2-\bl{m}_1)$
+**** the perceptron algorithm of rosenblatt
+** probalibilistic generative models
+** probabilistic discriminative models

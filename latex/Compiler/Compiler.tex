@@ -1,0 +1,801 @@
+% Created 2019-04-28 日 14:08
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\usepackage{tikz,qtree}
+\usepackage{forest,syntax}
+\input{../preamble.tex}
+\author{wugouzi}
+\date{\today}
+\title{Compiler}
+\hypersetup{
+ pdfauthor={wugouzi},
+ pdftitle={Compiler},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.1 (Org mode 9.1.14)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Chap1 introduction}
+\label{sec:orga06e29d}
+source code -> scanner -> [tokens] -> parser -> [syntax tree] -> semantic
+analyzer -> [annotated tree] -> source code optimizer -> [intermediate code]
+-> code generator -> [target code] -> target code optimizer -> [target code]
+
+\section{chap2 scanning}
+\label{sec:orgb50eafe}
+source code(\textbf{character stream}) -> \textbf{token stream}. Use regular expression.
+a ε R|S RS R* R+=R(R*) R?=(R|ε) [abce]=(a|b|c|e) [a-z] [\(^{\text{az}}\)]=anything but
+one of the listed chars
+
+comment "\emph{*"([\(^{\text{*}}\)/]|[\(^{\text{*}}\)]"}"|"\textbf{"[\^{}/])}"*/"
+
+finite automata
+
+Thompson's construction
+
+
+Minimizing the number of states in a DFA
+\begin{enumerate}
+\item it begins with the most optimistic assumptions possible: it create two sets
+\begin{itemize}
+\item one consisting of all the accepting states
+\item the other consisting of all the nonaccepting states
+\end{itemize}
+\item given this partition of the states of the original DFA, consider the
+transitions on \textbf{each character} a of the alphabet
+\begin{itemize}
+\item if all accepting states have transitions on a to accepting states,
+defines an a-transition from the new accepting state to itself
+\item if all accepting states have transitions on a to nonaccepting states \ldots{}
+\end{itemize}
+\item given this partition of the states of the original DFA, consider the
+transitions on each character a of the alphabet
+\begin{itemize}
+\item if there are two accepting states s and t that have transitions on a that
+land in different sets, no a-transition can be defined for this grouping
+of the states. a distinguish the states s and t
+\item if there are two accpeting states s and t s.t. s has an a-transition to
+another accepting state, while t has no a-transition at all. a
+distinguish s and t
+\end{itemize}
+\end{enumerate}
+
+\section{Chap3 context-free grammars and parsing}
+\label{sec:orga6c4681}
+\subsection{context-free grammars}
+\label{sec:org121046c}
+A context-free grammar involves recursion rules. 4-tuple \((V,\Sigma,S,\to)\).
+V nonterminal. Σ terminal. S start symbol. \(\to\subset
+   V\times(V\cup\Sigma)*\)
+
+\textbf{Left recursive}: the nonterminal A appears as the first symbol on the
+right-hand side of the rule defining A
+
+\textbf{Right recusive}:
+
+\textbf{ε-production}: empty->ε
+A grammar that generates a language containing the empty string must have at
+least one \textbf{ε-production}
+\subsection{Parse tree and abstract syntax trees}
+\label{sec:org2ba0be9}
+\subsubsection{parse tree}
+\label{sec:org93095e0}
+A \textbf{parse tree} corresponding to a derivation is a labeled tree
+\begin{itemize}
+\item the interior nodes are labeled by \textbf{nonterminals}
+\item the leaf is \textbf{terminals}
+\end{itemize}
+
+\textbf{left-most derivation}
+\subsubsection{abstract symtax tree}
+\label{sec:orgff1d794}
+\begin{forest}
+[+ [3] [4] ]
+\end{forest}
+\subsection{Ambiguity}
+\label{sec:orga628289}
+\subsubsection{ambiguity grammars}
+\label{sec:orgef52eb2}
+\textbf{ambiguous grammar}: a grammar that generates a string with two distinct parse
+trees
+
+Two basic methods:
+\begin{enumerate}
+\item A rule: that specifies in each ambiguous case which of the parse trees is
+the correct one. \textbf{disambbiguating rule}
+\begin{itemize}
+\item associativity
+\end{itemize}
+\item change the grammar
+\end{enumerate}
+\subsubsection{precedence and associativity}
+\label{sec:orgfa75e10}
+A \emph{left recursive} rule makes its operators associate on the left
+\subsubsection{the dangling else problem}
+\label{sec:org177a2ff}
+\begin{grammar}
+<statement> ::= <if-stmt>
+\alt `other'
+
+<if-stmt> ::= `if' `(' <exp> `)' <statement>
+\alt `if' `(' <exp> `)' <statement> `else' <statement>
+\end{grammar}
+
+disambiguating rule is \textbf{most closely nested rule}.
+grammar is
+\begin{grammar}
+<statement> -> <matched-stmt>
+\alt <unmatched-stmt>
+
+<matched-stmt> -> `if' `(' <exp> `)' <matched-stmt> `else' <matched-stmt>
+\alt `other'
+
+<unmatched-stmt> -> `if' `(' <exp> `)' <statement>
+\alt `if' `(' <exp> `)' <matched-stmt> `else' <unmatched-stmt>
+
+<exp> -> `0'
+\alt `1'
+\end{grammar}
+\subsubsection{inessential ambiguity}
+\label{sec:orgd6bbe6e}
+sometimes a grammar may be ambiguous and yet always produce unique \emph{abstract}
+\emph{syntax tree}.
+
+\textbf{inessential ambiguity}: the associated semantics don't depend on what
+ disambiguating rule is used
+\subsubsection{extended notations: EBNF and syntax diagrams}
+\label{sec:org7acd515}
+\(A\to A\;\alpha\mid\beta\Longrightarrow A\to\beta\;\{\alpha\}\).
+\(A\to\alpha\; A\mid\beta\Longrightarrow A\to\{\alpha\}\;\beta\)
+\subsection{Formal properties of context-free language}
+\label{sec:org127a5bf}
+A context-free grammar consists of the following
+\begin{enumerate}
+\item T terminals
+\item N nonterminals
+\item P grammar rules
+\item S start symbol
+\end{enumerate}
+
+\textbf{sentential form} a string a in \((T\cup N)*\)
+
+A grammar G is \textbf{ambiguous} if there exists a string \(w\in L(G)\) s.t. w has two
+distinct parse trees
+
+\section{Chap4 top-down parsing}
+\label{sec:orgdaed732}
+\subsection{Top-down parsing by recursive-descent}
+\label{sec:org594e27d}
+not easy and use EBNF
+\begin{grammar}
+<if-stmt> ::= `if' `(' <exp> `)' <statement>
+\alt `if' `(' <exp> `)' <statement> `else' <statement>
+\end{grammar} to if-stmt -> if (exp) statement [else statement]
+\subsection{LL(1) parsing}
+\label{sec:org1793dbd}
+use an explicit stack rather than recursive calls.
+\begin{grammar}
+<S> ::= <E> `+' <S>
+\alt <E>
+
+<E> ::= `num'
+\alt `(' <S> `)'
+\end{grammar}.
+\begin{center}
+\begin{tabular}{lrlr}
+partly-derived string & lookahead & parsed part & unparsed part\\
+\hline
+S & ( &  & (1+2+(3+4))+5\\
+E+S & ( &  & (1+2+(3+4))+5\\
+(S)+S & 1 & ( & 1+2+(3+4))+5\\
+(E+S)+S & 1 & ( & 1+2+(3+4))+5\\
+(1+S)+S & 2 & (1+ & 2+(3+4))+5\\
+(1+E+S)+S & 2 & (1+ & 2+(3+4))+5\\
+(1+2+S)+S & ( & (1+2+( & (3+4))+5\\
+\end{tabular}
+\end{center}
+
+For \(S\to(S)\; S\mid\epsilon\)
+\begin{center}
+\begin{tabular}{rlll}
+step & parsing & input & action\\
+\hline
+1 & \$S & ()\$ & S->(S)S\\
+2 & \$S)S( & ()\$ & match\\
+3 & \$S)S & )\$ & S->e\\
+4 & \$S) & )\$ & match\\
+5 & \$S & \$ & S->e\\
+6 & \$ & \$ & match\\
+\end{tabular}
+\end{center}
+
+Two actions:
+\begin{enumerate}
+\item generate
+\item match: match a token on top of the stack with the next input token
+\end{enumerate}
+
+This corresponds to the leftmost derivation. \textbf{characteristic of top-down
+parsing}
+\subsubsection{LL(1) parsing table}
+\label{sec:org7ed8c18}
+parsing table
+\begin{center}
+\begin{tabular}{llll}
+M[N,T] & ( & ) & \$\\
+\hline
+S & S->(S)S & S->e & S->e\\
+\end{tabular}
+\end{center}
+
+M is the set of non-terminals.
+T is the set of terminals or tokens including \$
+
+Table-constructing rule:
+\begin{enumerate}
+\item if \(A\to\alpha\) is a production choice and there is a derivation
+\(\alpha\Rightarrow*a\beta\) where a is a token then add \(A\to\alpha\) to
+M[A,a]
+\item if \(A\to\alpha\) and
+\(\alpha\Rightarrow*\epsilon,S\textdollar\textsterling\Rightarrow^*\beta
+      Aa\gamma\), where S is the start symbol and a is a token(or \$), then add
+\(A\to\alpha\) to M[A,a]
+\end{enumerate}
+
+A grammar is LL(1) if LL(1) parsing table has at most one production in each entry
+\subsubsection{left recursion removal and left factoring}
+\label{sec:org31dd705}
+\textbf{left recursion removal}
+\begin{itemize}
+\item \textbf{immediate left recursion}: \(exp\to exp\;+\;term|exp\;-\;term|term\)
+\item \textbf{indirect left recursion}: \(A\to Bb\) and \(B\to Aa\)
+\end{itemize}
+
+
+\begin{enumerate}
+\item Simple immediate left recursion.
+\(A\to A\alpha|\beta\) to \(A\to\beta\;A'\) and \(A'\to\alpha\;A'|\epsilon\)
+\item general immediate left recursion.
+\(A\to A\alpha_1|\dots|A\alpha_n|\beta_1|\dots|\beta_m\) to
+\(A\to\beta_1A'|\dots|\beta_mA'\) and
+\(A'\to\alpha_1A'|\dots|\alpha_nA'|\epsilon\)
+\item general left recursion. grammars with no \$\(\epsilon\)\$-productions and no cycles
+\end{enumerate}
+
+
+doesn't change language, but changes the grammar and parse tree
+
+\textbf{left factoring}.
+\(A\to\alpha\beta|\alpha\gamma\) to \(A\to\alpha A'\) and \(A'\to\beta\mid\gamma\)
+\subsubsection{Syntax tree construction in LL(1) parsing}
+\label{sec:org0e5e34a}
+\subsection{First and follow sets}
+\label{sec:org8ecca6d}
+X a grammar symbol(a terminal or non-terminal) or \(\epsilon\). Then First(X)
+is 
+\begin{enumerate}
+\item if X is a terminal or \(\epsilon\), then First(X)=\{X\}
+\item if X is a non-terminal, for each \(X\to X_1X_2\dots X_n\), First(X) contains
+First(X1) - \{e\}
+\end{enumerate}
+
+A non-terminal A is \textbf{nullable} iff there exists \(A\Rightarrow^*\epsilon\) iff
+First(A) contains \(\epsilon\)
+
+Follow(A) is 
+\begin{enumerate}
+\item if A is start symbol, \$ is in Follow(A)
+\item if \(B\to\alpha A\gamma\), then
+\(\text{First}(\gamma)-\{\epsilon\}\subseteq\text{Follow}(A)\)
+\item if \(B\to\alpha A\gamma, \epsilon\in\text{First}(\gamma)\), then Follow(A)
+contains Follow(B)
+\end{enumerate}
+\subsection{Error recovery in top-down parsers}
+\label{sec:org8947007}
+\section{Chap5 Bottom-up parsing}
+\label{sec:orgc53315a}
+\subsection{Overview of bottom-up parsing}
+\label{sec:orgb206224}
+\begin{itemize}
+\item A bottom-up parser uses an \textbf{explicit stack} to perform a parse
+\item The parsing stack will contain both tokens and nonterminals
+\begin{center}
+\begin{tabular}{ll}
+\$ & inputstring \$\\
+\hline
+\ldots{} & \ldots{}\\
+\$StartSymbol & \$accept\\
+\end{tabular}
+\end{center}
+\item \textbf{right-most} derivation -- backward
+start with the tokens; end with the start symbol
+\begin{center}
+\begin{tabular}{l}
+(1+2+(3+4))+5\\
+(E+2+(3+4))+5\\
+(S+2+(3+4))+5\\
+(S+E+(3+4))+5\\
+(S+(3+4))+5\\
+(S+(E+4))+5\\
+(S+(S+4))+5\\
+(S+(S+E))+5\\
+(S+(S))+5\\
+(S+E)+5\\
+(S)+5\\
+E+5\\
+S+5\\
+S+E\\
+S\\
+\end{tabular}
+\end{center}
+\item \textbf{parsing actions}: a sequence of \textbf{shift} and \textbf{reduce} operations
+\textbf{parser state}: a stack of terminals and non-terminals
+\textbf{current derivation step} = always stack + input
+\begin{center}
+\begin{tabular}{llr}
+derivation & step stack & unconsumed input\\
+\hline
+(1+2+(3+4))+5 &  & (1+2+(3+4))+5\\
+ & ( & 1+2+(3+4))+5\\
+(E+2+(3+4))+5 & (E & +2+(3+4))+5\\
+(S+2+(3+4))+5 & (S & +2+(3+4))+5\\
+ & (S+ & 2+(3+4))+5\\
+ & (S+2 & +(3+4))+5\\
+(S+E+(3+4))+5 & (S+E & +(3+4))+5\\
+\end{tabular}
+\end{center}
+\item 1. \textbf{shift}: shift a terminal from the front of the input to the top of the
+stack 
+\begin{enumerate}
+\item \textbf{reduce}: reduce a string α at the top of the stack to a nonterminal A,
+given the BNF choice A ⟶ α
+\end{enumerate}
+
+A bottom-up parser: \textbf{shift-reduce parser}
+\item One further feature of bottom-up parsers： grammars are always augmented
+with a \textbf{new start symbol}. if S is the start symbol, a new start symbol S' is
+added to the grammar :  S' →S
+
+\item example
+
+S'->S
+
+S ->(S)S|e
+
+S'=>S=>(S)S=>(S)=>()
+\begin{center}
+\begin{tabular}{rlrl}
+ & Parsing stack & Input & Action\\
+\hline
+1 & \$ & ( ) \$ & Shift\\
+2 & \$ ( & ) \$ & Reduce  S -> ε\\
+3 & \$ (S & ) \$ & Shift\\
+4 & \$ (S ) & \$ & Reduce  S -> ε\\
+5 & \$ (S ) S & \$ & Reduce S --> (S) S\\
+6 & \$S & \$ & Reduce S'--> S\\
+7 & \$S' & \$ & Accept\\
+\end{tabular}
+\end{center}
+
+\item example
+
+E'->E
+
+E->E+n|n
+
+E'=>E=>E+n=>n+n
+\begin{center}
+\begin{tabular}{rlrl}
+ & Parsing stack & Input & Action\\
+1 & \$ & n+n\$ & Shift\\
+2 & \$n & +n\$ & Reduce  E->n\\
+3 & \$E & +n\$ & Shift\\
+4 & \$E+ & n\$ & Shift\\
+5 & \$E+n & \$ & Reduce E->E+n\\
+6 & \$E & \$ & Reduce E'->E\\
+7 & \$E' & \$ & Accept\\
+\end{tabular}
+\end{center}
+\item[{Right sentential form}] \begin{itemize}
+\item A \textbf{sentential} form is any string derivable from the start symbol. Note
+that this includes the forms with non-terminals at intermediate steps as
+well.
+\item A \textbf{right-sentential form} is a sentential form that occurs in a step of
+rightmost derivation (RMD). 
+Each of the intermediate strings of terminals and nonterminals in such
+a derivation is called a right sentential form
+Each such sentential form is split between the parsing stack and the input
+during a shift-reduce parse
+\item A \textbf{sentence} is a sentential form consisting only of terminals
+\end{itemize}
+
+E,E+,E+n are \textbf{viable prefixes} of the right sentential form E+n.
+The sequence of symbols on the parsing stack is called \textbf{viable prefix} of the
+right sentential form
+\item \textbf{handle}
+This string, together with the \textbf{position} in the right sentential form where it
+occurs, and the production used to reduced it, is called the \textbf{handle} of the right
+sentential form
+
+\uline{determining the next handle in a parse is the main task of a shift-reduce parser}
+\end{itemize}
+\subsection{Finite automata of LR(0) items and LR(0) parsing}
+\label{sec:org1520476}
+\begin{itemize}
+\item An \textbf{LR(0) item} of a context-free grammar: a production choice with a
+distinguished position in its right-hand side
+\item If \textbf{A -> α}, \textbf{βγ = α}, then \textbf{A -> β · γ} is an LR(0) item
+\item Example
+\begin{center}
+\begin{tabular}{l}
+S' -> S\\
+S -> (S)S $\backslash$ e\\
+S' -> ·S\\
+S' -> S·\\
+S -> ·(S)S\\
+S -> (·S)S\\
+S -> (S·)S\\
+S -> (S)·S\\
+S -> (S)S·\\
+S -> ·\\
+\end{tabular}
+\end{center}
+\end{itemize}
+\subsubsection{Finite automata of items}
+\label{sec:org69205ae}
+\begin{itemize}
+\item The LR(0) items: as the state of a finite automata
+\item construct the DFA of sets of LR(0) using the subset construction from NFA
+\item If X is a token or a nonterminal
+
+\begin{tikzpicture}
+[place/.style={circle,minimum size=5mm}]
+\node (x1) at (0,0) [place] {$A\to\alpha\cdot X\eta$};
+\node (x2) at (5,0) [place] {$A\to\alpha X\cdot\eta$};
+\draw [->] (x1) to node [above] {X} (x2);
+\end{tikzpicture}
+\item If X is a token, then this transition corresponds to a shift of X from the
+input to the top of the stack during a parse
+\item if X is a nonterminal,
+X will never appear as an input symbol
+
+\begin{tikzpicture}
+\node (x1) at (0,0) [circle] {$A\to\alpha\cdot X\eta$};
+\node (x2) at (5,0) [circle] {$X\to\cdot\beta$};
+\draw [->] (x1) to node [above] {$\epsilon$} (x2);
+\end{tikzpicture}
+\item The \textbf{start state} of the NFA ↔ the \textbf{initial state} of the parser: the stack is
+empty
+\item the solution is to augment the grammar by a single production S' -> S
+\item \textbf{S'->·S} the \textbf{start state} of the NFA
+\end{itemize}
+\subsubsection{The LR(0) parsing algorithm}
+\label{sec:org8fb73ef}
+\begin{itemize}
+\item the parsing stack to store: \textbf{symbols} and \textbf{state numbers}
+\item pushing the new \textbf{state number} onto the parsing stack after each push of \textbf{a
+symbol}
+\item Let s be the current state. Then actions are
+\begin{enumerate}
+\item if state s contains any item of the form \textbf{A -> α·Xβ} (X is a terminal).
+Then the action is to shift the current input token onto the stack
+\item If state s contains any \textbf{complete item} (an item of the form \textbf{A->γ·}),
+then the action is to reduce by the rule \textbf{A->γ·}
+\begin{itemize}
+\item A \textbf{reduction} by the rule \textbf{S'->S} where S' is the start state
+\item \textbf{acceptance} if the input is empty
+\item \textbf{Error} if the input is not empty
+\end{itemize}
+\end{enumerate}
+\item A grammar is \textbf{LR(0)} grammar if the above rules are unambiguous
+\item A grammar is \textbf{LR(0)} iff
+\begin{itemize}
+\item Each state is a shift state
+\item A reduce state containing a single complete item
+\end{itemize}
+\item table
+\begin{center}
+\begin{tabular}{rllrrlr}
+state & action & rule & input & input & input & goto\\
+\hline
+ &  &  & ( & a & ) & A\\
+0 & shift &  & 3 & 2 &  & 1\\
+1 & reduce & A'->A &  &  &  & \\
+2 & reduce & A->(A) &  &  &  & \\
+3 & shift &  & 3 & 2 &  & 4\\
+4 & shift &  &  &  & 5 & \\
+5 & reduce & A->a &  &  &  & \\
+\end{tabular}
+\end{center}
+\end{itemize}
+\subsection{SLR(1) Parsing (simple LR(1))}
+\label{sec:org8d3c714}
+\begin{itemize}
+\item \textbf{definition}
+\begin{enumerate}
+\item if state s contains any item of form \(A\to\alpha\cdot X\beta\), then the
+action is to shift the current input token onto the stack, and the new
+state to be pushed on the stack is the state containing the item
+\(A\to\alpha\cdot X\beta\)
+\item if state s contains the complete item \(A\to\gamma\cdot\), and \uline{the next token in}
+\uline{the input string is in Follow(A)}, then the action is to reduce by the
+rule \(A\to\gamma\)
+\begin{itemize}
+\item A reduction by the rule \textbf{S'->S} where S' is the start state, this will
+happen only if the next input token is \$
+\item remove the string γ and all of its corresponding states from the parsing
+stack
+\item back up in the DFA to the state from which the construction of γ begin
+\item this state must contain an item of the form \(B\to\alpha\cdot A\beta\).
+Push A to the stack, and push the state containing the item
+\(B\to\alpha\cdot A\beta\)
+\end{itemize}
+\item if the next input token is s.t. neither of the above two cases applies,
+an error is declared
+\end{enumerate}
+\item A grammar is \textbf{SLR(1)} iff for any state s
+\begin{enumerate}
+\item for any item \(A\to\alpha\cdot X\beta\) in s with X a terminal, there is no \uline{complete}
+\uline{item} \(B\to\gamma\cdot\) in s with X ∈ Follow(B)
+\item For any two complete item \(A\to\alpha\cdot\) and \(B\to\beta\cdot\) in s,
+\(\text{Follow}(A)\cap\text{Follow(B)}=\emptyset\)
+\end{enumerate}
+\item right recursion can cause stack overflow
+\end{itemize}
+\subsubsection{disambiguating rules for parsing conflicts}
+\label{sec:org3539c67}
+\begin{itemize}
+\item two kinds of parsing conflicts in SLR(1) parsing
+\textbf{shift-reduce} conflicts
+\textbf{reduce-reduce} conflicts
+\item in the case of shift-reduce conflicts, there is a natural
+\textbf{disambiguaiting rule}: \uline{always prefer shift over the reduce}
+\item 
+\end{itemize}
+\subsubsection{limits of SLR(1) parsing power}
+\label{sec:org86e3a4e}
+\subsection{General LR(1) and LALR(1) parsing}
+\label{sec:orgafc2857}
+
+\begin{itemize}
+\item the difficulty with the SLR(1) method:
+applies lookaheads after the construction of the DFA of LR(0) items
+\item An \textbf{LR(1)} item is a pair consisting of an \textbf{LR(0)} item and a \textbf{lookahead} token
+\item \textbf{LR(1)} item as
+\textbf{[A->α·β, a]}
+A->α·β is LR(0) item, a is a token
+\item \textbf{definition of LR(1) transitions} main difference of LR(0) and LR(1)
+\textbf{[A->α·Xγ, a]}, X is any symbol, there is a transition on X to
+\textbf{[A->αX·γ,a]}
+\textbf{[A->α·Bγ,a]}, B nonterminal, there are ε-transitions to items \textbf{[B->·β,b]}
+for every \textbf{B->β} and for every token b in \textbf{First(γa)}
+\end{itemize}
+\subsubsection{Finite automata of LR(1) items}
+\label{sec:org33c5d2b}
+\begin{itemize}
+\item \textbf{start} state
+S'->S
+\item start item
+
+\textbf{[S'->·S, \$]}
+\end{itemize}
+\subsubsection{The LR(1) parsing algorithm}
+\label{sec:org16bb762}
+\begin{itemize}
+\item the general LR(1) parsing algorithm
+Let s be the current state.
+
+\begin{enumerate}
+\item s:[A->α·Xβ,a], X terminal, X is the next token in the input string \textbf{shift}
+\item s: [A->α·,a], the next token in the input string is a \textbf{reduce}
+\item otherwise error
+\end{enumerate}
+\item A grammar is \textbf{LR(1)} iff for any state s
+\begin{enumerate}
+\item for any item \textbf{[A->α·β,a]} in s with X a terminal, there is no item in s
+of the form \textbf{[B->γ·,X]} (otherwise there is a \uline{shift-reduce} conflict
+\item there are no two item in s of the form \textbf{[A->α·,a]} and \textbf{[B->β·,a]}
+\end{enumerate}
+\end{itemize}
+\subsection{LALR(1) parsing}
+\label{sec:org215f14b}
+\begin{itemize}
+\item the size of the DFA of sets of LR(1) items is too large
+\item first principle of LAIR(1) parsing
+the core of a state of DFA of LR(1) is a state of the DFA of LR(0) items
+\item second principle of LAIR(1) parsing
+s₁,s₂ of DFA of LR(1) that have the same core, suppose there is a transition
+on the symbol X from s₁ to a state t₁, then there is also a transition on X
+from state s₂ to a state t₂, and the states t₁ and t₂ have the same core
+\item if a grammar is LR(1) then the LALR(1) parsing table cannot have any
+shift-reduce conflicts, there may be reduce-reduce conflicts
+\item if a grammar is SLR(1), then it's LALR(1)
+\item compute the DFA of LALR(1) items directly from the DFA of LR(0) items through
+a process of \textbf{propagating lookaheads}
+\end{itemize}
+\subsection{Error recovery in Bottom-up parsers}
+\label{sec:orgcd7fb3e}
+A bottom-up parser will detect an error when a blank entry is detected
+\section{chap6 semantics analysis}
+\label{sec:org8ded601}
+\subsection{Attributes and attribute grammars}
+\label{sec:org8978b98}
+\textbf{attribute}: any property of a programming language constructs. May be fixed prior to
+the compilation process or be only determinable during program execution
+
+\textbf{binding} of the attribute: the process of computing an attribute and associating its
+computed value with the language construct in question
+
+\textbf{binding time}: the time during the compilation/execution process when the binding of
+an attribute occurs
+
+\textbf{static attributes/dynamic attributes}: based on the difference of the binding time
+
+\textbf{type checker}: an analyzer.
+computes the data type attribute of all language entities for which
+data types are defined. And verifies that these types conform to the type rules of
+the language
+
+\textbf{type checking}: set of rules that ensure the type consistency of different constructs
+in the program. e.g. operands types and so on
+\subsubsection{attribute grammars}
+\label{sec:org98a4241}
+\begin{itemize}
+\item \(X.a\): the value of a associated to X
+
+\(X\) is a grammar symbol and \(a\) is an attribute associated to \(X\)
+\item \textbf{syntax-directed semantics}: attributes are associated directly with the grammar
+symbols of the language
+\item given attributes \(a_1, a_2,...,a_k\) for each grammar rule 
+\(X_0\to X_1\dots X_n\), the values of
+the attributes \(X_i.a_j\) of each grammar symbol \(X_i\) are related to the values of the
+attributes of the other symbols in the rule
+\item an \textbf{attribute grammar}
+
+\(X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,\dots,X_n.a_1,\dots,X_n.a_k)\)
+\item example
+
+For 
+\begin{grammar}
+<number> ::= <number> <digit> \alt <digit>
+
+<digit> ::= `[0123456789]'
+\end{grammar}
+\begin{center}
+\begin{tabular}{ll}
+grammar rule & semantic rules\\
+\hline
+\(number1 \to number2 \; digit\) & \(number1.val=number2.val\times 10+digit.val\)\\
+\(number\to digit\) & \(number.val=digit.val\)\\
+\(digit\to 0\) & \(digit.val=0\)\\
+\end{tabular}
+\end{center}
+
+\begin{forest}
+[]
+\end{forest}
+\end{itemize}
+\subsubsection{simplifications and extensions to attribute grammars}
+\label{sec:org629453a}
+\begin{itemize}
+\item \textbf{metalanguage} for the attribute grammar: the collection of expressions allowable in
+an attribute equation
+\item \textbf{functions} can be added to the metalanguage whose definitions may be given elsewhere
+\item \textbf{simplifications}
+\begin{enumerate}
+\item using ambiguous grammar
+\item using abstract syntax tree instead of parse tree
+\end{enumerate}
+\end{itemize}
+
+\subsection{Algorithms for attribute computation}
+\label{sec:orga156a94}
+purpose
+
+\begin{itemize}
+\item each grammar rule choice has an \textbf{associated dependency graph}
+\item an edge from Xₘ.aₖ to Xᵢ.aⱼ expressing the dependency of Xᵢ.aⱼ on Xₘ.aₖ
+\end{itemize}
+\subsubsection{dependency graphs and evaluation order}
+\label{sec:orgec7a48e}
+\begin{itemize}
+\item \textbf{directed acyclic graphs} DAG
+topological sort
+\end{itemize}
+\subsubsection{synthesized and inherited attributes}
+\label{sec:org9aeb88b}
+\begin{itemize}
+\item \textbf{synthesized attributes}
+\begin{itemize}
+\item an attribute is synthesized if all its dependencies point from child to parent in
+the parse tree
+\item \textbf{S-attributed grammar}
+an attribute grammar where all the attributes are synthesized
+\end{itemize}
+\item \textbf{inherited attributes}
+inheritance from parent to siblings, from siblings to siblings
+\end{itemize}
+\subsubsection{The use of external data structures to store attributes values}
+\label{sec:orgb222566}
+\begin{itemize}
+\item Applicability
+\begin{itemize}
+\item Not suitable to the method of \textbf{parameters} and \textbf{returned values}
+\item particularly when the attribute values have significant structure
+and may be needed at arbitrary points during translation
+\item Not reasonable to be stored in the syntax tree nodes
+\end{itemize}
+\item Ways:
+\begin{itemize}
+\item external data structures: table, graphs and other data structures. One
+of the prime examples is the symbol table
+\item replace attribute equations by calls to procedures representing
+operations on the appropriate data structure used to maintain the
+attribute values
+\end{itemize}
+\end{itemize}
+\subsubsection{The computation of attributes during parsing}
+\label{sec:org3bad817}
+\begin{itemize}
+\item \textbf{L-attributed}
+\begin{itemize}
+\item An attribute grammar of \(a_1,\dots,a_k\) is \textbf{L-attributed} if for each
+inherited attribute \(a_j\) and each grammar rule \(X_0\to X_1\dots X_n\)
+the associated equations for a\(_{\text{j}}\) are
+\(X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,X_1.a_1,\dots,X_1.a_k,\dots,X_{i-1}
+        .a_1,\dots,X_{i-1}.a_k)\)
+\end{itemize}
+\item \textbf{S-attributed grammar} is L-attributed
+\end{itemize}
+\subsubsection{The dependence of attributes computation on the syntax}
+\label{sec:org2f0fa84}
+\subsection{The Symbol Table}
+\label{sec:org7d48f16}
+\textbf{semantic checks}
+
+\begin{center}
+\begin{tabular}{llll}
+NAME & KIND & TYPE & ATTRIBUTES\\
+foo & fun & int * int -> bool & extern\\
+\end{tabular}
+\end{center}
+
+\begin{enumerate}
+\item Linear list
+\item Various search tree structures
+AVL, B tree
+\item hash tables
+best choice
+\end{enumerate}
+\subsubsection{Declarations}
+\label{sec:org397a9d8}
+\begin{itemize}
+\item constant declarations
+\item type declarations
+\item variable declarations
+\item procedure/function declarations
+\end{itemize}
+\subsubsection{Scope rules and block structure}
+\label{sec:org74ffefa}
+\subsection{Data types and type checking}
+\label{sec:org0bca174}
+\end{document}
