@@ -1,4 +1,4 @@
-% Created 2019-04-14 日 17:27
+% Created 2019-04-28 日 14:41
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -14,12 +14,9 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
-\usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots,amsmath}
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{definition}{Definition}[section]
-\newtheorem{corollary}{Corollary}[section]
-\newtheorem{lemma}{Lemma}[section]
-\newcommand{\bl}[1] {\boldsymbol{#1}}
+\usepackage{minted}
+\usepackage{xcolor, amsthm, mathabx, mathtools, pgfplots,amsmath, commath}
+\input{preamble.tex}
 \author{gouziwu}
 \date{\today}
 \title{Numerical Analysis}
@@ -37,11 +34,10 @@
 
 
 
-
 \section{Chap1 Mathematical Preliminaries}
-\label{sec:orgd2328e7}
+\label{sec:org558e7c3}
 \subsection{1.2 Roundoff Errors and Computer Arithmetic}
-\label{sec:orgdfcf641}
+\label{sec:orgdb3f516}
 \textbf{Truncation Error} : the error involved in using a truncated, or finite, summation to
 approximate the sum of an infinite series 
 
@@ -89,7 +85,7 @@ integer for which $\frac{|p-p*|}{|p|}<5\times 10^{-t}$
 \end{itemize}
 
 \subsection{1.3 ALgorithms and Convergence}
-\label{sec:org81e4f8f}
+\label{sec:orga450488}
 An algorithm that satisfies that small changes in the initial data produce
 correspondingly small changes in the final results is called \textbf{stable};
 otherwise it is \textbf{unstable}. An algorithm is called \textbf{conditionally stable} if it
@@ -110,9 +106,9 @@ Suppose \(\lim\limits_{h\to 0}G(h)=0, \lim\limits_{h\to 0}F(h)=L\) and
 \(|F(h)-L|\le K|G(h)|\) for sufficiently small h, then we write
 \(F(h)=L+O(G(h))\)
 \section{Chap2 Solutions of equations in one variable}
-\label{sec:org8298845}
+\label{sec:orgc024d83}
 \subsection{2.1 Bisection method}
-\label{sec:orgd7704dc}
+\label{sec:org96c18ca}
 \begin{theorem}{Intermediate Value Theorem}
 If $f\in C[a,b]$, $K\in(f(a), f(b))$, then there exists a number $p\in(a,b)$
 for which $f(p)=K$
@@ -126,7 +122,7 @@ generates a sequence $\{p_n\},n=0,1,\dots$ approximating a zero $p$ of $f$ with
 \end{equation*}
 \end{theorem}
 \subsection{2.2 Fixed-Point Iteration}
-\label{sec:org2021e79}
+\label{sec:org1a5506f}
 \(f(x)=0\xleftrightarrow{\text{equivalent}} x=f(x)+x=g(x)\)
 
 \begin{theorem}{Fixed-Point Theorem}
@@ -142,7 +138,7 @@ $|p_n-p|\le\frac{1}{1-k}|p_{n+1}-p_n|$ and
 $|p_n-p|\le\frac{k^n}{1-k}|p_1-p_0|$
 \end{corollary}
 \subsection{2.3 Newton's method}
-\label{sec:org38cde5d}
+\label{sec:org091dc16}
 Linearize a nonlinear function using \textbf{Taylor's expansion}
 
 Let \(p_0\in [a,b]\) be an approximation to \(p\) s.t. \(f'(p_0)\neq 0\), hence 
@@ -158,7 +154,7 @@ n\in\mathbb{N}\setminus\{0\}$ converging to $p$ for any initial approximation
 $p\in[p-\delta,p+\delta]$.
 \end{theorem}
 \subsection{2.4 Error analysis for iterative methods}
-\label{sec:org92acf7f}
+\label{sec:orgea25f26}
 \begin{definition}
 Suppose $\{p_n\}(n=0,1,\dots)$ is a sequence that converges to $p$ with
 $p_n\neq p$ for all $n$. If positive constants $\alpha$ and $\lambda$ exist
@@ -261,9 +257,9 @@ g(x)&=x-\frac{\mu(x)}{\mu'(x)}\\
 &=x-\frac{f(x)f'(x)}{f'(x)^2-f(x)f''(x)}
 \end{align*}
 \section{Chap3 Interpolation and polynomial approximation}
-\label{sec:org9666754}
+\label{sec:org9c04142}
 \subsection{3.1 Interpolation and the Lagrange polynomial}
-\label{sec:org56371d3}
+\label{sec:org1549121}
 \(P_n(x)=\displaystyle\sum_{i=0}^nL_{n,i}(x)y_i\). Find \(L_{n,i}(x)\) for
 \(i=0,\dots,n\) s.t. \(L_{n,j}(x_j)=\delta_{ij}\). \(\delta_{ij}\) Kronecker delta.
 Each \(L_{n,i}\) has n roots \(x_0,\dots,\hat{x_i},\dots,x_n\).
@@ -288,14 +284,118 @@ For any \(x\neq x_i\). Define
 \(g(t)=R_n(t)-K(x)\displaystyle\prod_{i=0}^n(t-x_i)\). \(g(x)\) has n+2 distinct
 roots \(x_0\dots x_n x\). Hence \(g^{(n+1)}(\xi_x)=0,\xi_x\in(a,b)\).
 \(f^{(n+1)}(\xi_x)-Pn^{(n+1)}(\xi_x)-K(x)(n+1)!=R_n^{(n+1)}(\xi_x)-K(x)(n+1)!\).
-Thus \(R_n(x)=\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\displaystyle\prod_{i=0}^n(x-x_i)\).
+Thus
+\(R_n(x)=\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\displaystyle\prod_{i=0}^n(x-x_i)\).
+
+\begin{definition}
+Let $f$ be a function defined at $x_0,\dots,x_n$ and suppose $m_1,\dots,m_k$ are
+k distinct integers with $0\le m_i\le n$ for each i. The Lagrange polynomial that
+agrees with $f(x)$ at the k points $x_{m_1},\dots,x_{m_k}$ denoted by 
+$P_{m_1,\dot,m_k}(x)$
+\end{definition}
+
+\begin{theorem}
+Let $f$ be defined at $x_0,\dots,x_k$ and let $x_i$ and $x_j$ be two distinct numbers in
+this set. Then
+\begin{equation*}
+P(x)=\frac{(x-x_j)P_{0,1,\dots,j-1,j+1,\dots,k(x)}-(x-x_i)P_{0,\dots,i-1,i+1,\dots,k(x)}}
+{x_i-x_j}
+\end{equation*}
+describes the k-th Lagrange polynomial that interpolates $f$ at the k+1 points
+$x_0,\dots,x_k$
+\end{theorem}
+
+\textbf{Neville's Method}
+\begin{tabular}{c c c c c c}
+$x_0$ & $P_0$ &           &             &            \\
+$x_1$ & $P_1$ & $P_{0,1}$ &             &            \\
+$x_2$ & $P_2$ & $P_{1,2}$ & $P_{0,1,2}$ &            \\
+$x_3$ & $P_3$ & $P_{2,3}$ & $P_{1,2,3}$ & $P_{0,1,2,3}$\\
+\end{tabular}
+\subsection{3.2 Divied differences}
+\label{sec:orgc7b8dd7}
+\(f[x_i,x_j]=\frac{f(x_i)-f(x_j)}{x_i-x_j}(i\neq j, x_i\neq x_j)\).
+\(f[x_i,x_j,x_k]=\frac{f[x_i,x_j]-f[x_j,x_k]}{x_i-x_k}\).
+\subsection{Additional Newton Interpolation}
+\label{sec:orgf0dc93a}
+\subsubsection{Simple idea}
+\label{sec:org08d8726}
+Given \(x_0,\dots,x_n\)
+\begin{enumerate}
+\item Fitting $x_0$ first: $f(x)\approx f_0, f_0=f(x_0)$
+\item Add one more point $x_1$, $f_1=f(x_1)$
+\begin{equation*}
+f(x) \approx f_0+\alpha_1(x-x_0),\alpha_1=\frac{f_1-f_0}{x_1-x_0}
+\end{equation*}
+\item More points $f(x)\approx f_0+\alpha_1(x-x_0)+\alpha_2(x-x_0)(x-x_1)$
+\end{enumerate}
+
+\textbf{The pattern and coefficients}.
+\(f(x)=\displaystyle\sum_{i=0}^n\alpha_i
+    \displaystyle\prod_{j=0}^{j<i}(x-x_j)
+    =\displaystyle\sum_{i=0}^n\alpha_iN^{(i)}(x)\)
+
+\begin{equation*}
+\begin{pmatrix}
+f_0\\
+f_1\\
+\vdots\\
+f_n
+\end{pmatrix}=
+\begin{pmatrix}
+N^{(0)}(x_0) & N^{(1)}(x_0) & \dots & N^{(n)}(x_0)\\
+N^{(0)}(x_1) & N^{(1)}(x_1) & \dots & N^{(n)}(x_1)\\
+\vdots & \vdots & \ddots&\vdots\\
+N^{(0)}(x_n) & N^{(1)}(x_n) & \dots & N^{(n)}(x_n)\\
+\end{pmatrix}
+\begin{pmatrix}
+\alpha_0\\
+\alpha_1\\
+\vdots\\
+\alpha_n
+\end{pmatrix}
+\end{equation*}
+
+\(N^{(i)}(x_k)=\begin{cases}
+    0&k<i\\
+    \prod_{j=0}^{j<i}(x_k-x_j)&k\ge i\\
+    \end{cases}\) with \(N^{(0)}(x) = 1\).
+Newton interpolation matrix is lower triangular.
+Lagrange matrix is identity.
+\subsubsection{Basis transformation}
+\label{sec:org6d1d76c}
+\begin{equation*}
+\begin{pmatrix}
+1\\
+(x-x_0)\\
+(x-x_0)(x-x_1)\\
+\vdots
+\end{pmatrix}=(?)
+\begin{pmatrix}
+1\\
+x\\
+x^2\\
+\vdots
+\end{pmatrix}
+\end{equation*}
+Hence \((\Phi_B)^T=(T_A^B)^T(\Phi_A)^T\).
+\(\Phi_B=\Phi_AT_A^B\)
+
+\begin{align*}
+(\Phi_A)(\alpha_A)=(f)&=(\Phi_B)(\alpha_B)\\
+&=(\Phi_A)(T_A^B)(\alpha_B)\\
+&\Rightarrow\\
+(\alpha_A)&=(T_A^B)(\alpha_B)\\
+(\alpha_B)&=(T_A^B)^{-1}(\alpha_A)\\
+&=(T_B^A)(\alpha_A)
+\end{align*}
 \section{Chap6 Direct Methods for Solving Linear Systems}
-\label{sec:org3925d9a}
+\label{sec:orgdd1b3b7}
 \subsection{6.1 Linear Systems of Equations}
-\label{sec:org9aab32c}
+\label{sec:org7fbcda3}
 \textbf{Gaussian elimination with backward substitution}
 \subsection{6.2 Pivoting Strategies}
-\label{sec:org9d3185f}
+\label{sec:orgd38da01}
 \textbf{Problem}: small pivot element may cause trouble
 
 \textbf{Paritial Pivoting}: Determine the smallest p≥k s.t.
@@ -316,7 +416,7 @@ and interchange the pth and the kth rows
 \textbf{Complete Pivoting}: Search all the entries \(a_{ij}\) to find the entry with
  the largest magnitude
 \subsection{6.5 Matrix Factorization}
-\label{sec:org2886d3f}
+\label{sec:orgc6ae6bb}
 \(m_{ik}=a_{ik}/a_{kk}\)
 \begin{equation*}
 L_k=
@@ -355,7 +455,7 @@ a_{11}&a_{12}&\dots&a_{1n}\\
 
 \(A=LU\)
 \subsection{6.6 Special Types of Matrices}
-\label{sec:org0fe84f8}
+\label{sec:orgbd537e4}
 \textbf{Strictly Diagonally Dominant Matrix}.
 \(|a_{ii}|>\displaystyle\sum_{\substack{j=1,\\j\neq i}}^n|a_{ij}| \quad
    \text{for each } i=1,\dots,n\)
@@ -455,9 +555,9 @@ A=
 \end{pmatrix}
 \end{equation*}
 \section{Chap7 Iterative techiniques in Matrix algebra}
-\label{sec:org6193d1b}
+\label{sec:orgca1b345}
 \subsection{7.1 Norms of vectors and matrices}
-\label{sec:orgc50e4b5}
+\label{sec:org3067dd6}
 \begin{definition}
 A \textcolor{red}{vector norm} on $R^n$ is a function $||\cdot||: \mathbb{R}^n\to \mathbb{R}$
 with following properties for all $ \mathbf{x,y}\in \mathbb{R}^n, \alpha\in C$
@@ -513,9 +613,9 @@ A \textcolor{red}{matrix norm} on the set of $n\times n$:
 
 \(||\mathbf{A}||_\infty=\displaystyle\max_{1\le i\le n}\displaystyle\sum_{j=1}^n|a_{ij}|\),
 \(||\mathbf{A}||_1=\displaystyle\max_{1\le j\le n}\displaystyle\sum_{i=1}^n|a_{ij}|\),
-\(||\mathbf{A}||_2=\sqrt{\lambda_\text{max}(\mathbf{A}^T \mathbf{A})}\)
+\(||\mathbf{A}||_2=\sqrt{\lambda_{\text{max}}(\mathbf{A}^T \mathbf{A})}\)
 \subsection{7.2 Eigenvalues and Eigenvectors}
-\label{sec:org827c3be}
+\label{sec:orga9dbea8}
 \textbf{spectral radius}.
 \begin{definition}
 The \textcolor{red}{spectral radius $\rho(A)$} of a matrix A is defined as
@@ -535,7 +635,7 @@ We call an $n\times n$ matrix A \textcolor{red}{convergent} if for all $i,j=1,\d
 $\lim\limits_{k\to\infty}(A^k)_{ij}=0$
 \end{definition}
 \subsection{7.3 Iterative techniques for solving linear systems}
-\label{sec:orgc24bca8}
+\label{sec:org638aae7}
 \textbf{Jacobi iterative method}.
 \begin{equation*}
 \begin{cases}
@@ -565,10 +665,10 @@ A\bl{x}=\bl{b}&\Leftrightarrow(D-L-U)\bl{x}=\bl{b}\\
 &\Leftrightarrow D\bl{x}=(L+U)\bl{x}+\bl{b}\\
 &\Leftrightarrow \bl{x}=\underbrace{D^{-1}(L+U)}_{T_j}\bl{x}+\underbrace{D^{-1}}_{\bl{c}_j}\bl{b}
 \end{align*}.
-\(T_j\) is Jacobi iterative matrix. \(\bl{x}^{(k)}=T_j\bl{x}^{(k-1)}+\bl{c}_j\)
+$T_j$ is Jacobi iterative matrix. $\bl{x}^{(k)}=T_j\bl{x}^{(k-1)}+\bl{c}_j$
 
 
-\textbf{Gauss-Seidel iterative method}
+*Gauss-Seidel iterative method*
 \begin{align*}
 &\bl{x}^{(k)}=D^{-1}(L\bl{x}^{(k)}+U\bl{x}^{(k-1)})+D^{-1}\bl{b}\\
 \Leftrightarrow&(D-L)\bl{x}^{(k)}=U\bl{x}^{(k-1)}+\bl{b}\\
@@ -598,8 +698,50 @@ For any $\bl{x}^{(0)}\in R^n$, the sequence $\{\bl{x}^{(k)}\}_{k=0}^\infty$
 defined by $\bl{x}^{(k)}=T\bl{x}^{(k-1)}+\bl{c}$ for each k, converges to the
 unique solution of $\bl{x}=T\bl{x}+\bl{c}$ if and only if $\rho(T)<1$
 \end{theorem}
+\(\rho(T)<1\Longrightarrow(I-T)^{-1}=\\displaystyle\sum_{j=0}^\infty T^j\)
+
+\begin{theorem}
+If $\norm{T}<1$ for any natural matrix norm and $\bl{c}$ is a given vector, then the
+sequence $\{\bl{x}^{(k)}\}_{k=0}^\infty$ defined by $\bl{x}^{(k)}=T\bl{x}^{(k-1)}+\bl{c}$
+converges for any $\bl{x}^{(0)}\in R^n$ to a vector $\bl{x}$. And the following
+error bounds hold
+\begin{enumerate}
+\item $\norm{\bl{x}-\bl{x}^{(k)}}\le\norm{T}^k\norm{\bl{x}-\bl{x}^{(0)}}$
+\item $\norm{\bl{x}-\bl{x}^{(k)}}\le\frac{\norm{T}^k}{1-\norm{T}}\norm{\bl{x}^{(1)}
+-\bl{x}^{(0)}}$
+\end{enumerate}
+\end{theorem}
+
+\begin{theorem}
+If A is a strictly diagonally dominant, then for any choice of $\bl{x}^{(0)}$, both the
+Jacobi and Gauss-Seidel methods give sequences $\{\bl{x}^{(k)}\}_{k=0}^\infty$
+that converges to the unique solution
+\end{theorem}
+
+\textbf{relaxation methods}.
+\(x_i^{(k)}=\frac{1}{a_{ii}}(b_i-\displaystyle\sum_{j=1}^{i-1}a_{ij}x_i^{(k)}-
+   \displaystyle\sum_{j=i+1}^na_{ij}x_j^{(k-1)})=x_i^{(k-1)}+\frac{r_i^{(k)}}{a_{ii}}\)
+and relaxation method is
+\(x_i^{(k)}=x_i^{(k-1)}+\omega\frac{r_i^{(k)}}{a_{ii}}\)
+
+\begin{theorem}{(kahan)}
+If $a_{ii}\neq 0$ for each i. Then $\rho(T_\omega)\ge\abs{\omega-1}$.
+\end{theorem}
+This implies the SOR method can converge only if \(0<\omega<2\)
+
+\begin{theorem}{(Ostrowski-Reich)}
+If A is positive definite and $0<\omega<2$, the SOR converges
+\end{theorem}
+
+\begin{theorem}
+If A is positive definite and tridiagonal, then $\rho(T_g)=(\rho(T_j))^2<1$, and
+the optimal choice of $\omega$ for the SOR method is
+$\omega=\frac{2}{1+\sqrt{1-(\rho(T_j))^2}}$. With this choice of $\omega$, we
+have $\rho(T_\omega)=\omega-1$
+\end{theorem}
+
 \subsection{7.4 Error bounds and iterative refinement}
-\label{sec:orge496d2f}
+\label{sec:org423d1f4}
 Assume that A is accurate and \(\bl{b}\) has the error \(\delta \bl{b}\),
 then \(\bl{A}(\bl{x}+\delta \bl{x})=\bl{b}+\delta \bl{b}\)
 
@@ -677,9 +819,9 @@ $||\bl{x-x^*}\le||\bl{r}||\cdot||A^{-1}||$, and if $\bl{x,b}\neq\bl{0}$
 \item \(\bl{x}_2=\bl{x}_1+\bl{d}_1\)
 \end{enumerate}
 \section{chap9 Approximating Eigenvalues}
-\label{sec:org5fed992}
+\label{sec:org9121a69}
 \subsection{9.3 the power method}
-\label{sec:org304eb40}
+\label{sec:org07f243c}
 \textbf{the original method}
 Assumptions: A is an \(n\times n\) matrix with eigenvalues satisfying
 \(|\lambda_1|>|\lambda_2|\ge\dots\ge|\lambda_n|\ge 0\)

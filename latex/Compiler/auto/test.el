@@ -1,10 +1,12 @@
 (TeX-add-style-hook
- "preamble"
+ "test"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-run-style-hooks
-    "forest"
-    "flexisym"))
+    "latex2e"
+    "article"
+    "art10"
+    "graphicx"))
  :latex)
 

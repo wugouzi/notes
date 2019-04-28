@@ -1,4 +1,4 @@
-% Created 2019-04-28 日 14:08
+% Created 2019-04-28 日 19:14
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -17,7 +17,8 @@
 \usepackage{minted}
 \usepackage{tikz,qtree}
 \usepackage{forest,syntax}
-\input{../preamble.tex}
+\input{preamble.tex}
+\graphicspath{{../../images/Compiler/}}
 \author{wugouzi}
 \date{\today}
 \title{Compiler}
@@ -35,13 +36,13 @@
 
 
 \section{Chap1 introduction}
-\label{sec:orga06e29d}
+\label{sec:org2701f3e}
 source code -> scanner -> [tokens] -> parser -> [syntax tree] -> semantic
 analyzer -> [annotated tree] -> source code optimizer -> [intermediate code]
 -> code generator -> [target code] -> target code optimizer -> [target code]
 
 \section{chap2 scanning}
-\label{sec:orgb50eafe}
+\label{sec:org1e9ba9b}
 source code(\textbf{character stream}) -> \textbf{token stream}. Use regular expression.
 a ε R|S RS R* R+=R(R*) R?=(R|ε) [abce]=(a|b|c|e) [a-z] [\(^{\text{az}}\)]=anything but
 one of the listed chars
@@ -80,9 +81,9 @@ distinguish s and t
 \end{enumerate}
 
 \section{Chap3 context-free grammars and parsing}
-\label{sec:orga6c4681}
+\label{sec:org789c8a4}
 \subsection{context-free grammars}
-\label{sec:org121046c}
+\label{sec:orge72ae2c}
 A context-free grammar involves recursion rules. 4-tuple \((V,\Sigma,S,\to)\).
 V nonterminal. Σ terminal. S start symbol. \(\to\subset
    V\times(V\cup\Sigma)*\)
@@ -96,9 +97,9 @@ right-hand side of the rule defining A
 A grammar that generates a language containing the empty string must have at
 least one \textbf{ε-production}
 \subsection{Parse tree and abstract syntax trees}
-\label{sec:org2ba0be9}
+\label{sec:org7d4cd5c}
 \subsubsection{parse tree}
-\label{sec:org93095e0}
+\label{sec:org5263ef9}
 A \textbf{parse tree} corresponding to a derivation is a labeled tree
 \begin{itemize}
 \item the interior nodes are labeled by \textbf{nonterminals}
@@ -107,14 +108,14 @@ A \textbf{parse tree} corresponding to a derivation is a labeled tree
 
 \textbf{left-most derivation}
 \subsubsection{abstract symtax tree}
-\label{sec:orgff1d794}
+\label{sec:org4b24caf}
 \begin{forest}
 [+ [3] [4] ]
 \end{forest}
 \subsection{Ambiguity}
-\label{sec:orga628289}
+\label{sec:org6116cd5}
 \subsubsection{ambiguity grammars}
-\label{sec:orgef52eb2}
+\label{sec:orgdf8b044}
 \textbf{ambiguous grammar}: a grammar that generates a string with two distinct parse
 trees
 
@@ -128,10 +129,10 @@ the correct one. \textbf{disambbiguating rule}
 \item change the grammar
 \end{enumerate}
 \subsubsection{precedence and associativity}
-\label{sec:orgfa75e10}
+\label{sec:org1272b82}
 A \emph{left recursive} rule makes its operators associate on the left
 \subsubsection{the dangling else problem}
-\label{sec:org177a2ff}
+\label{sec:org933b428}
 \begin{grammar}
 <statement> ::= <if-stmt>
 \alt `other'
@@ -156,18 +157,18 @@ grammar is
 \alt `1'
 \end{grammar}
 \subsubsection{inessential ambiguity}
-\label{sec:orgd6bbe6e}
+\label{sec:orgd93290c}
 sometimes a grammar may be ambiguous and yet always produce unique \emph{abstract}
 \emph{syntax tree}.
 
 \textbf{inessential ambiguity}: the associated semantics don't depend on what
  disambiguating rule is used
 \subsubsection{extended notations: EBNF and syntax diagrams}
-\label{sec:org7acd515}
+\label{sec:org00eb3e2}
 \(A\to A\;\alpha\mid\beta\Longrightarrow A\to\beta\;\{\alpha\}\).
 \(A\to\alpha\; A\mid\beta\Longrightarrow A\to\{\alpha\}\;\beta\)
 \subsection{Formal properties of context-free language}
-\label{sec:org127a5bf}
+\label{sec:orgb147042}
 A context-free grammar consists of the following
 \begin{enumerate}
 \item T terminals
@@ -182,16 +183,16 @@ A grammar G is \textbf{ambiguous} if there exists a string \(w\in L(G)\) s.t. w 
 distinct parse trees
 
 \section{Chap4 top-down parsing}
-\label{sec:orgdaed732}
+\label{sec:org1919f80}
 \subsection{Top-down parsing by recursive-descent}
-\label{sec:org594e27d}
+\label{sec:org032d95c}
 not easy and use EBNF
 \begin{grammar}
 <if-stmt> ::= `if' `(' <exp> `)' <statement>
 \alt `if' `(' <exp> `)' <statement> `else' <statement>
 \end{grammar} to if-stmt -> if (exp) statement [else statement]
 \subsection{LL(1) parsing}
-\label{sec:org1793dbd}
+\label{sec:org8623038}
 use an explicit stack rather than recursive calls.
 \begin{grammar}
 <S> ::= <E> `+' <S>
@@ -237,7 +238,7 @@ Two actions:
 This corresponds to the leftmost derivation. \textbf{characteristic of top-down
 parsing}
 \subsubsection{LL(1) parsing table}
-\label{sec:org7ed8c18}
+\label{sec:org5719107}
 parsing table
 \begin{center}
 \begin{tabular}{llll}
@@ -263,7 +264,7 @@ M[A,a]
 
 A grammar is LL(1) if LL(1) parsing table has at most one production in each entry
 \subsubsection{left recursion removal and left factoring}
-\label{sec:org31dd705}
+\label{sec:org0a03681}
 \textbf{left recursion removal}
 \begin{itemize}
 \item \textbf{immediate left recursion}: \(exp\to exp\;+\;term|exp\;-\;term|term\)
@@ -287,9 +288,9 @@ doesn't change language, but changes the grammar and parse tree
 \textbf{left factoring}.
 \(A\to\alpha\beta|\alpha\gamma\) to \(A\to\alpha A'\) and \(A'\to\beta\mid\gamma\)
 \subsubsection{Syntax tree construction in LL(1) parsing}
-\label{sec:org0e5e34a}
+\label{sec:org4599d70}
 \subsection{First and follow sets}
-\label{sec:org8ecca6d}
+\label{sec:orgd8dee89}
 X a grammar symbol(a terminal or non-terminal) or \(\epsilon\). Then First(X)
 is 
 \begin{enumerate}
@@ -310,11 +311,11 @@ Follow(A) is
 contains Follow(B)
 \end{enumerate}
 \subsection{Error recovery in top-down parsers}
-\label{sec:org8947007}
+\label{sec:org97772f6}
 \section{Chap5 Bottom-up parsing}
-\label{sec:orgc53315a}
+\label{sec:org8607675}
 \subsection{Overview of bottom-up parsing}
-\label{sec:orgb206224}
+\label{sec:org1920ee8}
 \begin{itemize}
 \item A bottom-up parser uses an \textbf{explicit stack} to perform a parse
 \item The parsing stack will contain both tokens and nonterminals
@@ -439,7 +440,7 @@ sentential form
 \uline{determining the next handle in a parse is the main task of a shift-reduce parser}
 \end{itemize}
 \subsection{Finite automata of LR(0) items and LR(0) parsing}
-\label{sec:org1520476}
+\label{sec:orga4c4207}
 \begin{itemize}
 \item An \textbf{LR(0) item} of a context-free grammar: a production choice with a
 distinguished position in its right-hand side
@@ -461,7 +462,7 @@ S -> ·\\
 \end{center}
 \end{itemize}
 \subsubsection{Finite automata of items}
-\label{sec:org69205ae}
+\label{sec:orge2d13f7}
 \begin{itemize}
 \item The LR(0) items: as the state of a finite automata
 \item construct the DFA of sets of LR(0) using the subset construction from NFA
@@ -489,7 +490,7 @@ empty
 \item \textbf{S'->·S} the \textbf{start state} of the NFA
 \end{itemize}
 \subsubsection{The LR(0) parsing algorithm}
-\label{sec:org8fb73ef}
+\label{sec:orgfb08967}
 \begin{itemize}
 \item the parsing stack to store: \textbf{symbols} and \textbf{state numbers}
 \item pushing the new \textbf{state number} onto the parsing stack after each push of \textbf{a
@@ -528,7 +529,7 @@ state & action & rule & input & input & input & goto\\
 \end{center}
 \end{itemize}
 \subsection{SLR(1) Parsing (simple LR(1))}
-\label{sec:org8d3c714}
+\label{sec:org33e2e22}
 \begin{itemize}
 \item \textbf{definition}
 \begin{enumerate}
@@ -562,7 +563,7 @@ an error is declared
 \item right recursion can cause stack overflow
 \end{itemize}
 \subsubsection{disambiguating rules for parsing conflicts}
-\label{sec:org3539c67}
+\label{sec:org15c60a2}
 \begin{itemize}
 \item two kinds of parsing conflicts in SLR(1) parsing
 \textbf{shift-reduce} conflicts
@@ -572,9 +573,9 @@ an error is declared
 \item 
 \end{itemize}
 \subsubsection{limits of SLR(1) parsing power}
-\label{sec:org86e3a4e}
+\label{sec:org4c85ed5}
 \subsection{General LR(1) and LALR(1) parsing}
-\label{sec:orgafc2857}
+\label{sec:orga96c539}
 
 \begin{itemize}
 \item the difficulty with the SLR(1) method:
@@ -590,7 +591,7 @@ A->α·β is LR(0) item, a is a token
 for every \textbf{B->β} and for every token b in \textbf{First(γa)}
 \end{itemize}
 \subsubsection{Finite automata of LR(1) items}
-\label{sec:org33c5d2b}
+\label{sec:org08db46b}
 \begin{itemize}
 \item \textbf{start} state
 S'->S
@@ -599,7 +600,7 @@ S'->S
 \textbf{[S'->·S, \$]}
 \end{itemize}
 \subsubsection{The LR(1) parsing algorithm}
-\label{sec:org16bb762}
+\label{sec:org572ae5c}
 \begin{itemize}
 \item the general LR(1) parsing algorithm
 Let s be the current state.
@@ -617,7 +618,7 @@ of the form \textbf{[B->γ·,X]} (otherwise there is a \uline{shift-reduce} conf
 \end{enumerate}
 \end{itemize}
 \subsection{LALR(1) parsing}
-\label{sec:org215f14b}
+\label{sec:org8bb033e}
 \begin{itemize}
 \item the size of the DFA of sets of LR(1) items is too large
 \item first principle of LAIR(1) parsing
@@ -633,12 +634,12 @@ shift-reduce conflicts, there may be reduce-reduce conflicts
 a process of \textbf{propagating lookaheads}
 \end{itemize}
 \subsection{Error recovery in Bottom-up parsers}
-\label{sec:orgcd7fb3e}
+\label{sec:org6e973df}
 A bottom-up parser will detect an error when a blank entry is detected
 \section{chap6 semantics analysis}
-\label{sec:org8ded601}
+\label{sec:orgfc3d8ad}
 \subsection{Attributes and attribute grammars}
-\label{sec:org8978b98}
+\label{sec:org3c0e916}
 \textbf{attribute}: any property of a programming language constructs. May be fixed prior to
 the compilation process or be only determinable during program execution
 
@@ -658,7 +659,7 @@ the language
 \textbf{type checking}: set of rules that ensure the type consistency of different constructs
 in the program. e.g. operands types and so on
 \subsubsection{attribute grammars}
-\label{sec:org98a4241}
+\label{sec:org8cd4648}
 \begin{itemize}
 \item \(X.a\): the value of a associated to X
 
@@ -689,13 +690,25 @@ grammar rule & semantic rules\\
 \(digit\to 0\) & \(digit.val=0\)\\
 \end{tabular}
 \end{center}
+\end{itemize}
+
 
 \begin{forest}
-[]
+qtree,
+[{number\\($val=34*10+5=345$)}
+ [{number\\($val=3*10+4=34$)}
+  [{number\\$(val=3)$}
+   [{digit\\$(val=3)$}
+    [3]
+   ]
+  ]
+  [{digit\\$(val=4)$} [4]]
+ ]
+ [{digit\\$(val=5)$} [5]]
+]
 \end{forest}
-\end{itemize}
 \subsubsection{simplifications and extensions to attribute grammars}
-\label{sec:org629453a}
+\label{sec:orgeda005e}
 \begin{itemize}
 \item \textbf{metalanguage} for the attribute grammar: the collection of expressions allowable in
 an attribute equation
@@ -708,34 +721,86 @@ an attribute equation
 \end{itemize}
 
 \subsection{Algorithms for attribute computation}
-\label{sec:orga156a94}
-purpose
+\label{sec:orgdb2d40b}
 
 \begin{itemize}
-\item each grammar rule choice has an \textbf{associated dependency graph}
 \item an edge from Xₘ.aₖ to Xᵢ.aⱼ expressing the dependency of Xᵢ.aⱼ on Xₘ.aₖ
 \end{itemize}
 \subsubsection{dependency graphs and evaluation order}
-\label{sec:orgec7a48e}
+\label{sec:orgb7a64ee}
 \begin{itemize}
+\item each grammar rule choice has an \textbf{associated dependency graph}
+\item \(X_i.a_j=f_{ij}(\dots,X_m.a_k,\dots)\)
+
+an edge from each \(X_m.a_k\) to \(X_i.a_j\)
+
+\ttfamily
+\begin{tikzpicture}
+[level 1/.style={sibling distance=20mm},
+ level 2/.style={sibling distance=20mm},<-,baseline]
+  \node {Num.val}
+  child {node {Number.val}
+    child {node {number.val}
+      child {node {Digit.val}}}
+    child {node {Digit.val}}}
+  child {node {Digit.val}};
+\end{tikzpicture}  
+\rmfamily
+\item another example
+\begin{grammar}
+<decl> ::= <type> <var-list>
+
+<type> ::= `int' \alt `float'
+
+<var-list> ::= `id' `,' <var-list> \alt `id'
+\end{grammar}
+
+\begin{center}
+\begin{tabular}{ll}
+grammar Rule & semantic Rules\\
+\hline
+\(decl\to type\;var-list\) & \(var-list.dtype = type.dtype\)\\
+\(type \to int\) & \(type.dtype = integer\)\\
+\(type \to float\) & \(type.dtype = real\)\\
+\(var-list1\to id,\;var-list2\) & \(id.dtype = var-list1.dtype\)\\
+ & \(var-list2.dtype = var-list1.dtype\)\\
+\(var-list \to id\) & \(id.dtype = var-list.dtype\)\\
+\end{tabular}
+\end{center}
+
+\includegraphics[width=100mm]{DeclDependencyGraph.png}
 \item \textbf{directed acyclic graphs} DAG
 topological sort
 \end{itemize}
+
+How attribute values are found at the roots of the graph
+\begin{itemize}
+\item \textbf{Parse tree method}: construction of the dependency graph is based on the
+specific parse tree at compile time, add complexity and need circularity
+detective
+\item \textbf{Rule based method}: fix an order for attribute evaluation at compiler
+construction time. It depends on an analysis of the attribute equations, or
+semantic rules
+\end{itemize}
 \subsubsection{synthesized and inherited attributes}
-\label{sec:org9aeb88b}
+\label{sec:orge76dd8b}
 \begin{itemize}
 \item \textbf{synthesized attributes}
 \begin{itemize}
 \item an attribute is synthesized if all its dependencies point from child to parent in
 the parse tree
 \item \textbf{S-attributed grammar}
+
 an attribute grammar where all the attributes are synthesized
 \end{itemize}
 \item \textbf{inherited attributes}
-inheritance from parent to siblings, from siblings to siblings
+
+inheritance from parent to siblings, from siblings to siblings.
 \end{itemize}
+\subsubsection{attributes as parameters and returned values}
+\label{sec:orgf36f730}
 \subsubsection{The use of external data structures to store attributes values}
-\label{sec:orgb222566}
+\label{sec:org2f7af4d}
 \begin{itemize}
 \item Applicability
 \begin{itemize}
@@ -754,40 +819,86 @@ attribute values
 \end{itemize}
 \end{itemize}
 \subsubsection{The computation of attributes during parsing}
-\label{sec:org3bad817}
+\label{sec:org2c96381}
 \begin{itemize}
 \item \textbf{L-attributed}
 \begin{itemize}
 \item An attribute grammar of \(a_1,\dots,a_k\) is \textbf{L-attributed} if for each
 inherited attribute \(a_j\) and each grammar rule \(X_0\to X_1\dots X_n\)
 the associated equations for a\(_{\text{j}}\) are
+
 \(X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,X_1.a_1,\dots,X_1.a_k,\dots,X_{i-1}
         .a_1,\dots,X_{i-1}.a_k)\)
 \end{itemize}
 \item \textbf{S-attributed grammar} is L-attributed
+\item given an \emph{L-attributed} grammar where the \emph{inherited} attributes don't depend
+on the \emph{synthesized} attributes
+\begin{enumerate}
+\item \textbf{Top-down parser}: a recursive-descent parser can evaluate all the
+attributes by turning the inherited attributes into parameters and
+synthesized attributes into returned values.
+\item \textbf{Bottom-up parser}: LR parsers are suited to handling primarily
+synthesized attributes, but are difficult for inherited attributes
+\end{enumerate}
+\item \(A\to B\;C\quad C.i=f(B.s)\) \emph{s} is a \emph{synthesized} attribute
+
+\begin{center}
+\begin{tabular}{ll}
+Grammar Rule & Semantic Rules\\
+\hline
+\(A\to BDC\) & \\
+\(B\to\dots\) & compute \(B.s\)\\
+\(D\to\epsilon\) & \(saved_i=f(valstack[top])\)\\
+\(C\to\dots\) & \(saved_i\) is available\\
+\end{tabular}
+\end{center}
 \end{itemize}
 \subsubsection{The dependence of attributes computation on the syntax}
-\label{sec:org2f0fa84}
+\label{sec:org2ecdb77}
+\textbf{Theorem}. Given an attribute grammar , \uline{all inherited attributes can be
+changed into synthesized attributes} by suitable modification of the grammar,
+without changing the language of the grammar. (Knuth[1968])
+
+
 \subsection{The Symbol Table}
-\label{sec:org7d48f16}
-\textbf{semantic checks}
+\label{sec:org8834d06}
+\textbf{semantic checks} refer to properties of identifiers in the program - their
+scope or type
 
 \begin{center}
 \begin{tabular}{llll}
 NAME & KIND & TYPE & ATTRIBUTES\\
+\hline
 foo & fun & int * int -> bool & extern\\
 \end{tabular}
 \end{center}
-
+\subsubsection{The structure of the symbol table}
+\label{sec:orga39bbbf}
 \begin{enumerate}
 \item Linear list
 \item Various search tree structures
+
 AVL, B tree
 \item hash tables
+
 best choice
+
+Collision resolution
+\begin{enumerate}
+\item open addressing
+\item separate chaining
+\end{enumerate}
+
+The process of the hash function \(f:\Sigma^*\to\mathbb{N}/(size-1)\mathbb{N}\)
+
+Good solution: repeatedly use a constant \(\alpha\) as multiplying factor
+
+\(h_{i+1}=\alpha h_i+c_i, \quad h_0 = 0\)
+
+Final hash value \(h=h_n\mod size\). Typically \(\alpha\) is a power of 2
 \end{enumerate}
 \subsubsection{Declarations}
-\label{sec:org397a9d8}
+\label{sec:org63af50a}
 \begin{itemize}
 \item constant declarations
 \item type declarations
@@ -795,7 +906,88 @@ best choice
 \item procedure/function declarations
 \end{itemize}
 \subsubsection{Scope rules and block structure}
-\label{sec:org74ffefa}
+\label{sec:org5b8835a}
+two rules
+\begin{itemize}
+\item Declaration before use
+\item the most closely nested rule for block structure
+\end{itemize}
+\subsubsection{interaction of same-level declarations}
+\label{sec:orgabd07be}
+\subsubsection{an extended example of an attribute grammar using a symbol table}
+\label{sec:org9f891be}
+\begin{grammar}
+<S> ::= <exp> 
+
+<exp> ::= `(' <exp> `)' \alt  <exp> `+' <exp>
+\alt `id' \alt `num' \alt `let' <dec-list> `in' <exp>
+
+<dec-list> ::= <dec-list> `,' <decl> \alt <decl>
+
+<decl> ::= `id' `=' <exp>
+\end{grammar}
+
+Three attributes
+\begin{itemize}
+\item \texttt{err}: synthesize attribute. represent error
+\item \texttt{symbol}: inherited attribute. represent the symbol table
+\item \texttt{nestlevel}: inherited attribute, nonnegtive integer. represent the current
+nesting level of the let blocks
+\end{itemize}
+\ttfamily
+\begin{center}
+\begin{tabular}{ll}
+Grammar Rule & Semantic Rules\\
+\hline
+\emph{S \(\to\) exp} & exp.symtab = emptytable\\
+ & exp.nestlevel = 0\\
+ & S.err = exp.err\\
+\hline
+\emph{exp1 \(\to\) exp2+exp3} & exp2.symtab=exp1.symtab\\
+ & exp3.symtab=exp1.symtab\\
+ & exp2.nestlevel=exp1.nestlevel\\
+ & exp3.nestlevel=exp1.nestlevel\\
+ & exp1.err = exp2.err or exp3.err\\
+\hline
+\emph{exp1 \(\to\) (exp2)} & exp2.symtab =exp1.symtab\\
+ & exp2.nestlevel =exp1.nestlevel\\
+ & exp1.err = exp2.err\\
+\hline
+\emph{exp \(\to\) id} & exp.err = not isin(exp.symtab, id.name)\\
+\hline
+\emph{exp \(\to\) num} & exp.err = false\\
+\hline
+\emph{exp1 \(\to\) let dec-list in exp2} & dec-list.intab=exp1.symtab\\
+ & dec-list.nestlevel=exp1.nestlevel+1\\
+ & exp2.symtab=dec-list.outtab\\
+ & exp2.nestlevel=dec-list.nestlevel\\
+ & exp1.err = (dec-list.outtab=errtab) or exp2.err\\
+\hline
+\emph{dec-list1 \(\to\) dec-list2,decl} & dec-list2.intab= dec-list1.intab\\
+ & dec-list2.nestlevel=dec-list1.nestlevel\\
+ & decl.intab=dec-list2.outtab\\
+ & decl.nestlevel=dec-list2.nestlevel\\
+ & decl-list1.outtab=decl.outtab\\
+\hline
+\emph{dec-list \(\to\) decl} & decl.intab = dec-list.intab\\
+ & decl.nestlevel=dec-list.nestlevel\\
+ & dec-list.outtab=decl.outtab\\
+\hline
+\emph{decl \(\to\) id = exp} & exp.symtab = decl.intab\\
+ & exp.nestlevel=decl.nestlevel\\
+ & decl.outtab =\\
+ & if(decl.intab = errtab)or exp.err\\
+ & then errtab\\
+ & else\\
+ & if (lookup(decl.intab, id.name)= decl.nestlevel)\\
+ & then errtab\\
+ & else\\
+ & insert(decl.intab,id.name,decl.nestlevel)\\
+\end{tabular}
+\end{center}
+\rmfamily
+
+
 \subsection{Data types and type checking}
-\label{sec:org0bca174}
+\label{sec:orga57d00a}
 \end{document}

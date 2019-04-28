@@ -5,6 +5,7 @@
 #+LATEX_HEADER: \input{preamble.tex}
 #+LATEX_CLASS: article
 #+EXPORT_FILE_NAME: latex/Compiler/Compiler.tex
+#+LATEX_HEADER: \graphicspath{{../../images/Compiler/}}
 
 * Chap1 introduction
   source code -> scanner -> [tokens] -> parser -> [syntax tree] -> semantic
@@ -515,18 +516,19 @@
       | $number\to digit$                 | $number.val=digit.val$                       |
       | $digit\to 0$                      | $digit.val=0$                                |
       
+
       \begin{forest}
       qtree,
-      [number\\(val=34*10+5=345)
-       [number\\(val=3*10+4=34) 
-        [number\\(val=3) 
-         [digit\\(val=3) 
+      [{number\\($val=34*10+5=345$)}
+       [{number\\($val=3*10+4=34$)}
+        [{number\\$(val=3)$}
+         [{digit\\$(val=3)$}
           [3]
          ]
         ]
-        [digit\\(val=4) [4]]
+        [{digit\\$(val=4)$} [4]]
        ]
-       [digit\\(val=5) [5]]
+       [{digit\\$(val=5)$} [5]]
       ]
       \end{forest}
 *** simplifications and extensions to attribute grammars
@@ -538,21 +540,66 @@
       2. using abstract syntax tree instead of parse tree
 
 ** Algorithms for attribute computation
-   purpose
-   
-   * each grammar rule choice has an *associated dependency graph*
+
    * an edge from Xₘ.aₖ to Xᵢ.aⱼ expressing the dependency of Xᵢ.aⱼ on Xₘ.aₖ
 *** dependency graphs and evaluation order
-    + *directed acyclic graphs* DAG
+   + each grammar rule choice has an *associated dependency graph*
+   + $X_i.a_j=f_{ij}(\dots,X_m.a_k,\dots)$
+
+     an edge from each $X_m.a_k$ to $X_i.a_j$
+
+       \ttfamily
+       \begin{tikzpicture}
+       [level 1/.style={sibling distance=20mm},
+        level 2/.style={sibling distance=20mm},<-,baseline]
+         \node {Num.val}
+         child {node {Number.val}
+           child {node {number.val}
+             child {node {Digit.val}}}
+           child {node {Digit.val}}}
+         child {node {Digit.val}};
+       \end{tikzpicture}  
+       \rmfamily
+   + another example
+     \begin{grammar}
+     <decl> ::= <type> <var-list>
+
+     <type> ::= `int' \alt `float'
+
+     <var-list> ::= `id' `,' <var-list> \alt `id'
+     \end{grammar}
+
+     | grammar Rule                  | semantic Rules                      |
+     |-------------------------------+-------------------------------------|
+     | $decl\to type\;var-list$      | $var-list.dtype = type.dtype$       |
+     | $type \to int$                | $type.dtype = integer$              |
+     | $type \to float$              | $type.dtype = real$                 |
+     | $var-list1\to id,\;var-list2$ | $id.dtype = var-list1.dtype$        |
+     |                               | $var-list2.dtype = var-list1.dtype$ |
+     | $var-list \to id$             | $id.dtype = var-list.dtype$         |
+
+     \includegraphics[width=100mm]{DeclDependencyGraph.png}
+   + *directed acyclic graphs* DAG
       topological sort
+
+   How attribute values are found at the roots of the graph
+   * *Parse tree method*: construction of the dependency graph is based on the
+     specific parse tree at compile time, add complexity and need circularity
+     detective
+   * *Rule based method*: fix an order for attribute evaluation at compiler
+     construction time. It depends on an analysis of the attribute equations, or
+     semantic rules
 *** synthesized and inherited attributes
     + *synthesized attributes*
       * an attribute is synthesized if all its dependencies point from child to parent in
         the parse tree
       * *S-attributed grammar*
+
         an attribute grammar where all the attributes are synthesized
     + *inherited attributes*
-      inheritance from parent to siblings, from siblings to siblings
+
+      inheritance from parent to siblings, from siblings to siblings.
+*** attributes as parameters and returned values
 *** The use of external data structures to store attributes values
     + Applicability
       * Not suitable to the method of *parameters* and *returned values*
@@ -570,25 +617,134 @@
       * An attribute grammar of $a_1,\dots,a_k$ is *L-attributed* if for each
         inherited attribute $a_j$ and each grammar rule $X_0\to X_1\dots X_n$
         the associated equations for a_j are
+
         $X_i.a_j=f_{ij}(X_0.a_1,\dots,X_0.a_k,X_1.a_1,\dots,X_1.a_k,\dots,X_{i-1}
         .a_1,\dots,X_{i-1}.a_k)$
     + *S-attributed grammar* is L-attributed
-*** The dependence of attributes computation on the syntax
-** The Symbol Table
-   *semantic checks*
+    + given an /L-attributed/ grammar where the /inherited/ attributes don't depend
+      on the /synthesized/ attributes
+      1. *Top-down parser*: a recursive-descent parser can evaluate all the
+         attributes by turning the inherited attributes into parameters and
+         synthesized attributes into returned values. 
+      2. *Bottom-up parser*: LR parsers are suited to handling primarily
+         synthesized attributes, but are difficult for inherited attributes 
+    + $A\to B\;C\quad C.i=f(B.s)$ /s/ is a /synthesized/ attribute
 
-   | NAME | KIND | TYPE               | ATTRIBUTES |
-   | foo  | fun  | int * int -> bool  | extern     |
-   
+      | Grammar Rule   | Semantic Rules             |
+      |----------------+----------------------------|
+      | $A\to BDC$     |                            |
+      | $B\to\dots$    | compute $B.s$              |
+      | $D\to\epsilon$ | $saved_i=f(valstack[top])$ |
+      | $C\to\dots$    | $saved_i$ is available     |
+*** The dependence of attributes computation on the syntax
+    *Theorem*. Given an attribute grammar , _all inherited attributes can be
+    changed into synthesized attributes_ by suitable modification of the grammar,
+    without changing the language of the grammar. (Knuth[1968])
+
+    
+** The Symbol Table
+   *semantic checks* refer to properties of identifiers in the program - their
+   scope or type
+
+   | NAME | KIND | TYPE              | ATTRIBUTES |
+   |------+------+-------------------+------------|
+   | foo  | fun  | int * int -> bool | extern     |
+*** The structure of the symbol table  
    1. Linear list
    2. Various search tree structures
+
       AVL, B tree
    3. hash tables
+
       best choice
+
+      Collision resolution
+      1. open addressing
+      2. separate chaining
+
+      The process of the hash function $f:\Sigma^*\to\mathbb{N}/(size-1)\mathbb{N}$
+      
+      Good solution: repeatedly use a constant $\alpha$ as multiplying factor
+
+      $h_{i+1}=\alpha h_i+c_i, \quad h_0 = 0$
+
+      Final hash value $h=h_n\mod size$. Typically $\alpha$ is a power of 2
 *** Declarations
     * constant declarations
     * type declarations
     * variable declarations
     * procedure/function declarations
 *** Scope rules and block structure
+    two rules
+    * Declaration before use
+    * the most closely nested rule for block structure
+*** interaction of same-level declarations
+*** an extended example of an attribute grammar using a symbol table
+    \begin{grammar}
+    <S> ::= <exp> 
+
+    <exp> ::= `(' <exp> `)' \alt  <exp> `+' <exp>
+    \alt `id' \alt `num' \alt `let' <dec-list> `in' <exp>
+
+    <dec-list> ::= <dec-list> `,' <decl> \alt <decl>
+
+    <decl> ::= `id' `=' <exp>
+    \end{grammar}
+
+    Three attributes
+    * ~err~: synthesize attribute. represent error
+    * ~symbol~: inherited attribute. represent the symbol table
+    * ~nestlevel~: inherited attribute, nonnegtive integer. represent the current
+      nesting level of the let blocks
+\ttfamily
+| Grammar Rule                    | Semantic Rules                                   |
+|---------------------------------+--------------------------------------------------|
+| /S $\to$ exp/                     | exp.symtab = emptytable                          |
+|                                 | exp.nestlevel = 0                                |
+|                                 | S.err = exp.err                                  |
+|---------------------------------+--------------------------------------------------|
+| /exp1 $\to$ exp2+exp3/            | exp2.symtab=exp1.symtab                          |
+|                                 | exp3.symtab=exp1.symtab                          |
+|                                 | exp2.nestlevel=exp1.nestlevel                    |
+|                                 | exp3.nestlevel=exp1.nestlevel                    |
+|                                 | exp1.err = exp2.err or exp3.err                  |
+|---------------------------------+--------------------------------------------------|
+| /exp1 $\to$ (exp2)/               | exp2.symtab =exp1.symtab                         |
+|                                 | exp2.nestlevel =exp1.nestlevel                   |
+|                                 | exp1.err = exp2.err                              |
+|---------------------------------+--------------------------------------------------|
+| /exp $\to$ id/                    | exp.err = not isin(exp.symtab, id.name)          |
+|---------------------------------+--------------------------------------------------|
+| /exp $\to$ num/                   | exp.err = false                                  |
+|---------------------------------+--------------------------------------------------|
+| /exp1 $\to$ let dec-list in exp2/ | dec-list.intab=exp1.symtab                       |
+|                                 | dec-list.nestlevel=exp1.nestlevel+1              |
+|                                 | exp2.symtab=dec-list.outtab                      |
+|                                 | exp2.nestlevel=dec-list.nestlevel                |
+|                                 | exp1.err = (dec-list.outtab=errtab) or exp2.err  |
+|---------------------------------+--------------------------------------------------|
+| /dec-list1 $\to$ dec-list2,decl/  | dec-list2.intab= dec-list1.intab                 |
+|                                 | dec-list2.nestlevel=dec-list1.nestlevel          |
+|                                 | decl.intab=dec-list2.outtab                      |
+|                                 | decl.nestlevel=dec-list2.nestlevel               |
+|                                 | decl-list1.outtab=decl.outtab                    |
+|---------------------------------+--------------------------------------------------|
+| /dec-list $\to$ decl/             | decl.intab = dec-list.intab                      |
+|                                 | decl.nestlevel=dec-list.nestlevel                |
+|                                 | dec-list.outtab=decl.outtab                      |
+|---------------------------------+--------------------------------------------------|
+| /decl $\to$ id = exp/             | exp.symtab = decl.intab                          |
+|                                 | exp.nestlevel=decl.nestlevel                     |
+|                                 | decl.outtab =                                    |
+|                                 | if(decl.intab = errtab)or exp.err                |
+|                                 | then errtab                                      |
+|                                 | else                                             |
+|                                 | if (lookup(decl.intab, id.name)= decl.nestlevel) |
+|                                 | then errtab                                      |
+|                                 | else                                             |
+|                                 | insert(decl.intab,id.name,decl.nestlevel)        |
+\rmfamily
+
+
 ** Data types and type checking
+   Type inference. Type checking
