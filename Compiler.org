@@ -18,6 +18,7 @@
   one of the listed chars
 
   comment "/*"([^*/]|[^*]"/"|"*"[^/])*"*/"
+  
 
   finite automata
 
@@ -130,7 +131,8 @@
    \begin{grammar}
    <if-stmt> ::= `if' `(' <exp> `)' <statement>
    \alt `if' `(' <exp> `)' <statement> `else' <statement>
-   \end{grammar} to if-stmt -> if (exp) statement [else statement]
+   \end{grammar}
+   to if-stmt -> if (exp) statement [else statement]
 ** LL(1) parsing
    use an explicit stack rather than recursive calls.
    \begin{grammar}
@@ -139,7 +141,8 @@
 
    <E> ::= `num'
    \alt `(' <S> `)'
-   \end{grammar}.
+   \end{grammar} 
+   .
    | partly-derived string | lookahead | parsed part | unparsed part |
    |-----------------------+-----------+-------------+---------------|
    | S                     |         ( |             | (1+2+(3+4))+5 |
@@ -745,6 +748,70 @@
 |                                 | insert(decl.intab,id.name,decl.nestlevel)        |
 \rmfamily
 
-
 ** Data types and type checking
    Type inference. Type checking
+
+*** type names, type declarations and recursive type
+
+*** type equivalence
+    two type expression represent the same type
+
+    *structural equivalence*: two types are the same if and only if they have the same structure
+
+    *name equivalence*: two type expressions are equivalent if and only if they are either the
+    the same simple type or are the same type name
+
+    *declaration equivalence*: weaker version of name equivalence. $t2=t1$ are interpreted
+    as establishing type aliases rather than new types
+
+*** type inference and type checking
+
+*** additional topics in type checking
+    * *overloading*
+    * *type conversion and coercion*
+* Chap7 runtime environments
+** memory organization during program execution
+   *procedure activation record*
+   | space for arguments(parameters)                             |
+   |-------------------------------------------------------------|
+   | space for bookkeeping information, including return address |
+   |-------------------------------------------------------------|
+   | space for local data                                        |
+   |-------------------------------------------------------------|
+   | space for local temporaries                                 |
+
+   *processor registers*
+   * part of the structure of the runtime environment
+   * special-purpose registers
+     + PC :: program counter
+     + SP :: stack pointer
+     + FP :: frame pointer
+     + AP :: argument pointer
+
+   *calling sequence*
+   1. the allocation of memory for the activation record
+   2. the computation and storing of the arguments
+   3. the storing and setting of necessary registers to affect the call
+
+   *returning sequence*
+   1. the placing of the return value where it can be accessed by the caller
+   2. the readjustment of registers
+   3. the possible releasing for activation record memory
+** fully static runtime environment
+   all data are static, remaining fixed in memory for the duration of program execution
+
+   _No pointer or dynamic allocation. no recursive procedure calling_
+
+   entire program memory
+   * the global variables and all variables are allocated statically
+   * each procedure has only a single activation record
+   * all variables can be accessed directly via fixed address
+   * no extra information about the environment needs to be kept in an
+     activation record
+
+   the calling sequence(simple)
+   1. each argument is computed and stored into its appropriate parameter location
+      in the activation of the procedure being called
+   2. the *return address* of the caller is saved
+   3. a jump is made to the begining of the code of the called procedure
+   4. on return, a simple jump is made to the return address

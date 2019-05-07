@@ -4,6 +4,7 @@
 #+EMAIL: gouziwu@gmail.com
 #+AUTHOR: wu
 #+EXPORT_FILE_NAME: latex/ArtificialIntelligence/ArtificialIntelligence.tex
+#+LATEX_HEADER: \graphicspath{{../../images/ArtificialIntelligence/}}
 #+OPTIONS:
 * Inference and Reasoning
 ** Propositional logic
@@ -63,13 +64,140 @@
    Bayes' Theorem: $p(Y|X)=\frac{p(X|Y)p(Y)}{p(X)}$. Using sum rule
    $p(X)=\displaystyle\sum_Yp(X|Y)p(Y)$
 
-   probability densities. $p(x\in(a,b))=$
+   probability densities. 
+   \begin{align*}
+   p(x\in(a,b))&=\int_a^bp(x)dx\\
+   P(z)&=\int_{-\infty}^z p(x)dx\\
+   \int_{-\infty}^\infty p(x)dx&=1\quad p(x)\le0
+   \end{align*}
+
+
+   *expectation* $\mathbb{E}[f]=
+   \begin{cases}
+   \displaystyle\sum_{x}p(x)f(x) & \text{discrete variables}\\
+   \int p(x)f(x)dx & \text{continuous variables}
+   \end{cases}$. In either cases,
+   $\mathbb{E}[f]\approx\frac{1}{N}\displaystyle\sum_{n=1}^N f(x_n)$.
+   *conditional expectation*: $\mathbb{E}_x[f| y]=\displaystyle\sum_xp(x| y)f(x)$.
+
+   The *variance* of $f(x)$ is
+
+   \begin{align*}
+   var[f]&=\mathbb{E}[(f(x)-\mathbb{E}[f(x)])^2]\\
+   &=\mathbb{E}[f(x)^2-2f(x)\mathbb{E}[f(x)]+\mathbb{E}[f(x)]^2]\\
+   &=\mathbb{E}[f(x)^2]-\mathbb{E}[f(x)]^2
+   \end{align*}
+
+
+   The *covarian
+ce* is
+
+   \begin{align*}
+   cov[x,y]&=\mathbb{E}_{x,y}[(x-\mathbb{E}[x])(y-\mathbb{E}[y])]\\
+   &=\mathbb{E}_{x,y}[xy]-\mathbb{E}[x]\mathbb{E}[y]
+   \end{align*}
+
+
+   /the variance of the sum of two independent random variables is the sum of/
+   /variance/. Given
+   #+ATTR_LATEX: :align c|c
+   | X       | probability |
+   |---------+-------------|
+   | $x_1$   | $p_1$       |
+   | $\dots$ | $\dots$     |
+   | $x_n$   | $p_n$       |
+
+   #+attr_latex: :align c|c
+   | Y       | probability |
+   |---------+-------------|
+   | /       |             |
+   | $y_1$   | $q_1$       |
+   | $\dots$ | $\dots$     |
+   | $y_m$   | $q_m$       |
+   \begin{align*}
+   var(X+Y)=var(X)+var(Y)
+   \end{align*}
+
+   In case of two vectors of random variables $\bl{x}$ and $\bl{y}$, the
+   covariance is a matrix
+   \begin{align*}
+   cov[\bl{x},\bl{y}]&=\mathbb{E}_{\bl{x},\bl{y}}[(\bl{x}-\mathbb{E}[\bl{x}])(\bl{y}^T
+   -\mathbb{E}[\bl{y}^T])]\\
+   &=\mathbb{E}_{\bl{x},\bl{y}}[\bl{xy}^T]-\mathbb{E}[\bl{x}]\mathbb{E}[\bl{y}^T]
+   \end{align*}
+
+   *Bayesian probabilities*: $P(A|B)=\frac{P(B|A)P(A)}{P(B)}$. For a data set 
+   $\mathcal{D}=\{t_1,\dots,t_n\}$ and assumption $w$,
+   $p(w|\mathcal{D})=\frac{p(\mathcal{D}|w)p(w)}{p(\mathcal{D})}$. $p(w)$ is
+   *prior probability*, $p(\mathcal{D}|w)$ is *likelihood* (the probability
+   $\mathcal{D}$ happens). Hence 
+   \begin{equation*}
+   \text{posterior}\propto\text{likelihood}\times\text{prior}
+   \end{equation*}
+
+   *Gaussian distribution*.
+   \begin{equation*}
+   \mathcal{N}(x|\mu,\sigma^2)=\frac{1}{(2\pi\sigma^2)^{1/2}}\exp\left\{
+   -\frac{1}{2\sigma^2}(x-\mu)^2\right\}
+   \end{equation*}
+   $\mu$ is called *mean*, $\sigma^2$ is called *variance*, $\sigma$ *standard
+   deviation*, $\beta=1/\sigma^2$ *precision*
+   \begin{align*}
+   \mathbb{E}[x]&=\int_{-\infty}^\infty\mathcal{N}(x|\mu,\sigma^2)xdx=\mu\\
+   \mathbb{E}[x^2]&=\int_{-\infty}^\infty\mathcal{N}(x|\mu,\sigma^2)x^2dx=\mu^2
+   +\sigma^2\\
+   var[x]&=\mathbb{E}[x^2]-\mathbb{E}[x]^2=\sigma^2\\
+   \end{align*}
+   For $D$-dimensional vector $\bl{x}$ of continuous variables
+   \begin{equation*}
+   \mathcal{N}(\bl{x}|\bl{\mu},\bl{\Sigma})=\frac{1}{(2\pi)^{D/2}}\frac{1}
+   {\abs{\bl{\Sigma}}^{1/2}}\exp\left\{-\frac{1}{2}(\bl{x}-\bl{\mu})^T
+   \bl{\Sigma^{-1}}(\bl{x}-\bl{\mu})\right\}
+   \end{equation*}
+
+   To determine values for the unknown parameters given $\mu$ and $\sigma^2$ by
+   maximizing the likelihood function. Use log.
+   \begin{align*}
+   P(\bl{X}|\mu,\sigma^2)&=\displaystyle\prod_{n=1}^N\mathcal{N}(x_n|\mu,\sigma^2)\\
+   \Rightarrow \ln P(\bl{X}|\mu,\sigma^2)&=-\frac{1}{2\sigma^2}
+   \displaystyle\sum_{n=1}^N(x_n-\mu)^2-\frac{N}{2}\ln\sigma^2-\frac{N}{2}\ln(2\pi)\\
+   \end{align*}
+   Hence $\mu_{ML}=\frac{1}{N}\displaystyle\sum_{n=1}^Nx_n$,
+   $\sigma^2_{ML}=\frac{1}{N}\displaystyle\sum_{n=1}^N(x_n-\mu_{ML})^2$ by
+   partial derivative. Maximum likelihood estimator for mean is unbiased, that
+   is, $\mathbb{E}(\mu_{ML})=\mu$. Maximum likelihood estimator for variance is
+   biased. $\mathbb{E}(\sigma_{ML}^2)=\mathbb{E}(x^2)-\mathbb{E}(\mu_{ML}^2)=
+   \frac{N-1}{N}\sigma_x^2$
 ** information theory
+   *entropy*: measuring uncertainty of a random variable $X$.
+   $H(X)=H(p)=-\displaystyle\sum_{x\in\Omega}p(x)\log p(x)$ where $\Omega$ is
+   all possible values and define $0\log0=0,\log=\log_2$
+
+   $H(X)=\displaystyle\sum_{x\in\Omega}p(x)\log_2\frac{1}{p(x)}=
+   E(\log_2\frac{1}{p(x)})$. And "information of $x$"​="#bits to code $x$"​=$-\log
+   p(x)$
+   
+   *Kullback-Leibler divergence*: comparing two distributions
 ** model selection
+   *cross-validation*
+   \includegraphics[width=100mm]{CrossValidation}
+
+   split training data into *training set* and *validation set*. Train different
+   models on training set and choose model with minimum error on validation set.
 ** decision theory
+   Suppose we have an input vector $\bl{x}$ together with a corresponding vector
+   $\bl{t}$ of target variables and our goal is to predict $\bl{t}$ given new
+   value for $\bl{x}$. The joint probability distribution $p(\bl{x},\bl{t})$
+   provides a complete summary of the uncertainty with these variables
 * Statistical learning and modeling - Supervised learning
 ** Basic concepts
    + *Linearly separable*
+     * decision regions:
+       
+       input space is divided into several regions
+     * decision boundaries:
+       - under linear models, it's a linear function
+       - (D-1)-dimensional hyper-plane within the D-dimensional input space
    + *representation of class labels*
      * Two classes K = 2
      * K classes
@@ -89,6 +217,25 @@
        - fisher's linear discriminant
        - the perceptron algorithm of rosenblatt
      * use discriminant functions directly and don't compute probabilities
+
+       Given discriminant functions $f_1(\bl{x}),\dots,f_K(\bl{x})$. Classify
+       $\bl{x}$ as class $\mathcal{C}_k$ iff $f_k(\bl{x})>f_j(\bl{x}),\forall
+       j\neq k$
+
+       * *least-squares approach*: making the model predictions as close as
+         possible to a set of target values
+       * *fisher's linear discriminant*: maximum class separation in the ouput
+         space
+       * *the perceptron algorithm of rosenblatt*
+     * generative approach
+       - model the class-conditional densities and the class priors
+       - compute posterior probabilities through Bayes's theorem
+
+         $\underbrace{p(\mathcal{C}_k|\bl{x})}_\text{posterior for class}=
+         \frac{\overbrace{p(\bl{x}|\mathcal{C}_k)}^\text{class conditional density}
+         \overbrace{p(\mathcal{C}_k)}^\text{class prior}}{p(\bl{x})}=
+         \frac{p(\bl{x}|\mathcal{C}_k)p(\mathcal{C}_k)}{\sum_{j}p(\bl{x}|\mathcal{C}_j)
+         p(\mathcal{C}_j)}$
 ** discriminant functions
 *** Two classes
     + Linear discriminant function $y(\bl{x})=\bl{w}^T\bl{x}+w_0$
@@ -99,10 +246,12 @@
         then $\bl{w}^T(\bl{x}_A-\bl{x}_B)=0$. hence w is orthogonal to every
         vector lying within Ω. $\frac{\bl{w}}{\norm{\bl{w}}}$ is the normal
         vector of Ω
+
       - $\bl{x}=\bl{x}_\perp+r\frac{\bl{w}}{\norm{\bl{w}}}$ hence
-        $r=\frac{y(\bl{x})}{\norm{bl{x}}}$. $y(\bl{x}_\perp)=0\to
+        $r=\frac{y(\bl{x})}{\norm{\bl{w}}}$. $y(\bl{x}_\perp)=0\to
         \bl{w}^T\bl{x}=-w_0+r\frac{\bl{w}^T\bl{w}}{\norm{\bl{w}}}$ 
-      - $\tilde{\bl{w}}=(w_0,\bl{w}), \tilde{\bl{x}}=(x_0,\bl{x})$
+      - $\tilde{\bl{w}}=(w_0,\bl{w}), \tilde{\bl{x}}=(x_0,\bl{x}),
+        y(\bl{x})=\tilde{\bl{w}}^T\tilde{\bl{x}}$
 *** K-class
     + One-versus-the-rest classifier
       K - 1 classifiers each of which solves a two-class problem
@@ -116,11 +265,45 @@
         $y_k(\bl{x})=y_j(\bl{x})\to
         (\bl{w}_k-\bl{w}_j)^T\bl{x}+(w_{k_0}-w_{j_0})=0$
       - $\mathcal{R}_k$ is singly connected convex
+      - $\hat{\bl{x}}=\lambda\bl{x}_A+(1-\lambda)\bl{x}_B$ where $0\le\lambda\le
+        1$, $y_k(\hat{\bl{x}})=\lambda y_k(\bl{x}_A)+(1-\lambda)y_k(\bl{x}_B)$
+        and hence $\hat{x}$ also lies inside $\mathcal{R}_k$
 *** Learning the parameters of linear discriminant functions
+**** Linear basis function models
+     *linear regression*:
+     $y(\bl{x},\bl{w})=w_0+w_1x_1+\dots+w_Dx_D=\bl{w}^T\bl{x}$.
+
+     For nonlinear functions $\phi_j$,
+     $y(\bl{x},\bl{w})=w_0+\displaystyle\sum_{j=1}^{M-1}
+     w_j\phi_j(\bl{x})=\bl{w}^T\bl{\phi(\bl{x})}$ where $\phi_j(\bl{x})$ are
+     *basis functions* 
+**** parameter optimization via maximum likelihood
+     Assume target variable $t$ is given by a deterministic function
+     $y(\bl{x},\bl{w})$ with additive Gaussian noice so that
+     $t=y(\bl{x},\bl{w})+\epsilon$ where $\epsilon$ is a zero mean Gaussian
+     random variable with precision $\beta$, hence we can write
+     \begin{equation*}
+     p(t|\bl{x},\bl{w},\beta)=\mathcal{N}(t|y(\bl{x},\bl{w}),\beta^{-1})
+     \end{equation*}
+     and $\mathbb{E}(t|\bl{x})=\int tp(t|\bl{x})dt=y(\bl{x},\bl{w})$
+
+     For data set $\bl{X}=\{\bl{x}_1,\dots,\bl{x}_n\},\bl{t}=(t_1,\dots,t_n)^T$,
+     $p(t|\bl{X},\bl{w},\beta)=\displaystyle\prod_{n=1}^N\mathcal{N}(t_n|
+     \bl{w}^T\bl{\phi}(\bl{x}_n),\beta^{-1})$
+
+     $\ln p(t|\bl{w},\beta)=\displaystyle\sum_{n=1}^N\ln\mathcal{N}(t_n|
+     \bl{w}^T\bl{\phi}(\bl{x}_n),\beta^{-1})=\frac{N}{2}\ln\beta-\frac{N}{2}\ln(2\pi)-
+     \beta E_D(\bl{w})$
+
+     $E_D(\bl{w})=\frac{1}{2}\norm{t-\Phi\bl{w}}$ is sum-of-squares error function
 **** Least-squares approach
      + Problem
+       - Each class $\mathcal{C}_k$ is described by its own linear model 
+         $y_k(\bl{x})=\bl{w}_k^T\bl{x}+w_{k0}$
+       - group together: $y(\bl{x})=\widetilde{\bl{W}}^T\tilde{\bl{x}}$,
+         $\tilde{\bl{w}}_k=(w_{k0},\bl{w}_k^T)^T$, $\tilde{\bl{x}}=(1,\bl{x}^T)^T$
      + Learning
-       - SSE function
+       - minimizing SSE function sum-of-squares
          $SSE=\displaystyle\sum_{i=1}^n(y_i-f(x_i))^2$
          $E_D(\widetilde{\bl{W}})=1/2\text{Tr}\{(\bl{\widetilde{X}\widetilde{W}-T})^T 
          (\bl{\widetilde{X}\widetilde{W}-T})\}$

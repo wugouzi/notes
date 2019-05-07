@@ -1,4 +1,4 @@
-% Created 2019-04-27 六 13:14
+% Created 2019-05-06 一 20:38
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -14,8 +14,10 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
+\usepackage{minted}
 \usepackage{commath,amsmath}
 \newcommand{\bl}[1] {\boldsymbol{#1}}
+\graphicspath{{../../images/ArtificialIntelligence/}}
 \author{wu}
 \date{\today}
 \title{Artificial Intelligence}
@@ -32,21 +34,21 @@
 \tableofcontents
 
 \section{Inference and Reasoning}
-\label{sec:orgcb8d914}
+\label{sec:org38b0a17}
 \subsection{Propositional logic}
-\label{sec:org44de718}
+\label{sec:orgf524320}
 \subsection{Predicate logic}
-\label{sec:org451ea25}
+\label{sec:org7a59bce}
 \subsection{First Order Inductive Learner}
-\label{sec:org740f309}
+\label{sec:org0b16f3e}
 \textbf{knowledge graph}: node = entity, edge = relation.
 triplet (head entity, relation, tail entity)
 \section{Statistical learning and modeling}
-\label{sec:orgb12a6ff}
+\label{sec:orge76684a}
 \subsection{Machine Learning: the concept}
-\label{sec:org3005812}
+\label{sec:org4b78d21}
 \subsubsection{Example and concept}
-\label{sec:org9c64bfb}
+\label{sec:org90f3889}
 \begin{description}
 \item[{Supervised learning problems}] applications in which the \textbf{training data} comprises examples of the input
 vectors along with their corresponding \textbf{target vectors} are known
@@ -76,7 +78,7 @@ types of machine learning
 \item deep learning
 \end{itemize}
 \subsubsection{supervised learning: important concepts}
-\label{sec:org89be3a4}
+\label{sec:org29b6e67}
 \begin{itemize}
 \item Data: labeled instances \(<\bl{x}_i,\bl{y}>\)
 \item features: attribute-value pairs which characterize each \(\bl{x}\)
@@ -89,22 +91,176 @@ types of machine learning
 \item \textbf{model construction}
 \item \textbf{model usage}
 \end{itemize}
+
+\textbf{regression}
+\begin{itemize}
+\item Example: price of a used car
+
+\(\bl{x}\): car attributes. \(\bl{y}=g(\bl{x}\mid\bl{\theta})\): price. \(g\):
+model. \(\theta\) parameter set.
+\end{itemize}
 \subsection{example: polynomial curve fitting}
-\label{sec:org18fc0e6}
+\label{sec:org7dce0da}
 \subsection{probability theory review and notation}
-\label{sec:org47b68f9}
+\label{sec:orgde19897}
+rules of probability
+\begin{itemize}
+\item \textbf{sum rule} \(p(X)=\displaystyle\sum_Yp(X,Y)\)
+\item \textbf{product rule} \(p(X,Y)=p(Y|X)p(X)\)
+\end{itemize}
+
+Bayes' Theorem: \(p(Y|X)=\frac{p(X|Y)p(Y)}{p(X)}\). Using sum rule
+\(p(X)=\displaystyle\sum_Yp(X|Y)p(Y)\)
+
+probability densities. 
+\begin{align*}
+p(x\in(a,b))&=\int_a^bp(x)dx\\
+P(z)&=\int_{-\infty}^z p(x)dx\\
+\int_{-\infty}^\infty p(x)dx&=1\quad p(x)\le0
+\end{align*}
+
+
+\textbf{expectation} \(\mathbb{E}[f]=
+   \begin{cases}
+   \displaystyle\sum_{x}p(x)f(x) & \text{discrete variables}\\
+   \int p(x)f(x)dx & \text{continuous variables}
+   \end{cases}\). In either cases,
+\(\mathbb{E}[f]\approx\frac{1}{N}\displaystyle\sum_{n=1}^N f(x_n)\).
+\textbf{conditional expectation}: \(\mathbb{E}_x[f| y]=\displaystyle\sum_xp(x| y)f(x)\).
+
+The \textbf{variance} of \(f(x)\) is
+
+\begin{align*}
+var[f]&=\mathbb{E}[(f(x)-\mathbb{E}[f(x)])^2]\\
+&=\mathbb{E}[f(x)^2-2f(x)\mathbb{E}[f(x)]+\mathbb{E}[f(x)]^2]\\
+&=\mathbb{E}[f(x)^2]-\mathbb{E}[f(x)]^2
+\end{align*}
+
+
+   The \textbf{covarian
+ce} is
+
+\begin{align*}
+cov[x,y]&=\mathbb{E}_{x,y}[(x-\mathbb{E}[x])(y-\mathbb{E}[y])]\\
+&=\mathbb{E}_{x,y}[xy]-\mathbb{E}[x]\mathbb{E}[y]
+\end{align*}
+
+
+\emph{the variance of the sum of two independent random variables is the sum of}
+\emph{variance}. Given
+\begin{center}
+\begin{tabular}{c|c}
+X & probability\\
+\hline
+\(x_1\) & \(p_1\)\\
+\(\dots\) & \(\dots\)\\
+\(x_n\) & \(p_n\)\\
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{c|c}
+Y & probability\\
+\hline
+\(y_1\) & \(q_1\)\\
+\(\dots\) & \(\dots\)\\
+\(y_m\) & \(q_m\)\\
+\end{tabular}
+\end{center}
+\begin{align*}
+var(X+Y)=var(X)+var(Y)
+\end{align*}
+
+In case of two vectors of random variables \(\bl{x}\) and \(\bl{y}\), the
+covariance is a matrix
+\begin{align*}
+cov[\bl{x},\bl{y}]&=\mathbb{E}_{\bl{x},\bl{y}}[(\bl{x}-\mathbb{E}[\bl{x}])(\bl{y}^T
+-\mathbb{E}[\bl{y}^T])]\\
+&=\mathbb{E}_{\bl{x},\bl{y}}[\bl{xy}^T]-\mathbb{E}[\bl{x}]\mathbb{E}[\bl{y}^T]
+\end{align*}
+
+\textbf{Bayesian probabilities}: \(P(A|B)=\frac{P(B|A)P(A)}{P(B)}\). For a data set 
+\(\mathcal{D}=\{t_1,\dots,t_n\}\) and assumption \(w\),
+\(p(w|\mathcal{D})=\frac{p(\mathcal{D}|w)p(w)}{p(\mathcal{D})}\). \(p(w)\) is
+\textbf{prior probability}, \(p(\mathcal{D}|w)\) is \textbf{likelihood} (the probability
+\(\mathcal{D}\) happens). Hence 
+\begin{equation*}
+\text{posterior}\propto\text{likelihood}\times\text{prior}
+\end{equation*}
+
+\textbf{Gaussian distribution}.
+\begin{equation*}
+\mathcal{N}(x|\mu,\sigma^2)=\frac{1}{(2\pi\sigma^2)^{1/2}}\exp\left\{
+-\frac{1}{2\sigma^2}(x-\mu)^2\right\}
+\end{equation*}
+\(\mu\) is called \textbf{mean}, \(\sigma^2\) is called \textbf{variance}, \(\sigma\) \textbf{standard
+deviation}, \(\beta=1/\sigma^2\) \textbf{precision}
+\begin{align*}
+\mathbb{E}[x]&=\int_{-\infty}^\infty\mathcal{N}(x|\mu,\sigma^2)xdx=\mu\\
+\mathbb{E}[x^2]&=\int_{-\infty}^\infty\mathcal{N}(x|\mu,\sigma^2)x^2dx=\mu^2
++\sigma^2\\
+var[x]&=\mathbb{E}[x^2]-\mathbb{E}[x]^2=\sigma^2\\
+\end{align*}
+For \$D\$-dimensional vector \(\bl{x}\) of continuous variables
+\begin{equation*}
+\mathcal{N}(\bl{x}|\bl{\mu},\bl{\Sigma})=\frac{1}{(2\pi)^{D/2}}\frac{1}
+{\abs{\bl{\Sigma}}^{1/2}}\exp\left\{-\frac{1}{2}(\bl{x}-\bl{\mu})^T
+\bl{\Sigma^{-1}}(\bl{x}-\bl{\mu})\right\}
+\end{equation*}
+
+To determine values for the unknown parameters given \(\mu\) and \(\sigma^2\) by
+maximizing the likelihood function. Use log.
+\begin{align*}
+P(\bl{X}|\mu,\sigma^2)&=\displaystyle\prod_{n=1}^N\mathcal{N}(x_n|\mu,\sigma^2)\\
+\Rightarrow \ln P(\bl{X}|\mu,\sigma^2)&=-\frac{1}{2\sigma^2}
+\displaystyle\sum_{n=1}^N(x_n-\mu)^2-\frac{N}{2}\ln\sigma^2-\frac{N}{2}\ln(2\pi)\\
+\end{align*}
+Hence \(\mu_{ML}=\frac{1}{N}\displaystyle\sum_{n=1}^Nx_n\),
+\(\sigma^2_{ML}=\frac{1}{N}\displaystyle\sum_{n=1}^N(x_n-\mu_{ML})^2\) by
+partial derivative. Maximum likelihood estimator for mean is unbiased, that
+is, \(\mathbb{E}(\mu_{ML})=\mu\). Maximum likelihood estimator for variance is
+biased. \(\mathbb{E}(\sigma_{ML}^2)=\mathbb{E}(x^2)-\mathbb{E}(\mu_{ML}^2)=
+   \frac{N-1}{N}\sigma_x^2\)
 \subsection{information theory}
-\label{sec:org6782f8d}
+\label{sec:org4b5936e}
+\textbf{entropy}: measuring uncertainty of a random variable \(X\).
+\(H(X)=H(p)=-\displaystyle\sum_{x\in\Omega}p(x)\log p(x)\) where \(\Omega\) is
+all possible values and define \(0\log0=0,\log=\log_2\)
+
+\(H(X)=\displaystyle\sum_{x\in\Omega}p(x)\log_2\frac{1}{p(x)}=
+   E(\log_2\frac{1}{p(x)})\). And "information of \(x\)"​="\#bits to code \(x\)"​=\(-\log
+   p(x)\)
+
+\textbf{Kullback-Leibler divergence}: comparing two distributions
 \subsection{model selection}
-\label{sec:org7531087}
+\label{sec:org5888f1a}
+\textbf{cross-validation}
+\includegraphics[width=100mm]{CrossValidation}
+
+split training data into \textbf{training set} and \textbf{validation set}. Train different
+models on training set and choose model with minimum error on validation set.
 \subsection{decision theory}
-\label{sec:org3ead5e0}
+\label{sec:orgb861a59}
+Suppose we have an input vector \(\bl{x}\) together with a corresponding vector
+\(\bl{t}\) of target variables and our goal is to predict \(\bl{t}\) given new
+value for \(\bl{x}\). The joint probability distribution \(p(\bl{x},\bl{t})\)
+provides a complete summary of the uncertainty with these variables
 \section{Statistical learning and modeling - Supervised learning}
-\label{sec:orgff95c0f}
+\label{sec:org2d879dc}
 \subsection{Basic concepts}
-\label{sec:org3477fc9}
+\label{sec:org92da548}
 \begin{itemize}
 \item \textbf{Linearly separable}
+\begin{itemize}
+\item decision regions:
+
+input space is divided into several regions
+\item decision boundaries:
+\begin{itemize}
+\item under linear models, it's a linear function
+\item (D-1)-dimensional hyper-plane within the D-dimensional input space
+\end{itemize}
+\end{itemize}
 \item \textbf{representation of class labels}
 \begin{itemize}
 \item Two classes K = 2
@@ -133,12 +289,35 @@ f:activation function
 \item the perceptron algorithm of rosenblatt
 \end{itemize}
 \item use discriminant functions directly and don't compute probabilities
+
+Given discriminant functions \(f_1(\bl{x}),\dots,f_K(\bl{x})\). Classify
+\(\bl{x}\) as class \(\mathcal{C}_k\) iff \(f_k(\bl{x})>f_j(\bl{x}),\forall
+       j\neq k\)
+
+\begin{itemize}
+\item \textbf{least-squares approach}: making the model predictions as close as
+possible to a set of target values
+\item \textbf{fisher's linear discriminant}: maximum class separation in the ouput
+space
+\item \textbf{the perceptron algorithm of rosenblatt}
+\end{itemize}
+\item generative approach
+\begin{itemize}
+\item model the class-conditional densities and the class priors
+\item compute posterior probabilities through Bayes's theorem
+
+\(\underbrace{p(\mathcal{C}_k|\bl{x})}_\text{posterior for class}=
+         \frac{\overbrace{p(\bl{x}|\mathcal{C}_k)}^\text{class conditional density}
+         \overbrace{p(\mathcal{C}_k)}^\text{class prior}}{p(\bl{x})}=
+         \frac{p(\bl{x}|\mathcal{C}_k)p(\mathcal{C}_k)}{\sum_{j}p(\bl{x}|\mathcal{C}_j)
+         p(\mathcal{C}_j)}\)
+\end{itemize}
 \end{itemize}
 \end{itemize}
 \subsection{discriminant functions}
-\label{sec:org60e3310}
+\label{sec:org7414da9}
 \subsubsection{Two classes}
-\label{sec:orgb6685d0}
+\label{sec:orga87629a}
 \begin{itemize}
 \item Linear discriminant function \(y(\bl{x})=\bl{w}^T\bl{x}+w_0\)
 \begin{itemize}
@@ -149,14 +328,16 @@ f:activation function
 then \(\bl{w}^T(\bl{x}_A-\bl{x}_B)=0\). hence w is orthogonal to every
 vector lying within Ω. \(\frac{\bl{w}}{\norm{\bl{w}}}\) is the normal
 vector of Ω
+
 \item \(\bl{x}=\bl{x}_\perp+r\frac{\bl{w}}{\norm{\bl{w}}}\) hence
-\(r=\frac{y(\bl{x})}{\norm{bl{x}}}\). \(y(\bl{x}_\perp)=0\to
+\(r=\frac{y(\bl{x})}{\norm{\bl{w}}}\). \(y(\bl{x}_\perp)=0\to
         \bl{w}^T\bl{x}=-w_0+r\frac{\bl{w}^T\bl{w}}{\norm{\bl{w}}}\)
-\item \(\tilde{\bl{w}}=(w_0,\bl{w}), \tilde{\bl{x}}=(x_0,\bl{x})\)
+\item \(\tilde{\bl{w}}=(w_0,\bl{w}), \tilde{\bl{x}}=(x_0,\bl{x}),
+        y(\bl{x})=\tilde{\bl{w}}^T\tilde{\bl{x}}\)
 \end{itemize}
 \end{itemize}
 \subsubsection{K-class}
-\label{sec:org6b0feb4}
+\label{sec:org44ac30a}
 \begin{itemize}
 \item One-versus-the-rest classifier
 K - 1 classifiers each of which solves a two-class problem
@@ -171,13 +352,18 @@ K(K-1)/2 binary discriminant functions
 \(y_k(\bl{x})=y_j(\bl{x})\to
         (\bl{w}_k-\bl{w}_j)^T\bl{x}+(w_{k_0}-w_{j_0})=0\)
 \item \(\mathcal{R}_k\) is singly connected convex
+\item \(\hat{\bl{x}}=\lambda\bl{x}_A+(1-\lambda)\bl{x}_B\) where \(0\le\lambda\le
+        1\), \(y_k(\hat{\bl{x}})=\lambda y_k(\bl{x}_A)+(1-\lambda)y_k(\bl{x}_B)\)
+and hence \(\hat{x}\) also lies inside \(\mathcal{R}_k\)
 \end{itemize}
 \end{itemize}
 \subsubsection{Learning the parameters of linear discriminant functions}
-\label{sec:org0a4c7c7}
+\label{sec:org0a553bf}
 \begin{enumerate}
+\item Linear basis function models
+\label{sec:orgcaddb66}
 \item Least-squares approach
-\label{sec:org384cc9d}
+\label{sec:orgaea651f}
 \begin{itemize}
 \item Problem
 \item Learning
@@ -189,7 +375,7 @@ K(K-1)/2 binary discriminant functions
 \end{itemize}
 \end{itemize}
 \item fisher's linear discriminant
-\label{sec:orga85208a}
+\label{sec:org4dd0683}
 from the view of dimensionality reduction
 \(y\ge -w_0\) as class \(\mathcal{C}_1\)
 
@@ -197,10 +383,10 @@ from the view of dimensionality reduction
      m_2=\frac{1}{N_2}\displaystyle\sum_{n\in\mathcal{C}_2}x_n
      \xrightarrow{y=\bl{w}^T\bl{x}} m_2-m_1=\bl{w}^T(\bl{m}_2-\bl{m}_1)\)
 \item the perceptron algorithm of rosenblatt
-\label{sec:org909e073}
+\label{sec:org12c4dcf}
 \end{enumerate}
 \subsection{probalibilistic generative models}
-\label{sec:org39dd59e}
+\label{sec:org09229e3}
 \subsection{probabilistic discriminative models}
-\label{sec:orgec033a6}
+\label{sec:orga3a9f13}
 \end{document}
