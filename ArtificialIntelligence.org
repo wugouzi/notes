@@ -277,7 +277,8 @@ ce* is
      $y(\bl{x},\bl{w})=w_0+\displaystyle\sum_{j=1}^{M-1}
      w_j\phi_j(\bl{x})=\bl{w}^T\bl{\phi(\bl{x})}$ where $\phi_j(\bl{x})$ are
      *basis functions* 
-**** parameter optimization via maximum likelihood
+**** *parameter optimization via maximum likelihood*
+
      Assume target variable $t$ is given by a deterministic function
      $y(\bl{x},\bl{w})$ with additive Gaussian noice so that
      $t=y(\bl{x},\bl{w})+\epsilon$ where $\epsilon$ is a zero mean Gaussian
@@ -295,7 +296,40 @@ ce* is
      \bl{w}^T\bl{\phi}(\bl{x}_n),\beta^{-1})=\frac{N}{2}\ln\beta-\frac{N}{2}\ln(2\pi)-
      \beta E_D(\bl{w})$
 
-     $E_D(\bl{w})=\frac{1}{2}\norm{t-\Phi\bl{w}}$ is sum-of-squares error function
+     $E_D(\bl{w})=\frac{1}{2}\displaystyle\sum_{n=1}^N
+     \left\{t_n-\bl{w}^T\bl{\phi}(\bl{x}_n)\right\}^2=
+     \frac{1}{2}\norm{t-\Phi\bl{w}}$ is sum-of-squares error function
+
+     solve $\bl{w}$ by maximum likelihood.
+     \begin{equation*}
+     \nabla\ln p(\bl{t}|\bl{w},\beta)=\displaystyle\sum_{n=1}^N
+     \left\{t_n-\bl{w}^T\bl{\phi}(\bl{x}_n)\right\}\phi(\bl{x}_n)^T
+     \end{equation*}
+     \begin{equation*}
+     0=\displaystyle\sum_{n=1}^N t_n\bl{\phi}(\bl{x}_n)^T-\bl{w}^T
+     (\displaystyle\sum_{n=1}^N\bl{\phi}(\bl{x}_n)\bl{\phi}(\bl{x}_n)^T)
+     \end{equation*}
+     Hence we get
+     \begin{equation*}
+     \bl{w}_{ML}=(\bl{\Phi}^T\bl{\Phi})^{-1}\bl{\Phi}^T\bl{t}
+     \end{equation*}
+     $\Phi$ is *design matrix*.
+     #+ATTR_LATEX: :mode math :environment pmatrix :math-prefix \Phi=
+     | \phi_0(\bl{x}_1) | \phi_1(\bl{x}_1) | \dots  | \phi_{M-1}(\bl{x}_1) |
+     | \phi_0(\bl{x}_2) | \phi_1(\bl{x}_2) | \dots  | \phi_{M-1}(\bl{x}_2) |
+     | \vdots           | \vdots           | \ddots | \vdots               |
+     | \phi_0(\bl{x}_N) | \phi_1(\bl{x}_N) | \dots  | \phi_{M-1}(\bl{x}_N) |
+
+     For bias parameter $w_0$.
+     $E_D(\bl{w})=\frac{1}{2}\displaystyle\sum_{n=1}^N 
+     \{t_n-w_0-\displaystyle\sum_{j=1}^{M-1}w_j\phi_j(\bl{x}_n)\}^2$. Hence
+     $w_0=\bar{t}-\displaystyle\sum_{j=1}^{M-1}w_j\bar{\phi_j}$,
+     $\bar{t}=\frac{1}{N}\displaystyle\sum_{n=1}^Nt_n$,
+     $\bar{\phi_j}=\frac{1}{N}\displaystyle\sum_{n=1}^N\phi_j(\bl{x}_n)$.
+
+     $frac{N}{2\beta}=E_D(\bl{w})$. $\frac{1}{\beta_{ML}}=
+     \frac{1}{N}\displaystyle\sum_{n=1}^N\left\{t_n-\bl{w}^T_{ML}
+     \bl{\phi}(\bl{x}_n)\right\}^2$
 **** Least-squares approach
      + Problem
        - Each class $\mathcal{C}_k$ is described by its own linear model 
@@ -307,7 +341,12 @@ ce* is
          $SSE=\displaystyle\sum_{i=1}^n(y_i-f(x_i))^2$
          $E_D(\widetilde{\bl{W}})=1/2\text{Tr}\{(\bl{\widetilde{X}\widetilde{W}-T})^T 
          (\bl{\widetilde{X}\widetilde{W}-T})\}$
+
+         $\bl{\widetilde{W}}=(\bl{\widetilde{X}}^T\bl{\widetilde{X}})^{-1}\bl{\widetilde{X}}^T\bl{T}$
 **** fisher's linear discriminant
+
+     \includegraphics[width=100mm]{Fisher}
+
      from the view of dimensionality reduction
      $y\ge -w_0$ as class $\mathcal{C}_1$
 
@@ -316,4 +355,71 @@ ce* is
      \xrightarrow{y=\bl{w}^T\bl{x}} m_2-m_1=\bl{w}^T(\bl{m}_2-\bl{m}_1)$
 **** the perceptron algorithm of rosenblatt
 ** probalibilistic generative models
+   A probabilistic view of classification from simple assumptions about the
+   distribution of the data
+
+   \begin{align*}
+   p(\mathcal{C}_1|\bl{x})&=\frac{p(\bl{x}|\mathcal{C}_1)p(\mathcal{C}_1)}
+   {p(\bl{x}|\mathcal{C}_1)p(\mathcal{C}_1)+p(\bl{x}|\mathcal{C}_2)p(\mathcal{C}_2)}\\
+   &=\frac{1}{1+\exp(-a)}=\sigma(a)
+   \end{align*}
+   where 
+   \begin{equation*}
+   a=\ln\frac{p(\bl{x}|\mathcal{C}_1)p(\mathcal{C}_1)}
+   {p(\bl{x}|\mathcal{C}_2)p(\mathcal{C}_2)}
+   \end{equation*}
+   and $\sigma(a)$ is the *logistic sigmoid* function defined by
+   \begin{equation*}
+   \sigma(a)=\frac{1}{1+\exp(-a)}
+   \end{equation*}
+   and $\sigma(-a)=1-\sigma(a)$, its inverse is *logit* function
+   \begin{equation*}
+   a=\ln(\frac{\sigma}{1-\sigma})
+   \end{equation*}
+
+   For case of $K > 2$ classes, we have the following *multi-class generalization*
+   \begin{equation*}
+   p(\mathcal{C}_k|\bl{x})=\frac{p(\bl{x}|\mathcal{C}_k)p(\mathcal{C}_k)}
+   {\sum_jp(\bl{x}|\mathcal{C}_j)p(\mathcal{C}_j)}=\frac{\exp(a_k)}{\sum_j\exp(a_j)},
+   a_k=\ln\left[p(\bl{x}|\mathcal{C}_k)p(\mathcal{C}_k)\right]
+   \end{equation*}
+   The *normalized exponential* is known as the *softmax function* as it represents
+   a /smoothed version of the max function/
+   \begin{equation*}
+   \text{if } a_k\ll a_j,\forall j\neq k,\text{then } p(\mathcal{C}_k|\bl{x})\approx 1,
+   p(\mathcal{C}_j|\bl{x})\approx 0
+   \end{equation*}
+
+   For *continuous inputs*, assume
+   \begin{equation*}
+   p(\bl{x}|\mathcal{C}_k)=\frac{1}{(2\pi)^{D/2}}\frac{1}
+   {\abs{\bl{\Sigma}}^{1/2}}\exp\left\{-\frac{1}{2}(\bl{x}-\bl{\mu}_k)^T
+   \bl{\Sigma^{-1}}(\bl{x}-\bl{\mu}_k)\right\}
+   \end{equation*}
+   1. 2 classes
+      \begin{align*}
+      p(\mathcal{C}_1|\bl{x})&=\sigma(\bl{w}^T\bl{x}+w_0)\\
+      \bl{w}&=\bl{\Sigma}^{-1}(\bl{\mu}_1-\bl{\mu}_2)\\
+      w_0&=-\frac{1}{2}\bl{\mu}_1^T\bl{\Sigma}^{-1}\bl{\mu}_1+
+      \frac{1}{2}\bl{\mu}_2^T\bl{\Sigma}^{-1}\bl{\mu}_2+\ln\frac{p(\mathcal{C}_1)}
+      {p(\mathcal{C}_2)}\\
+      \end{align*}
+   2. K classes
+      \begin{align*}
+      a_k(\bl{x})&=\bl{w}_k^T\bl{x}+w_{k0}\\
+      \bl{w}_k&=\bl{\Sigma}^{-1}\bl{\mu}_k\\
+      w_{k0}&=-\frac{1}{2}\bl{\mu}_k^T\bl{\Sigma}^{-1}\bl{\mu}_k+\ln p(\mathcal{C}_k)
+      \end{align*}
 ** probabilistic discriminative models
+** Boosting
+   Originally designed for classification problems.
+
+   Motivation: a procedure that combines the outputs of many "weak" classifiers
+   to produce a strong/accurate classifier
+
+   
+*** AdaBoost
+    \includegraphics[width=100mm]{Boosting}
+* wef
+** wfe
+   K-means
