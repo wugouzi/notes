@@ -1,10 +1,9 @@
 #+TITLE: Artificial Intelligence
-#+LATEX_HEADER: \usepackage{commath,amsmath}
-#+LATEX_HEADER: \newcommand{\bl}[1] {\boldsymbol{#1}}
 #+EMAIL: gouziwu@gmail.com
 #+AUTHOR: wu
 #+EXPORT_FILE_NAME: latex/ArtificialIntelligence/ArtificialIntelligence.tex
 #+LATEX_HEADER: \graphicspath{{../../images/ArtificialIntelligence/}}
+#+LATEX_HEADER: \input{preamble.tex}
 #+OPTIONS:
 * Inference and Reasoning
 ** Propositional logic
@@ -89,8 +88,7 @@
    \end{align*}
 
 
-   The *covarian
-ce* is
+   The *covariance* is
 
    \begin{align*}
    cov[x,y]&=\mathbb{E}_{x,y}[(x-\mathbb{E}[x])(y-\mathbb{E}[y])]\\
@@ -289,10 +287,10 @@ ce* is
      and $\mathbb{E}(t|\bl{x})=\int tp(t|\bl{x})dt=y(\bl{x},\bl{w})$
 
      For data set $\bl{X}=\{\bl{x}_1,\dots,\bl{x}_n\},\bl{t}=(t_1,\dots,t_n)^T$,
-     $p(t|\bl{X},\bl{w},\beta)=\displaystyle\prod_{n=1}^N\mathcal{N}(t_n|
+     $p(\bl{t}|\bl{X},\bl{w},\beta)=\displaystyle\prod_{n=1}^N\mathcal{N}(t_n|
      \bl{w}^T\bl{\phi}(\bl{x}_n),\beta^{-1})$
 
-     $\ln p(t|\bl{w},\beta)=\displaystyle\sum_{n=1}^N\ln\mathcal{N}(t_n|
+     $\ln p(\bl{t}|\bl{w},\beta)=\displaystyle\sum_{n=1}^N\ln\mathcal{N}(t_n|
      \bl{w}^T\bl{\phi}(\bl{x}_n),\beta^{-1})=\frac{N}{2}\ln\beta-\frac{N}{2}\ln(2\pi)-
      \beta E_D(\bl{w})$
 
@@ -420,6 +418,123 @@ ce* is
    
 *** AdaBoost
     \includegraphics[width=100mm]{Boosting}
+* unsupervised learning - clustering em and PCA
+** K-means clustering
+   * Distortion measure
+     $J=\displaystyle\sum_{n=1}^N \displaystyle\sum_{k=1}^Kr_{nk}
+     \norm{\bl{x}_n-\bl{\mu}_k}^2$
+** Mixtures of Gaussians
+   + Definition: 
+     \begin{equation*}
+     p(\bl{x})=\displaystyle\sum_{k=1}^K\pi_k\mathcal{N}
+     (\bl{x}|\bl{\mu}_k,\bl{\Sigma}_k)\quad \displaystyle\sum_{k=1}^k\pi_k=1
+     \quad 0\le\pi_k\le1
+     \end{equation*}
+   + introduce a K-dimensional binary random variable $\bl{z}=(z_1,\dots,z_k)^T$
+     \begin{equation*}
+     z_k\in\{0,1\}\quad \displaystyle\sum_kz_k=1\quad p(z_k=1)=\pi_k
+     \end{equation*}
+
+     Hence $p(\bl{z})
+     =\displaystyle\prod_{k=1}^K\pi_k^{z_k}$, $\bz$ is *latent variable* (inferred
+     from other observed variables)
+
+     If $p(\bl{x}|z_k=1)=\mathcal{N}(\bl{x}|\bl{\mu}_k,\bl{\Sigma})$, then
+     $p(\bl{x}|\bl{z})=\displaystyle\prod_{k=1}^K\mathcal{N}(\bl{x}|\bl{\mu}_k,
+     \bl{\Sigma}_k)^{z_k}$
+   + *equivalent formulation* of the Gaussian mixture.
+     \begin{align*}
+     \Aboxed{
+     p(\bl{x})&=\displaystyle\sum_{\bl{z}}p(\bl{x}|\bl{z})p(\bl{z})
+     =\displaystyle\sum_{\bl{z}}\displaystyle\prod_{k=1}^K
+     \mathcal{N}(\bl{x}|\bl{\mu}_k,\bl{\Sigma}_k)^{z_k}}\\
+     &=\displaystyle\sum_{j=1}^K\displaystyle\prod_{k=1}^K\mathcal{N}(\bl{x}|\bl{\mu}_k,
+     \bl{\Sigma}_k)^{I_{kj}}\quad I_{kj}=
+     \begin{cases}
+     1&\text{if } k=j\\
+     0&\text{otherwise}
+     \end{cases}\\
+     &=\displaystyle\sum_{j=1}^K\pi_j\mathcal{N}(\bl{x}|\bl{\mu}_j,\bl{\Sigma}_j)
+     \end{align*}
+
+     responsibility:
+     \begin{equation*}
+     \gamma(z_k)=p(z_k=1|\bx)=\frac{p(z_k=1)p(\bx|z_k=1)}{\dissum_{j=1}^Kp(z_j=1)p(\bx|z_j=1)}
+     =\frac{ \pi_k\caln(\bx|\bmu_k,\bSigma)}{\dissum_{j=1}^K\pi_j\caln(\bx|\bmu_j
+     \bSigma_j)}
+     \end{equation*}
+     \includegraphics[width=130mm]{GMM}
+
+   *Expectation-Maximization algorithm for GMM*. 
+   $p(\bX|)=\dispro p(\bx)$
+
+   $\ln p(\bX|\pi,\bmu, \bSigma)=\dissum_{n=1}^N\ln\left\{
+   \dissum_{k=1}^K\pi_k\caln(\bx_n|\bmu_k,\bSigma_k)\right\}$
+   1. E step
+      \begin{equation*}
+      \gamma(z_{nk})=\frac{\pi_k\caln(\bx_n|\bmu_k,\bSigma_k)}
+      {\dissum_j\pi_j\caln(\bx_n|\bmu_j,\bSigma_j)}
+      \end{equation*}
+   2. M step
+      * solve $\bmu_k$
+        \begin{align*}
+        &\frac{\partial\ln p(\bX|\pi,\bmu,\bSigma)}{\partial\bmu_k}=0\\
+        &0=-\frac{\pi_k\caln(\bx_n|\bmu_k,\bSigma_k)}
+        {\dissum_j\pi_j\caln(\bx_n|\bmu_j,\bSigma_j)}\bSigma_k^{-1}(\bx_n-\bmu_k)\\
+        &\bmu_k=\frac{1}{N_k}\dissum_{n=1}^N\gamma(z_{nk})\bx_n\\
+        &N_k=\dissum_{n=1}^N\gamma(z_{nk})
+        \end{align*}
+      * solve $\bSigma_k$
+        \begin{align*}
+        &\frac{\partial\ln p(\bX|\pi,\bmu,\bSigma)}{\partial\bSigma_k}=0\\
+        &\bSigma_k=\frac{1}{N_k}\dissum_{n=1}^N\gamma(z_{nk})(\bx_n-\bmu_k)(\bx_n-\bmu_k)^T
+        \end{align*}
+
+        
+   *EM for Gaussian Mixtures*
+   1. initialize the means $\bmu_k$, covariances $\bSigma_k$ and mixing
+      coefficients $\pi_k$
+   2. E step
+   3. M step
+   4. evaluate the log likelihood
+      \begin{equation*}
+      \ln p(\bX|\pi,\bmu, \bSigma)=\dissum_{n=1}^N\ln\left\{
+      \dissum_{k=1}^K\pi_k\caln(\bx_n|\bmu_k,\bSigma_k)\right\}
+      \end{equation*}
+      and check for convergence of either the parameters or the log likelihood.
+      If the convergence criterion is not satisfied return to step 2
+** An alternative view of EM
+*** the general EM algorithm
+    The log likelihood of a discrete latent variables model
+    \begin{equation*}
+    \ln p(\bX|\theta)=\ln\lb\dissum_{\bZ} p(\bX,\bZ|\btheta)\rb
+    \end{equation*}
+
+
+    /the goal of EM algorithm is to find maximum likelihood solution for models
+    having latent variables/ 
+
+
+    For the complete data set $\lb\bX,\bZ\rb$, the likelihood function
+    \begin{equation*}
+    \ln p(\bX|\btheta)\Longrightarrow \ln p(\bX,\bZ|\btheta)
+    \end{equation*}
+
+
+    For the incomplete data set $\lb\bX\rb$, we adopt the following steps to
+    find maximum likelihood solution
+    \begin{tikzpicture}[node distance=2.5cm]
+    \tikzstyle{arrow}=[->,thick];
+    \node (1) [] {$\btheta^\text{old}$};
+    \node (2) [below left of=1] {$p(\bZ|\bX,\btheta^\text{old})$};
+    \node (3) [below right of=2] {$\E_{\bZ}[\ln p(\bX,\bZ|\btheta)]=\displaystyle\sum_{\bZ}
+    p(\bZ|\bX,\btheta^\text{old})\ln p(\bX,\bZ|\btheta)\Q (\btheta,\btheta^\text{old})$};
+    \node (4) [below right of=1] {$\btheta^\text{new}=\text{arg} \max_{\btheta}\calq(\btheta,\btheta^\text{old})$};
+    \draw [arrow] (1) -- (2);
+    \draw [arrow] (2) -- (3);
+    \draw [arrow] (3) -- (4);
+    \draw [arrow] (4) -- (1);
+    \end{tikzpicture}
 * wef
 ** wfe
    K-means

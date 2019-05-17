@@ -265,12 +265,12 @@
    \end{theorem}
 
    *Neville's Method*
-n   \begin{tabular}{c c c c c c}
+   \begin{tabular}{c c c c c c}
    $x_0$ & $P_0$ &           &             &            \\
    $x_1$ & $P_1$ & $P_{0,1}$ &             &            \\
    $x_2$ & $P_2$ & $P_{1,2}$ & $P_{0,1,2}$ &            \\
    $x_3$ & $P_3$ & $P_{2,3}$ & $P_{1,2,3}$ & $P_{0,1,2,3}$\\
-   \end{tabular}n
+   \end{tabular}
 ** 3.2 Divied differences
    $f[x_i,x_j]=\frac{f(x_i)-f(x_j)}{x_i-x_j}(i\neq j, x_i\neq x_j)$.
    $f[x_i,x_j,x_k]=\frac{f[x_i,x_j]-f[x_j,x_k]}{x_i-x_k}$.
@@ -508,7 +508,7 @@ n   \begin{tabular}{c c c c c c}
 
    \begin{equation*}
    \int_a^bf(x)dx\approx \displaystyle\sum_{k=0}^nf(x_k)
-   \overbrace{\int_a^bL_k(x)dx}^{A_k}
+   \overbrace{\int_a^b L_k(x)dx}^{A_k}
    \end{equation*}
 
    Error
@@ -524,6 +524,28 @@ n   \begin{tabular}{c c c c c c}
    the formula is \textcolor{red}{exact}
    for $x^k$ for each $k=0,1,\dots,n$
    \end{definition}
+
+   Example. Consider the linear interpolation on $[a,b]$, we have 
+   \begin{equation*}
+   P_1(x)=\frac{x-b}{a-b}f(a)+\frac{x-a}{b-a}f(b)
+   \end{equation*}
+   $A_1=A_2=\frac{b-a}{2}, \int_a^bf(x)dx\approx\frac{b-a}{2}[f(a)+f(b)]$. This
+   is \textcolor{red}{trapezoidal rule}.
+
+   Consider $x^k$
+   \begin{align*}
+   1:\quad &\int_a^b1dx=b-a \textcolor{red}{=} \frac{b-a}{2}[1+1]\\
+   x:\quad &\int_a^bxdx=b-a \textcolor{red}{=}\frac{b-a}{2}[a+b]\\
+   x^2:\quad &\int_a^bx^2dx=b-a \textcolor{red}{\neq}  \frac{b-a}{2}[a^2+b^2]\\
+   \end{align*}
+
+   For equally spaced nodes: $x_i=a+ih,h=\frac{b-a}{n}, i=0,1,\dots,n$
+
+   \begin{align*}
+   A_i&=\int_{x_0}^{x_n}\displaystyle\prod_{j\neq i}\frac{x-x_j}{x_i-x_j}dx\\
+   &=\int_0^n\displaystyle\prod_{i\neq j}\frac{(t-j)h}{(i-j)h}\times hdt\quad x=a+th\\
+   &=\frac{(b-a)(-1)^{n-i}}{n\;i!(n-i)!}\int_0^n\displaystyle\prod_{i\neq j}(t-j)dt
+   \end{align*}
 * Chap6 Direct Methods for Solving Linear Systems
 ** 6.1 Linear Systems of Equations
    *Gaussian elimination with backward substitution*
@@ -998,6 +1020,217 @@ n   \begin{tabular}{c c c c c c}
    \textcolor{red}{generalized polynomial} 
    \end{definition}
 
+
+   Weight function
+   \begin{align*}
+   &E=\sum w_i[P(x_i)-y_i]^2\\
+   &E=\int_a^bw(x)[P(x)-f(x)]^2dx
+   \end{align*}
+   \begin{equation*}
+   \sum w_i\norm{P(x)-f(x)}_2^2=\sum w_i\bl{e}^T\bl{e}=\bl{e}^TW\bl{e}
+   \end{equation*}
+   where
+   #+ATTR_LATEX :mode math :environment pmatrix :math-preffix W=
+   | w_1 |       |      |
+   |     | \dots |      |
+   |     |       | w_n_ |
+
+
+   The *general least squares approximation problem*. $E$ is minimized
+
+
+   *Inner product* and *norm*
+   \begin{equation*}
+   (f,g)=
+   \begin{cases}
+   \displaystyle\sum_{i=1}^m w_if(x_i)g(x_i)\\
+   \int_a^bw(x)f(x)g(x)dx
+   \end{cases}
+   \end{equation*}
+   It can be shown that $(f,g)$ is an *inner proudct* and $\norm{f}=\sqrt{(f,f)}$
+   is a *norm*
+
+
+   Hence, The general least squares approximation problem is to find a
+   generalized polynomial $P(x)$ such that $E=(P-y,P-y)=\norm{P-y}^2$ is
+   minimized. 
+
+
+   Let $P(x)=a_0\phi_0(x)+\dots+a_n\phi_n(x)$. 
+   $\frac{\partial E}{\partial a_k}=0\Longrightarrow
+   \displaystyle\sum_{j=0}^n(\phi_k,\phi_j)a_j=(\phi_k,f)$.
+   \begin{equation*}
+   \begin{pmatrix}
+   &&\\
+   &b_{ij}=(\phi_i,\phi_j)&\\
+   &&
+   \end{pmatrix}
+   \begin{pmatrix}
+   a_0\\
+   \vdots\\
+   a_n
+   \end{pmatrix}
+   =
+   \begin{pmatrix}
+   (\phi_0,f)\\
+   \dots\\
+   (\phi_n,f)
+   \end{pmatrix}=\vec{c}
+   \end{equation*}
+
+   
+   Example. When approximating $f(x)\in C[0,1]$ with $\phi_j(x)=x^j$ and
+   $w(x)=1$, then
+   \begin{equation*}
+   (\phi_i,\phi_j)=\int_0^1x^ix^jdx=\frac{1}{i+j+1}
+   \end{equation*}
+   Hilbert matrix.
+
+
+   Improvement: Find a general linear independent set of functions s.t. any pair
+   is *orthogonal*, then the matrix will be diagonal. And
+   \begin{equation*}
+   a_k=\frac{(\phi_k,f)}{(\phi_k,\phi_k)}
+   \end{equation*}
+
+
+   *Construction*
+   \begin{theorem}
+   the set of polynomial functions defined in the following way is orthogonal on [a,b]
+   w.r.t. weight function $w$
+   \begin{align*}
+   \phi_0(x)&=1\\
+   \phi_1(x)&=x-B_1\\
+   \phi_k(x)&=(x-B_k)\phi_{k-1}(x)-C_k\phi_{k-2}(x)\\
+   B_k&=\frac{(x\phi_{k-1},\phi_{k-1})}{(\phi_{k-1},\phi_{k-1})}\\
+   C_k&=\frac{(x\phi_{k-1},\phi_{k-2})}{(\phi_{k-2},\phi_{k-2})}
+   \end{align*}
+   \end{theorem}
+
+
+   Example. Approximate
+   #+ATTR_LATEX: :mode math :environment pmatrix
+   | x | 1 |  2 |  3 | 4 |
+   | y | 4 | 10 | 18 | 26 |
+
+   with $y=a_0+a_1x+a_2x^2, w=1$
+
+
+   Solution. $y=a_0\phi_0(x)+a_1\phi_1(x)+a_2\phi_2(x)$. $\phi_0(x)=1$
+** 8.3 Chebyshev polynomials and economization of power series
+   Minimize $\norm{P-y}_\infty$, \textcolor{red}{minimax problem} 
+
+   1. Find a polynomial $P_n(x)$ of degree n s.t. $\norm{P_n-f}_\infty$ is
+      minimized
+
+      \begin{definition}
+      If $P(x_0)-f(x_0)=\pm\norm{P-f}_\infty, \textcolor{red}{x_0}$ is called a
+      $(\pm)$ \textcolor{red}{deviation point}
+      \end{definition}
+
+      We can estimate the features of the polynomial
+      1. If $f\in C[a,b]$ and f is \textcolor{red}{not} a polynomial of degree
+         n, then there exists a \textcolor{red}{unique} polynomial $P_n(x)$ s.t. 
+         $\norm{P_n-f}_\infty$ is minimized
+      2. $P_n(x)$ exists, and must have both + and - deviation points
+      3. 
+         \begin{theorem}{Chebyshev Theorem }
+         $P_n(x)$ minimizes $\norm{P_n-f}\Longleftrightarrow P_n(x)$ has at least
+         \textcolor{red}{n+2} alternating + and - deviation points w.r.t. $f$.
+         That is, there exists a set of points $a\le t_1<\dots<t_{n+2}\le b$
+         s.t. 
+         \begin{equation*}
+         P_n(t_k)-f(t_k)=\pm(-1)^k\norm{P_n-f}_\infty
+         \end{equation*}
+         \end{theorem}
+
+         The set $\{t_k\}$ is called the \textcolor{red}{Chebyshev altenating
+         sequence} 
+         
+   2. Determine the interpolating points $\{x_0,\dots,x_n\}$ s.t. $P_n(x)$
+      minimizes the remainder
+
+      \begin{equation*}
+      \abs{P_n(x)-f(x)}=
+      \abs{R_n(x)}=\abs{\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\displaystyle\prod_{i=0}^n(x-x_i)}
+      \end{equation*}
+      
+      2.1 Find $\{x_1,\dots,x_n\}$ s.t. $\norm{\omega_n}_\infty$ is minimized on
+      $[-1,1]$, where $\omega_n(x)=\displaystyle\prod_{i=1}^n(x-x_i)$.
+
+      Since $\omega_n(x)=x^n-P_{n-1}(x)$, the problem becomes to
+   3. Find a polynomial $P_{n-1}(x) s.t. \norm{x^n-P_{n-1}(x)}_\infty$ is
+      minimized on $[-1,1]$
+
+      
+   *Chebyshev polynomials*. Consider the $n+1$ extreme values of $\cos(n\theta)$
+   on $[0,\pi]$.
+
+   Let $x=\cos(\theta)$, then $x\in[-1,1]$, $T_n(x)=\cos(n\theta)=
+   cos(n\cdot \arccos x)$ is called the \textcolor{red}{Chebyshev polynomial}.
+
+   Properties:
+   1. $t_k=\cos(\frac{k}{n}\pi), k=0,\dots,n,
+      T_n(t_k)=(-1)^k\norm{T_n(x)}_\infty$
+   2. $T_n(x)$ has $n$ roots $x_k=\cos(\frac{2k-1}{2n}\pi), k=1,\dots,n$
+   3. $T_n$ has recurrence relation
+      \begin{equation*}
+      T_0(x)=1,T_1(x)=x,T_{n+1}(x)=2xT_n(x)-T_{n-1}(x)
+      \end{equation*}
+   4. $\{T_0(x),T_1(x),\dots\}$ are orthogonal on $[-1,1]$ w.r.t. weight
+      function $w(x)=1/\sqrt{1-x^2}$
+      \begin{equation*}
+      (T_n,T_m)=\int_{-1}^1\frac{T_n(x)T_m(x)}{\sqrt{1-x^2}}dx=
+      \begin{cases}
+      0 & n\neq m\\
+      \pi & n=m=0\\
+      \pi/2&n=m\neq 0\\
+      \end{cases}
+      \end{equation*}
+      
+      
+   $w_n(x)=x^n-P_{n-1}(x)=T_n(x)/2^{n-1}$. Let $\Wt{\prod}$ ={monic polynomials
+   of degree n}. 
+   \begin{equation*}
+   \min_{w_n\in\wt{\prod}}\norm{w_n}_\infty=\norm{\frac{1}
+   {2^{n-1}}T_n(x)}_\infty=\frac{1}{2^{n-1}}
+   \end{equation*}
+   \begin{equation*}
+   \abs{P_n(x)-f(x)}=
+   \abs{R_n(x)}=\abs{\frac{f^{(n+1)}(\xi_x)}{(n+1)!}\displaystyle\prod_{i=0}^n(x-x_i)}
+   \end{equation*}
+   Take the $n+1$ roots of $T_{n+1}(x)$ as the interpolating points, then the
+   interpolating polynomial $P_n(x)$ assumes the minimum upper bound of the
+   absolute error $\frac{M}{2^n(n+1)!}$
+
+   
+   *Economization of power series*. Given $P_n(x)\approx f(x)$, economization of
+   pppppppower series is to reduce the degree of polynomial with a *minimal loss of
+   accuracy* 
+
+    
+   Consider approximating an arbitrary n-th degree polynomial
+   \begin{equation*}
+   P_n(x)=a_nx^n+a_{n-1}x^{n-1}+\dots+a_1x+a_0
+   \end{equation*}
+   with a polynomial $P_{n-1}(x)$ by removing an n-th degree polynomial $Q_n(x)$
+   that has the coefficient $a_n$ for $x_n$. Then
+   \begin{equation*}
+   \max_{[-1,1]}\abs{f(x)-P_{n-1}(x)}\le\max_{[-1,1]}\abs{f(x)-P_n(x)}+
+   \max_{[-1,1]}\abs{Q_n(x)}
+   \end{equation*}
+   To minimize the loss of accuracy, $Q_n(x)=a_n\frac{T_n(x)}{2^{n-1}}$
+
+
+   Example. The 4-th order Taylor polynomial for $f(x)=e^x$ on $[-1,1]$ is
+
+   \begin{equation*}
+   P_4=1+x+\frac{x^2}{2}+\frac{x^3}{5}+\frac{x^4}{24}
+   \end{equation*}
+   .The upper bound of truncation error is 
+   $\abs{R_4(x)}\le\frac{e}{5!}\abs{x^5}\approx0.023$
+
+   solution. $T_4=8x^4-8x^2+1, Q_4$
 * chap9 Approximating Eigenvalues
 ** 9.3 the power method
    *the original method*
@@ -1042,3 +1275,25 @@ n   \begin{tabular}{c c c c c c}
    $|\frac{1}{\lambda_n}|>| \frac{1}{\lambda_{n-1}}|\ge\dots\ge|
    \frac{1}{\lambda_1}|$ 
 
+* TODO ppt
+* TODO hw [0/15]
+  ~C-u C-c C-c~
+  - [ ] NA01-CH1-A
+  - [ ] NA02-CH2-A
+  - [ ] NA03-CH6-AB
+  - [ ] NA04-CH6-A
+  - [ ] NA04-CH7-A
+  - [ ] NA05-CH7-A
+  - [ ] NA06-CH3-A
+  - [ ] NA06-CH7-A
+    conditional number
+    hilber matrix
+  - [ ] NA06 CH9 -A
+  - [ ] NA07-CH3-AB
+  - [ ] NA08-CH3-A
+  - [ ] NA08-CH8-A
+    least squares polynomial
+  - [ ] NA09-CH8-A
+    least squares polynomial orthogonal
+  - [ ] NA10-CH4-A
+  - [ ] NA10-CH8-A
