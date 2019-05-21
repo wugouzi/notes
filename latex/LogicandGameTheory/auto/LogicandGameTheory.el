@@ -35,8 +35,7 @@
     "hyperref"
     "minted")
    (LaTeX-add-labels
-    "sec:org140cbc1")
-   (LaTeX-add-environments
-    '("gathered" LaTeX-env-args ["argument"] 0)))
+    "sec:org7036d3b"
+    "sec:org160640a"))
  :latex)
 

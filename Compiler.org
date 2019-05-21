@@ -771,6 +771,13 @@
     * *type conversion and coercion*
 * Chap7 runtime environments
 ** memory organization during program execution
+   | code area          |
+   | global/static area |
+   | stack              |
+   | free space         |
+   | heap               |
+
+
    *procedure activation record*
    | space for arguments(parameters)                             |
    |-------------------------------------------------------------|
@@ -815,13 +822,30 @@
    2. the *return address* of the caller is saved
    3. a jump is made to the begining of the code of the called procedure
    4. on return, a simple jump is made to the return address
+   
+
+   | code for main procedure             | code area |
+   | code for procedure 1                | code area |
+   | ...                                 | code area |
+   | code for procedure n                | code area |
+   | global data area                    | data area |
+   | activation record of main procedure | data area |
+   | ...                                 | data area |
+
+
 ** stack-based runtime environments
+   for a language where
+   * recursive calls are allowed
+   * local variables are newly allocated at each call
+   * activation records cannot be allocated statically
+
+
    the stack of *activation records* grows and shrinks with the main of calls in
    the executing program
 
    Each procedure may have several *different activation records* on the call
    stack at one time
-
+   
    In a language where _all procedures are global_, the stack-based environment
    requires two things
    1. frame point, =fp=, a pointer to the current activation record to allow
@@ -829,8 +853,16 @@
 
       *control link* or *dynamic link*, a point to a record of the immediately
       preceding activation
+
+      /fp/ points to the control link of the current activation record
+      
+      
    2. stack pointer, =sp=, a pointer to the last location allocated on the call stack
 *** stack-based environments without local procedures
+
+
+    \includegraphics[width=150mm]{fp}
+
     the calling sequence
     1. compute the /arguments/ and store them in their correct positions in the
        new activation record of the procedure.
@@ -849,10 +881,49 @@
     2. load the control link into the /fp/
     3. perform a /jump/ to the return address
     4. change the /sp/ to pop the arguments
+
+
+    Dealing with variable-length data
+    * C compiler typically deal with this by pushing the arguments to a call *in
+      reverse order* onto the runtime stack. The first parameter is always 
+      located at a fixed offset from the fp in the implementation described
+      above. 
+*** stack-based environment with local procedures
+    *access link(static link)*: represents the defining environment of the
+     procedure; 
+
+    *control link*: represents the calling environment of the procedure. 
+
+    \includegraphics[width=150mm]{AccessLink}
+
+
+    The calling sequence
+    1. The access link must be pushed onto the runtime stack just before the /fp/
+       during a call
+    2. The /sp/ must be adjusted by an extra amount to remove the access link
+       after an exit 
 ** Dynamic memory
+   A stack-based environment will result in a dangling reference
+
+   For example
+   #+BEGIN_SRC c
+     int * dangle(void) {
+         int x;
+         return &x;
+     }
+   #+END_SRC
+   An assignment =addr=danle()=
 *** fully dynamic runtime environment
+    more complex instance of a dangling reference occurs if a local function can
+    be returned by a call
+
+
     A stack-based runtime environment is inadequate
 
+    A more general form of environment *fully dynamic environment*. It can
+    deallocate activation records only when all references to them have
+    disappear 
+    
 
     Garbage collection
     * The tracking of references during execution
@@ -860,13 +931,12 @@
       arbitrary times during execution
 
       
-    In fully dynamic environment, the basic structure of activation record
-    remains the same
-
-    
-    when control is returned to the caller, the exited activation record remains
-    in memory, to be de-allocated at some later time
+    * In fully dynamic environment, the basic structure of activation record
+      remains the same
+    * when control is returned to the caller, the exited activation record remains
+      in memory, to be de-allocated at some later time
 *** dynamic memory in object-oriented languages
+    features: Objects, methods, inheritance, and dynamic binding
 *** heap management
     *Heap* the data structure
     1. allocate
@@ -908,3 +978,46 @@
     the final value of the parameter is copied back out to the location of the
     argument 
 *** pass by name
+* Code generation
+** Intermediate code and data structures for code generation
+*** Three-address code
+    ~x = y op z~
+
+    x is an address
+
+    For ~2*a+(b-3)~, it becomes
+    | ~T1 = 2 * a~   |
+    | ~T2 = b -3~    |
+    | ~T3 = T1 + T2~ |
+*** Data structures for the implementation of three address code
+    * Four fields are necessary: one for operation and three for the addresses
+    * Those instructions that need fewer than three addresses, one or more of
+      the address fields is given a null or "empty" value
+    * the entire sequence of three-address instructions is implemented as an
+      array or linked list
+*** P-code
+    ~2 * a + (b - 3)~
+
+    | ldc 2 | load constant 2          |
+    | lod a | load value of variable a |
+    | mpi   | integer multiplication   |
+    | lod b |                          |
+    | ldc 3 |                          |
+    | sbi   | integer subtraction      |
+    | adi   | integer addition         |
+
+
+    ~x:=y+1~
+
+    | lda x | load address of x                         |
+    | lod y |                                           |
+    | ldc 1 |                                           |
+    | adi   |                                           |
+    | sto   | store top to address below top & pop both |
+** Basic code generation techniques
+*** Intermediate code or target code as a synthesized attribute
+*** Practical code generation
+*** generation of target code from intermediate code
+    1. *macro expansion*
+    2. *static simulation*
+** Code generation of data structure references
