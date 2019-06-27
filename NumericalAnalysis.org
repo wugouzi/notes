@@ -44,6 +44,15 @@
                  $|\frac{y-fl(y)}{y}|\le \frac{0.5}{0.1}\times 10^{-k}=0.5\times
                  10^{-k+1}$
 
+   
+   \textcolor{red}{ Subtraction of nearly equal numbers will
+   cause a cancellation of significant digits.} 
+
+
+   \textcolor{red}{Dividing by a number with small magnitude (or, 
+   equivalently, multiplying by a number with large magnitude) will 
+   cause an enlargement of the error.} 
+
    *Finite digit arithmetic*
    
    + $x\oplus y=fl(fl(x)+fl(y))$
@@ -640,6 +649,121 @@
    \end{equation*}
 
 ** 4.7 Gaussian Quadrature
+   Construct formula 
+   \begin{equation*}
+   \int_a^bw(x)f(x)dx\approx \displaystyle\sum_{k=0}^kA_kf(x_k)
+   \end{equation*}
+   of precision degree \textcolor{red}{2n+1} with n+1 points
+
+   \begin{theorem}
+   $x_0,\dots,x_n$ are Gaussian points iff $W(x)=\displaystyle\prod_{k=0}^n(x-x_k)$
+   is orthogonal to all the polynomials of degree no greater than $n$
+   \end{theorem}
+   \begin{proof}
+   \begin{enumerate}
+   \item If $x_0,\dots,x_n$ are Gaussian points, then the degree of precision of
+   the formula $\int_a^bw(x)f(x)\approx \displaystyle\sum_{k=0}^nA_kf(x_k)$ is
+   at least $2n+1$.
+
+   For any polynomial $P_m(x)$ with $m\le n$, the degree of $P_m(x)W(x)$ is no greater
+   than $2n+1$. Hence
+   \begin{equation*}
+   \int_a^bw(x)P_m(x)W(x)dx=\displaystyle\sum_{k=0}^nA_kP_m(x_k)W(x_k)=0
+   \item Let $P_m(x)=W(x)q(x)+r(x)$. Then
+   \begin{align*}
+   \int_a^bw(x)P_m(x)dx&=\int_a^bw(x)W(x)q(x)dx+\int_a^bw(x)r(x)dx=
+   \displaystyle\sum_{k=0}^nA_kr(x_k)\\&=\displaystyle\sum_{k=0}^nA_kP_m(x_k)
+   \end{align*}
+   Since $r(x)$'s degree is less then $n+1$ and can be approximate by $n+1$ points
+   \end{equation*}
+   \end{enumerate}
+   \end{proof}
+
+   Suppose $\{\varphi_0,\dots,\varphi_n,\dots\}$ are linearly independent and
+   $\varphi_{n+1}$ is orthogonal to any polynomial $P_m(x)$ with $m\le n$. If we
+   take $varphi_{n+1}$ to be $W(x)$, the the \textcolor{red}{roots of $\varphi$}
+   are the Gaussian points
+* chap5 Initial-value problems for ordinary differential equations
+** 5.1 the elementary theory of initial-value problems
+   \begin{equation*}
+   \begin{cases}
+   \frac{dy}{dt}=f(t,y)&t\in[a,b]\\
+   y(a)=\alpha\\
+   \end{cases}
+   \end{equation*}
+
+   Compute the approximation of $y(t)$ at a set of mesh points 
+   $a=t_0<t_1<\dots<t_n=b$
+
+   \begin{definition}
+   A function $f(t,y)$ is said to satisfy a \textcolor{red}{Lipschitz condition} in
+   the varaible $y$ on a set $D\subset R^2$ if a constatn $L>0$ exists with
+   \begin{equation*}
+   \abs{f(t,y_1)-f(t,y_2)}\le L\abs{y_1-y_2}
+   \end{equation*}
+   whenever $(t,y_1),(t,y_2)\in D$. The constant L is a 
+   \textcolor{red}{Lipschitz condition} 
+   \end{definition}
+
+   \begin{theorem}
+   Suppose that $D=\{(t,y)|a\le t\le b, -\infty<y<\infty\}$ and that $f(t,y)$ is continuous
+   on D. If $f$ satisfies a Lipschitz condition on $D$ in the variable y, then the IVP
+   \begin{equation*}
+   y'(t)=f(t,y), a\le t\le b, y(a) = \alpha
+   \end{equation*}
+   has a /textbf{unique solution} $y(t)$
+   \end{theorem}
+
+
+   \begin{definition}
+   The initial-value problem
+   \begin{equation*}
+   y'(t)=f(t,y), a\le t\le b, y(a)=\alpha
+   \end{equation*}
+   is said to be a \textcolor{red}{well-posed problems} if:
+   \begin{enumerate}
+   \item A unique solution $y(t)$ to the problem
+   \item For any $\epsilon>0$, there exists a positive constant $k(\epsilon)$ s.t.
+   whenever \abs{\epsilon_0}<\epsilon, and $\delta(t)$ is continuous with 
+   $\abs{\delta(t)}<\epsilon$ on [a,b], a unique solution $z(t)$ 
+   \begin{equation*}
+   z'(t)=f(t,z)+\delta(t), a\le t\le b, z(a)=\alpha+\epsilon_0
+   \end{equation*}
+   exists with $\abs{z(t)-y(t)}<k(\epsilon)\epsilon$, for all $a\le t\le b$
+   \end{enumerate}
+   \end{definition}
+
+   \begin{theorem}
+   Suppose that $D=\{(t,y)|a\le t\le b,-\infty<y<\infty\}$ and that $f(t,y)$ is continuous on $D$.
+   If $f$ satisfies a Lipschitz condition on $D$ in the variable $y$, then the IVP is well-posed
+   \end{theorem}
+** 5.2 Euler's Method
+  \begin{align*}
+  y'(t_0)&\approx\frac{y(t_0+h)-y(t_0)}{h}\\
+  y(t_1)&\approx y(t_0)+hy'(t_0)=\alpha+hf(t_0,\alpha)
+  \end{align*}
+** 5.3 Higher Order Taylor Methods
+   \begin{definition}
+   The difference method
+   \begin{equation*}
+   w_0=\alpha\quad w_{i+1}=w_i+h\phi(t_i,w_i), \text{for each } i = 0,1,\dots, n-1
+   \end{equation*}
+   has \textcolor{red}{local truncation error}
+   \begin{equation*}
+   \tau_{i+1}(h)=\frac{y_{i+1}-(y_i+h\phi(t_i,y_i))}{h}=\frac{y_{i+1}-y_i}{h}-\phi(t_i,y_i)
+   \end{equation*}
+   \end{definition}
+
+   \begin{equation*}
+   y_{i+1}=y_i+hf(t_i,y_i)+\frac{h^2}{2}f'(t_i,y_i)+\dots+\frac{h^n}{n!}f^{(n-1)}(t_i,y_i)
+   + \frac{h^{n+1}}{(n+1)!}f^{(n)}(\xi, y(\xi_i))
+   \end{equation*}
+
+   \begin{align*}
+   &w_0=\alpha\\
+   &w_{i+1}=w_i+hT^{(n)}(t_i,w_i)\\
+   &\text{where } T^{(n)}(t_i,w_i)=f(t_i,w_i)+\frac{h}{2}
+   \end{align*}
 * Chap6 Direct Methods for Solving Linear Systems
 ** 6.1 Linear Systems of Equations
    *Gaussian elimination with backward substitution*
@@ -1369,10 +1493,21 @@
    $|\frac{1}{\lambda_n}|>| \frac{1}{\lambda_{n-1}}|\ge\dots\ge|
    \frac{1}{\lambda_1}|$ 
 
-* TODO hw [0/15]
+* TODO hw [6%]
+
   ~C-u C-c C-c~
-  - [ ] NA01-CH1-A
-  - [ ] NA02-CH2-A
+  - [X] NA01-CH1-A
+    - [X] Ex3. given relative error, find the largest interval for each value of
+      $p$
+    - [X] finite digit algorithm
+  - [-] NA02-CH2-A
+    bisection $p_n-p\le \frac{b-a}{2^n}$
+    - [X] use this compute the number of iteration
+    - [ ] compare different fixed point $g$ 's speed
+      use derivative and note that it's not convergent if derivative is larget
+      than 1
+    - [ ] 
+    - [ ]
   - [ ] NA03-CH6-AB
   - [ ] NA04-CH6-A
   - [ ] NA04-CH7-A
@@ -1386,6 +1521,7 @@
   - [ ] NA08-CH3-A
   - [ ] NA08-CH8-A
     least squares polynomial
+
   - [ ] NA09-CH8-A
     least squares polynomial orthogonal
   - [ ] NA10-CH4-A
