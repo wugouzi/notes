@@ -1,0 +1,142 @@
+% \iffalse
+%<*never>
+\documentclass{ltxdoc}
+
+\usepackage[T1]{fontenc}
+\usepackage{undertilde}
+\parindent=15pt
+
+\AtBeginDocument{\CodelineIndex\EnableCrossrefs}
+\AtEndDocument{\PrintIndex}
+\begin{document}
+\def\docdate{2000/08/08}
+\CheckSum{213}
+\DocInput{undertilde.dtx}
+\end{document}
+%</never>
+% \fi
+%
+% \DoNotIndex{\newline,\rightslice,\small,\itshape,\@@apports,\@@competence}
+% \DoNotIndex{\@@date,\@@descr,\@@duree,\@@lieu,\@@titre,\\,\aftergroup}
+% \DoNotIndex{\bigskip,\csname,\def,\edef,\else,\empty}
+% \DoNotIndex{\endcsname,\endtabularx,\ensuremath,\expandafter}
+% \DoNotIndex{\fi,\global,\ifx,\large,\largeurcolonne,\let}
+% \DoNotIndex{\linewidth,\medskip,\newcommand,\newenvironment}
+% \DoNotIndex{\newlength,\pagestyle,\par,\parindent,\phantom}
+% \DoNotIndex{\RequirePackage,\scshape,\setlength,\ta,\tb}
+% \DoNotIndex{\tabularx,\tb,\textbf,\the,\toksdef,\triangleright}
+%
+% \setcounter{tocdepth}{1}
+% \GetFileInfo{undertilde.sty}
+%
+% \title{The \textsf{undertilde} package}
+% \author{Benjamin \textsc{Bayart}\\
+%  French Data Network\\
+%  \texttt{bayartb@edgard.fdn.fr}}
+% \date{Printed on \today\\Last change on \filedate}
+% \maketitle
+%
+% \begin{abstract}
+% This document describes the use and implementation of the package \textsf{undertilde}
+% to typeset a tilde under one or several math symbols.
+% \end{abstract}
+%
+% \section{Usage}
+%
+% This package provides a |\utilde| command, which behave more or
+% less like the \TeX\ |\tilde| accent, except that the resulting
+% accent is put under the letter. One can think about extending
+% the package to other ``growing accents'' like hat and so on, it
+% is not yet done, maybe in a future release.
+%
+% The syntax is rather evident:
+% \begin{verbatim}
+% \utilde{a} \neq \tilde{a}
+% \end{verbatim}
+%
+% Which produces, in math mode: $\utilde{a} \neq \tilde{a}$.
+% The under accent behaves correctly in all the circumstances where
+% it was tried. The only limit is the one encoded in the font itself,
+% there is a size limit for such accents.
+%
+% It can be used in fractions, square-roots, and so on. It can also
+% span several letters. In some cases, the resulting maths can look
+% strange, like that:
+%\begin{verbatim}
+%\frac{\utilde{ab}}{c} \neq \frac{ab}{c}
+%\end{verbatim}
+%
+% Which result in $\frac{\utilde{ab}}{c} \neq \frac{ab}{c}$.
+%
+% Lets consider this to be a feature and not a bug.
+%
+% \section{How to make this work?}
+%
+% In fact, it's rather easy. In the math fonts, at least the one
+% considered here, the fifth dimension is the minimal amount of
+% white space to be put under a math accent (cf. \TeX{book}).
+%
+% Thus, proceed in N steps:
+% \begin{enumerate}
+% \item Typeset the argument, measure its width.
+% \item Typeset a normal tilde over a ``nothing'' of the same width
+%  and of no height.
+% \item Make a stack with the argument, then the tilde, then a negative
+%  space to remove the white vertical space added by \TeX.
+% \end{enumerate}
+%
+% \section{Details of the implementation}
+% 
+% The usual proclamations:
+%    \begin{macrocode}
+%<*package>
+\ProvidesPackage{undertilde}[2000/08/08 v1.0 Tilde under a math object]
+%    \end{macrocode}
+%
+% First, we allocate a register to store the value of the fifth
+% fontdimen in the context of the mathematical stuff that is to
+% be typeset (the right font, the right style, the right size).
+%
+% A command to store the current style (display, text, script, etc)
+% that is in use just before the call (|\mathpal@save|).
+% 
+%    \begin{macrocode}
+\newlength\knuthian@fdfive
+\def\mathpal@save#1{\let\was@math@style=#1\relax}
+%    \end{macrocode}
+%
+% Then, the real thing. First, we save the style; then we typeset
+% the argument in box 124.
+%
+%    \begin{macrocode}
+\def\utilde#1{\mathpalette\mathpal@save
+              {\setbox124=\hbox{$\was@math@style#1$}%
+%    \end{macrocode}
+%
+% Now, the hard thing. The box 125 will, in a firt time contain
+% nothing (it is used to measure the fontdimen 5).
+%
+%    \begin{macrocode}
+\setbox125=\hbox{$\fam=3\global\knuthian@fdfive=\fontdimen5\font$}
+%    \end{macrocode}
+%
+% Then after, it contains the tilde typeseted over a white rule
+% of the same width than box 124 (the math material that have to
+% be under-tilded).
+%
+%    \begin{macrocode}
+\setbox125=\hbox{$\widetilde{\vrule height 0pt depth 0pt width \wd124}$}%
+%    \end{macrocode}
+%
+% Then we display, directly in the math formula a box containing
+% the math material (box 124), the tilde (box 125) and a negative
+% skip to ``remove'' the offset added by \TeX\ (the minimal height
+% of the accent, from baseline).
+%
+%    \begin{macrocode} 
+               \baselineskip=1pt\relax
+               \vtop{\copy124\copy125\vskip -\knuthian@fdfive}}}
+%</package>
+%    \end{macrocode}
+%
+% \end{document}
