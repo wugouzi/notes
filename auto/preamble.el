@@ -41,9 +41,9 @@
     "theorem"
     "definition"
     "corollary"
-    "example"
     "lemma"
     "proposition"
+    "example"
     "remark"))
  :latex)
 
