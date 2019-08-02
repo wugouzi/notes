@@ -1,6 +1,7 @@
 #+TITLE: Belief Functions:Theory and Algorithms
 #+AUTHOR: Thomas Reineking
 #+LATEX_HEADER: \input{preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/BeliefFunctions:TheoryandAlgorithms/BeliefFunctions.tex
 
 * Introduction
 ** Belief function theory
@@ -33,4 +34,136 @@
     \begin{equation*}
     m(\emptyset)=0
     \end{equation*}
-    is called /normalized/
+    is called /normalized/. It's always possible to turn an unnormalized mass
+    function $m$ into a normalized mass function $m'$
+    \begin{equation*}
+    m'(A)=
+    \begin{cases}
+      \frac{m(A)}{1-m(\emptyset)}&\text{if } A\neq\emptyset\\
+      0&\text{if } A=\emptyset
+    \end{cases}
+    \end{equation*}
+    Sets $A\subseteq \Theta$ with $m(A)>0$ are called /focal sets/
+    \begin{equation*}
+    \calf_m=\lb A\mid A\subseteq\Theta,m(A)>0\rb
+    \end{equation*}
+*** Belief function
+    The total amount of belief committed to a hypothesis $A\subseteq\Theta$
+    including all subsetes $B\subseteq A$ is denoted by $bel(A)$. The function
+    $bel:\calp(\Theta)\to[0,1]$ is called a /belief function/
+    \begin{align*}
+    bel(A)&=\displaystyle\sum_{B\subseteq A,B\neq\emptyset}m(B),\quad\forall 
+    A\subseteq\Theta,A\neq\emptyset\\
+    bel(\emptyset)&=0
+    \end{align*}
+
+    For a given belief function $bel$, one can always find a probability
+    function $P$ s.t. 
+    \begin{equation*}
+    bel(A)\le P(A),\quad\forall A\subseteq\Theta
+    \end{equation*}
+    In this case, $bel$ and $P$ are called /compatible/
+
+    /implicability function b/
+    \begin{equation*}
+    b(A)=bel(A)+m(\emptyset)
+    \end{equation*}
+*** Plausibility function
+    
+    The /plausibility/ $pl(A)$ is the amount of belief /not/ strictly committed to
+    the complement $\bar{A}$. herefore  expresses  how plausible a hypothesis
+    $A$ is, i.e.,how much belief mass potentially supports $A$. 
+    $pl:\calp(\Theta)\to[0,1]$
+    \begin{equation*}
+    pl(A)=bel(\Theta)-bel(\bar{A}),\quad\forall A\subseteq\Theta
+    \end{equation*}
+    \begin{align*}
+    pl(A)&=\displaystyle\sum_{B\subseteq\Theta,B\cap A\neq\emptyset}
+    m(B),\quad\forall A\subseteq\Theta\\
+    pl(\emptyset)=0
+    \end{align*}
+    
+    Whereas /bel/ can be viewed as a lower bound for an unknown
+    probability function $P$ under a lower- and upper probability
+    interpretation, the 
+    plausibilitycan be viewed as an upper bound. 
+    \begin{equation*}
+    pl(A)\ge P(A),\quad\forall A\subseteq\Theta
+    \end{equation*}
+*** Commonality Function
+    The /commonality/ $q(A)$ states how much mass in total is committed to $A$ and
+    all of the supersets $B$ with $A\subseteq B\subseteq\Theta$. 
+    The commonality $q(A)$ therefore expresses how much mass potentially
+    supports the entire set $A$.
+    A /commonality
+    function/ $q:\calp(\Theta)\to[0,1]$
+    \begin{equation*}
+    q(A)=\displaystyle\sum_{B\subseteq\Theta,B\supseteq A} m(B),
+    \quad\forall A\subseteq\Theta 
+    \end{equation*}
+*** Classes of belief functions
+**** categorical belief function
+     A belief function is called /categorical/ if it's normalized and has only one
+     focal set 
+     \begin{equation*}
+     m(A)=1,\quad A\subseteq\Theta
+     \end{equation*}
+**** Vacuous belief function 
+     A belief function is called /vacuous/ if it's categorical and the focal set
+     is the frame of discernment \Theta 
+**** Bayesian belief functions
+     A belief function is called /Bayesian/ if it's normalized and all of its
+     focal sets are singletons, i.e. if it's a probability function. In this
+     case, the belief function /bel/ satisfies the property of additivity defined
+     by the Kolmogorov axioms 
+     \begin{equation*}
+     bel(A\cup B)=bel(A)+bel(B) \text{ if } A\cap B=\emptyset \text{ with }
+     A,B\subseteq\Theta
+     \end{equation*}
+
+     Also, the following hold for Bayesian belief functions
+     \begin{gather*}
+     P(A)=bel(A)=pl(A)\\
+     P(a)=m(a)=q(a), \forall a\in\Theta
+     \end{gather*}
+** Combination rules
+   In order to solve inference problems, belief functions representing different
+   pieces of evidence need to be combined in a meaningful way. 
+
+   Typically, each piece of evidence is represented by a separate belief
+   function.  Combination rules arethen used to successively fuse all these
+   belief functions in order to obtain a belief function representing all
+   available evidence. 
+*** Dempster's rule 
+    The resulting belief function reflectsa conjunctive combination of the
+    underlying evidence.
+
+    Let $m_1$ and $m_2$ be normalized mass functions induced by distinct pieces
+    of evidence which are defined over the same frame of discernment \Theta.
+    \begin{align*}
+    m_{1\oplus 2}(A)&=\eta \displaystyle\sum_{B\cap C=A}m_1(B)m_2(C),
+    \forall A\subseteq\Theta,A\neq\emptyset \\
+    m_{1\oplus 2}(\emptyset)&=0\\
+    \eta^{-1}&=1-\displaystyle\sum_{B\cap C=\emptyset}m_1(B)m_2(C)
+    \end{align*}
+    Here,\eta is a normalization constant assuring that the resulting mass
+    functionis normalized 
+
+    When using normalized belief functions, a situation can occur in which
+    two belief functions entirely contradict each other. The larget \eta
+    becomes, the higher the conflict there is between $m_1$ and $m_2$.
+    /weight of conflict/ $Con$
+    \begin{equation*}
+    Con(m_1,m_2)=-\log(1-\displaystyle\sum_{B\cap C=\emptyset}m_1(B)m_2(C))
+    \end{equation*}
+    \begin{equation*}
+    Con(m_1,\dots,m_{n+1})=Con(m_1,\dots,m_n)+Con(m_1\oplus\dots\oplus m_n,m_{n+1})
+    \end{equation*}
+
+    Let $e_1,e_2$ denote two pieces of evidence.
+    \begin{equation*}
+    P(x|e_1,e_2)\propto P(e_1|x)P(e_2|x)P(x)\propto
+    \frac{P(x|e_1)}{P(x)}\frac{P(x|e_2)}{P(x)}P(x)
+    \end{equation*}
+*** conjunctive rule
+
