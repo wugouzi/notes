@@ -94,8 +94,195 @@
    1. the mapping
       \begin{align*}
       &\Pi^T_S:2^{(\Omega^T)}\to 2^{(\Omega^S)}\\
-      &\Pi^T_S(A)\triangleq\lb\omega^T\in\Omega^S\mid\exists\omega^T\in A:
+      &\Pi^T_S(A)\triangleq\lb\omega^S\in\Omega^S\mid\exists\omega^T\in A:
       \pi^T_S(\omega^T)=\omega^S\rb
       \end{align*}
+      is called the /projection/ of $\Omega^T$ onto $\Omega^S$
+   2. the mapping
+      \begin{align*}
+      &\what{\Pi}^T_S:2^{(\Omega^S)}\to 2^{(\Omega^T)}\\
+      &\what{\Pi}^T_S(A)\triangleq\lb\omega^T\in\Omega^T\mid\pi^T_S(\omega^T)\in B\rb\\
+      \end{align*}
+      is called the /cylindrical extension/ of $\Omega^S$ onto $\Omega^T$
    #+END_definition
+** vagueness and uncertainty
+*** modeling vague data
+    Observations allow us to restrict the set \Omega of possible states of the world;
+    these observations may be precise but in general they will contain some inherent ambiguity.
 
+    Suppose
+    \begin{equation*}
+    \Omega=\lb z3,z2,z1,ca,rd,ld\rb
+    \end{equation*}
+    a radar device provides vague outputs consisting of the three grey levels
+    black, grey and white. Assume $\lb ca,rd,ld\rb$ appear in black, $\lb z1\rb$
+    appears in grey and $\lb z2,z3\rb$ appear in white
+
+    We have to distinguish between models for describing a /vague datum/ and
+    the /uncertainty/ about the location of the ship based on the vague datum. The
+    information contained in the vague radar device image should be encoded by a
+    function $\mu:\Omega\to\lb black,grey,white\rb$
+
+    We can consider a totally ordered finite set $(L,\le)$ of acceptability
+    degrees. The expert is allowed to specify for each acceptability degree
+    $l\in L$ a corresponding region $\mu_l$. 
+
+    Layered sets can be characterized by functions
+    \begin{equation*}
+    \mu:\Omega\to L
+    \end{equation*}
+    where $\mu(\omega)$ is the biggest value $l\in L$ s.t. $\omega\in\mu_l$
+*** Modeling partial belief
+* Vague data
+** Basic concepts
+    Throughout this chapter let us assume, for simplicity, that we perfectly
+    trust any source of information, so that we can focus on vagueness.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Each function $\eta:\Omega\to L$ is called an /L-set/ of \Omega.
+    $\calf_L(\Omega)$ denotes the set of all L-sets of \Omega
+    #+END_definition
+    Given a vague datum in terms of an L-set $\eta:\Omega\to L$ the question of
+    interest always concerns the actual location of the original entity
+    $\omega_0\in\Omega$ 
+
+    *Example.* Let $\Omega=\lb z3,z2,z1,ca,ld,rd\rb$ and let
+    \begin{equation*}
+    \eta_1:\Omega\to L_1=\lb black,white\rb
+    \end{equation*}
+    where
+    \begin{equation*}
+    \eta_1(\omega)=
+    \begin{cases}
+    white&\text{if } \omega\in\lb z3,z2,z1\rb\\
+    black&\text{otherwise}
+    \end{cases}
+    \end{equation*}
+    $A=\lb z3,z2,z1\rb$ is a /minimal/ set that /necessarily/ covers $\omega_0$.
+    
+    Now suppose $\eta_2:\Omega\to L_2=\lb black,grey,white\rb$
+    \begin{equation*}
+    \eta_2(\omega)=
+    \begin{cases}
+    white &\text{if } \omega\in\lb z3,z2\rb\\
+    grey & \text{if } \omega\in\lb ld\rb\\
+    black&\text{otherwise}
+    \end{cases}
+    \end{equation*}
+** On the origin of vague data
+   Grey levels often arise physically from the superposition of multiple layers
+   of shaded patterns, where the grey gradation corresponds to the number of levels.
+
+   In the sequel we consider a
+   vague datum to represent the superposition of /retrictions/, each of which
+   reflects what is known about $\omega_0$ in some well defined /context/. 
+   In the presence of $n$ different contexts we obtain $n$ restrictions
+   $A^1,\dots,A^n$ for the unknown original $\omega_0$.
+   The
+   sets $A^i,i=1,\dots,n$, we imagine to refer to n copies
+   $\Omega_{(1)},\dots,\Omega_{(n)}$ of \Omega. So on the formal level we have
+   to deal with the set 
+   $\Omega_n\triangleq \displaystyle\bigcup_{\omega\in\Omega}\lb\omega^1,\dots,\omega^n\rb$
+   which is a refinement of \Omega. The corresponding refinement mapping is
+   $\what{\sigma}_n:2^\Omega\to 2^{\Omega_n}$ where
+   \begin{equation*}
+   \what{\sigma}_n(\lb\omega\rb)=\lb\omega^1,\dots,\omega^n\rb
+   \end{equation*}
+   and the projection
+   \begin{equation*}
+   \sigma_n:2^{\Omega_n}\to 2^\Omega;\e\sigma_n(\lb\omega^i\rb)=\lb\omega\rb
+   \end{equation*}
+   Define $\Omega_{(i)}\triangleq\lb\omega^i\mid\omega\in\Omega\rb$.
+
+   At the perception level we obtain an image consisting of up to $n$ grey tones.
+   On the formal level the superposition of layered restrictions can be easily
+   described by a mapping
+   \begin{align*}
+   vag^{\sigma_n}_{A^1,\dots,A^n}:&\Omega\to\lb 0,\dots,n\rb\\
+   &\omega\mapsto card(\lb i\mid\omega^i\in A^i\rb)
+   \end{align*}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Each subset $A\subseteq\Omega_n,n\in\N$ induces via the projection mapping
+   $\sigma_n$ the grey level image
+   \begin{align*}
+   vag^{\sigma_n}_{A^1,\dots,A^n}:&\Omega\to\lb 0,\dots,n\rb\\
+   &\omega\mapsto card(\lb i\mid\omega^i\in A^i\rb)
+   \end{align*}
+   #+END_definition
+** Uncertainty handling by means of layered contexts
+   To each $l\in L$ we can assign a number $j(l)$ which is interpreted as the
+   number of superposed layers
+*** Possibility and necessity
+    Based on some vague datum $\eta:\Omega\to L$ we have to evaluate whether a
+    given set $A\subseteq\Omega$ covers the element $\omega_0$ or not.
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let $\mu:\Omega\to\lb 0,\dots,n\rb$. $\omega\in\Omega$ is called /j-possible/
+    w.r.t. $\mu$ if and only if $\mu(\omega)=j$. A subset $A\neq \emptyset$ of
+    \Omega is called /j-possible/ if
+    $A\cap\lb\omega\in\Omega\mid\mu(\omega)\ge j\rb\neq\emptyset$  but 
+    $A\cap\lb\omega\in\Omega\mid\mu(\omega)\ge j+1\rb=\emptyset$
+    #+END_definition
+
+    Let
+    \begin{align*}
+    Poss_\mu:&2^\Omega\to\lb 0,\dots,n\rb\\
+    &A\mapsto \max\lb\mu(\omega)\mid\omega\in A\rb
+    \end{align*}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let $\mu:\Omega\to\lb 0,\dots,n\rb$. A subset $A\subseteq\Omega$ is called
+    /j-necessary/ w.r.t. $\mu$ if 
+    \begin{equation*}
+    \lb\omega\in\Omega\mid\mu(\omega)\ge j\rb\subseteq A\e\text{but}\e
+    \lb\omega\in\Omega\mid\mu(\omega)\ge j-1\rb\not\subseteq A
+    \end{equation*}
+    #+END_definition
+    $\mu_j\triangleq\lb\omega\in\Omega\mid\mu(\omega)\ge j\rb$, the /level sets/
+    
+    \begin{equation*}
+    \mu(\omega)=\max\lb\min(j,\mathds{1}_{\mu_j}(\omega))\mid j=0,\dots,n\rb
+    \end{equation*}
+    where $\mathds{1}_A(\omega)=n$ if $\omega\in A$ and $\mathds{1}_A(\omega)=0$
+    otherwise. /representation theorem/
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let $f$ be the 2-tuple $(E_1,E_2)$ where $E_1\subseteq E_2\subseteq\Omega$.
+    $E_1$ is called the /speculative region/, $E_2$ the /sure region/. The set of
+    all 2-tuples with the above property is denoted by $Fl(\Omega)$
+    #+END_definition
+
+*** operations with vague data
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let $\mu:\Omega\to\lb 0,\dots,n\rb$ and $\mu':\Omega\to\lb 0,\dots,n\rb$.
+    \mu is called a /specialization/ of \mu'(written $\mu\sqsubseteq\mu'$) if and
+    only if $\mu(\omega)\le\mu'(\omega)$ holds for all $\omega\in\Omega$
+    #+END_definition
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let $T:(2^{\Omega_n})^t\to 2^{\Omega_n'}$,
+    $\calf_n(\Omega)=\lb\mu|\mu:\Omega\to\lb 0,\dots,n\rb\rb$. A mapping 
+    $\varphi_T:(\calf_n(\Omega))^t\to \calf_n(\Omega')$ /correctness preserving/
+    w.r.t. $T$ if and only if for all $\mu_1,\dots,\mu_t\in\calf_n(\Omega)$ and
+    all $A_1,\dots,A_t\subseteq\Omega_n$ with $vag_{A_i}^{\sigma_n}=\mu_i$, we
+    have 
+    \begin{equation*}
+    vag_{T(A_1,\dots,A_t)}^{\sigma_n}\sqsubseteq\varphi_T(\mu_1,\dots,\mu_t)
+    \end{equation*}
+    #+END_definition
+ 
+*** on the interpretation of vague data
+
+** Concluding remarks
+   From our point of view, impreci"ion means that the value $\omega_0\in\Omega$
+   is unknown
+   (in its narrow sense) but restricted by some set $A\subseteq \Omega$
+   which covers $\omega_0$ with
+   certainty. Vagueneu arises essentially from the fact that the problem of
+   determining Wo is considered in several different contexts, each of which
+   yields an imprecise description. 

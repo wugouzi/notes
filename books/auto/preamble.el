@@ -23,9 +23,13 @@
     "threeparttable"
     "scalerel"
     "stackengine"
+    "stackrel"
+    "dsfont"
+    "newpxtext"
     "graphicx")
    (TeX-add-symbols
     '("stcomp" 1)
+    '("rom" 1)
     '("dom" 1)
     '("fixwidehat" 1)
     '("wt" 1)
@@ -43,11 +47,12 @@
     "simsubset"
     "simsubsetsim")
    (LaTeX-add-amsthm-newtheorems
-    "theorem"
+    "dummy"
     "definition"
     "corollary"
     "lemma"
     "proposition"
+    "theorem"
     "example"
     "remark"))
  :latex)

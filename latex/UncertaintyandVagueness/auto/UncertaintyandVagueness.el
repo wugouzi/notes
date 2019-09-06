@@ -35,9 +35,17 @@
     "hyperref"
     "minted")
    (LaTeX-add-labels
-    "sec:orgabc4af6"
-    "sec:orgb9a4f31"
-    "sec:org8ed5bbe"
-    "sec:orga7c16de"))
+    "sec:orga084906"
+    "sec:org0b45b23"
+    "sec:org249483b"
+    "sec:org8d64b34"
+    "sec:orgf1dd632"
+    "sec:orgee90c47"
+    "sec:org07cd68c"
+    "sec:orga592537"
+    "sec:org356375e"
+    "sec:org2adb6b3"
+    "sec:org6b0eaa9"
+    "sec:orgad3e2f4"))
  :latex)
 

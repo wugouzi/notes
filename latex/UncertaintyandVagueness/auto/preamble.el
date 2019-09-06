@@ -24,6 +24,7 @@
     "scalerel"
     "stackengine"
     "stackrel"
+    "dsfont"
     "newpxtext"
     "graphicx")
    (TeX-add-symbols
