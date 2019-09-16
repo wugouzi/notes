@@ -18,6 +18,7 @@
     "stmaryrd"
     "empheq"
     "tikz"
+    "tikz-cd"
     "tcolorbox"
     "actuarialsymbol"
     "threeparttable"
