@@ -97,31 +97,31 @@
    #+BEGIN_definition
    For any set $x\in\wf$, 
    \begin{equation*}
-   \rank{x}=\min\{\beta\mid x\in V_{\beta+1}\}
+   \rank(x)=\min\{\beta\mid x\in V_{\beta+1}\}
    \end{equation*}
    #+END_definition
 
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
-   1. $V_\alpha=\{x\in\wf\mid\rank{x}<\alpha\}$
+   1. $V_\alpha=\{x\in\wf\mid\rank(x)<\alpha\}$
    2. \wf is transitive
-   3. For any $x,y\in\wf$, if $x\in y$, then $\rank{x}<\rank{y}$
-   4. for any $y\in\wf$, $\rank{y}=\sup\{\rank{x}+1\mid x\in y\}$
+   3. For any $x,y\in\wf$, if $x\in y$, then $\rank(x)<\rank(y)$
+   4. for any $y\in\wf$, $\rank(y)=\sup\{\rank(x)+1\mid x\in y\}$
    #+END_lemma
 
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
    Supoose \alpha is an ordinal
-   1. $\alpha\in\wf$ and $\rank{\alpha}=\alpha$
+   1. $\alpha\in\wf$ and $\rank(\alpha)=\alpha$
    2. $V_\alpha\cap\on=\alpha$
    #+END_lemma
 
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
    1. If $x\in\wf$, then $\bigcup x,\calp(x),\{x\}\in\wf$, and their ranks are
-      all less than $\rank{x}+\omega$
+      all less than $\rank(x)+\omega$
    2. If $x,y\in\wf$, then $x\times y,x\cup y,x\cap y,\{x,y\},(x,y),x^y\in\wf$,
-      and their ranks are all less than $\rank{x}+\rank{y}+\omega$
+      and their ranks are all less than $\rank(x)+\rank(y)+\omega$
    3. $\Z,\Q,\R\in V_{\omega+\omega}$
    4. for any set $x$, $x\in\wf$ iff $x\subset\wf$
    #+END_lemma
@@ -342,7 +342,8 @@
    2. $x=y$
    3. $x\subset y$
    4. $\{x,y\}$
-   5. \{x\}
+   5. $\{x\}$
+
    6. $(x,y)$
    7. $\emptyset$
    8. $x\cup y$
@@ -372,5 +373,164 @@
    7. $f(x)$
    8. $f$ is injective
    #+END_theorem
-** Relative consistence of axiom of foundation
+** Relative consistence of the axiom of foundation
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Suppose transitive class $\cm\models\zfmm-\text{Pow}-\text{inf}$ and
+   $\omega\in\cm$, then the axiom of infinity is true in \cm. Hence the axiom of
+   infinity is true in \wf
+   #+END_lemma
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:7.5.2
+   Let $T$ be a theory of set theory language and \Sigma a set of sentences.
+   Suppose \cm is a class and $T\vdash\cm\neq\emptyset$, then if
+   $\cm\models_T\Sigma$, then
+   1. for any sentences \varphi, if $\Sigma\vdash\varphi$, then
+      $T\vdash\varphi^\cm$
+   2. if $T$ is consistent, then so is $\text{Cn}(\Sigma)$
+   #+END_theorem
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   The axiom of foundation is consistent with \zfm.
+   #+END_theorem
+
+   #+BEGIN_proof
+   By ref:7.5.2, let T be \zfm, \Sigma be \zf and \cm be \wf
+   #+END_proof
+
+   #+ATTR_LATEX: :options [$\zfmm$]
+   #+BEGIN_lemma
+   Suppose transitive model $\cmm\models\zfmm-\text{Pow}-\text{Inf}$. If
+   $X,R\in\cm$ and $R$ is a well-order on $X$, then
+   \begin{equation*}
+   (R\text{ is a well-order on }X)^\cmm
+   \end{equation*}
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [$\zfmm$]
+   #+BEGIN_theorem
+   $V_\omega\models\zfc-\text{Inf}+\neg\text{Inf}$
+   #+END_theorem
+   #+BEGIN_proof
+   For any $X\in V_\omega$, $X$ is finite hence there is a well-ordering on $X$
+   #+END_proof
+
+   \begin{corollary}
+   $\con{\zfmm}\to\con{\zfc-\text{Inf}+\neg\text{Inf}}$
+   \end{corollary}
+** Induction and recursion based on well-order relation
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   $\bR$ is a well-founded relation on $\bX$ if and only if
+   \begin{equation*}
+   \forall U\subset\bX(U\neq\emptyset\to\exists y\in U(\neg\exists z\in U(z\bR y)))
+   \end{equation*}
+   #+END_definition
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Relation $\bR$ is \tf{set-like} on $\bX$ iff for any $x\in\bX$,\par
+   $\{y\in\bX\mid y\bR x\}$ is a set
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   If $\bR$ is a set-like relation on $\bX$ and $x\in \bX$, define
+   \begin{align*}
+   \pred^0(\bX,x,\bR)&=\{y\in\bX\mid y\bR x\}\\
+   \pred^{n+1}(\bX,x,bR)&=\bigcup\{\pred(\bX,y,\bR)\mid y\in\pred^n(\bX,x,\bR)\}\\
+   \cl(\bX,x,\bR)&=\displaystyle\bigcup_{n\in\omega}\pred^n(\bX,x,\bR)
+   \end{align*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If $\bR$ is a set-like relation on $\bX$, then for any $y\in\cl(\bX,x,\bR)$,
+   $\pred(\bX,y,\bR)\subseteq\cl(\bX,x,\bR)$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [Induction on well-founded set-like relation]
+   #+BEGIN_theorem
+   If $\bR$ is a well-founded set-like relation on $\bX$, then every nonempty 
+   $\bY\subseteq\bX$ has minimal element under $\bR$
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Suppose $\bR$ is a well-founded set-like relation on $\bX$. If 
+   $\bF:\bX\times\bV\to\bV$, then there is a unique $\bG:\bX\to\bV$ s.t.
+   \begin{equation*}
+   \forall x\in\bX(\bG(x)=\bF(x,\bG\restriction\pred(\bX,x,\bR)))
+   \end{equation*}
+   #+END_theorem
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   If $\bR$ is a set-like well-founded relation on $\bX$, define 
+   \begin{equation*}
+   \rank(x,\bX,\bR)=\sup\{\rank(y,\bX,\bR)+1\mid y\bR x\wedge y\in\bX\}
+   \end{equation*}
+   #+END_definition
+
+   Note that
+   \begin{equation*}
+   \bF(x,h)=\sup\{\alpha+1\mid\alpha\in\ran{h}\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options [$\zfmm$]
+   #+BEGIN_lemma
+   If $\bX$ is transitive and $\in$ is well-founded on $\bX$, then
+   $\bX\subseteq\wf$ and for any $x\in\bX$, $\rank(x,\bX,\in)=\rank(x)$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   $\bR$ is a set-like well-founded relation on $\bX$, \tf{Mostowski function}
+   $\bG$ on $(\bX,\bR)$ is 
+   \begin{equation*}
+   \bG(x)=\{\bG(y)\mid y\in\bX\wedge y\bR x\}
+   \end{equation*}
+   $\cmm=\ran{\bG}$ is called the \tf{Mostowski collapse} of $(\bX,\bR)$
+   #+END_definition
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. $\forall x,y\in\bX(x\bR y\to\bG(x)\in\bG(y))$
+   2. \cm is transitive
+   3. If the axiom of power set holds, $\cm\subseteq\wf$
+   4. if the axiom of power set holds and $x\in\bX$, then\par
+      $\rank(x,\bX,\bR)=\rank(\bG(x))$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   $\bR$ is extensional on $\bX$ iff
+   \begin{equation*}
+   \forall x,y\in\bX(\forall z\in\bX(z\bR x\leftrightarrow z\bR y)\to x=y)
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If $\bX$ is transitive then $\in$ is extensional on $\bX$
+   #+END_lemma
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let $\bR$ be a set-like well-founded relation on $\bX$, $\bG$ is a Mostowski
+   function on it. If $\bR$ is extensional, then $\bG$ is an isomorphism
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [Mostowski collapse theorem]
+   #+BEGIN_theorem
+   Suppose $\bR$ is set-like well-founded extensional on $\bX$, then there are
+   unique transitive class \cm and bijection $\bG:\bX\to\cm$ s.t. 
+   $\bG:(\bX,\bR)\cong(\cm,\in)$
+   #+END_theorem
+** Absoluteness under the axiom of foundation

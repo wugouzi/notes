@@ -32,7 +32,6 @@
     '("stcomp" 1)
     '("rom" 1)
     '("trcl" 1)
-    '("rank" 1)
     '("con" 1)
     '("ran" 1)
     '("dom" 1)
@@ -46,6 +45,7 @@
     '("what" 1)
     "widehatsym"
     "lowerwidehatsym"
+    "zfm"
     "varprod"
     "bigtimes"
     "odiv"
