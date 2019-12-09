@@ -1,0 +1,376 @@
+#+TITLE: Notes on Set Theory
+#+AUTHOR: Qi'ao Chen
+
+#+LATEX_HEADER: \input{preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/settheory/SetTheory.tex
+
+* Foreword
+  Notes for the entrance examination
+* Models of Set - Sertraline
+** Some mathematical logic
+  #+ATTR_LATEX: :options [Gödel’s second incompleteness theorem]
+  #+BEGIN_theorem
+  If a consistent recursive axiom set $T$ contains $\zfc$, then
+  \begin{equation*}
+  T\not\vdash\con{t}
+  \end{equation*}
+  especially, $\zfc\not\vdash\con{\zfc}$
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Suppose $(M,E_M)$ and $(N,E_N)$ are two models of set theory, then
+  1. if for any formula \sigma, $M\models\sigma$ if and only if
+     $N\models\sigma$, then $M$ and $N$ are \tf{elementary equivalent}, denoted
+     by $M\equiv N$
+  2. If bijection $f:M\to N$ satisfies: for any $a,b\in M$, $aE_Mb$ iff
+     $f(a)E_Nf(b)$, then $f:M\cong N$ is an \tf{isomorphism}
+  3. If $M\subseteq N$ and $E_M=E_N\restriction M$, then $M$ is $N$'s submodel
+  4. If $M$ is isomorphic to a submodel of $N$ by injection $f$, and for any
+     formula $\varphi(x_1,\dots,x_n)$, for any $a_1,\dots,a_n\in M$, 
+     $M\models\varphi[a_1,\dots,a_n]$ iff
+     $N\models\varphi[f(a_1),\dots,f(a_n)]$, then $f$ is called an
+     \tf{elementary embedding} from $M$ to $N$, written as $f:M\prec N$
+  5. If $M\subseteq N$ and $M\prec N$, then $M$ is a \tf{elementary submodel}
+     of $N$
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  Suppose $N\models\zfc,M\subseteq N$, then $M\prec N$ iff
+  $\forall\varphi(x,x_1,\dots,x_n)$, $\forall(a_1,\dots,a_n)\in M$, if 
+  $\exists a\in N$ s.t. $N\models\varphi[a,a_1,\dots,a_n]$, then $\exists a\in
+  M$ s.t. 
+  $M\models\varphi[a,a_1,\dots,a_n]$
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Suppose $(M,E)\models\zfc$
+  1. $h_\varphi:M^n\to M$ is \varphi's \tf{Skolem function} if 
+     $\forall a_1,\dots,a_n\in M$, if $\exists a\in M$ s.t.
+     $M\models\varphi[a,a_1,\dots,a_n]$, then
+     $M\models\varphi[h_\varphi(a_1,\dots,a_n),a_1,\dots,a_n]$ . requires \ac
+  2. Let $\calh=\{h_\varphi\mid\varphi \text{is a formula on set theory}\}$. For
+     any $S\subseteq M$, \tf{Skolem hull} $\calh(S)$ is the smallest set
+     consisting of $S$ and closed under $\calh$
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  $N\models\zfc,S\subseteq N$, if $M=\calh(S)$, then $M\prec N$
+  #+END_lemma
+
+  #+ATTR_LATEX: :options [Löwenheim-Skolem theorem]
+  #+BEGIN_theorem
+  Suppose $N\models\zfc$ and is infinite, then there is a model $M$ s.t.
+  $\abs{M}=\omega$ and $M\prec N$
+  #+END_theorem
+** Cumulative Hierarchy
+   This section works in \zfm(a.k.a. $\zf-\text{axiom of foundation}$)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any \alpha, define sequence $V_\alpha$
+   1. $V_0=\emptyset$
+   2. $V_{\alpha+1}=\calp(V_\alpha)$
+   3. For any limit ordinal \lambda, $V_\lambda=\bigcup_{\beta<\lambda}V_\beta$
+
+      
+   And $\wf=\displaystyle\bigcup_{\alpha\in\on}V_\alpha$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For any ordinal \alpha
+   1. $V_\alpha$ is transitive
+   2. if $\xi\le\alpha$, then $V_\xi\subseteq V_\alpha$
+   3. if \kappa is inaccessible cardinal, then $\abs{V_\kappa}=\kappa$
+   #+END_lemma
+
+   #+BEGIN_proof
+   3. Obviously $\kappa\le V_\kappa$. Since \kappa is inaccessible, then for any
+      $\alpha<\kappa$, $\abs{V_\alpha}<\kappa$.
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any set $x\in\wf$, 
+   \begin{equation*}
+   \rank{x}=\min\{\beta\mid x\in V_{\beta+1}\}
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. $V_\alpha=\{x\in\wf\mid\rank{x}<\alpha\}$
+   2. \wf is transitive
+   3. For any $x,y\in\wf$, if $x\in y$, then $\rank{x}<\rank{y}$
+   4. for any $y\in\wf$, $\rank{y}=\sup\{\rank{x}+1\mid x\in y\}$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Supoose \alpha is an ordinal
+   1. $\alpha\in\wf$ and $\rank{\alpha}=\alpha$
+   2. $V_\alpha\cap\on=\alpha$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. If $x\in\wf$, then $\bigcup x,\calp(x),\{x\}\in\wf$, and their ranks are
+      all less than $\rank{x}+\omega$
+   2. If $x,y\in\wf$, then $x\times y,x\cup y,x\cap y,\{x,y\},(x,y),x^y\in\wf$,
+      and their ranks are all less than $\rank{x}+\rank{y}+\omega$
+   3. $\Z,\Q,\R\in V_{\omega+\omega}$
+   4. for any set $x$, $x\in\wf$ iff $x\subset\wf$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Suppose \ac
+   1. for any group $G$, there exists group $G'\cong G$ in \wf
+   2. for any topological space $T$, there exists $T'\cong T$ in \wf
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Binary relation $<$ on set $A$ is \tf{well-founded} if for any nonempty
+   $X\subseteq A$, $X$ has minimal element under $<$
+   #+END_definition
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   If $A\in\wf$, then $\in$ is a well-founded relation on $A$
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If set $A$ is transitive and $\in$ is well-founded on $A$, then $A\in\wf$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For any set $x$, there is a smallest transitive set $\trcl{x}$ s.t.
+   $x\subseteq\trcl{x}$ 
+   #+END_lemma
+
+   #+BEGIN_proof
+   \begin{align*}
+   x_0&=x\\
+   x_{n+1}&=\bigcup x_n\\
+   \trcl{x}&=\displaystyle\bigcup_{n<\omega}x_n
+   \end{align*}
+   #+END_proof
+
+   $\trcl{x}$ is called \tf{transitive closure} of $x$
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Without axiom of power set
+   1. if $x$ is transitive, then $\trcl{x}=x$
+   2. if $y\in x$, then $\trcl{y}\subseteq\trcl{x}$
+   3. $\trcl{x}=x\cup\bigcup\{\trcl{y}\mid y\in x\}$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For any set $X$, the following are equivalent
+   1. $X\in\wf$
+   2. $\trcl{X}\in\wf$
+   3. $\in$ is a well-founded relation on $\trcl{X}$
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   The following propositions are equivalent
+   1. Axiom of foundation
+   2. For any set $X$, $\in$ is a well-founded relation on $X$
+   3. $\tf{V}=\wf$
+   #+END_theorem
+** Relativization
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \tf{M} be a class \varphi a formula, the \tf{relativization} of \varphi
+   to \tf{M} is $\varphi^{\tf{M}}$ defined inductively
+   \begin{align*}
+   (x\in y)^{\cm}&\leftrightarrow x=y\\
+   (x\in y)^{\cm}&\leftrightarrow x\in y\\
+   (\varphi\to\psi)^{\cm}&\leftrightarrow \varphi^{\cm}\to\psi^\cm\\
+   (\neg\varphi)^\cm&\leftrightarrow\neg\varphi^\cm\\
+   (\forall x\varphi)^\cm&\leftrightarrow(\forall x\in\cm)\varphi^\cm
+   \end{align*}
+   #+END_definition
+
+   Note $\varphi^\cv=\varphi$ and
+   \begin{equation*}
+   f^\cm=\{(x_1,\dots,x_n,x_{n+1})\in\cm\mid\varphi^\cm(x_1,\dots,x_n,x_{n+1})\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any theory $T$, any class $\cm$, $\cm\models T$ iff for any axiom
+   $\varphi$ of $T$, $\varphi^\cm$ holds
+   #+END_definition
+
+
+   #+ATTR_LATEX: :options [\zfm]
+   #+BEGIN_theorem
+   $\wf\models\zf$
+   #+END_theorem
+
+   #+BEGIN_proof
+   * \tf{Axiom of existence}
+
+     $(\exists x(x=x))^\cm\leftrightarrow\exists x\in\cm(x=x)$, which is
+     equivalent to \cm being nonempty
+   * \tf{Axiom of extensionality}
+
+     \begin{gather*}
+     \forall X\forall Y\forall u((u\in X\leftrightarrow u\in Y)\to X=Y)^\cm
+     \Leftrightarrow\\
+     \forall X\in\cm\forall Y\in\cm\forall u\in\cm
+     ((u\in X\leftrightarrow u\in Y)\to X=Y)
+     \end{gather*}
+
+     \begin{lemma}
+     If $\cm$ is transitive, then axiom of extensionality holds in \cm
+     \end{lemma}
+
+   * \tf{Axiom schema of specification}
+
+     \begin{equation*}
+     \forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow
+     u\in X\wedge\varphi^\cm(u))
+     \end{equation*}
+
+     Since for any $X\in\wf$, $\calp(X)\subseteq \wf$
+   * \tf{Axiom of paring}
+   * \tf{Axiom of union}
+   * \tf{Axiom of power set}
+
+     \begin{equation*}
+     \forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow(u\subseteq X)^\cm)
+     \end{equation*}
+     and 
+     \begin{equation*}
+     (u\subseteq X)^\cm\leftrightarrow\forall x\in\cm(x\in u\to x\in X)
+     \leftrightarrow u\cap\cm\subseteq X
+     \end{equation*}
+   * \tf{Axiom of foundation}
+   * \tf{Axiom schema of replacement}
+   #+END_proof 
+** Absoluteness
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any formula $\psi(x_1,\dots,x_n)$ and any class \cm,\cn, 
+   $\cm\subseteq \cn$, if
+   \begin{equation*}
+   \forall x_1\dots\forall x_n\in\cm(\psi^\cm(x_1,\dots,x_n)
+   \leftrightarrow\psi^\cn(x_1,\dots,x_n))
+   \end{equation*}
+   then $\psi(x_1,\dots,x_n)$ is \tf{absolute} for \cm,cn. If $\cn=\cv$, then
+   \psi is \tf{absolute} for \cm
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Suppose $\cm\subseteq\cn$ and \varphi,\psi are formulas, then
+   1. if \varphi,\psi are absolute for \cm,cn, then so are
+      $\neg\varphi,\varphi\to\psi$ 
+   2. if \varphi doesn't contain any quantifiers, then \varphi is absolute for
+      any \cm
+   3. if \cm,\cn  are transitive and \varphi is absolute for them, then so are
+      $\forall x\in y\varphi$
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   $\Delta_0$ formula
+   1. $x=y,x\in y$ are $\Delta_0$ formulas
+   2. if \varphi,\psi are $\Delta_0$, then so are $\neg\varphi,\varphi\to\psi$
+   3. if $\varphi$ is $\Delta_0$, $y$ is any set, then $(\forall x\in y)\varphi$
+      is $\Delta_0$
+      
+
+   If \varphi is $\Delta_0$, then $\exists x_1\dots\exists x_n\varphi$ is
+   $\Sigma_1$ formula, $\forall x_1\dots\forall x_n\varphi$ is $\Pi_1$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   $\cm\subseteq\cn$ are both transitive, $\psi(x_0,\dots,x_n)$ is a formula,
+   then
+   1. if \psi is $\Delta_0$, then it's absolute for \cm,cn
+   2. if \psi is $\Sigma_1$, then
+      \begin{equation*}
+      \forall x_1\dots x_n(\psi^\cm(x_1,\dots,x_n)\to\psi^\cn(x_1,\dots,x_n))
+      \end{equation*}
+   3. if \psi is $\Pi_1$, then
+      \begin{equation*}
+      \forall x_1\dots x_n(\psi^\cn(x_1,\dots,x_n)\to\psi^\cm(x_1,\dots,x_n))
+      \end{equation*}
+   #+END_lemma
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If $\cm\subseteq\cn$, $\cm\models\Sigma,\cn\models\Sigma$ and
+   \begin{equation*}
+   \Sigma\vdash\forall x_1\dots\forall x_n(\varphi(x_1,\dots,x_n)\leftrightarrow
+   \psi(x_1,\dots,x_n))
+   \end{equation*}
+   then \varphi is absolute for \cm,\cn if and only if \psi is absolute for \cm,\cn
+   #+END_lemma
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Suppose $\cm\subseteq\cn$, $f(x_1,\dots,x_n)$ is a function. $f$ is
+   \tf{absolute} for \cm and \cn if and only if $\varphi(x_1,\dots,x_n,x_{n+1})$
+   defining $f$ is absolute.
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Following relations and functions can be defined in
+   $\zfmm-\text{Pow}-\text{Inf}$ and are equivalent to some $\Delta_0$ formulas.
+   So they are absolute for any transitive model \cm on 
+   $\zfmm-\text{Pow}-\text{Inf}$
+   1. $x\in y$
+   2. $x=y$
+   3. $x\subset y$
+   4. $\{x,y\}$
+   5. \{x\}
+   6. $(x,y)$
+   7. $\emptyset$
+   8. $x\cup y$
+   9. $x-y$
+   10. $x\cap y$
+   11. $x^+$
+   12. $x$ is a transitive set
+   13. $\bigcup x$
+   14. $\bigcap x$ ($\bigcap\emptyset=\emptyset$)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Absoluteness is closed under operation composition
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Following relations and functions are absolute for any transitive model \cm on 
+   $\zfmm-\text{Pow}-\text{Inf}$
+   1. $z$ is an ordered pair
+   2. $A\times B$
+   3. $R$ is a relation
+   4. $\dom{R}$
+   5. $\ran{R}$
+   6. $f$ is a function
+   7. $f(x)$
+   8. $f$ is injective
+   #+END_theorem
+** Relative consistence of axiom of foundation
+

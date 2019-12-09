@@ -1,0 +1,413 @@
+% Created 2019-12-09 一 16:29
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\author{Qi'ao Chen}
+\date{\today}
+\title{Notes on Set Theory}
+\hypersetup{
+ pdfauthor={Qi'ao Chen},
+ pdftitle={Notes on Set Theory},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage
+\section{Foreword}
+\label{sec:org5ae23f0}
+Notes for the entrance examination
+\section{Models of Set - Sertraline}
+\label{sec:org3343fdd}
+\subsection{Some mathematical logic}
+\label{sec:org7004eba}
+\begin{theorem}[Gödel’s second incompleteness theorem]
+If a consistent recursive axiom set \(T\) contains \(\zfc\), then
+\begin{equation*}
+T\not\vdash\con{t}
+\end{equation*}
+especially, \(\zfc\not\vdash\con{\zfc}\)
+\end{theorem}
+
+\begin{definition}[]
+Suppose \((M,E_M)\) and \((N,E_N)\) are two models of set theory, then
+\begin{enumerate}
+\item if for any formula \(\sigma\), \(M\models\sigma\) if and only if
+\(N\models\sigma\), then \(M\) and \(N\) are \tf{elementary equivalent}, denoted
+by \(M\equiv N\)
+\item If bijection \(f:M\to N\) satisfies: for any \(a,b\in M\), \(aE_Mb\) iff
+\(f(a)E_Nf(b)\), then \(f:M\cong N\) is an \tf{isomorphism}
+\item If \(M\subseteq N\) and \(E_M=E_N\restriction M\), then \(M\) is \(N\)'s submodel
+\item If \(M\) is isomorphic to a submodel of \(N\) by injection \(f\), and for any
+formula \(\varphi(x_1,\dots,x_n)\), for any \(a_1,\dots,a_n\in M\), 
+\(M\models\varphi[a_1,\dots,a_n]\) iff
+\(N\models\varphi[f(a_1),\dots,f(a_n)]\), then \(f\) is called an
+\tf{elementary embedding} from \(M\) to \(N\), written as \(f:M\prec N\)
+\item If \(M\subseteq N\) and \(M\prec N\), then \(M\) is a \tf{elementary submodel}
+of \(N\)
+\end{enumerate}
+\end{definition}
+
+\begin{lemma}[]
+Suppose \(N\models\zfc,M\subseteq N\), then \(M\prec N\) iff
+\(\forall\varphi(x,x_1,\dots,x_n)\), \(\forall(a_1,\dots,a_n)\in M\), if 
+\(\exists a\in N\) s.t. \(N\models\varphi[a,a_1,\dots,a_n]\), then \(\exists a\in
+  M\) s.t. 
+\(M\models\varphi[a,a_1,\dots,a_n]\)
+\end{lemma}
+
+\begin{definition}[]
+Suppose \((M,E)\models\zfc\)
+\begin{enumerate}
+\item \(h_\varphi:M^n\to M\) is \(\varphi\)'s \tf{Skolem function} if 
+\(\forall a_1,\dots,a_n\in M\), if \(\exists a\in M\) s.t.
+\(M\models\varphi[a,a_1,\dots,a_n]\), then
+\(M\models\varphi[h_\varphi(a_1,\dots,a_n),a_1,\dots,a_n]\) . requires \ac
+\item Let \(\calh=\{h_\varphi\mid\varphi \text{is a formula on set theory}\}\). For
+any \(S\subseteq M\), \tf{Skolem hull} \(\calh(S)\) is the smallest set
+consisting of \(S\) and closed under \(\calh\)
+\end{enumerate}
+\end{definition}
+
+\begin{lemma}[]
+\(N\models\zfc,S\subseteq N\), if \(M=\calh(S)\), then \(M\prec N\)
+\end{lemma}
+
+\begin{theorem}[Löwenheim-Skolem theorem]
+Suppose \(N\models\zfc\) and is infinite, then there is a model \(M\) s.t.
+\(\abs{M}=\omega\) and \(M\prec N\)
+\end{theorem}
+\subsection{Cumulative Hierarchy}
+\label{sec:orge300cdc}
+This section works in \zfm(a.k.a. \(\zf-\text{axiom of foundation}\))
+
+\begin{definition}[]
+For any \(\alpha\), define sequence \(V_\alpha\)
+\begin{enumerate}
+\item \(V_0=\emptyset\)
+\item \(V_{\alpha+1}=\calp(V_\alpha)\)
+\item For any limit ordinal \(\lambda\), \(V_\lambda=\bigcup_{\beta<\lambda}V_\beta\)
+\end{enumerate}
+
+
+And \(\wf=\displaystyle\bigcup_{\alpha\in\on}V_\alpha\)
+\end{definition}
+
+\begin{lemma}[]
+For any ordinal \(\alpha\)
+\begin{enumerate}
+\item \(V_\alpha\) is transitive
+\item if \(\xi\le\alpha\), then \(V_\xi\subseteq V_\alpha\)
+\item if \(\kappa\) is inaccessible cardinal, then \(\abs{V_\kappa}=\kappa\)
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\begin{enumerate}
+\item Obviously \(\kappa\le V_\kappa\). Since \(\kappa\) is inaccessible, then for any
+\(\alpha<\kappa\), \(\abs{V_\alpha}<\kappa\).
+\end{enumerate}
+\end{proof}
+
+\begin{definition}[]
+For any set \(x\in\wf\), 
+\begin{equation*}
+\rank{x}=\min\{\beta\mid x\in V_{\beta+1}\}
+\end{equation*}
+\end{definition}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item \(V_\alpha=\{x\in\wf\mid\rank{x}<\alpha\}\)
+\item \wf is transitive
+\item For any \(x,y\in\wf\), if \(x\in y\), then \(\rank{x}<\rank{y}\)
+\item for any \(y\in\wf\), \(\rank{y}=\sup\{\rank{x}+1\mid x\in y\}\)
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+Supoose \(\alpha\) is an ordinal
+\begin{enumerate}
+\item \(\alpha\in\wf\) and \(\rank{\alpha}=\alpha\)
+\item \(V_\alpha\cap\on=\alpha\)
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item If \(x\in\wf\), then \(\bigcup x,\calp(x),\{x\}\in\wf\), and their ranks are
+all less than \(\rank{x}+\omega\)
+\item If \(x,y\in\wf\), then \(x\times y,x\cup y,x\cap y,\{x,y\},(x,y),x^y\in\wf\),
+and their ranks are all less than \(\rank{x}+\rank{y}+\omega\)
+\item \(\Z,\Q,\R\in V_{\omega+\omega}\)
+\item for any set \(x\), \(x\in\wf\) iff \(x\subset\wf\)
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+Suppose \ac
+\begin{enumerate}
+\item for any group \(G\), there exists group \(G'\cong G\) in \wf
+\item for any topological space \(T\), there exists \(T'\cong T\) in \wf
+\end{enumerate}
+\end{lemma}
+
+\begin{definition}[]
+Binary relation \(<\) on set \(A\) is \tf{well-founded} if for any nonempty
+\(X\subseteq A\), \(X\) has minimal element under \(<\)
+\end{definition}
+
+
+\begin{theorem}[]
+If \(A\in\wf\), then \(\in\) is a well-founded relation on \(A\)
+\end{theorem}
+
+\begin{lemma}[]
+If set \(A\) is transitive and \(\in\) is well-founded on \(A\), then \(A\in\wf\)
+\end{lemma}
+
+\begin{lemma}[]
+For any set \(x\), there is a smallest transitive set \(\trcl{x}\) s.t.
+\(x\subseteq\trcl{x}\) 
+\end{lemma}
+
+\begin{proof}
+\begin{align*}
+x_0&=x\\
+x_{n+1}&=\bigcup x_n\\
+\trcl{x}&=\displaystyle\bigcup_{n<\omega}x_n
+\end{align*}
+\end{proof}
+
+\(\trcl{x}\) is called \tf{transitive closure} of \(x\)
+
+
+\begin{lemma}[]
+Without axiom of power set
+\begin{enumerate}
+\item if \(x\) is transitive, then \(\trcl{x}=x\)
+\item if \(y\in x\), then \(\trcl{y}\subseteq\trcl{x}\)
+\item \(\trcl{x}=x\cup\bigcup\{\trcl{y}\mid y\in x\}\)
+\end{enumerate}
+\end{lemma}
+
+\begin{theorem}[]
+For any set \(X\), the following are equivalent
+\begin{enumerate}
+\item \(X\in\wf\)
+\item \(\trcl{X}\in\wf\)
+\item \(\in\) is a well-founded relation on \(\trcl{X}\)
+\end{enumerate}
+\end{theorem}
+
+\begin{theorem}[]
+The following propositions are equivalent
+\begin{enumerate}
+\item Axiom of foundation
+\item For any set \(X\), \(\in\) is a well-founded relation on \(X\)
+\item \(\tf{V}=\wf\)
+\end{enumerate}
+\end{theorem}
+\subsection{Relativization}
+\label{sec:orga62e469}
+\begin{definition}[]
+Let \tf{M} be a class \(\varphi\) a formula, the \tf{relativization} of \(\varphi\)
+to \tf{M} is \(\varphi^{\tf{M}}\) defined inductively
+\begin{align*}
+(x\in y)^{\cm}&\leftrightarrow x=y\\
+(x\in y)^{\cm}&\leftrightarrow x\in y\\
+(\varphi\to\psi)^{\cm}&\leftrightarrow \varphi^{\cm}\to\psi^\cm\\
+(\neg\varphi)^\cm&\leftrightarrow\neg\varphi^\cm\\
+(\forall x\varphi)^\cm&\leftrightarrow(\forall x\in\cm)\varphi^\cm
+\end{align*}
+\end{definition}
+
+Note \(\varphi^\cv=\varphi\) and
+\begin{equation*}
+f^\cm=\{(x_1,\dots,x_n,x_{n+1})\in\cm\mid\varphi^\cm(x_1,\dots,x_n,x_{n+1})\}
+\end{equation*}
+
+\begin{definition}[]
+For any theory \(T\), any class \(\cm\), \(\cm\models T\) iff for any axiom
+\(\varphi\) of \(T\), \(\varphi^\cm\) holds
+\end{definition}
+
+
+\begin{theorem}[\zfm]
+\(\wf\models\zf\)
+\end{theorem}
+
+\begin{proof}
+\begin{itemize}
+\item \tf{Axiom of existence}
+
+\((\exists x(x=x))^\cm\leftrightarrow\exists x\in\cm(x=x)\), which is
+equivalent to \cm being nonempty
+\item \tf{Axiom of extensionality}
+
+\begin{gather*}
+\forall X\forall Y\forall u((u\in X\leftrightarrow u\in Y)\to X=Y)^\cm
+\Leftrightarrow\\
+\forall X\in\cm\forall Y\in\cm\forall u\in\cm
+((u\in X\leftrightarrow u\in Y)\to X=Y)
+\end{gather*}
+
+\begin{lemma}
+If $\cm$ is transitive, then axiom of extensionality holds in \cm
+\end{lemma}
+
+\item \tf{Axiom schema of specification}
+
+\begin{equation*}
+\forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow
+u\in X\wedge\varphi^\cm(u))
+\end{equation*}
+
+Since for any \(X\in\wf\), \(\calp(X)\subseteq \wf\)
+\item \tf{Axiom of paring}
+\item \tf{Axiom of union}
+\item \tf{Axiom of power set}
+
+\begin{equation*}
+\forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow(u\subseteq X)^\cm)
+\end{equation*}
+and 
+\begin{equation*}
+(u\subseteq X)^\cm\leftrightarrow\forall x\in\cm(x\in u\to x\in X)
+\leftrightarrow u\cap\cm\subseteq X
+\end{equation*}
+\item \tf{Axiom of foundation}
+\item \tf{Axiom schema of replacement}
+\end{itemize}
+\end{proof}
+\subsection{Absoluteness}
+\label{sec:org90ee40a}
+\begin{definition}[]
+For any formula \(\psi(x_1,\dots,x_n)\) and any class \cm,\cn, 
+\(\cm\subseteq \cn\), if
+\begin{equation*}
+\forall x_1\dots\forall x_n\in\cm(\psi^\cm(x_1,\dots,x_n)
+\leftrightarrow\psi^\cn(x_1,\dots,x_n))
+\end{equation*}
+then \(\psi(x_1,\dots,x_n)\) is \tf{absolute} for \cm,cn. If \(\cn=\cv\), then
+\(\psi\) is \tf{absolute} for \cm
+\end{definition}
+
+\begin{lemma}[]
+Suppose \(\cm\subseteq\cn\) and \(\varphi\),\(\psi\) are formulas, then
+\begin{enumerate}
+\item if \(\varphi\),\(\psi\) are absolute for \cm,cn, then so are
+\(\neg\varphi,\varphi\to\psi\)
+\item if \(\varphi\) doesn't contain any quantifiers, then \(\varphi\) is absolute for
+any \cm
+\item if \cm,\cn  are transitive and \(\varphi\) is absolute for them, then so are
+\(\forall x\in y\varphi\)
+\end{enumerate}
+\end{lemma}
+
+\begin{definition}[]
+\(\Delta_0\) formula
+\begin{enumerate}
+\item \(x=y,x\in y\) are \(\Delta_0\) formulas
+\item if \(\varphi\),\(\psi\) are \(\Delta_0\), then so are \(\neg\varphi,\varphi\to\psi\)
+\item if \(\varphi\) is \(\Delta_0\), \(y\) is any set, then \((\forall x\in y)\varphi\)
+is \(\Delta_0\)
+\end{enumerate}
+
+
+If \(\varphi\) is \(\Delta_0\), then \(\exists x_1\dots\exists x_n\varphi\) is
+\(\Sigma_1\) formula, \(\forall x_1\dots\forall x_n\varphi\) is \(\Pi_1\)
+\end{definition}
+
+\begin{lemma}[]
+\(\cm\subseteq\cn\) are both transitive, \(\psi(x_0,\dots,x_n)\) is a formula,
+then
+\begin{enumerate}
+\item if \(\psi\) is \(\Delta_0\), then it's absolute for \cm,cn
+\item if \(\psi\) is \(\Sigma_1\), then
+\begin{equation*}
+\forall x_1\dots x_n(\psi^\cm(x_1,\dots,x_n)\to\psi^\cn(x_1,\dots,x_n))
+\end{equation*}
+\item if \(\psi\) is \(\Pi_1\), then
+\begin{equation*}
+\forall x_1\dots x_n(\psi^\cn(x_1,\dots,x_n)\to\psi^\cm(x_1,\dots,x_n))
+\end{equation*}
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+If \(\cm\subseteq\cn\), \(\cm\models\Sigma,\cn\models\Sigma\) and
+\begin{equation*}
+\Sigma\vdash\forall x_1\dots\forall x_n(\varphi(x_1,\dots,x_n)\leftrightarrow
+\psi(x_1,\dots,x_n))
+\end{equation*}
+then \(\varphi\) is absolute for \cm,\cn if and only if \(\psi\) is absolute for \cm,\cn
+\end{lemma}
+
+
+\begin{definition}[]
+Suppose \(\cm\subseteq\cn\), \(f(x_1,\dots,x_n)\) is a function. \(f\) is
+\tf{absolute} for \cm and \cn if and only if \(\varphi(x_1,\dots,x_n,x_{n+1})\)
+defining \(f\) is absolute.
+\end{definition}
+
+\begin{theorem}[]
+Following relations and functions can be defined in
+\(\zfmm-\text{Pow}-\text{Inf}\) and are equivalent to some \(\Delta_0\) formulas.
+So they are absolute for any transitive model \cm on 
+\(\zfmm-\text{Pow}-\text{Inf}\)
+\begin{enumerate}
+\item \(x\in y\)
+\item \(x=y\)
+\item \(x\subset y\)
+\item \(\{x,y\}\)
+\item $\backslash${x$\backslash$}
+\item \((x,y)\)
+\item \(\emptyset\)
+\item \(x\cup y\)
+\item \(x-y\)
+\item \(x\cap y\)
+\item \(x^+\)
+\item \(x\) is a transitive set
+\item \(\bigcup x\)
+\item \(\bigcap x\) (\(\bigcap\emptyset=\emptyset\))
+\end{enumerate}
+\end{theorem}
+
+\begin{lemma}[]
+Absoluteness is closed under operation composition
+\end{lemma}
+
+\begin{theorem}[]
+Following relations and functions are absolute for any transitive model \cm on 
+\(\zfmm-\text{Pow}-\text{Inf}\)
+\begin{enumerate}
+\item \(z\) is an ordered pair
+\item \(A\times B\)
+\item \(R\) is a relation
+\item \(\dom{R}\)
+\item \(\ran{R}\)
+\item \(f\) is a function
+\item \(f(x)\)
+\item \(f\) is injective
+\end{enumerate}
+\end{theorem}
+\subsection{Relative consistence of axiom of foundation}
+\label{sec:orgc151bfe}
+\end{document}
