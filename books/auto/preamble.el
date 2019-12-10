@@ -32,7 +32,6 @@
     '("stcomp" 1)
     '("rom" 1)
     '("trcl" 1)
-    '("con" 1)
     '("ran" 1)
     '("dom" 1)
     '("fixwidehat" 1)
