@@ -8,13 +8,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -36,23 +36,23 @@
     "hyperref"
     "minted")
    (LaTeX-add-labels
-    "sec:orgb656399"
-    "sec:orgb898be7"
-    "sec:org963875a"
-    "sec:org1ae1cdb"
-    "sec:orge9709e2"
-    "sec:org6e343ed"
-    "sec:org3377b0c"
+    "sec:org01ba3a1"
+    "sec:orgc0ac8f5"
+    "sec:orgf00f0b7"
+    "sec:org7cea4f1"
+    "sec:orgc9d325d"
+    "sec:org6bdb381"
+    "sec:org37dc5d6"
     "7.5.2"
-    "sec:org3ea4e84"
-    "sec:orgeb7f2d3"
-    "sec:org175eb1f"
-    "sec:org66f54d9"
-    "sec:org1224083"
-    "sec:org35538ef"
-    "sec:org8a3e572"
-    "sec:org712240e"
+    "sec:org9437a6b"
+    "sec:org263eabc"
+    "sec:orga351d8a"
+    "sec:org47915f2"
+    "sec:orgd490fb2"
+    "sec:org5d12200"
+    "sec:orgdd00093"
+    "sec:org1f144ed"
     "8.3.2"
-    "sec:org6ea1888"))
+    "sec:org468cb1b"))
  :latex)
 
