@@ -1,0 +1,368 @@
+% Created 2019-12-18 三 20:55
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\author{David Marker}
+\date{\today}
+\title{Model Theory: An Introduction}
+\hypersetup{
+ pdfauthor={David Marker},
+ pdftitle={Model Theory: An Introduction},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage\section{Structures and Theories}
+\label{sec:org2193cdd}
+\subsection{Languages and Structures}
+\label{sec:org20dc365}
+\begin{definition}[]
+A language \(\call\) is given by specifying the following data
+\begin{enumerate}
+\item A set of function symbols \(\calf\) and positive integers \(n_f\) for each
+\(f\in\calf\)
+\item a set of relation symbols \(\calr\) and positive integers \(n_R\) for each
+\(R\in\calr\)
+\item a set of constant symbols \(\calc\)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[]
+An \(\call\)-structure \(\calm\) is given by the following data
+\begin{enumerate}
+\item a nonempty set \(M\) called the \tf{universe}, \tf{domain} or \tf{underlying set}
+of \(\calm\)
+\item a function \(f^\calm:M^{n_f}\to M\) for each \(f\in\calf\)
+\item a set \(R^\calm\subseteq M^{n_R}\) for each \(R\in\calr\)
+\item an element \(c^\calm\in M\) for each \(c\in\calc\)
+\end{enumerate}
+\end{definition}
+
+We refer to \(f^\calm,R^\calm,c^\calm\) as the \tf{interpretations} of the
+symbols \(f,R\) and \(c\). We often write the structure as
+\(\calm=(M,f^\calm,R^\calm,c^\calm:f\in\calf,R\in\calr,c\in\calc)\) 
+
+\begin{definition}[]
+Suppose that \(\calm\) and \(\caln\) are \(\call\)-structures with universes \(M\)
+and \(N\) respectively. An \(\call\)-\tf{embedding} \(\eta:\calm\to\caln\) is a
+one-to-one map \(\eta:M\to N\) that
+\begin{enumerate}
+\item \(\eta(f^\calm(a_1,\dots,a_{n_f}))=f^\caln(\eta(a_1),\dots,\eta(a_{n_f}))\)
+for all \(f\in\calf\) and \(a_1,\dots,a_{n_f}\in M\)
+\item \((a_1,\dots,a_{m_R})\in R^\calm\) if and only if
+\((\eta(a_1),\dots,\eta(a_{m_R}))\in R^\caln\) for all \(R\in\calr\) and
+\(a_1,\dots,a_{m_R}\in M\)
+\item \(\eta(c^\calm)=c^\caln\) for \(c\in\calc\)
+\end{enumerate}
+\end{definition}
+
+A bijective \(\call\)-embedding is called an \(\call\)-\tf{isomorphism}. If
+\(M\subseteq N\) and the inclusion map is an \(\call\)-embedding, we say either
+\(\calm\) is a \tf{substrcture} of \(\caln\) or that \(\caln\) is an \tf{extension}
+of \(\calm\)
+
+The \tf{cardinality} of \(\calm\) is \(\abs{M}\)
+
+\begin{definition}[]
+The set of \(\call\)-\tf{terms} is the smallest set \(\calt\) s.t.
+\begin{enumerate}
+\item \(c\in\calt\) for each constant symbol \(c\in\calc\)
+\item each variable symbol \(v_i\in\calt\) for \(i=1,2,\dots\)
+\item if \(t_1,\dots,t_{n_f}\in\calt\) and \(f\in\calf\) then
+\(f(t_1,\dots,n_{n_f})\in\calt\)
+\end{enumerate}
+\end{definition}
+
+
+Suppose that \(\calm\) is an \(\call\)-structure and that \(t\) is a term built
+using variables from \(\bar{v}=(v_{i_1},\dots,v_{i_m})\). We want to interpret
+\(t\) as a function \(t^\calm:M^m\to M\). For \(s\) a subterm of \(t\) and
+\(\bar{a}=(a_{i_1},\dots,a_{i_m})\in M\), we inductively define
+\(s^\calm(\bar{a})\) as follows.
+\begin{enumerate}
+\item If \(s\) is a constant symbol \(c\), then \(s^\calm(\bar{a})=c^\calm\)
+\item If \(s\) is the variable \(v_{i_j}\), then \(s^\calm(\bar{a})=a_{i_j}\)
+\item If \(s\) is the term \(f(t_1,\dots,t_{n_f})\), where \(f\) is a function symbol
+of \(\call\) and \(t_1,\dots,t_{n_f}\) are terms, then 
+\(s^\calm(\bar{a})=f^\calm(t^\calm_1(\bar{a}),\dots,t_{n_f}^\calm(\bar{a}))\)
+\end{enumerate}
+
+
+The function \(t^\calm\) is defined by \(\bar{a}\mapsto t^\calm(\bar{a})\)
+
+
+\begin{definition}[]
+\(\phi\) is an \tf{atomic} \(\call\)-\tf{formula} if \(\phi\) is either
+\begin{enumerate}
+\item \(t_1=t_2\) where \(t_1\) and \(t_2\) are terms
+\item \(R(t_1,\dots,t_{n_R})\)
+\end{enumerate}
+
+
+The set of \(\call\)-\tf{formulas} is the smallest set \(\calw\) containing the
+atomic formulas s.t.
+\begin{enumerate}
+\item if \(\phi\in\calw\), then \(\neg\phi\in\calw\)
+\item if \(\phi,\psi\in\calw\), then \((\phi\wedge\psi),(\phi\vee\psi)\in\calw\)
+\item if \(\phi\in\calw\), then \(\exists v_i\phi,\forall v_i\phi\in\calw\)
+\end{enumerate}
+\end{definition}
+
+We say a variable \(v\) \tf{occurs freely} in a formula \(\phi\) if it is not
+inside a \(\exists v\) or \(\forall v\) quantifier; otherwise we say that it's
+\tf{bound}. We call a formula a \tf{sentence} if it has no free variables. We
+often write \(\phi(v_1,\dots,v_n)\) to make explicit the free variables in \(\phi\)
+
+\begin{definition}[]
+Let \(\phi\) be a formula with free variables from
+\(\bar{v}=(v_{i_1,\dots,v_{i_m}})\) and let \(\bar{a}=(a_{i_1},\dots,a_{i_m})\in
+   M^m\). We inductively define \(\calm\models\phi\bar{a}\) as follows
+\begin{enumerate}
+\item If \(\phi\) is \(t_1=t_2\), then \(\calm\models\phi(\bar{a})\) if
+\(t_1^\calm(\bar{a})=t_2^\calm(\bar{a})\)
+\item If \(\phi\) is \(R(t_1,\dots,t_{m_R})\) then \(\calm\models\phi(\bar{a})\) if
+\((t_1^\calm(\bar{a}),\dots,t_{m_R}^\calm(\bar{a}))\in R^\calm\)
+\item If \(\phi\) is \(\neg\psi\) then \(\calm\models\phi(\bar{a})\) if
+\(\calm\not\models\psi(\bar{a})\)
+\item If \(\phi\) is \((\psi\wedge\theta)\) then \(\calm\models\phi(\bar{a})\) if
+\(\calm\models\psi(\bar{a})\) and
+\(\calm\models\theta(\bar{a})\)
+\item If \(\phi\) is \((\psi\vee\theta)\) then \(\calm\models\phi(\bar{a})\) if
+\(\calm\models\psi(\bar{a})\) or
+\(\calm\models\theta(\bar{a})\)
+\item If \(\phi\) is \(\exists v_j\psi(\bar{v},v_j)\) then \(\calm\models\phi(\bar{a})\)
+if there is \(b\in M\) s.t. \(\calm\models\psi(\bar{a},b)\)
+\item If \(\phi\) is \(\forall v_j\psi(\bar{v},v_j)\) then \(\calm\models\phi(\bar{a})\)
+if \(\calm\models\psi(\bar{a},b)\) for all \(b\in M\)
+\end{enumerate}
+\end{definition}
+
+
+If \(\calm\models\phi(\bar{a})\) we say that \(\calm\) \tf{satisfies}
+\(\phi(\bar{a})\) or \(\phi(\bar{a})\) is \tf{true} in \(\calm\)
+
+\begin{proposition}[]
+Suppose that \(\calm\) is a substrcture of \(\caln\), \(\bar{a}\in M\) and
+\(\phi(\bar{v})\) is a quantifier-free formula. Then
+\(\calm\models\phi(\bar{a})\) if and only if \(\caln\models\psi(\bar{a})\)
+\end{proposition}
+
+\begin{proof}
+\tf{Claim} If \(t(\bar{v})\) is a term and \(\bar{b}\in M\) then
+\(t^\calm(\bar{b})=t^\caln(\bar{b})\). 
+\end{proof}
+
+\begin{definition}[]
+We say that two \(\call\)-strctures \(\calm\) and \(\caln\) are \tf\{elementarily
+equivalent\} and write \(\calm\equiv\caln\) if
+\begin{equation*}
+ \calm\models\phi\text{ if and only if } \caln\models\phi
+\end{equation*}
+for all \(\call\)-sentences \(\phi\)
+\end{definition}
+
+We let \(\th(\calm)\), the \tf{full theory} of \(\calm\) be the set of
+\(\call\)-sentences \(\phi\) s.t. \(\calm\models\phi\)
+
+\begin{theorem}[]
+Suppose that \(j:\calm\to\caln\) is an isomorphism. Then \(\calm\equiv\caln\)
+\end{theorem}
+
+\begin{proof}
+Show by induction on formulas that \(\calm\models\phi(a_1,\dots,a_n)\) if and
+only if \(\caln\models\phi(j(a_1),\dots,j(a_n))\) for all formulas \(\phi\)
+\end{proof}
+\subsection{Theories}
+\label{sec:org122036b}
+Let \(\call\) be a language. An \(\call\)-\tf{theory} \(T\) is a set of
+\(\call\)-sentences. We say that \(\calm\) is a \tf{model} of \(T\) and write
+\(\calm\models T\) if \(\calm\models\phi\) for all sentences \(\phi\in T\). A
+theory is \tf{satisfiable} if it has a model.
+
+A class of \(\call\)-structures \(\calk\) is an \tf{elementary class} if there
+is an \(\call\)-theory \(T\) s.t. \(\calk=\{\calm:\calm\models T\}\)
+
+\begin{example}[Groups]
+Let $\call=\{\cdot,e\}$ where $\cdot$ is a binary function symbol and $e$ is a 
+constant symbol. The class of groups is axiomatized by
+\begin{align*}
+&\forall x\;e\cdot x=x\cdot e=x\\
+&\forall x\forall y\forall z\;x\cdot(y\cdot z)=(x\cdot y)\cdot z\\
+&\forall x\exists y\;x\cdot y=y\cdot x= e
+\end{align*}
+\end{example}
+
+\begin{example}[Rings and Fields]
+Let $\call_r$ be the language of rings $\{+,-,\cdot,0,1\}$, where $ +,-$ and $\cdot$
+are binary function symbols and $0$ and $1$ are constants. The axioms for rings are given 
+by
+\begin{align*}
+&\forall x\forall y\forall z\;(x-y=z\leftrightarrow x=y+z)\\
+&\forall x\;x\cdot 0=0\\
+&\forall x\forall y\forall z\;x\cdot(y\cdot z)=(x\cdot y)\cdot z\\
+&\forall x\;x\cdot 1=1\cdot x=x\\
+&\forall x\forall y\forall z\;x\cdot(y+z)=(x\cdot y)+(x\cdot z)\\
+&\forall x\forall y\forall z\;(x+y)\cdot z=(x\cdot z)+(y\cdot z)
+\end{align*}
+We axiomatize the class of fields by adding
+\begin{align*}
+&\forall x\forall y\;x\cdot y=y\cdot x\\
+&\forall x\;(x\neq 0\to\exists y\;x\cdot y=1)
+\end{align*}
+We axiomatize the class of algebraically closed fields by adding to the field axioms the sentences
+\begin{equation*}
+\forall a_0\dots\forall a_{n-1}\exists x\;x^n+\displaystyle\sum_{i=1}^{n-1}
+a_ix^i=0
+\end{equation*}
+for $n=1,2,\dots$. Let \acf\; be the axioms for algebraically closed fields.
+
+Let $\psi_p$ be the \(\call_r\)-sentence $\forall x\;
+\underbrace{x+\dots+x}_{p\text{-times}}=0$, which asserts that a field has characteristic
+$p$. For $p>0$ a prime, let $\acf_p=\acf\cup\{\psi_p\}$ and
+$\acf_0=\acf\cup\{\neg\psi_p:p>0\}$ be the theories of algebraically
+closed fields of characteristic $p$ and zero respectively
+\end{example}
+
+\begin{definition}[]
+Let \(T\) be an \(\call\)-theory and \(\phi\) an \(\call\)-sentence. We say that
+\(\phi\) is a \tf{logical consequence} of \(T\) and write \(T\models\phi\) if
+\(\calm\models\phi\) whenever \(\calm\models T\)
+\end{definition}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item Let \(\call=\{+,<,0\}\) and let \(T\) be the theory of ordered abelian groups.
+Then \(\forall x(x\neq 0\to x+x\neq 0)\) is a logical consequence of \(T\)
+\item Let \(T\) be the theory of groups where every element has order 2. Then\par
+\(T\not\models\exists x_1\exists x_2\exists x_3(x_1\neq x_2\wedge
+      x_2\neq x_3\wedge x_1\neq x_3)\)
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\begin{enumerate}
+\item \(\Z/2\Z\models T\wedge\neg\exists x_1\exists x_2\exists x_3(x_1\neq x_2\wedge
+      x_2\neq x_3\wedge x_1\neq x_3)\)
+\end{enumerate}
+\end{proof}
+\subsection{Definable Sets and Interpretability}
+\label{sec:org348d9e9}
+\begin{definition}[]
+Let \(\calm=(M,\dots)\) be an \(\call\)-structure. We say that \(X\subseteq M^n\)
+is \tf{definable} if and only if there is an \(\call\)-formula 
+\(\phi(v_1,\dots,v_n,w_1,\dots,w_m)\) and \(\bar{b}\in M^b\) s.t. 
+\(X=\{\bar{a}\in M^n:\calm\models\phi(\bar{a},\bar{b})\}\). We say that
+\(\phi(\bar{v},\bar{b})\) \tf{defines} \(X\). We say that \(X\) is
+\(A\)-\tf{definable} or \tf{definable over}  \(A\) if there is a formula 
+\(\psi(\bar{v},w_1,\dots,w_l)\) and \(\bar{b}\in A^l\) s.t.
+\(\psi(\bar{v},\bar{b})\) defines \(X\)
+\end{definition}
+
+A number of examples using \(\call_r\), the language of rings
+\begin{itemize}
+\item Let \(\calm=(R,+,-,\cdot,0,1)\) be a ring. Let \(p(X)\in R[X]\). Then 
+\(Y=\{x\in R:p(x)=0\}\) is definable. Suppose that
+\(p(X)=\displaystyle\sum_{i=0}^ma_iX^i\). Let \(\phi(v,w_0,\dots,w_n)\) be the
+formula
+\begin{equation*}
+w_n\cdot\underbrace{v\cdots v}_{n\text{-times}}+\dots+w_1\cdot v+w_0=0
+\end{equation*}
+Then \(\phi(v,a_0,\dots,a_n)\) defines \(Y\). Indeed, \(Y\) is \(A\)-definable
+for any \(A\supseteq\{a_0,\dots,a_n\}\)
+\item Let \(\calm=(\R,+,-,\cdot,0,1)\) be the field of real numbers. Let
+\(\phi(x,y)\) be the formula 
+\begin{equation*}
+\exists z(z\neq 0\wedge y=x+z^2)
+\end{equation*}
+Because \(a<b\) if and only if \(\calm\models\phi(a,b)\), the ordering is
+\(\emptyset\)-definable
+\item Consider the natural numbers \(\N\) as an \(\call=\{+,\cdot,0,1\}\) structure.
+There is an \(\call\)-formula \(T(e,x,s)\) s.t. \(\N\models T(e,x,s)\) if and
+only if the Turing machine with program coded by \(e\) halts on input \(x\) in
+at most \(s\) steops. Thus the Turing machine with program \(e\) halts on input
+\(x\) if and only if
+\end{itemize}
+\(\N\models\exists s\;T(e,x,s)\). So the halting
+    computations is definable
+
+
+\begin{proposition}[]
+Let \(\calm\) be an \(\call\)-structure. Suppose that \(D_n\) is a collection of
+subsets of \(M^n\) for all \(n\ge 1\) and \(\cald=(D_n:n\ge 1)\) is the smallest
+collection s.t. 
+\begin{enumerate}
+\item \(M^n\in D_n\)
+\item for all \(n\)-ary function symbols \(f\) of \(\call\), the graph of \(f^\calm\)
+is in \(D_{n+1}\)
+\item for all \(n\)-ary relation symbols \(R\) of \(\call\), \(R^\calm\in D_n\)
+\item for all \(i,j\le n\), \(\{(x_1,\dots,x_n)\in M^n:x_i=x_j\}\in D_n\)
+\item if \(X\in D_n\), then \(M\times X\in D_{n+1}\)
+\item each \(D_n\) is cloed under complement, union and intersection
+\item if \(X\in D_{n+1}\) and \(\pi:M^{n+1}\to M^n\) is the projection 
+\((x_1,\dots,x_{n+1})\mapsto(x_1,\dots,x_n)\), then \(\pi(X)\in D_n\)
+\item if \(X\in D_{n+m}\) and \(b\in M^m\), then \(\{a\in M^n:(a,b)\in X\}\in D_n\)
+\end{enumerate}
+
+
+Thus \(X\subseteq M^n\) is definable if and only if \(X\in D_n\)
+\end{proposition}
+
+\begin{proposition}[]
+Let \(\calm\) be an \(\call\)-structure. If \(X\subset M^n\) is \(A\)-definable,
+then every \(\call\)-automorphism of \(\calm\) that fixes \(A\) pointwise fixes
+\(X\) setwise(that is, if \(\sigma\) is an automorphism of \(M\) and \(\sigma(a)=a\)
+for all \(a\in A\), then \(\sigma(X)=X\))
+\end{proposition}
+
+\begin{proof}
+\begin{equation*}
+\calm\models\psi(\bar{v},\bar{a})\leftrightarrow
+\calm\models\psi(\sigma(\bar{v}),\sigma(\bar{a}))\leftrightarrow
+\calm\models\psi(\sigma(\bar{v}),\bar{a})
+\end{equation*}
+In other words, \(\bar{b}\in X\) if and only if \(\sigma(\bar{b})\in X\)
+\end{proof}
+
+\begin{definition}[]
+A subset \(S\) of a field \(L\) is \tf{algebraically independent} over a
+subfield \(K\) if the elements of 
+\(S\) do not satisfy any non-trivial polynomial equation with
+coefficients in \(K\) 
+\end{definition}
+
+
+\begin{corollary}[]
+The set of real numbers is not definable in the field of complex numbers
+\end{corollary}
+
+\begin{proof}
+If \(\R\) where definable, then it would be definable over a finite
+\(A\subset\C\). Let \(r,s\in\C\) be algebraically independent over \(A\) with
+\(r\in\R\) and \(s\not\in\R\). There is an automorphism \(\sigma\) of \(\C\) s.t.
+\(\sigma|A\) is the identity and \(\sigma(r)=s\). Thus \(\sigma(\R)\neq\R\) and
+\(\R\) is not definable over \(A\)
+\end{proof}
+
+We say that an \(\call_0\)-structure \(\caln\) is \tf{definably interpreted} in
+an \(\call\)-structure \(\calm\) if and only if we can find a definable
+\(X\subseteq M^n\) for some \(n\) and we can interpret the symbols of \(\call_0\)
+as definable subsets and functions on \(X\) so that the resulting
+\(\call_0\)-structure is isomorphic to \(\calm\)
+\end{document}

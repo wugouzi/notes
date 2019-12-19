@@ -27,6 +27,7 @@
     "stackrel"
     "dsfont"
     "newpxtext"
+    "enumitem"
     "graphicx")
    (TeX-add-symbols
     '("stcomp" 1)
