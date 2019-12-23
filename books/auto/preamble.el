@@ -60,6 +60,7 @@
     "proposition"
     "theorem"
     "example"
-    "remark"))
+    "remark"
+    "exercise"))
  :latex)
 

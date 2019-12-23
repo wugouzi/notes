@@ -1,11 +1,442 @@
 #+TITLE: Notes on Set Theory
-#+AUTHOR: Qi'ao Chen
+#+AUTHOR: Thomas Jech
 
 #+LATEX_HEADER: \input{preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/settheory/SetTheory.tex
 
-* Foreword
-  Notes for the entrance examination
+* Ordinal
+** Linear and partial ordering
+   #+ATTR_LATEX:
+ options []
+   #+BEGIN_definition
+   A binary relation $<$ on a set $P$ is a \tf{partial ordering} of $P$ if:
+   1. $p\not< p$ for any $p\in P$
+   2. if $p<q$ and $q<r$ then $p<r$
+
+      $(P,<)$ is called a \tf{partial ordered set}. A partial ordering $<$ of
+      $P$ is a \tf{linear ordering} if moreover
+   3. $p<q$ or $q<p$ or $p=q$ for all $p,q\in P$
+   #+END_definition
+
+
+   If $(P,<)$ and $(Q,<)$ are poset and $f:P\to Q$, then $f$ is
+   \tf{order-preserving} if $x<y$ implies $f(x)<f(y)$. If $P$ and $Q$ are
+   linearly ordered, then $f$ is also called \tf{increasing}
+** Well-Ordering
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A linear ordering $<$ of a set $P$ is a \tf{well-ordering} if every nonempty
+   subset of $P$ has a least element
+   #+END_definition
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma1
+   If $(W,<)$ is a well-ordering set and $f:W\to W$ is an increasing function,
+   then $f(x)\ge x$ for each $x\in W$
+   #+END_lemma
+   #+BEGIN_proof
+   Assume that the set $X=\{x\in W\mid f(x)<x\}$ is nonempty and let $z$ be the
+   least element of $X$. Hence $f(f(x))<f(x)$ and $f(x)\in X$, a contradiction.
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   The only automorphism of a well-ordered set is the identity
+   #+END_corollary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   If two well-ordered sets $W_1,W_2$ are isomorphic, then the isomorphism of
+   $W_1$ onto $W_2$ is unique
+   #+END_corollary
+
+   If $W$ is a well-ordered set and $u\in W$, then $\{x\in W:x<u\}$ is an
+   \tf{initial segment} of $W$
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma2
+   No well-ordered set is isomorphic to an initial segment of itself
+   #+END_lemma
+   #+BEGIN_proof
+   If $\ran{f}=\{x:x<u\}$, then $f(u)<u$, contrary to lemma ref:lemma1
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   If $W_1$ and $W_2$ are well-ordered sets, then exactly one of the following
+   three cases holds:
+   1. $W_1\cong W_2$
+   2. $W_1$ is isomorphic to an initial segment of $W_2$
+   3. $W_2$ is isomorphic to an initial segment of $W_1$
+   #+END_theorem
+   #+BEGIN_proof
+   For $u\in W_i,(i=1,2)$, let $W_i(u)$ denote the initial segment of $W_i$
+   given by $u$. Let
+   \begin{equation*}
+   f=\{(x,y)\in W_1\times W_2\mid W_1(x)\cong W_2(y)\}
+   \end{equation*}
+
+   If $W_1(x)\cong W_w(y)$ and $W_1(x)\cong W_2(y')$, then $W_2(y)\cong
+   W_1(y')$. According to lemma ref:lemma2, $y=y'$. Hence it's easy to see that
+   $f$ is a one-to-one function.
+
+   If $h$ is an isomorphism between $W_1(x)$ and $W_2(y)$ and $x'<x$, then
+   $W_1(x')\cong W_2(h(x'))$. It follows that $f$ is order-preserving.
+
+   If $\dom{f}=W_1$ and $\ran{f}=W_2$, then case 1 holds.
+
+   If $y_1<y_2$ and $y_2\in \ran{f}$, then $y_1\in\ran{f}$. If there is some
+   $y<y_2$ and $y\not\in\ran{f}$. Consider the least element $y'$ of $\{y\in
+   W_2\mid y<y_2\wedge y\not\in\ran{f}\}$. Let $x'=\sup\{x\in W_1\mid\exists
+   y\in W_2(W_1(x)\cong W_2(y)\wedge y<y')\}$, then $W_1(x')\cong W_2(y')$, a
+   contradiction. 
+
+   If $\ran{f}\neg W_2$ and $y_0$ is the least element of $W_2-\ran{f}$. We have
+   $\ran{f}=W_2(x_0)$. Necessarily, $\dom{f}=W_1$, for otherwise we could have
+   $(x_0,y_0)\in f$ where \(x_0=\)least element of $W_1-\dom{f}$. Thus case 2
+   holds.
+
+   Similarly, case 3 holds.
+   #+END_proof
+
+   If $W_1\cong W_2$, we say that they have the same \tf{order-type}
+
+
+** Ordinal Numbers
+   The idea is to define ordinal numbers so that
+   \begin{equation*}
+   \alpha<\beta\Leftrightarrow\alpha\in\beta\wedge\alpha=\{\beta:\beta<\alpha\}
+   \end{equation*}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A set $T$ is \tf{transitive} if every element of $T$ is a subset of $T$
+   #+END_definition
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A set is an \tf{ordinal number} (an \tf{ordinal}) if it's transitive and
+   well-ordered by $\in$
+   #+END_definition
+   The class of all ordinals is denoted by $Ord$
+
+   We define
+   \begin{equation*}
+   \alpha<\beta\Leftrightarrow\alpha\in\beta
+   \end{equation*}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma3
+   1. $0=\emptyset$ is an ordinal
+   2. If $\alpha$ is an ordinal and $\beta\in\alpha$, then \beta is an ordinal
+   3. If $\alpha\neq\beta$ are ordinals and $\alpha\subset\beta$, then
+      $\alpha\in\beta$
+   4. If \alpha,\beta are ordinals, then either $\alpha\subset\beta$ or
+      $\beta\subset\alpha$
+   #+END_lemma
+   #+BEGIN_proof
+   1. definition
+   2. definition
+   3. If $\alpha\subset\beta$, let \gamma be the least element of the set
+      $\beta-\alpha$. Since \alpha is transitive, it follows that \alpha is the
+      initial segment of \beta given by \gamma. Thus
+      $\alpha=\{\xi\in\beta\mid\xi<\gamma\}=\gamma\in\beta$
+   4. Clearly $\alpha\cap\beta$ is an ordinal \gamma. We have $\gamma=\alpha$ or
+      $\gamma=\beta$, for otherwise $\gamma\in\alpha$ and $\gamma\in\beta$ by 3.
+      Then $\gamma\in\gamma$ which contradicts the definition of an ordinal
+   #+END_proof
+   Using lemma ref:lemma3 one gets the following facts about ordinal numbers
+   1. $<$ is a linear ordering of the class $Ord$
+   2. For each \alpha, $\alpha=\{\beta:\beta<\alpha\}$
+   3. If $C$ is a nonempty class of ordinals, then $\bigcap C$ is an ordinal,
+      $\bigcap C\in C$ and $\bigcap C=\inf C$
+   4. If $X$ is a nonempty set of ordinals, then $\bigcup X$ is an ordinal and
+      $\bigcup X=\sup X$
+   5. For every \alpha, $\alpha\cup\{\alpha\}$ is an ordinal and
+      $\alpha\cup\{\alpha\}=\inf\{\beta:\beta>\alpha\}$
+
+
+   We thus define $\alpha+1=\alpha\cup\{\alpha\}$(the \tf{succesor} of \alpha) 
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Every well-ordered set is isomorphic to a unique ordinal number
+   #+END_theorem
+
+   #+BEGIN_proof
+   The uniqueness follows from lemma ref:lemma2. Given a well-ordered set $W$,
+   we find an isomorphic ordinal as follows: Define $F(x)=\alpha$ if \alpha is
+   isomorphic to the initial segment of $W$ given by $x$. If such an \alpha
+   exists, then it's unique. By the replacement axiom, $F(W)$ is a set. For each
+   $x\in W$, such an \alpha exists. Otherwise consider the least $x$ such that
+   \alpha doesn't exist. Let $\alpha=\sup\{F(x')\mid x'\in W\wedge x' <x\}$ and
+   $F(x)=\alpha$. If \gamma is the least $\gamma\not\in F(W)$, then
+   $F(W)=\gamma$ and we have an isomorphism of $W$ onto \gamma
+   #+END_proof
+
+   If $\alpha=\beta+1$, then \alpha is a \tf{succesor ordinal}. If \alpha is not
+   a succesor ordinal then $\alpha=\sup\{\beta:\beta<\alpha\}=\bigcup\alpha$ is
+   called a \tf{limit ordinal}. We also consider 0 a limit ordinal and define
+   $\sup\emptyset=0$.
+
+** Induction and Recursion
+   #+ATTR_LATEX: :options [Transfinite Induction]
+   #+BEGIN_theorem
+   Let $C$ be a class of ordinals and assume
+   1. $0\in C$
+   2. if $\alpha\in C$, then $\alpha+1\in C$
+   3. if \alpha is a nonzero limit ordinal and $\beta\in C$ for all
+      $\beta<\alpha$, then $\alpha\in C$
+
+      
+   Then $C$ is the class of all ordinals
+   #+END_theorem
+
+   #+BEGIN_proof
+   Otherwise let \alpha be the least ordinal $\alpha\not\in C$ and apply 1, 2 or 3
+   #+END_proof
+
+   A function whose domain is the set $\N$ is called an \tf{(infinite)
+   sequence} (A \tf{sequence} in $X$ is a function $f:\N\to X$). The standard
+   notation for a sequence is
+   \begin{equation*}
+   \la a_n:n<\omega\ra
+   \end{equation*}
+   A \tf{finite sequence} is a function $s$ s.t. $\dom{s}=\{i:i<n\}$ for some
+   $n\in\N$; then $s$ is a \tf{sequence of length} $n$
+
+   A \tf{transfinite sequence} is a function whose domain is an ordinal
+   \begin{equation*}
+   \la a_\xi:\xi<\alpha\ra
+   \end{equation*}
+   It is also called an \alpha-\tf{sequence} or a \tf{sequence of length}
+   \alpha. We also say that a sequence $\la a_\xi:\xi<alpha\ra$ is an
+   \tf{enumeration} of its range $\{a_\xi:\xi<\alpha\}$. If $s$ is a sequence of
+   length \alpha, then $s^\smallfrown x$ or simply $sx$ denotes the sequence of length
+   $\alpha+1$ that extends $s$ and whose \(\alpha\)th term is $x$:
+   \begin{equation*}
+   s^\smallfrown x=sx=s\cap\{(\alpha,x)\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options [Transfinite Recursion]
+   #+BEGIN_theorem
+   Let $G$ be a function, then ref:align1 below defines a unique function $F$ on
+   $Ord$ s.t.
+   \begin{equation*}
+   F(\alpha)=G(F\restriction\alpha)
+   \end{equation*}
+   for each \alpha
+   #+END_theorem
+   In other words, if we let $a_\alpha=F(\alpha)$, then for each \alpha
+   \begin{equation*}
+   a_\alpha=G(\la a_\xi:\xi<\alpha\ra)
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let $X$ be a set and \theta be an ordinal number. For every function $G$ on
+   the set of all transfinite sequences in $X$ of length $<\theta$ s.t.
+   $\ran{G}\subset X$ there exists a unique \theta-sequence in $X$ s.t. 
+   $a_\alpha=G(\la a_\xi:\xi<\theta)$ for every $\alpha<\theta$
+   #+END_corollary
+   #+BEGIN_proof
+   
+   Let
+   \begin{align}
+   \label{align1}
+   F(\alpha)=x\leftrightarrow&\text{ there is a sequence }
+   \la a_\xi:\xi<\alpha\ra \text{ such that }\\
+   &1.\;(\forall \xi<\alpha)a_\xi=G(\la a_n\eta:\eta<\xi\ra)\nonumber \\
+   &2.\; x=G(\la a_\xi:\xi<\alpha\ra)\nonumber
+   \end{align}
+
+   For every \alpha, if there is an \alpha-sequence that satisfying 1, then such
+   a sequence is unique. Thus $F(\alpha)$ is determined uniquely by 2 and
+   therefore $F$ is a function. 
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $\alpha>0$ be a limit ordinal and let $\la\gamma_\xi:\xi<\alpha\ra$ be a
+   \tf{nondecreasing} sequence of ordinals (i.e., $\xi<\eta$ implies
+   $\gamma_\xi\le\gamma_eta$). We define the \tf{limit} of the sequence by
+   \begin{equation*}
+   \lim_{\xi\to\alpha}\gamma_\xi=\sup\{\gamma_\xi:\xi<\alpha\}
+   \end{equation*}
+
+   A sequence of ordinals $\la\gamma_\alpha:\alpha\in Ord\ra$ is \tf{normal} if
+   it's increasing and \tf{continuous}, i.e., for every limit \alpha,
+   $\gamma_\alpha=\lim_{\xi\to\alpha}\gamma_\xi$ 
+   #+END_definition
+
+   
+** Ordinal Arithmetic
+   #+ATTR_LATEX: :options [Addition]
+   #+BEGIN_definition
+   For all ordinal numbers \alpha
+   1. $\alpha+0=\alpha$
+   2. $\alpha+(\beta+1)=(\alpha+\beta)+1$, for all \beta
+   3. $\alpha+\beta=\lim_{\xi\to\beta}(\alpha+\xi)$ for all limit $\beta>0$
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Multiplication]
+   #+BEGIN_definition
+   For all ordinal numbers \alpha
+   1. $\alpha\cdot 0=0$
+   2. $\alpha\cdot(\beta+1)=(\alpha\cdot\beta)+\alpha$, for all \beta
+   3. $\alpha\cdot\beta=\lim_{\xi\to\beta}(\alpha\cdot\xi)$ for all limit $\beta>0$
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Exponentiation]
+   #+BEGIN_definition
+   For all ordinal numbers \alpha
+   1. $\alpha^0=1$
+   2. $\alpha^{\beta+1}=\alpha^\beta\cdot\alpha$, for all \beta
+   3. $\alpha^\beta=\lim_{\xi\to\beta}\alpha^\xi$ for all limit $\beta>0$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For all ordinals \alpha, \beta and \gamma
+   1. $\alpha+(\beta+\gamma)=(\alpha+\beta)+\gamma$
+   2. $\alpha\cdot(\beta\cdot\gamma)=(\alpha\cdot\beta)\cdot\gamma$
+   #+END_lemma
+   Neither $+$ nor $\cdot$ are commutative
+   \begin{equation*}
+   1+\omega=\omega\neq \omega+1,\e 2\cdot\omega=\omega\neq\omega\cdot 2
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $(A,<_A)$ and $(B,<_B)$ be disjoint linearly ordered sets. The \tf{sum}
+   of these linear orders is the set $A\cup B$ with the ordering defined as
+   follows:
+   $x<y$ if and only if
+   1. $x,y\in A$ and $x<_A y$
+   2. $x,y\in B$ and $x<_B y$
+   3. $x\in A$ and $y\in B$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $(A,<)$ and $(B,<)$ be linearly ordered sets. The \tf{product} of these
+   linear orders is the set $A\times B$ with the ordering defined by
+   \begin{equation*}
+   (a_1,b_1)<(a_2,b_2)\Leftrightarrow b_1<b_2\text{ or } (b_1=b_2\wedge a_1<a_2)
+   \end{equation*}
+   #+END_definition
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For all ordinals \alpha and \beta, $\alpha+\beta$ and $\alpha\cdot\beta$ are
+   respectively isomorphic to the sum and to the product of \alpha and \beta
+   #+END_lemma
+
+   #+BEGIN_proof
+   Suppose $(A,<_A)\cong\alpha$ and $(B,<_B)\cong\beta$. 
+   1. if $\beta=0$, then $B=\emptyset, A\cup B=A$
+   2. if $(A\cup B,<_{A\cup B})\cong \alpha+\beta$, let $B'\equal B\cup\{c\}$ s.t.
+      $\{c\}\cap A=\{c\}\cap B=\emptyset$ all for all $b\in B$, $b<c$. Hence
+      \begin{equation*}
+      \alpha+(\beta+1)=(\alpha+\beta)+1\cong(A\cup B)\cup\{c\}=A\cup B'
+      \end{equation*}
+      
+   3. if \beta is a limit ordinal and for all $\xi<\beta$ and $B_\xi\cong\xi$,\par
+      $(A\cup B_\xi,<_{A\cup B_\xi})\cong\alpha+\xi$,
+      \begin{equation*}
+      A\cup B=A\cup\sup{B_\xi}=\sup(A\cup B_\xi)\cong\sup(\alpha+\xi)=\alpha+\beta
+      \end{equation*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. If $\beta<\gamma$ then $\alpha+\beta<\alpha+\gamma$
+   2. If $\alpha<\beta$ then there exists a unique \delta s.t.
+      $\alpha+\delta=\beta$
+   3. If $\beta < \gamma$ and $\alpha>0$, then
+      $\alpha\cdot\beta<\alpha\cdot\gamma$
+   4. If $\alpha>0$ and \gamma is arbitrary, then there exist a unique \beta and
+      a unique $\rho<\alpha$ s.t. $\gamma=\alpha\cdot\beta+\rho$
+   5. If $\beta<\gamma$ and $\alpha>1$, then $\alpha^\beta<\alpha^\gamma$
+   #+END_lemma
+   #+BEGIN_proof
+   2. [@2] Let \delta be the order-type of the set $\{\xi:\alpha\le\xi<\beta\}$
+   4. [@4] Let \beta be the greatest ordinal s.t. $\alpha\cdot\beta\le\gamma$
+   #+END_proof
+
+
+   #+ATTR_LATEX: :options [Cantor's Normal Form Theorem]
+   #+BEGIN_theorem
+   Every ordinal $\alpha>0$ can be represented uniquely in the form
+   \begin{equation*}
+   \alpha=\omega^{\beta_1}\cdot k_1+\dots+\omega^{\beta_n}\cdot k_n
+   \end{equation*}
+   where $n\ge 1$, $\alpha\ge\beta_1>\dots>\beta_n$ and $k_1,\dots,k_n$ are
+   nonzero natural numbers.
+   #+END_theorem
+   #+BEGIN_proof
+   By induction on \alpha. For $\alpha=1$ we have $1=\omega^0+1$; for arbitrary
+   $\alpha>0$, let $\beta$ be the greatest ordinal s.t. $\omega^\beta\le
+   \alpha$.
+   The uniqueness of the normal form is proved by induction
+   #+END_proof
+
+   
+** Well-Founded Relations
+   A binary relation $E$ on a set $P$ is \tf{well-founded} if every nonempty
+   $X\subset P$ has an \(E\)-\tf{minimal} element.
+
+   Given a well-founded relation $E$ on a set $P$, we can define the \tf{height}
+   of $E$ and assign to each $x\in P$ and ordinal number, the \tf{rank} of $x$
+   in $E$
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   If $E$ is a well-founded relation on $P$, then there exists a unique function
+   \rho from $P$ into the ordinals s.t. for all $x\in P$
+   \begin{equation*}
+   \rho(x)=\sup\{\rho(y)+1:yEx\}
+   \end{equation*}
+   #+END_theorem
+   The range of \rho is an initial segment of the ordinals, thus an ordinal
+   number. This ordinal is called the \tf{height} of $E$
+
+   #+BEGIN_proof
+   By induction, let
+   \begin{align*}
+   &P_0=\emptyset\\
+   &P_{\alpha+1}=\{x\in P:\forall y(yEx\to y\in P_\alpha)\}\cup P_\alpha\\
+   &P_\alpha=\displaystyle\bigcup_{\xi<\alpha}P_\xi \e\text{if } \alpha 
+   \text{ is a limit ordinal}
+   \end{align*}
+   Let \theta be the least ordinal s.t. $P_{\theta+1}=P_\theta$. We claim that
+   $P_\theta=P$ 
+   #+END_proof
+
+** Exercise
+   1. Every normal sequence $\la\gamma_\alpha:\alpha\in Ord\ra$ has arbitrarily
+      large \tf{fixed points}, i.e., \alpha s.t. $\gamma_\alpha=\alpha$
+
+      #+BEGIN_proof
+      From
+      \href{https://math.stackexchange.com/questions/1808103/show-that-there-exists-a-fixed-point-for-this-set-theoretic-class-function}{StackExchange}.
+      
+      #+END_proof
+
+
+   A limit ordinal $\gamma>0$ is called \tf{indecomposable} if there exist no
+   $\alpha<\gamma$ and $beta<\gamma$ s.t. $\alpha+\beta=\gamma$
+   2. [@2] A limit ordinal $\gamma>0$ is indecomposable if and only if
+      $\alpha+\gamma=\gamma$ for all $\alpha<\gamma$ if and only if
+      $\gamma=\omega^\alpha$ for some \alpha
+      #+BEGIN_proof
+      1. $(3)\to(1)$. Assume $\gamma_1,\gamma_2<\gamma=\omega^\alpha$. By
+         Cantor's normal form theorem, there exist $\alpha'$ and $k$ s.t. 
+         $\gamma_1,\gamma_2<\omega^{\alpha'}\cdot k$
+      2. $(2)\to(3)$. Assume that $\gamma$ can't be written as $\omega^\alpha$.
+         Then by Cantor's theorem, $\gamma=\omega^{\beta_1}\cdot
+         k_1+\dots+\omega^{\beta_n}\cdot k_n$. But then
+         $\omega^{\beta_1}<\gamma$ and $\omega^{\beta_1}+\gamma>\gamma$
+      #+END_proof
+* Cardinal Numbers
 * Models of Set - Sertraline
 ** Some mathematical logic
   #+ATTR_LATEX: :options [Gödel’s second incompleteness theorem]
