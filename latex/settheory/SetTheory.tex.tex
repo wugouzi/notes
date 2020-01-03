@@ -1,4 +1,4 @@
-% Created 2019-12-09 一 19:29
+% Created 2020-01-03 五 14:59
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -27,7 +27,7 @@
  pdflang={English}}
 \begin{document}
 
-\tableofcontents \clearpage\% Created 2019-12-09 一 19:28
+\tableofcontents \clearpage\% Created 2020-01-03 五 14:56
 \% Intended \LaTeX{} compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -45,11 +45,11 @@
 \usepackage{hyperref}
 \usepackage{minted}
 \input{preamble.tex}
-\author{Qi'ao Chen}
+\author{Thomas Jech}
 \date{\today}
 \title{Notes on Set Theory}
 \hypersetup\{
- pdfauthor=\{Qi'ao Chen\},
+ pdfauthor=\{Thomas Jech\},
  pdftitle=\{Notes on Set Theory\},
  pdfkeywords=\{\},
  pdfsubject=\{\},
@@ -59,420 +59,700 @@
 
 \maketitle
 \tableofcontents \clearpage
-\section{Foreword}
-\label{sec:orgb74da21}
-Notes for the entrance examination
-\section{Models of Set - Sertraline}
-\label{sec:org20aa1db}
-\subsection{Some mathematical logic}
-\label{sec:org1b1c148}
-\begin{theorem}[Gödel’s second incompleteness theorem]
-If a consistent recursive axiom set \(T\) contains \(\zfc\), then
+\section{Ordinal}
+\label{sec:org54c3bd7}
+\subsection{Linear and partial ordering}
+\label{sec:org5774768}
+\begin{definition}
+A binary relation \(<\) on a set \(P\) is a \tf{partial ordering} of \(P\) if:
+\begin{enumerate}
+\item \(p\not< p\) for any \(p\in P\)
+\item if \(p<q\) and \(q<r\) then \(p<r\)
+
+\((P,<)\) is called a \tf{partial ordered set}. A partial ordering \(<\) of
+\(P\) is a \tf{linear ordering} if moreover
+\item \(p<q\) or \(q<p\) or \(p=q\) for all \(p,q\in P\)
+\end{enumerate}
+\end{definition}
+
+
+If \((P,<)\) and \((Q,<)\) are poset and \(f:P\to Q\), then \(f\) is
+\tf{order-preserving} if \(x<y\) implies \(f(x)<f(y)\). If \(P\) and \(Q\) are
+linearly ordered, then \(f\) is also called \tf{increasing}
+\subsection{Well-Ordering}
+\label{sec:org51825c1}
+\begin{definition}[]
+A linear ordering \(<\) of a set \(P\) is a \tf{well-ordering} if every nonempty
+subset of \(P\) has a least element
+\end{definition}
+
+\begin{lemma}[]
+\label{lemma1}
+If \((W,<)\) is a well-ordering set and \(f:W\to W\) is an increasing function,
+then \(f(x)\ge x\) for each \(x\in W\)
+\end{lemma}
+\begin{proof}
+Assume that the set \(X=\{x\in W\mid f(x)<x\}\) is nonempty and let \(z\) be the
+least element of \(X\). Hence \(f(f(x))<f(x)\) and \(f(x)\in X\), a contradiction.
+\end{proof}
+
+\begin{corollary}[]
+The only automorphism of a well-ordered set is the identity
+\end{corollary}
+
+\begin{corollary}[]
+If two well-ordered sets \(W_1,W_2\) are isomorphic, then the isomorphism of
+\(W_1\) onto \(W_2\) is unique
+\end{corollary}
+
+If \(W\) is a well-ordered set and \(u\in W\), then \(\{x\in W:x<u\}\) is an
+\tf{initial segment} of \(W\)
+\begin{lemma}[]
+\label{lemma2}
+No well-ordered set is isomorphic to an initial segment of itself
+\end{lemma}
+\begin{proof}
+If \(\ran{f}=\{x:x<u\}\), then \(f(u)<u\), contrary to lemma \ref{lemma1}
+\end{proof}
+
+\begin{theorem}[]
+If \(W_1\) and \(W_2\) are well-ordered sets, then exactly one of the following
+three cases holds:
+\begin{enumerate}
+\item \(W_1\cong W_2\)
+\item \(W_1\) is isomorphic to an initial segment of \(W_2\)
+\item \(W_2\) is isomorphic to an initial segment of \(W_1\)
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+For \(u\in W_i,(i=1,2)\), let \(W_i(u)\) denote the initial segment of \(W_i\)
+given by \(u\). Let
 \begin{equation*}
-T\not\vdash\con{t}
+f=\{(x,y)\in W_1\times W_2\mid W_1(x)\cong W_2(y)\}
 \end{equation*}
-especially, \(\zfc\not\vdash\con{\zfc}\)
-\end{theorem}
 
+If \(W_1(x)\cong W_w(y)\) and \(W_1(x)\cong W_2(y')\), then \(W_2(y)\cong
+   W_1(y')\). According to lemma \ref{lemma2}, \(y=y'\). Hence it's easy to see that
+\(f\) is a one-to-one function.
+
+If \(h\) is an isomorphism between \(W_1(x)\) and \(W_2(y)\) and \(x'<x\), then
+\(W_1(x')\cong W_2(h(x'))\). It follows that \(f\) is order-preserving.
+
+If \(\dom{f}=W_1\) and \(\ran{f}=W_2\), then case 1 holds.
+
+If \(y_1<y_2\) and \(y_2\in \ran{f}\), then \(y_1\in\ran{f}\). If there is some
+\(y<y_2\) and \(y\not\in\ran{f}\). Consider the least element \(y'\) of \(\{y\in
+   W_2\mid y<y_2\wedge y\not\in\ran{f}\}\). Let \(x'=\sup\{x\in W_1\mid\exists
+   y\in W_2(W_1(x)\cong W_2(y)\wedge y<y')\}\), then \(W_1(x')\cong W_2(y')\), a
+contradiction. 
+
+If \(\ran{f}\neg W_2\) and \(y_0\) is the least element of \(W_2-\ran{f}\). We have
+\(\ran{f}=W_2(x_0)\). Necessarily, \(\dom{f}=W_1\), for otherwise we could have
+\((x_0,y_0)\in f\) where \(x_0=\)least element of \(W_1-\dom{f}\). Thus case 2
+holds.
+
+Similarly, case 3 holds.
+\end{proof}
+
+If \(W_1\cong W_2\), we say that they have the same \tf{order-type}
+
+
+\subsection{Ordinal Numbers}
+\label{sec:org33f703d}
+The idea is to define ordinal numbers so that
+\begin{equation*}
+\alpha<\beta\Leftrightarrow\alpha\in\beta\wedge\alpha=\{\beta:\beta<\alpha\}
+\end{equation*}
 \begin{definition}[]
-Suppose \((M,E_M)\) and \((N,E_N)\) are two models of set theory, then
-\begin{enumerate}
-\item if for any formula \(\sigma\), \(M\models\sigma\) if and only if
-\(N\models\sigma\), then \(M\) and \(N\) are \tf{elementary equivalent}, denoted
-by \(M\equiv N\)
-\item If bijection \(f:M\to N\) satisfies: for any \(a,b\in M\), \(aE_Mb\) iff
-\(f(a)E_Nf(b)\), then \(f:M\cong N\) is an \tf{isomorphism}
-\item If \(M\subseteq N\) and \(E_M=E_N\restriction M\), then \(M\) is \(N\)'s submodel
-\item If \(M\) is isomorphic to a submodel of \(N\) by injection \(f\), and for any
-formula \(\varphi(x_1,\dots,x_n)\), for any \(a_1,\dots,a_n\in M\), 
-\(M\models\varphi[a_1,\dots,a_n]\) iff
-\(N\models\varphi[f(a_1),\dots,f(a_n)]\), then \(f\) is called an
-\tf{elementary embedding} from \(M\) to \(N\), written as \(f:M\prec N\)
-\item If \(M\subseteq N\) and \(M\prec N\), then \(M\) is a \tf{elementary submodel}
-of \(N\)
-\end{enumerate}
+A set \(T\) is \tf{transitive} if every element of \(T\) is a subset of \(T\)
 \end{definition}
-
-\begin{lemma}[]
-Suppose \(N\models\zfc,M\subseteq N\), then \(M\prec N\) iff
-\(\forall\varphi(x,x_1,\dots,x_n)\), \(\forall(a_1,\dots,a_n)\in M\), if 
-\(\exists a\in N\) s.t. \(N\models\varphi[a,a_1,\dots,a_n]\), then \(\exists a\in
-  M\) s.t. 
-\(M\models\varphi[a,a_1,\dots,a_n]\)
-\end{lemma}
-
 \begin{definition}[]
-Suppose \((M,E)\models\zfc\)
-\begin{enumerate}
-\item \(h_\varphi:M^n\to M\) is \(\varphi\)'s \tf{Skolem function} if 
-\(\forall a_1,\dots,a_n\in M\), if \(\exists a\in M\) s.t.
-\(M\models\varphi[a,a_1,\dots,a_n]\), then
-\(M\models\varphi[h_\varphi(a_1,\dots,a_n),a_1,\dots,a_n]\) . requires \ac
-\item Let \(\calh=\{h_\varphi\mid\varphi \text{is a formula on set theory}\}\). For
-any \(S\subseteq M\), \tf{Skolem hull} \(\calh(S)\) is the smallest set
-consisting of \(S\) and closed under \(\calh\)
-\end{enumerate}
+A set is an \tf{ordinal number} (an \tf{ordinal}) if it's transitive and
+well-ordered by \(\in\)
 \end{definition}
+The class of all ordinals is denoted by \(Ord\)
 
+We define
+\begin{equation*}
+\alpha<\beta\Leftrightarrow\alpha\in\beta
+\end{equation*}
 \begin{lemma}[]
-\(N\models\zfc,S\subseteq N\), if \(M=\calh(S)\), then \(M\prec N\)
-\end{lemma}
-
-\begin{theorem}[Löwenheim-Skolem theorem]
-Suppose \(N\models\zfc\) and is infinite, then there is a model \(M\) s.t.
-\(\abs{M}=\omega\) and \(M\prec N\)
-\end{theorem}
-\subsection{Cumulative Hierarchy}
-\label{sec:org4cb1e41}
-This section works in \zfm(a.k.a. \(\zf-\text{axiom of foundation}\))
-
-\begin{definition}[]
-For any \(\alpha\), define sequence \(V_\alpha\)
+\label{lemma3}
 \begin{enumerate}
-\item \(V_0=\emptyset\)
-\item \(V_{\alpha+1}=\calp(V_\alpha)\)
-\item For any limit ordinal \(\lambda\), \(V_\lambda=\bigcup_{\beta<\lambda}V_\beta\)
-\end{enumerate}
-
-
-And \(\wf=\displaystyle\bigcup_{\alpha\in\on}V_\alpha\)
-\end{definition}
-
-\begin{lemma}[]
-For any ordinal \(\alpha\)
-\begin{enumerate}
-\item \(V_\alpha\) is transitive
-\item if \(\xi\le\alpha\), then \(V_\xi\subseteq V_\alpha\)
-\item if \(\kappa\) is inaccessible cardinal, then \(\abs{V_\kappa}=\kappa\)
+\item \(0=\emptyset\) is an ordinal
+\item If \(\alpha\) is an ordinal and \(\beta\in\alpha\), then \(\beta\) is an ordinal
+\item If \(\alpha\neq\beta\) are ordinals and \(\alpha\subset\beta\), then
+\(\alpha\in\beta\)
+\item If \(\alpha\),\(\beta\) are ordinals, then either \(\alpha\subset\beta\) or
+\(\beta\subset\alpha\)
 \end{enumerate}
 \end{lemma}
-
 \begin{proof}
 \begin{enumerate}
-\item Obviously \(\kappa\le V_\kappa\). Since \(\kappa\) is inaccessible, then for any
-\(\alpha<\kappa\), \(\abs{V_\alpha}<\kappa\).
+\item definition
+\item definition
+\item If \(\alpha\subset\beta\), let \(\gamma\) be the least element of the set
+\(\beta-\alpha\). Since \(\alpha\) is transitive, it follows that \(\alpha\) is the
+initial segment of \(\beta\) given by \(\gamma\). Thus
+\(\alpha=\{\xi\in\beta\mid\xi<\gamma\}=\gamma\in\beta\)
+\item Clearly \(\alpha\cap\beta\) is an ordinal \(\gamma\). We have \(\gamma=\alpha\) or
+\(\gamma=\beta\), for otherwise \(\gamma\in\alpha\) and \(\gamma\in\beta\) by 3.
+Then \(\gamma\in\gamma\) which contradicts the definition of an ordinal
 \end{enumerate}
+\end{proof}
+Using lemma \ref{lemma3} one gets the following facts about ordinal numbers
+\begin{enumerate}
+\item \(<\) is a linear ordering of the class \(Ord\)
+\item For each \(\alpha\), \(\alpha=\{\beta:\beta<\alpha\}\)
+\item If \(C\) is a nonempty class of ordinals, then \(\bigcap C\) is an ordinal,
+\(\bigcap C\in C\) and \(\bigcap C=\inf C\)
+\item If \(X\) is a nonempty set of ordinals, then \(\bigcup X\) is an ordinal and
+\(\bigcup X=\sup X\)
+\item For every \(\alpha\), \(\alpha\cup\{\alpha\}\) is an ordinal and
+\(\alpha\cup\{\alpha\}=\inf\{\beta:\beta>\alpha\}\)
+\end{enumerate}
+
+
+We thus define \(\alpha+1=\alpha\cup\{\alpha\}\)(the \tf{succesor} of \(\alpha\)) 
+
+\begin{theorem}[]
+Every well-ordered set is isomorphic to a unique ordinal number
+\end{theorem}
+
+\begin{proof}
+The uniqueness follows from lemma \ref{lemma2}. Given a well-ordered set \(W\),
+we find an isomorphic ordinal as follows: Define \(F(x)=\alpha\) if \(\alpha\) is
+isomorphic to the initial segment of \(W\) given by \(x\). If such an \(\alpha\)
+exists, then it's unique. By the replacement axiom, \(F(W)\) is a set. For each
+\(x\in W\), such an \(\alpha\) exists. Otherwise consider the least \(x\) such that
+\(\alpha\) doesn't exist. Let \(\alpha=\sup\{F(x')\mid x'\in W\wedge x' <x\}\) and
+\(F(x)=\alpha\). If \(\gamma\) is the least \(\gamma\not\in F(W)\), then
+\(F(W)=\gamma\) and we have an isomorphism of \(W\) onto \(\gamma\)
+\end{proof}
+
+If \(\alpha=\beta+1\), then \(\alpha\) is a \tf{succesor ordinal}. If \(\alpha\) is not
+a succesor ordinal then \(\alpha=\sup\{\beta:\beta<\alpha\}=\bigcup\alpha\) is
+called a \tf{limit ordinal}. We also consider 0 a limit ordinal and define
+\(\sup\emptyset=0\).
+
+\subsection{Induction and Recursion}
+\label{sec:org797d0f6}
+\begin{theorem}[Transfinite Induction]
+Let \(C\) be a class of ordinals and assume
+\begin{enumerate}
+\item \(0\in C\)
+\item if \(\alpha\in C\), then \(\alpha+1\in C\)
+\item if \(\alpha\) is a nonzero limit ordinal and \(\beta\in C\) for all
+\(\beta<\alpha\), then \(\alpha\in C\)
+\end{enumerate}
+
+
+Then \(C\) is the class of all ordinals
+\end{theorem}
+
+\begin{proof}
+Otherwise let \(\alpha\) be the least ordinal \(\alpha\not\in C\) and apply 1, 2 or 3
+\end{proof}
+
+A function whose domain is the set \(\N\) is called an \tf\{(infinite)
+sequence\} (A \tf{sequence} in \(X\) is a function \(f:\N\to X\)). The standard
+notation for a sequence is
+\begin{equation*}
+\la a_n:n<\omega\ra
+\end{equation*}
+A \tf{finite sequence} is a function \(s\) s.t. \(\dom{s}=\{i:i<n\}\) for some
+\(n\in\N\); then \(s\) is a \tf{sequence of length} \(n\)
+
+A \tf{transfinite sequence} is a function whose domain is an ordinal
+\begin{equation*}
+\la a_\xi:\xi<\alpha\ra
+\end{equation*}
+It is also called an \(\alpha\)-\tf{sequence} or a \tf{sequence of length}
+\(\alpha\). We also say that a sequence \(\la a_\xi:\xi<alpha\ra\) is an
+\tf{enumeration} of its range \(\{a_\xi:\xi<\alpha\}\). If \(s\) is a sequence of
+length \(\alpha\), then \(s^\smallfrown x\) or simply \(sx\) denotes the sequence of length
+\(\alpha+1\) that extends \(s\) and whose \(\alpha\)th term is \(x\):
+\begin{equation*}
+s^\smallfrown x=sx=s\cap\{(\alpha,x)\}
+\end{equation*}
+
+\begin{theorem}[Transfinite Recursion]
+Let \(G\) be a function, then \ref{align1} below defines a unique function \(F\) on
+\(Ord\) s.t.
+\begin{equation*}
+F(\alpha)=G(F\restriction\alpha)
+\end{equation*}
+for each \(\alpha\)
+\end{theorem}
+In other words, if we let \(a_\alpha=F(\alpha)\), then for each \(\alpha\)
+\begin{equation*}
+a_\alpha=G(\la a_\xi:\xi<\alpha\ra)
+\end{equation*}
+
+\begin{corollary}[]
+Let \(X\) be a set and \(\theta\) be an ordinal number. For every function \(G\) on
+the set of all transfinite sequences in \(X\) of length \(<\theta\) s.t.
+\(\ran{G}\subset X\) there exists a unique \(\theta\)-sequence in \(X\) s.t. 
+\(a_\alpha=G(\la a_\xi:\xi<\theta)\) for every \(\alpha<\theta\)
+\end{corollary}
+\begin{proof}
+
+Let
+\begin{align}
+\label{align1}
+F(\alpha)=x\leftrightarrow&\text{ there is a sequence }
+\la a_\xi:\xi<\alpha\ra \text{ such that }\\
+&1.\;(\forall \xi<\alpha)a_\xi=G(\la a_n\eta:\eta<\xi\ra)\nonumber \\
+&2.\; x=G(\la a_\xi:\xi<\alpha\ra)\nonumber
+\end{align}
+
+For every \(\alpha\), if there is an \(\alpha\)-sequence that satisfying 1, then such
+a sequence is unique. Thus \(F(\alpha)\) is determined uniquely by 2 and
+therefore \(F\) is a function. 
 \end{proof}
 
 \begin{definition}[]
-For any set \(x\in\wf\), 
+Let \(\alpha>0\) be a limit ordinal and let \(\la\gamma_\xi:\xi<\alpha\ra\) be a
+\tf{nondecreasing} sequence of ordinals (i.e., \(\xi<\eta\) implies
+\(\gamma_\xi\le\gamma_eta\)). We define the \tf{limit} of the sequence by
 \begin{equation*}
-\rank{x}=\min\{\beta\mid x\in V_{\beta+1}\}
+\lim_{\xi\to\alpha}\gamma_\xi=\sup\{\gamma_\xi:\xi<\alpha\}
 \end{equation*}
+
+A sequence of ordinals \(\la\gamma_\alpha:\alpha\in Ord\ra\) is \textbf{normal} if
+it's increasing and \textbf{continuous}, i.e., for every limit \(\alpha\),
+\(\gamma_\alpha=\lim_{\xi\to\alpha}\gamma_\xi\) 
+\end{definition}
+
+
+\subsection{Ordinal Arithmetic}
+\label{sec:org962f33c}
+\begin{definition}[Addition]
+For all ordinal numbers \(\alpha\)
+\begin{enumerate}
+\item \(\alpha+0=\alpha\)
+\item \(\alpha+(\beta+1)=(\alpha+\beta)+1\), for all \(\beta\)
+\item \(\alpha+\beta=\lim_{\xi\to\beta}(\alpha+\xi)\) for all limit \(\beta>0\)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}
+For all ordinal numbers \(\alpha\)
+\begin{enumerate}
+\item \(\alpha\cdot 0=0\)
+\item \(\alpha\cdot(\beta+1)=(\alpha\cdot\beta)+\alpha\), for all \(\beta\)
+\item \(\alpha\cdot\beta=\lim_{\xi\to\beta}(\alpha\cdot\xi)\) for all limit \(\beta>0\)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Exponentiation]
+For all ordinal numbers \(\alpha\)
+\begin{enumerate}
+\item \(\alpha^0=1\)
+\item \(\alpha^{\beta+1}=\alpha^\beta\cdot\alpha\), for all \(\beta\)
+\item \(\alpha^\beta=\lim_{\xi\to\beta}\alpha^\xi\) for all limit \(\beta>0\)
+\end{enumerate}
 \end{definition}
 
 \begin{lemma}[]
+For all ordinals \(\alpha\), \(\beta\) and \(\gamma\)
 \begin{enumerate}
-\item \(V_\alpha=\{x\in\wf\mid\rank{x}<\alpha\}\)
-\item \wf is transitive
-\item For any \(x,y\in\wf\), if \(x\in y\), then \(\rank{x}<\rank{y}\)
-\item for any \(y\in\wf\), \(\rank{y}=\sup\{\rank{x}+1\mid x\in y\}\)
+\item \(\alpha+(\beta+\gamma)=(\alpha+\beta)+\gamma\)
+\item \(\alpha\cdot(\beta\cdot\gamma)=(\alpha\cdot\beta)\cdot\gamma\)
 \end{enumerate}
 \end{lemma}
-
-\begin{lemma}[]
-Supoose \(\alpha\) is an ordinal
-\begin{enumerate}
-\item \(\alpha\in\wf\) and \(\rank{\alpha}=\alpha\)
-\item \(V_\alpha\cap\on=\alpha\)
-\end{enumerate}
-\end{lemma}
-
-\begin{lemma}[]
-\begin{enumerate}
-\item If \(x\in\wf\), then \(\bigcup x,\calp(x),\{x\}\in\wf\), and their ranks are
-all less than \(\rank{x}+\omega\)
-\item If \(x,y\in\wf\), then \(x\times y,x\cup y,x\cap y,\{x,y\},(x,y),x^y\in\wf\),
-and their ranks are all less than \(\rank{x}+\rank{y}+\omega\)
-\item \(\Z,\Q,\R\in V_{\omega+\omega}\)
-\item for any set \(x\), \(x\in\wf\) iff \(x\subset\wf\)
-\end{enumerate}
-\end{lemma}
-
-\begin{lemma}[]
-Suppose \ac
-\begin{enumerate}
-\item for any group \(G\), there exists group \(G'\cong G\) in \wf
-\item for any topological space \(T\), there exists \(T'\cong T\) in \wf
-\end{enumerate}
-\end{lemma}
+Neither \(+\) nor \(\cdot\) are commutative
+\begin{equation*}
+1+\omega=\omega\neq \omega+1,\e 2\cdot\omega=\omega\neq\omega\cdot 2
+\end{equation*}
 
 \begin{definition}[]
-Binary relation \(<\) on set \(A\) is \tf{well-founded} if for any nonempty
-\(X\subseteq A\), \(X\) has minimal element under \(<\)
+Let \((A,<_A)\) and \((B,<_B)\) be disjoint linearly ordered sets. The \tf{sum}
+of these linear orders is the set \(A\cup B\) with the ordering defined as
+follows:
+\(x<y\) if and only if
+\begin{enumerate}
+\item \(x,y\in A\) and \(x<_A y\)
+\item \(x,y\in B\) and \(x<_B y\)
+\item \(x\in A\) and \(y\in B\)
+\end{enumerate}
 \end{definition}
 
-
-\begin{theorem}[]
-If \(A\in\wf\), then \(\in\) is a well-founded relation on \(A\)
-\end{theorem}
-
+\begin{definition}[]
+Let \((A,<)\) and \((B,<)\) be linearly ordered sets. The \tf{product} of these
+linear orders is the set \(A\times B\) with the ordering defined by
+\begin{equation*}
+(a_1,b_1)<(a_2,b_2)\Leftrightarrow b_1<b_2\text{ or } (b_1=b_2\wedge a_1<a_2)
+\end{equation*}
+\end{definition}
 \begin{lemma}[]
-If set \(A\) is transitive and \(\in\) is well-founded on \(A\), then \(A\in\wf\)
-\end{lemma}
-
-\begin{lemma}[]
-For any set \(x\), there is a smallest transitive set \(\trcl{x}\) s.t.
-\(x\subseteq\trcl{x}\) 
+For all ordinals \(\alpha\) and \(\beta\), \(\alpha+\beta\) and \(\alpha\cdot\beta\) are
+respectively isomorphic to the sum and to the product of \(\alpha\) and \(\beta\)
 \end{lemma}
 
 \begin{proof}
+Suppose \((A,<_A)\cong\alpha\) and \((B,<_B)\cong\beta\). 
+\begin{enumerate}
+\item if \(\beta=0\), then \(B=\emptyset, A\cup B=A\)
+\item if \((A\cup B,<_{A\cup B})\cong \alpha+\beta\), let \(B'\equal B\cup\{c\}\) s.t.
+\(\{c\}\cap A=\{c\}\cap B=\emptyset\) all for all \(b\in B\), \(b<c\). Hence
+\begin{equation*}
+\alpha+(\beta+1)=(\alpha+\beta)+1\cong(A\cup B)\cup\{c\}=A\cup B'
+\end{equation*}
+
+\item if \(\beta\) is a limit ordinal and for all \(\xi<\beta\) and \(B_\xi\cong\xi\),\par
+\((A\cup B_\xi,<_{A\cup B_\xi})\cong\alpha+\xi\),
+\begin{equation*}
+A\cup B=A\cup\sup{B_\xi}=\sup(A\cup B_\xi)\cong\sup(\alpha+\xi)=\alpha+\beta
+\end{equation*}
+\end{enumerate}
+\end{proof}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item If \(\beta<\gamma\) then \(\alpha+\beta<\alpha+\gamma\)
+\item If \(\alpha<\beta\) then there exists a unique \(\delta\) s.t.
+\(\alpha+\delta=\beta\)
+\item If \(\beta < \gamma\) and \(\alpha>0\), then
+\(\alpha\cdot\beta<\alpha\cdot\gamma\)
+\item If \(\alpha>0\) and \(\gamma\) is arbitrary, then there exist a unique \(\beta\) and
+a unique \(\rho<\alpha\) s.t. \(\gamma=\alpha\cdot\beta+\rho\)
+\item If \(\beta<\gamma\) and \(\alpha>1\), then \(\alpha^\beta<\alpha^\gamma\)
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+\begin{enumerate}
+\setcounter{enumi}{1}
+\item Let \(\delta\) be the order-type of the set \(\{\xi:\alpha\le\xi<\beta\}\)
+\setcounter{enumi}{3}
+\item Let \(\beta\) be the greatest ordinal s.t. \(\alpha\cdot\beta\le\gamma\)
+\end{enumerate}
+\end{proof}
+
+
+\begin{theorem}[Cantor's Normal Form Theorem]
+Every ordinal \(\alpha>0\) can be represented uniquely in the form
+\begin{equation*}
+\alpha=\omega^{\beta_1}\cdot k_1+\dots+\omega^{\beta_n}\cdot k_n
+\end{equation*}
+where \(n\ge 1\), \(\alpha\ge\beta_1>\dots>\beta_n\) and \(k_1,\dots,k_n\) are
+nonzero natural numbers.
+\end{theorem}
+\begin{proof}
+By induction on \(\alpha\). For \(\alpha=1\) we have \(1=\omega^0+1\); for arbitrary
+\(\alpha>0\), let \(\beta\) be the greatest ordinal s.t. \(\omega^\beta\le
+   \alpha\).
+The uniqueness of the normal form is proved by induction
+\end{proof}
+
+
+\subsection{Well-Founded Relations}
+\label{sec:org79a817d}
+A binary relation \(E\) on a set \(P\) is \textbf{well-founded} if every nonempty
+\(X\subset P\) has an \(E\)-\textbf{minimal} element.
+
+Given a well-founded relation \(E\) on a set \(P\), we can define the \tf{height}
+of \(E\) and assign to each \(x\in P\) and ordinal number, the \tf{rank} of \(x\)
+in \(E\)
+
+\begin{theorem}[]
+If \(E\) is a well-founded relation on \(P\), then there exists a unique function
+\(\rho\) from \(P\) into the ordinals s.t. for all \(x\in P\)
+\begin{equation*}
+\rho(x)=\sup\{\rho(y)+1:yEx\}
+\end{equation*}
+\end{theorem}
+The range of \(\rho\) is an initial segment of the ordinals, thus an ordinal
+number. This ordinal is called the \tf{height} of \(E\)
+
+\begin{proof}
+By induction, let
 \begin{align*}
-x_0&=x\\
-x_{n+1}&=\bigcup x_n\\
-\trcl{x}&=\displaystyle\bigcup_{n<\omega}x_n
+&P_0=\emptyset\\
+&P_{\alpha+1}=\{x\in P:\forall y(yEx\to y\in P_\alpha)\}\cup P_\alpha\\
+&P_\alpha=\displaystyle\bigcup_{\xi<\alpha}P_\xi \e\text{if } \alpha 
+\text{ is a limit ordinal}
 \end{align*}
+Let \(\theta\) be the least ordinal s.t. \(P_{\theta+1}=P_\theta\). We claim that
+\(P_\theta=P\) 
 \end{proof}
 
-\(\trcl{x}\) is called \tf{transitive closure} of \(x\)
+\subsection{Exercise}
+\label{sec:org46e58b3}
+\begin{exercise}
+Every normal sequence \(\la\gamma_\alpha:\alpha\in Ord\ra\) has arbitrarily
+large \tf{fixed points}, i.e., \(\alpha\) s.t. \(\gamma_\alpha=\alpha\)
+\end{exercise}
 
 
+\begin{proof}
+From
+\href{https://math.stackexchange.com/questions/1808103/show-that-there-exists-a-fixed-point-for-this-set-theoretic-class-function}{StackExchange}.
+\end{proof}
+
+A limit ordinal \(\gamma>0\) is called \tf{indecomposable} if there exist no
+\(\alpha<\gamma\) and \(\beta<\gamma\) s.t. \(\alpha+\beta=\gamma\)
+\begin{exercise}
+A limit ordinal \(\gamma>0\) is indecomposable if and only if
+\(\alpha+\gamma=\gamma\) for all \(\alpha<\gamma\) if and only if
+\(\gamma=\omega^\alpha\) for some \(\alpha\)
+\end{exercise}
+
+\begin{proof}
+\begin{enumerate}
+\item (3)\(\to\)(1). Assume \(\gamma_1,\gamma_2<\gamma=\omega^\alpha\). By
+Cantor's normal form theorem, there exist \(\alpha'\) and \(k\) s.t. 
+\(\gamma_1,\gamma_2<\omega^{\alpha'}\cdot k\)
+\item (2)\(\to\)(3). Assume that \(\gamma\) can't be written as \(\omega^\alpha\).
+Then by Cantor's theorem, \(\gamma=\omega^{\beta_1}\cdot
+      k_1+\dots+\omega^{\beta_n}\cdot k_n\). But then
+\(\omega^{\beta_1}<\gamma\) and \(\omega^{\beta_1}+\gamma>\gamma\)
+\end{enumerate}
+\end{proof}
+
+\begin{exercise}
+(Without the Axiom of Infinity). Let \(\omega=\) least limit \(\alpha\neq 0\) if
+it exists, \(\omega=\ord\) otherwise. Prove that the following statements are
+equivalent
+\begin{enumerate}
+\item There exists an inductive set
+\item There exists an infinite set
+\item \(\omega\) is a set
+\end{enumerate}
+\end{exercise}
+
+
+\section{Cardinal Numbers}
+\label{sec:org02f8b54}
+\subsection{Cardinality}
+\label{sec:org973dc8d}
+Two sets \(X,Y\) have the same \emph{cardinality}
+\begin{equation}
+\label{eq:3.1}
+\abs{X}=\abs{Y}
+\end{equation}
+if there exists a one-to-one mapping of \(X\) onto \(Y\).
+
+The relation \ref{eq:3.1} is an equivalence relation. We assume that we can
+assign to each set \(X\) its \emph{cardinal number} \(\abs{X}\) so that two sets are
+assigned the same cardinal just in case they satisfy condition \ref{eq:3.1}. 
+\emph{Cardinal numbers can be defined either using the Axiom of Regularity (via
+equivalence classes) or using}
+\emph{the Axiom of Choice}
+
+\begin{equation*}
+\abs{X}\le\abs{Y}
+\end{equation*}
+if there exists a one-to-one mapping of \(X\) into \(Y\).
+
+\begin{theorem}[Cantor]
+For every set \(X\), \(\abs{X}<\abs{P(X)}\)
+\end{theorem}
+\begin{proof}
+Let \(f\) be a function from \(X\) into \(P(X)\). The set 
+\begin{equation*}
+Y=\{x\in X:x\not\in f(x)\}
+\end{equation*}
+is not in the range of \(f\). Thus \(f\) is not a function of \(X\) onto \(P(X)\)
+\end{proof}
+\begin{theorem}[Cantor-Bernstein]
+If \(\abs{A}\le\abs{B}\) and \(\abs{B}\le\abs{A}\), then \(\abs{A}=\abs{B}\)
+\end{theorem}
+\begin{proof}
+If \(f_1:A\to B\) and \(f_2:B\to A\) are one-to-one, then if we let \(B'=f_2(B)\)
+and \(A_1=f_2(f_1(A))\), we have \(A_1\subset B'\subset A\) and
+\(\abs{A_1}\equal\abs{A}\). Thus we may assume that \(A_1\subset B\subset A\) and
+that \(f\) is a one-to-one function of \(A\) onto \(A_1\); we will show that
+\(\abs{A}=\abs{B}\)
+
+We define for all \(n\in\N\)
+\begin{alignat*}{2}
+&A_0=A,\quad&&A_{n+1}=f(A_n)\\
+&B_0=B,&&B_{n+1}=f(B_n)
+\end{alignat*}
+Let \(g\) be the function on \(A\) defined as follows 
+\begin{equation*}
+g(x)=
+\begin{cases}
+f(x)&\text{if }x\in A_n-B_n\text{ for some }n\\
+x&\text{otherwise}
+\end{cases}
+\end{equation*}
+Then \(g\) is a one-to-one mapping of \(A\) onto \(B\)
+
+\href{https://math.stackexchange.com/questions/936467/problem-applying-the-cantor-bernstein-theorem-proof-technique-to-two-open-interv}{StackExchange}
+\end{proof}
+
+The arithmetic operations on cardinals are defined as follows:
+\begin{alignat*}{2}
+&\kappa+\lambda=\abs{A\cup B}\quad&&\text{where }\abs{A}=\kappa,\abs{B}=\lambda,A,B
+\text{ are disjoint} \\
+&\kappa\cdot\lambda=\abs{A\times B}&&\text{where }\abs{A}=\kappa,\abs{B}=\lambda\\
+&\kappa^\lambda=\abs{A^B}&&\text{where }\abs{A}=\kappa,\abs{B}=\lambda
+\end{alignat*}
 \begin{lemma}[]
-Without axiom of power set
-\begin{enumerate}
-\item if \(x\) is transitive, then \(\trcl{x}=x\)
-\item if \(y\in x\), then \(\trcl{y}\subseteq\trcl{x}\)
-\item \(\trcl{x}=x\cup\bigcup\{\trcl{y}\mid y\in x\}\)
-\end{enumerate}
+If \(\abs{A}=\kappa\), then \(\abs{P(A)}=2^\kappa\)
 \end{lemma}
+\begin{proof}
+For every \(X\subset A\), let \(\chi_X\) be the function
+\begin{equation*}
+\chi_X(x)=
+\begin{cases}
+1&\text{if }x\in X\\
+0&\text{if }x\in A-X\\
+\end{cases}
+\end{equation*}
+The mapping \(f:X\to\chi_X\) is a one-to-one correspondence between \(P(A)\) and
+\(\{0,1\}^A\)
+\end{proof}
 
-\begin{theorem}[]
-For any set \(X\), the following are equivalent
+Facts about cardinal arithmetic
 \begin{enumerate}
-\item \(X\in\wf\)
-\item \(\trcl{X}\in\wf\)
-\item \(\in\) is a well-founded relation on \(\trcl{X}\)
+\item \(+\) and \(\cdot\) are associative, commutative and distributive
+\item \((\kappa\cdot\lambda)^\mu=\kappa^\mu\cdot\lambda^\mu\)
+\item \((\kappa^\lambda)^\mu==\kappa^{\lambda\cdot\mu}\)
+\item \(\kappa^{\lambda+\mu}=\kappa^\lambda\cdot\kappa^\mu\)
+\item If \(\kappa\le\lambda\), then \(\kappa^\mu\le\lambda^\mu\)
+\item If \(0<\lambda\le\mu\), then \(\kappa^\lambda\le\kappa^\mu\)
+\item \(\kappa^0=1;1^\kappa=1;0^\kappa=0\) if \(\kappa>0\)
 \end{enumerate}
-\end{theorem}
 
-\begin{theorem}[]
-The following propositions are equivalent
+\subsection{Alephs}
+\label{sec:org54388fa}
+An ordinal \(\alpha\) is called  \emph{cardinal number} (a cardinal) if
+\(\abs{\alpha}\neq\abs{\beta}\) for all \(\beta<\alpha\)
+
+If \(W\) is a well-ordered set, then there exists an ordinal \(\alpha\) s.t.
+\(\abs{W}=\abs{\alpha}\). Thus we let
+\begin{equation*}
+\abs{W}=\text{the least ordinal s.t. } \abs{W}=\abs{\alpha}
+\end{equation*}
+
+All infinite cardinals are limit ordinals. The infinite ordinal numbers that
+are cardinals are called \emph{alephs}
+\begin{lemma}[]
+\label{lemma3.4}
 \begin{enumerate}
-\item Axiom of foundation
-\item For any set \(X\), \(\in\) is a well-founded relation on \(X\)
-\item \(\tf{V}=\wf\)
+\item For every \(\alpha\) there is a cardinal number greater than \(\alpha\)
+\item If \(X\) is a set of cardinals, then \(\sup X\) is a cardinal
 \end{enumerate}
-\end{theorem}
-\subsection{Relativization}
-\label{sec:org6c601b0}
-\begin{definition}[]
-Let \tf{M} be a class \(\varphi\) a formula, the \tf{relativization} of \(\varphi\)
-to \tf{M} is \(\varphi^{\tf{M}}\) defined inductively
+
+
+For every \(\alpha\), let \(\alpha^+\) be the least cardinal number greater than
+\(\alpha\), the \emph{cardinal successor} of \(\alpha\)
+\end{lemma}
+\begin{proof}
+\begin{enumerate}
+\item For any set \(X\), let
+\begin{equation*}
+h(X)=\text{the least }\alpha\text{ s.t. there is no one-to-one function of }
+\alpha\to X
+\end{equation*}
+There is only a set of possible well-orderings of subsets of \(X\). Hence
+there is only a set of ordinals for which a one-to-one function of \(\alpha\)
+into \(X\) exists. Thus \(h(X)\) exists.
+
+If \(\alpha\) is an ordinal, then \(\abs{\alpha}<\abs{h(\alpha)}\)
+\item Let \(\alpha=\sup X\). If \(f\) is a one-to-one mapping of \(\alpha\) onto some
+\(\beta<\alpha\), let \(\kappa\in X\) s.t. \(\beta<\kappa\le\alpha\). Then
+\(\abs{\kappa}=\abs{\{f(\xi):\xi<\kappa\}}\le\beta\), a contradiction
+\end{enumerate}
+\end{proof}
+Using Lemma \ref{lemma3.4} we define the increasing enumeration of all alephs.
 \begin{align*}
-(x\in y)^{\cm}&\leftrightarrow x=y\\
-(x\in y)^{\cm}&\leftrightarrow x\in y\\
-(\varphi\to\psi)^{\cm}&\leftrightarrow \varphi^{\cm}\to\psi^\cm\\
-(\neg\varphi)^\cm&\leftrightarrow\neg\varphi^\cm\\
-(\forall x\varphi)^\cm&\leftrightarrow(\forall x\in\cm)\varphi^\cm
+&\aleph_0=\omega_0=\omega,\e\e\aleph_{\alpha+1}=\omega_{\alpha+1}=\aleph_\alpha^+\\
+&\aleph_\alpha=\omega_\alpha=\sup\{\omega_\beta:\beta<\alpha\}\e
+\text{if }\alpha\text{ is a limit ordinal}
 \end{align*}
-\end{definition}
-
-Note \(\varphi^\cv=\varphi\) and
-\begin{equation*}
-f^\cm=\{(x_1,\dots,x_n,x_{n+1})\in\cm\mid\varphi^\cm(x_1,\dots,x_n,x_{n+1})\}
-\end{equation*}
-
-\begin{definition}[]
-For any theory \(T\), any class \(\cm\), \(\cm\models T\) iff for any axiom
-\(\varphi\) of \(T\), \(\varphi^\cm\) holds
-\end{definition}
-
-
-\begin{theorem}[\zfm]
-\(\wf\models\zf\)
+\begin{theorem}[]
+\label{thm3.5}
+\(\aleph\)\textsubscript{\(\alpha \cdot \aleph\)}\textsubscript{\(\alpha\)}=\(\aleph\)\textsubscript{\(\alpha\)}
 \end{theorem}
 
+\subsection{The Canonical Well-Ordering of \(\alpha\times\alpha\)}
+\label{sec:org4a9c692}
+We define
+\begin{align*}
+(\alpha,\beta)<(\gamma,\delta)\leftrightarrow\e&\text{either }\max
+\{\alpha,\beta\}<\max\{\gamma,\delta\},\\
+&\text{or }\max\{\alpha,\beta\}=\max\{\gamma,\delta\}\text{ and }\alpha<\gamma,\\
+&\text{or }\max\{\alpha,\beta\}=\max\{\gamma,\delta\},\alpha=\gamma\text{ and }
+\beta<\delta
+\end{align*}
+This relation is a linear ordering of the class \(\ord\times\ord\). Moreover if
+\(X\subset\ord\times\ord\) is nonempty, then \(X\) has a least element. Also, for
+each \(\alpha\),\(\alpha\times\alpha\) is the initial segment given by
+\((0,\alpha)\). If we let
+\begin{equation*}
+\Gamma(\alpha,\beta)=\text{the order-type of the set }
+\{(\xi,\eta):(\xi,\eta)<(\alpha,\beta)\}
+\end{equation*}
+then \(\Gamma\) is a one-to-one mapping of \(\ord^2\) onto \(\ord\) and
+\begin{equation*}
+(\alpha,\beta)<(\gamma,\delta)\e\text{ if and only if }\e
+\Gamma(\alpha,\beta)<\Gamma(\gamma,\delta)
+\end{equation*}
+Note that \(\Gamma(\omega,\omega)=\omega\) and since
+\(\gamma(\alpha)=\Gamma(\alpha,\alpha)\) is an increasing function of \(\alpha\),
+we have \(\gamma(\alpha)\ge\alpha\). However, \(\gamma(\alpha)\) is also
+continuous and so \(\Gamma(\alpha,\alpha)=\alpha\) for arbitrarily large \(\alpha\)
+
+\noindent \emph{Proof of Theorem \ref{thm3.5}}. We shall show that
+\(\gamma(\omega_\alpha)=\omega_\alpha\). This is true for \(\alpha=0\). Thus let
+\(\alpha\) be the least ordinal s.t. \(\gamma(\omega_\alpha)\neq\omega_\alpha\).
+Let \(\beta,\gamma<\omega_\alpha\) be s.t.
+\(\Gamma(\beta,\gamma)=\omega_\alpha\). Pick \(\delta<\omega_\alpha\) s.t.
+\(\delta>\beta\) and \(\delta>\gamma\). Since \(\delta\times\delta\) is an initial
+segment of \(\ord\times\ord\) in the canonical well-ordering and contains
+\((\beta,\gamma)\), we have \(\Gamma(\delta,\delta)\supset\omega_\alpha\) and so
+\(\abs{\delta\times\delta}\ge\aleph_\alpha\). However
+\(\abs{\delta\times\delta}=\abs{\delta}\cdot\abs{\delta}\), and by the
+minimality of \(\alpha\),
+\(\abs{\delta}\cdot\abs{\delta}=\abs{\delta}<\aleph_\alpha\). A contradiction
+
+As a corollary we have 
+\begin{equation*}
+\aleph_\alpha+\aleph_\beta=\aleph_\alpha\cdot\aleph_\beta=\max
+\{\aleph_\alpha,\aleph_\beta\}
+\end{equation*}
+
+\subsection{Cofinality}
+\label{sec:org4d0e15e}
+Let \(\alpha>0\) be a limit ordinal. We say that an increasing \(\beta\)-sequence 
+\(\la\alpha_\xi:\xi<\beta\ra\), \(\beta\) a limit ordinal, is \emph{cofinal} in \(\alpha\) if 
+\(\lim_{\xi\to\beta}\alpha_\xi=\alpha\). \(A\subset\alpha\) is \emph{cofinal} in \(\alpha\)
+if \(\sup A=\alpha\). If \(\alpha\) is an infinite limit ordinal, the \emph{cofinality} of
+\(\alpha\) is 
+\begin{align*}
+\cf\alpha=&\text{the least limit ordinal }\beta\text{ s.t. there is 
+an increasing}\\
+&\beta\text{-sequence }\la\alpha_\xi:\xi<\beta\ra
+\text{ with }\lim_{\xi\to\beta}\alpha_\xi=\alpha
+\end{align*}
+Obviously \(\cf\alpha\) is a limit ordinal and \(\cf\alpha\le\alpha\). Examples:
+\(\cf(\omega+\omega)=\cf\aleph_\omega=\omega\)
+\begin{lemma}[]
+  \(\cf(\cf\alpha)=\cf\alpha\)
+
+  $\cf$
+\end{lemma}
 \begin{proof}
-\begin{itemize}
-\item \tf{Axiom of existence}
-
-\((\exists x(x=x))^\cm\leftrightarrow\exists x\in\cm(x=x)\), which is
-equivalent to \cm being nonempty
-\item \tf{Axiom of extensionality}
-
-\begin{gather*}
-\forall X\forall Y\forall u((u\in X\leftrightarrow u\in Y)\to X=Y)^\cm
-\Leftrightarrow\\
-\forall X\in\cm\forall Y\in\cm\forall u\in\cm
-((u\in X\leftrightarrow u\in Y)\to X=Y)
-\end{gather*}
-
-\begin{lemma}
-If $\cm$ is transitive, then axiom of extensionality holds in \cm
-\end{lemma}
-
-\item \tf{Axiom schema of specification}
-
-\begin{equation*}
-\forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow
-u\in X\wedge\varphi^\cm(u))
-\end{equation*}
-
-Since for any \(X\in\wf\), \(\calp(X)\subseteq \wf\)
-\item \tf{Axiom of paring}
-\item \tf{Axiom of union}
-\item \tf{Axiom of power set}
-
-\begin{equation*}
-\forall X\in\cm\exists Y\in\cm\forall u\in\cm(u\in Y\leftrightarrow(u\subseteq X)^\cm)
-\end{equation*}
-and 
-\begin{equation*}
-(u\subseteq X)^\cm\leftrightarrow\forall x\in\cm(x\in u\to x\in X)
-\leftrightarrow u\cap\cm\subseteq X
-\end{equation*}
-\item \tf{Axiom of foundation}
-\item \tf{Axiom schema of replacement}
-\end{itemize}
+If \(\la\alpha_\xi:\xi<\beta\ra\) is cofinal in \(\alpha\) and
+\(\la\xi(\nu):\nu<\gamma\ra\) is cofinal in \(\beta\), then
+\(\la\alpha_{\xi(\nu)}:\nu<\gamma\ra\) is cofinal in \(\alpha\)
 \end{proof}
-\subsection{Absoluteness}
-\label{sec:org786b00c}
-\begin{definition}[]
-For any formula \(\psi(x_1,\dots,x_n)\) and any class \cm,\cn, 
-\(\cm\subseteq \cn\), if
-\begin{equation*}
-\forall x_1\dots\forall x_n\in\cm(\psi^\cm(x_1,\dots,x_n)
-\leftrightarrow\psi^\cn(x_1,\dots,x_n))
-\end{equation*}
-then \(\psi(x_1,\dots,x_n)\) is \tf{absolute} for \cm,cn. If \(\cn=\cv\), then
-\(\psi\) is \tf{absolute} for \cm
-\end{definition}
-
 \begin{lemma}[]
-Suppose \(\cm\subseteq\cn\) and \(\varphi\),\(\psi\) are formulas, then
+Let \(\alpha>0\) be a limit ordinal
 \begin{enumerate}
-\item if \(\varphi\),\(\psi\) are absolute for \cm,cn, then so are
-\(\neg\varphi,\varphi\to\psi\)
-\item if \(\varphi\) doesn't contain any quantifiers, then \(\varphi\) is absolute for
-any \cm
-\item if \cm,\cn  are transitive and \(\varphi\) is absolute for them, then so are
-\(\forall x\in y\varphi\)
+\item If \(A\subset \alpha\) and \(\sup A=\alpha\), then the order-type of \(A\) is at
+least \(\cf\alpha\)
+\item If \(\beta_0\le\beta_1\le\dots\le\beta_\xi\le\dots,\xi<\gamma\), is a
+nondecreasing \(\gamma\)-sequence of ordinals in \(\alpha\) and 
+\(\lim_{\xi\to\gamma}\beta_\xi=\alpha\), then \(\cf\gamma=\cf\alpha\)
 \end{enumerate}
 \end{lemma}
-
-\begin{definition}[]
-\(\Delta_0\) formula
-\begin{enumerate}
-\item \(x=y,x\in y\) are \(\Delta_0\) formulas
-\item if \(\varphi\),\(\psi\) are \(\Delta_0\), then so are \(\neg\varphi,\varphi\to\psi\)
-\item if \(\varphi\) is \(\Delta_0\), \(y\) is any set, then \((\forall x\in y)\varphi\)
-is \(\Delta_0\)
-\end{enumerate}
-
-
-If \(\varphi\) is \(\Delta_0\), then \(\exists x_1\dots\exists x_n\varphi\) is
-\(\Sigma_1\) formula, \(\forall x_1\dots\forall x_n\varphi\) is \(\Pi_1\)
-\end{definition}
-
-\begin{lemma}[]
-\(\cm\subseteq\cn\) are both transitive, \(\psi(x_0,\dots,x_n)\) is a formula,
-then
-\begin{enumerate}
-\item if \(\psi\) is \(\Delta_0\), then it's absolute for \cm,cn
-\item if \(\psi\) is \(\Sigma_1\), then
-\begin{equation*}
-\forall x_1\dots x_n(\psi^\cm(x_1,\dots,x_n)\to\psi^\cn(x_1,\dots,x_n))
-\end{equation*}
-\item if \(\psi\) is \(\Pi_1\), then
-\begin{equation*}
-\forall x_1\dots x_n(\psi^\cn(x_1,\dots,x_n)\to\psi^\cm(x_1,\dots,x_n))
-\end{equation*}
-\end{enumerate}
-\end{lemma}
-
-\begin{lemma}[]
-If \(\cm\subseteq\cn\), \(\cm\models\Sigma,\cn\models\Sigma\) and
-\begin{equation*}
-\Sigma\vdash\forall x_1\dots\forall x_n(\varphi(x_1,\dots,x_n)\leftrightarrow
-\psi(x_1,\dots,x_n))
-\end{equation*}
-then \(\varphi\) is absolute for \cm,\cn if and only if \(\psi\) is absolute for \cm,\cn
-\end{lemma}
-
-
-\begin{definition}[]
-Suppose \(\cm\subseteq\cn\), \(f(x_1,\dots,x_n)\) is a function. \(f\) is
-\tf{absolute} for \cm and \cn if and only if \(\varphi(x_1,\dots,x_n,x_{n+1})\)
-defining \(f\) is absolute.
-\end{definition}
-
-\begin{theorem}[]
-Following relations and functions can be defined in
-\(\zfmm-\text{Pow}-\text{Inf}\) and are equivalent to some \(\Delta_0\) formulas.
-So they are absolute for any transitive model \cm on 
-\(\zfmm-\text{Pow}-\text{Inf}\)
-\begin{enumerate}
-\item \(x\in y\)
-\item \(x=y\)
-\item \(x\subset y\)
-\item \(\{x,y\}\)
-\item \(\{x\}\)
-
-\item \((x,y)\)
-\item \(\emptyset\)
-\item \(x\cup y\)
-\item \(x-y\)
-\item \(x\cap y\)
-\item \(x^+\)
-\item \(x\) is a transitive set
-\item \(\bigcup x\)
-\item \(\bigcap x\) (\(\bigcap\emptyset=\emptyset\))
-\end{enumerate}
-\end{theorem}
-
-\begin{lemma}[]
-Absoluteness is closed under operation composition
-\end{lemma}
-
-\begin{theorem}[]
-Following relations and functions are absolute for any transitive model \cm on 
-\(\zfmm-\text{Pow}-\text{Inf}\)
-\begin{enumerate}
-\item \(z\) is an ordered pair
-\item \(A\times B\)
-\item \(R\) is a relation
-\item \(\dom{R}\)
-\item \(\ran{R}\)
-\item \(f\) is a function
-\item \(f(x)\)
-\item \(f\) is injective
-\end{enumerate}
-\end{theorem}
-\subsection{Relative consistence of the axiom of foundation}
-\label{sec:orgabec2d6}
-\begin{lemma}[]
-Suppose transitive class \(\cm\models\zfmm-\text{Pow}-\text{inf}\) and
-\(\omega\in\cm\), then the axiom of infinity is true in \cm. Hence the axiom of
-infinity is true in \wf
-\end{lemma}
-
-\begin{theorem}[]
-\label{7.5.2}
-Let \(T\) be a theory of set theory language and \(\Sigma\) a set of sentences.
-Suppose \cm is a class and \(T\vdash\cm\neq\emptyset\), then if
-\(\cm\models_T\Sigma\), then
-\begin{enumerate}
-\item for any sentences \(\varphi\), if \(\Sigma\vdash\varphi\), then
-\(T\vdash\varphi^\cm\)
-\item if \(T\) is consistent, then so is \(\text{Cn}(\Sigma)\)
-\end{enumerate}
-\end{theorem}
-
-
-\begin{theorem}[]
-The axiom of foundation is consistent with \zfm.
-\end{theorem}
-
 \begin{proof}
-By \ref{7.5.2}, let T be \zfm, \(\Sigma\) be \zf and \cm be \wf
+   $\cf$
 \end{proof}
-
-\begin{lemma}[\zfmm]
-Suppose transitive model \(\cmm\models\zfmm-\text{Pow}-\text{Inf}\). If
-\(X,R\in\cm\) and \(R\) is a well-order on \(X\), then
-\begin{equation*}
-(R\text{ is a well-order on }X)^\cmm
-\end{equation*}
-\end{lemma}
 \end{document}
 \end{document}

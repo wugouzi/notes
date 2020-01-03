@@ -1,0 +1,412 @@
+
+
+#+TITLE: Recursively Enumerable Sets and Degrees: A Study of Computable Functions and Computably Generated Sets
+#+AUTHOR: Robert I. Soare
+
+#+LATEX_HEADER: \input{preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/RecursivelyEnumerableSetsAndDegrees/RecursivelyEnumerableSetsAndDegrees.tex
+
+* Recursive Functions
+** Formal Definitions of Computable Functions
+*** Primitive Recursive Functions
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The class of primitive recursive functions is the smallest class $\calc$ of
+   functions closed under the following schema
+   1. the \tf{successor function}, $\lambda x[x+1]\in\calc$
+   2. the \tf{constant functions}, $\lambda x_1\dots x_n[m]\in\calc$, $0\le n,m$
+   3. the \tf{identity functions}, $\lambda x_1\dots x_n[x_i]\in\calc$, $1\le
+      i\le n$
+   4. (Composition) If $g_1,\dots,g_m,h\in\calc$, then
+      \begin{equation*}
+      f(x_1,\dots,x_n)=h(g_1(x_1,\dots,x_n),\dots,g_m(x_1,\dots,x_n))
+      \end{equation*}
+      is in $\calc$ where $g_1,\dots,g_m$ are functions of $n$ variables and $h$
+      is a function of $m$ variables
+   5. (Primitive Recursion) If $g,h\in\calc$ and $n\ge 1$ then $f\in\calc$ where
+      \begin{gather*}
+      f(0,x_2,\dots,x_n)=g(x_2,\dots,x_n)\\
+      f(x_1+1,x_2,\dots,x_n)=h(x_1,f(x_1,\dots,x_n),x_2,\dots,x_n)\\
+      \end{gather*}
+   #+END_definition
+
+
+   Hence a function is primitve recursive if there is a \tf{derivation}, namely
+   a sequence $f_1,\dots,f_k=f$ s.t. for each $f_i,i\le k$ is either an initial
+   function or obtained from 4 or 5.
+
+   A predicate (relation) is \tf{primitive recursive} if its characteristic
+   function is.
+*** Diagonalization and Partial Recursive Functions
+   Although the primitive recursive functions include all the usual functions
+   from elementary number theory they fail to include \tf{all} computable
+   functions. Each derivation of a primitive recursive function is a finite
+   string of symbols from a fixed finite alphabet, and thus all derivations can
+   be effectively listed. Let $f_n$ be the function corresponding to the \(n\)th
+   derivation in this listing. Then the function $g(x)=f_x(x)+1$ cannot be
+   primitive recursive.
+
+   The same argument applies to any effective set of schemata which produces
+   only \tf{total} functions. Thus to obtain all computable functions we are
+   forced to consider computable \tf{partial} functions.
+
+   #+ATTR_LATEX: :options [Kleene]
+   #+BEGIN_definition
+   The class of \tf{partial recursive} (p.r.) functions is the least class
+   obtained by closing under schemata 1 through 5 for the primitive recursive
+   functions and the following schemata 6. A \tf{total recursive} function
+   (abbreviated \tf{recursive} function) is a partial recursive function which
+   is total.
+   6. [@6] (Unbounded Search) If $\theta(x_1,\dots,x_n,y)$ is a partial
+      recursive function of $n+1$ variables, and 
+      \begin{align*}
+      \psi(x_1,\dots,x_n)=\mu y[\theta&(x_1,\dots,x_n,y)\downarrow=0\\
+      &\wedge (\forall z\le y)[\theta(x_1,\dots,x_n,z)\downarrow]]
+      \end{align*}
+   #+END_definition
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A relation $R\subseteq \omega^n,n\ge 1$ is \tf{recursive} (\tf{primitive
+   recursive, has property } $P$) if its characteristic function $\chi_R$ is
+   recursive (primitive recursive) where $\chi_R(x_1\dots,x_n)=1$ if and only if
+   $(x_1,\dots,x_n)\in R$.
+   #+END_definition
+*** Turing Computable Functions
+   A \tf{Turing machine} $M$ includes a two-way infinite \tf{tape} divided into
+   \tf{cells}, a \tf{reading head} which scans one cell of the tape at a time,
+   and a finite set of internal \tf{states} $Q=\{q_0,\dots,q_n\},n\ge 1$. Each
+   cell is either blank (B) or has written on it the symbol 1. In a single step
+   the machine may simultaneously
+   1. change from one state to another
+   2. change the scanned symbol $s$ to another symbol $s'\in S=\{1,B\}$
+   3. move the reading head one cell to the right (R) or left (L)
+
+
+   The operation of $M$ is controlled by a partial map 
+   $\delta:Q\times S\to Q\times S\times\{R,L\}$
+
+   The map \delta viewed as a finite set of quintuples is called a \tf{Turing
+   program}. The \tf{input} integer $x$ is represented by a string of $x+1$
+   consecutive 1's.
+** The Basic Results
+   \tf{Church's Thesis} asserts that these functions coincide with the
+   intuitively computable functions. We shall accept Church's Thesis and from
+   now on shall use the terms "partial recursive" "Turing computable" and
+   "computable" interchangeably
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $P_e$ be the Turing program with code number (Gödel number) $e$ 
+   (also called \tf{index} $e$) in this
+   listing and let $\varphi_e^{(n)}$ be the partial fucntions of $n$ variables
+   computed by $P_e$, where $\varphi_e$ abbreviates $\varphi_e^{(1)}$
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Padding Lemma]
+   #+BEGIN_lemma
+   Each partial recursive function $\varphi_x$ has $\aleph_0$ indices, and
+   furthermore for each $x$ we can effectively find an infinite set $A_x$ of
+   indices for the same partial function
+   #+END_lemma
+
+
+   #+BEGIN_proof
+   For any program $P_x$ mentioning internal states $\{q_0,\dots,q_n\}$ add
+   extraneous instructions $q_{n+1}Bq_{n+1}BR,q_{n+2}Bq_{n+2},BR,\dots$ to get
+   new programs for the same functions
+   #+END_proof
+   #+ATTR_LATEX: :options [Normal Form Theorem (Kleene]
+   #+BEGIN_theorem
+   There exist a predicate $T(e,x,y)$ (called the \tf{Kleene T-predicate}) and a
+   function $U(y)$ which are recursive (indeed primitive recursive) s.t.
+   \begin{equation*}
+   \varphi_e(x)=U(\mu y T(e,x,y))
+   \end{equation*}
+   #+END_theorem
+
+   It follows from the Normal Form Theorem that every Turing computable partial
+   function is partial recursive.
+
+   #+ATTR_LATEX: :options [Enumeration Theorem]
+   #+BEGIN_theorem
+   There is a p.r. function of 2 variables $\varphi_z^{(2)}(e,x)$ s.t.
+   $\varphi_z^{(2)}(e,x)=\varphi_e(x)$. Indeed the Enumeration Theorem holds for
+   p.r. functions of $n$ variables
+   #+END_theorem
+   #+BEGIN_proof
+   Let $\varphi_z^{(2)}(e,x)=U(\mu y T(e,x,y))$. For
+   $\varphi_z^{(n)}(e,x_1,\dots,x_{n-1})$, by \(s\)-\(m\)-\(n\) theorem, 
+   \begin{equation*}
+   \varphi_z^{(n)}(e,\bar{x})=
+   \varphi_{s^2_{n-1}(z,e)}^{(n-1)}(\bar{x})
+   \end{equation*}
+   Thus we only need to make sure that $s^2_{n-1}(z,e)\in A_e$, which can be
+   effectively found.
+   #+END_proof
+   #+ATTR_LATEX: :options [Parameter Theorem ($s$-$m$-$n$ Theorem)]
+   #+BEGIN_theorem
+   For every $m,n\ge 1$ there exists a 1:1 recursive function $s^m_n$ of $m+1$
+   variables s.t. for all $x,y_1,y_2,\dots,y_m$
+   \begin{equation*}
+   \varphi_{s^m_n(x,y_1,\dots,y_m)}^{(n)}=\lambda z_1,\dots,z_n
+   (\varphi_x^{(m+n)}(y_1,\dots,y_m,z_1,\dots,z_n))
+   \end{equation*}
+   #+END_theorem
+   #+BEGIN_proof
+   /(informal)/. For simplicity consider the case $m=n=1$. The program
+   $P_{s_1^1(x,y)}$ on input $z$ first obtains $P_x$ and then applies $P_x$ to
+   input $(y,z)$
+   #+END_proof
+
+   #+BEGIN_remark
+   Here is an interesting question in \href{https://cs.stackexchange.com/questions/80837/is-smn-theorem-the-same-concept-as-currying}{StackExchange}
+   #+END_remark
+
+   The \(s\)-\(m\)-\(n\) theorem asserts that $y$ may be treated as a fixed parameter
+   in the program $P_{s(x,y)}$ which operate on $z$ and furthermore that the
+   index $s(x,y)$ of this program is effective in $x$ and $y$. A simple
+   application of the $s$-$m$-$n$ theorem is the existence of a recursive
+   function $f(x)$ s.t. $\varphi_{f(x)}=2\varphi_x$. Let
+   $\psi(x,y)=2\varphi_x(y)$. By Church's Thesis
+   $\psi(x,y)=\varphi_e^{(2)}(x,y)$ for some $e$. Let $f(x)=s^1_1(e,x)$
+
+   We let $\la x,y\ra$ denote the image of $(x,y)$ under the standard pairing
+   function $\frac{1}{2}(x^2+2xy+y^2+3x+y)$ which is a bijective recursive
+   function from $\omega^2\to\omega$. Let $\pi_1$ and $\pi_2$ denote the inverse
+   functions $\pi_1(\la x,y\ra)=x$
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   We write $\varphi_{e,s}(x)=y$ if $x,y,e<s$ and $y$ is the output
+   $\varphi_e(x)$ in $<s$ steps of the Turing machine $P_e$. If such a $s$
+   exists we say $\varphi_{e,s}(x)$ \tf{converges}, which we write as 
+   $\varphi_{e,s}(x)\downarrow$, and \tf{diverges} ($\varphi_{e,s}(x)\uparrow$).
+   Similarly, we write $\varphi_e(x)\downarrow$ if $\varphi_{e,s}(x)\downarrow$
+   for some $s$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   1. The set $\{\la e,x,s\ra:\varphi_{e,s}(x)\downarrow\}$ is recursive
+   2. The set $\{\la e,x,y,s\ra:\varphi_{e,s}(x)=y\}$ is recursive
+   #+END_theorem
+   #+BEGIN_proof
+   From Church's Thesis since they are all computable
+   #+END_proof
+** Recursively Enumerable Sets and Unsolvable Problems
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A set $A$ is \tf{recursively enumerable} (r.e.) if $A$ is the domain of
+      some p.r. function
+   2. let the \(e\)th r.e. set be denoted by
+      \begin{equation*}
+      W_e=\dom{\varphi_e}=\{x:\varphi_e(x)\downarrow\}=\{x:(\exists y)T(e,x,y)\}
+      \end{equation*}
+   3. $W_{e,s}=\dom{\varphi_{e,s}}$
+   #+END_definition
+
+   Note that $\varphi_e(x)=x$ iff $(\exists s)[\varphi_{e,s}=y]$ and 
+   $x\in W_e$ iff $(\exists s)(x\in W_{e,s})$
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $K=\{x:\varphi_x(x)\text{ converges }\}=\{x:x\in W_x\}$
+   #+END_definition
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   $K$ is r.e.
+   #+END_proposition
+   #+BEGIN_proof
+   $K$ is the domain of the following p.r. function
+   \begin{equation*}
+   \psi(x)=
+   \begin{cases}
+   x&\text{if } \varphi_x(x)\text{ converges},\\
+   \text{undefined}&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   Now $\psi$ is p.r. by Church's Thesis. Alternatively and more formally,
+   $K=\dom{\theta}$ where $\theta(x)=\varphi_z^{(2)}(x,x)$ for $\varphi_z^{(2)}$
+   the p.r. function defined in the Enumeration Theorem
+   #+END_proof
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   label:col1
+   $K$ is not recursive
+   #+END_corollary
+   #+BEGIN_proof
+   If $K$ had a recursive characteristic function $\chi_K$ then the following
+   function would be recursive
+   \begin{equation*}
+   f(x)=
+   \begin{cases}
+   \varphi_x(x)+1&\text{if }x\in K\\
+   0&\text{if }x\not\in K
+   \end{cases}
+   \end{equation*}
+   However $f$ cannot be recursive since $f\neq\varphi_x$ for any $x$
+   #+END_proof
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   $K_0=\{\la x,y\ra:x\in W_y\}$
+   #+END_definition
+   $K_0$ is p.r. but
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   $K_0$ is not recursive
+   #+END_proposition
+   #+BEGIN_proof
+   $x\in K$ iff $\la x,x\ra\in K$
+   #+END_proof
+
+   The \tf{halting problem} is to decide for arbitrary $x$ and $y$ whether
+   $\varphi_x(y)\downarrow$. Corollary ref:col1 asserts the unsolvability of the
+   halting problem.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. $A$ is a \tf{many-one reducible} (\tf{m-reducible}) to $B$ (written
+      $A\le_m B$) if there is a recursive function $f$ s.t. $f(A)\subset B$ and
+      $f(\bar{A})\subseteq\bar{B}$, i.e. $x\in A$ iff $f(x)\in B$
+   2. $A$ is \tf{one-one reducible} (\tf{1-reducible}) to $B$ ($A\le_1 B$) if
+      $A\le_m B$ by a 1:1 recursive function
+   #+END_definition
+
+   The proof of corollary ref:col1 established that $K\le_1 K_0$ via the
+   function $f(x)=\la x,x\ra$
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. $A\equiv_m B$ if $A\le_m B$ and $B\le_m A$
+   2. $A\equiv_1 B$ if $A\le_1 B$ and $B\le_1 A$
+   3. $\deg_m(A)=\{B:A\equiv_m B\}$
+   4. $\deg_1(A)=\{B:A\equiv_1 B\}$
+   #+END_definition
+
+   The equivalence classes under $\equiv_m$ and $\equiv_1$ are called the
+   \tf{m-degrees} and \tf{1-degrees} respectively
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   If $A\le_m B$ and $B$ is recursive then $A$ is recursive
+   #+END_proposition
+
+   #+BEGIN_proof
+   $\chi_A(x)=\chi_B(f(x))$
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm1
+   $K\le_1\text{Tot}:=\{x:\varphi_x\text{ is a total function}\}$
+   #+END_theorem
+   #+BEGIN_proof
+   Define the function
+   \begin{equation*}
+   \psi(x,y)=
+   \begin{cases}
+   1&\text{if } x\in K\\
+   \text{undefined} &\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   By \(s\)-\(m\)-\(n\) theorem, there is a 1:1 recursive function $f$ s.t.
+   $\varphi_{f(x)}(y)=\psi(x,y)$. Choose $e$ s.t. $\varphi_e(x,y)=\psi(x,y)$ 
+   since \psi is p.r. and
+   define $f(x)=s_1^1(e,x)$. Note that
+   \begin{align*}
+   &x\in K\Longrightarrow \varphi_{f(x)}=\lambda y[1]\Longrightarrow\varphi_{f(x)}\text{ total}
+   \Longrightarrow f(x)\in\text{Tot}\\
+   &x\not\in K\Longrightarrow\varphi_{f(x)}=\lambda y[\text{undefined}]\Longrightarrow
+   \varphi_{f(x)}\text{ not total}\Longrightarrow f(x)\not\in\text{Tot}
+   \end{align*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A set $A\subseteq\omega$ is an \tf{index set} if for all $x$ and $y$
+   \begin{equation*}
+   (x\in A\wedge\varphi_x=\varphi_y)\Longrightarrow y\in  A
+   \end{equation*}
+   #+END_definition
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   If $A$ is a nontrivial index set, i.e., $A\neq \emptyset,\omega$, then either
+   $K\le_1 A$ or $K\le_1\bar{A}$
+   #+END_theorem
+
+   #+BEGIN_proof
+   Choose $e_0$ s.t. $\varphi_{e_0}(y)$ is undefined for all $y$. If
+   $e_0\in\bar{A}$, then $K\le_1 A$ as follows. Since $A\neq\emptyset$ we can
+   choose $e_1\in A$. Now $\varphi_{e_1}\neq\varphi_{e_0}$ because $A$ is an
+   index set. By \(s\)-\(m\)-\(n\) theorem define a 1:1 recursive function $f$
+   s.t.
+   \begin{equation*}
+   \varphi_{f(x)}(y)=
+   \begin{cases}
+   \varphi_{e_1}(y)&x\in K\\
+   \text{undefined}&x\not\in K
+   \end{cases}
+   \end{equation*}
+   Now
+   \begin{align*}
+   &x\in K\Longrightarrow\varphi_{f(x)}=\varphi_{e_1}\Longrightarrow f(x)\in A\\
+   &x\not\in K\Longrightarrow\varphi_{f(x)}=\varphi_{e_0}\Longrightarrow
+   f(x)\in\bar{A}
+   \end{align*}
+   #+END_proof
+
+
+   #+ATTR_LATEX: :options [Rice's Theorem]
+   #+BEGIN_corollary
+   Let $\calc$ be any class of partial recursive functions. Then
+   $\{n:\varphi_n\in\calc\}$ is recursive iff $\calc=\emptyset$ or $\calc$ is
+   the set of all partial recursive functions
+   #+END_corollary
+   #+BEGIN_proof
+   $\calc$ is an index set and hence is trivial.
+   #+END_proof
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \begin{align*}
+   &K_1=\{x:W_x\neq\emptyset\}\\
+   &\text{Fin}=\{x:W_x\text{ is finite}\}\\
+   &\text{Inf}=\omega-\text{Fin}=\{x:W_x\text{ is infinite}\}\\
+   &\text{Tot}=\{x:\varphi_x\text{ is total}\}=\{x:W_x=\omega\}\\
+   &\text{Con}=\{x:\varphi_x\text{ is total and constant}\}\\
+   &\text{Cof}=\{x:W_x\text{ is cofinite}\}\\
+   &\text{Rec}=\{x:W_x\text{ is recursive}\}\\
+   &\text{Ext}=\{x:\varphi_x\text{ is extendible to a total recursive function}\}\\
+   \end{align*}
+   #+END_definition
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   An r.e. set $A$ is \tf{1-complete} if $W_e\le_1 A$ for every r.e. set $W_e$
+   #+END_definition
+
+   $K_0$ is 1-complete because $x\in W_e$ iff $\la x,e\ra\in K_0$
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let $A$ \tf{join} $B$ written $A\oplus B$ be
+   \begin{equation*}
+   \{2x:x\in A\}\cup\{2x+1:x\in B\}
+   \end{equation*}
+   #+END_definition
+   #+BEGIN_exercise
+   1. $A\le_m A\oplus B$ and $B\le_M A\oplus B$
+   2. if $A\le_m C$ and $B\le_m C$ then $A\oplus B\le_m C$
+   #+END_exercise
+
+   #+BEGIN_exercise
+   $K\equiv_1 K_0\equiv_1 K_1$
+   #+END_exercise
+   #+BEGIN_proof
+   From proof of theorem label:thm1, $K\le_1 A$ for $A=K_1,\text{con}$ or
+   $\text{Inf}$.
+
+   
+   #+END_proof
+** Recursive Permutation and Myhill's Isomorphism Theorem
+* Fundamentals of Recursively Enumerable Sets and the Recursion Theorem
+** Equivalent Definitions of Recursively Enumerable Sets

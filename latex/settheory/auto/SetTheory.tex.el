@@ -36,13 +36,25 @@
     "hyperref"
     "minted")
    (LaTeX-add-labels
-    "sec:orgb74da21"
-    "sec:org20aa1db"
-    "sec:org1b1c148"
-    "sec:org4cb1e41"
-    "sec:org6c601b0"
-    "sec:org786b00c"
-    "sec:orgabec2d6"
-    "7.5.2"))
+    "sec:org54c3bd7"
+    "sec:org5774768"
+    "sec:org51825c1"
+    "lemma1"
+    "lemma2"
+    "sec:org33f703d"
+    "lemma3"
+    "sec:org797d0f6"
+    "align1"
+    "sec:org962f33c"
+    "sec:org79a817d"
+    "sec:org46e58b3"
+    "sec:org02f8b54"
+    "sec:org973dc8d"
+    "eq:3.1"
+    "sec:org54388fa"
+    "lemma3.4"
+    "thm3.5"
+    "sec:org4a9c692"
+    "sec:org4d0e15e"))
  :latex)
 
