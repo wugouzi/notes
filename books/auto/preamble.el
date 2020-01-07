@@ -4,10 +4,11 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("xcolor" "dvipsnames") ("tcolorbox" "most")))
+                     '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most")))
    (TeX-run-style-hooks
     "xcolor"
     "forest"
+    "inputenc"
     "mathtools"
     "pgfplots"
     "amsthm"
@@ -28,6 +29,7 @@
     "dsfont"
     "newpxtext"
     "enumitem"
+    "subcaption"
     "graphicx")
    (TeX-add-symbols
     '("stcomp" 1)
@@ -45,6 +47,8 @@
     '("what" 1)
     "widehatsym"
     "lowerwidehatsym"
+    "bto"
+    "Ra"
     "zfm"
     "cl"
     "sg"
