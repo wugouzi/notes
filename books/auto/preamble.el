@@ -54,6 +54,7 @@
     "sg"
     "cf"
     "zfc"
+    "th"
     "type"
     "zf"
     "varprod"
