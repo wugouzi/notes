@@ -50,13 +50,6 @@
     "bto"
     "Ra"
     "zfm"
-    "cl"
-    "sg"
-    "cf"
-    "zfc"
-    "th"
-    "type"
-    "zf"
     "varprod"
     "bigtimes"
     "odiv"
@@ -70,7 +63,7 @@
     "lemma"
     "proposition"
     "theorem"
-    "example"
+    "examplle"
     "remark"
     "exercise"))
  :latex)

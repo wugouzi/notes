@@ -1,0 +1,237 @@
+% Created 2020-01-11 六 16:45
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\author{Elias M. Stein \& Rami Shakarchi}
+\date{\today}
+\title{Real Analysis: Measure Theory, Integration, and Hilbert Spaces}
+\hypersetup{
+ pdfauthor={Elias M. Stein \& Rami Shakarchi},
+ pdftitle={Real Analysis: Measure Theory, Integration, and Hilbert Spaces},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage
+\section{Measure Theory}
+\label{sec:orgf150d1e}
+\subsection{Preliminaries}
+\label{sec:org19077c8}
+The \textbf{open ball} in \(\R^d\) centered at \(x\) and of radius \(r\) is defined by
+\begin{equation*}
+B_r(x)=\{y\in\R^d:\abs{y-x}<r\}
+\end{equation*}
+A subset \(E\subset\R^d\) is \textbf{open} if for every \(x\in E\), there exists \(r>0\)
+with \(B_r(x)\subset E\). A set is \textbf{closed} if its complement is open.
+
+A set \(E\) is \textbf{bounded} if it's contained in some ball of finite radius. A
+bounded set is \textbf{compact} if it's also closed. Compact sets enjoy the
+Heine-Borel covering property:
+\begin{itemize}
+\item Assume \(E\) is compact, \(E\subset\bigcup_\alpha\calo_\alpha\), and each
+\(\calo_\alpha\) is open. Then there are finitely many of the open sets
+\(\calo_{\alpha_1},\dots,\calo_{\alpha_N}\) s.t.
+\(E\subset\bigcup_{j=1}^N\calo_{\alpha_j}\)
+\end{itemize}
+
+
+\begin{lemma}[]
+\label{lemma1.2}
+If \(R,R_1,\dots,R_N\) are rectangles, and \(R\subset\bigcup_{k=1}^NR_k\), then
+\begin{equation*}
+\abs{R}\le \displaystyle\sum_{k=1}^N\abs{R_k}
+\end{equation*}
+\end{lemma}
+
+\begin{theorem}[]
+Every open subset \(\calo\) of \(\R\) can be written uniquely as a countable
+union of disjoint open intervals
+\end{theorem}
+\begin{proof}
+For every \(x\in\calo\), let
+\begin{equation*}
+a_x=\inf\{a<x:(a,x)\subset\calo\}\quad b_x=\sup\{b>x:(x,b)\subset\calo\}
+\end{equation*}
+and \(I_x=(a_x,b_x)\). Then \(\calo=\bigcup_{x\in\calo}I_x\). Now suppose that
+two intervals \(I_x\) and \(I_y\) intersects. Then \((I_x\cup I_y)\subset I_x\) and
+\((I_x\cup I_y)\subset I_x\). This can happen only if \(I_x=I_y\). Therefore any
+two disjoint intervals in the collection \(\cali=\{I_x\}_{x\in\calo}\). Since
+every open interval \(I_x\) contains a rational number.
+\end{proof}
+
+\begin{theorem}[]
+Every open subset \(\calo\) of \(\R^d\), \(d\ge 1\), can be written as a countable
+union of almost disjoint closed cubes.
+\end{theorem}
+\subsection{The exterior measure}
+\label{sec:org56645fc}
+\begin{definition}[]
+If \(E\) is \emph{any} subset of \(\R^d\), the \textbf{exterior measure} of \(E\) is
+\begin{equation*}
+m_*(E)=\inf \displaystyle\sum_{j=1}^\infty\abs{Q_j}
+\end{equation*}
+   where the infimum is taken over all countable coverings
+   \(E\subset\bigcup_{j=1}^\infty Q_j\) by closed cubes
+.
+\end{definition}
+\begin{examplle}[]
+The exterior measure of a point is zero. This is clear once we observe that a
+point is a cube with volume zero.
+\end{examplle}
+
+\begin{examplle}[]
+The exterior measure of a closed cube is equal to its volume. Indeed suppose
+\(Q\) is a closed cube in \(\R^d\). Since \(Q\) covers itself, we must have
+\(m_*(Q)\le\abs{Q}\). Therefore, it suffices to prove the reverse inequality.
+
+We consider an arbitrary covering \(Q\subset\bigcup_{j=1}^\infty Q_j\) by
+cubes, and note that it suffices to prove that
+\begin{equation*}
+\abs{Q}\le \displaystyle\sum_{j=1}^\infty\abs{Q_j}
+\end{equation*}
+
+For a fixed \(\epsilon>0\) we choose for each \(j\) an open cube \(S_j\) which
+contains \(Q_j\) and s.t. \(\abs{S_j}\le(1+\epsilon)\abs{Q_j}\). From the open
+covering \(\bigcup_{j=1}^\infty S_j\) of the compact set \(Q\), we may select a
+finite subcovering which, after possibly renumbering the rectangles, we may
+write as \(Q\subset\bigcup_{j=1}^NS_j\). We may apply Lemma \ref{lemma1.2} to
+conclude that \(\abs{Q}\le\sum_{j=1}^N\abs{S_j}\). Consequently,
+\begin{equation*}
+\abs{Q}\le(1+\epsilon)\displaystyle\sum_{j=1}^N\abs{Q_j}\le(1+\epsilon)
+\displaystyle\sum_{j=1}^\infty\abs{Q_j}
+\end{equation*}
+Since \(\epsilon\) is arbitrary, the inequality holds; thus \(\abs{Q}\le m_*(Q)\)
+\end{examplle}
+
+\begin{examplle}[]
+If \(Q\) is an open cube, the result \(m_*(Q)=\abs{Q}\) still holds. Since \(Q\) is
+covered by its closure \(\overline{Q}\) and \(\abs{\overline{Q}}=\abs{Q}\), we
+immediately see that \(m_*(Q)\le\abs{Q}\). Note that if \(Q_0\) is a closed cube
+contained in \(Q\), then \(m_*(Q_0)\le m_*(Q)\), since any covering of \(Q\) by a
+countable number of closed cubes is also a covering of \(Q_0\). Hence
+\(\abs{Q_0}\le m_*(Q)\), and since we can choose \(Q_0\) with a volume as close
+as we wich to \(\abs{Q}\), we must have \(\abs{Q}\le m_*(Q)\)
+\end{examplle}
+
+\begin{examplle}[]
+The exteriormeasure of a rectangle \(R\) is equal to its volume. To obtain
+\(\abs{R}\le m_*(R)\), consider a grid in \(\R^d\) formed by cubes of side length
+\(1/k\). Then if \(\calq\) consists of the (finite) collection of all cubes entirely
+contained in \(R\), and \(\calq'\) the (fintie) collection of all cubes that
+intersect the complement of \(R\), we first note that
+\(R\subset\bigcup_{Q\in(\calq\cup\calq')}Q\). Also a simple argument yields
+\begin{equation*}
+\displaystyle\sum_{Q\in\calq}\abs{Q}\le\abs{R}
+\end{equation*}
+Moreover, there are \(O(k^{d-1})\) cubes in \(\calq'\) and these cubes have
+volume \(k^{-d}\), so that \(\sum_{Q\in\calq'}\abs{Q}=O(1/k)\). Hence
+\begin{equation*}
+\displaystyle\sum_{Q\in\calq\cup\calq'}\abs{Q}\le\abs{R}+O(1/k)
+\end{equation*}
+and letting \(k\) tend to infinity yields \(m_*(R)\le\abs{R}\)
+\end{examplle}
+
+\begin{examplle}[]
+The exterior measure of \(\R^d\) is infinite. This follows from the fact that
+any covering of \(\R^d\) is also a covering of any cube \(Q\subset\R^d\) hence
+\(\abs{Q}\le m_*(\R^d)\).
+\end{examplle}
+
+\begin{examplle}[]
+The Cantor set \(\calc\) has exterior measure 0. From the construction of
+\(\calc\), we know that \(\calc\subset C_k\), where each \(C_k\) is a dijoint union
+of \(2^k\) closed intervals, each of length \(3^{-k}\). Consequently,
+\(m_*(\calc)\le(2/3)^k\) for all \(k\), hence \(m_*(\calc)=0\)
+\end{examplle}
+
+
+\begin{proposition}[]
+For every \(\epsilon>0\), there exists a covering \(E\subset\bigcup_{j=1}^\infty
+   Q_j\) with
+\begin{equation*}
+\displaystyle\sum_{j=1}^\infty m_*(Q_j)\le m_*(E)+\epsilon
+\end{equation*}
+\end{proposition}
+
+\begin{proposition}[Monotonicity]
+If \(E_1\subset E_2\), then \(m_*(E_1)\le m_*(E_2)\)
+\end{proposition}
+
+\begin{proposition}[Countable sub-additivity]
+\label{ob2}
+If \(E=\bigcup_{j=1}^\infty E_j\), then \(m_*(E)\le\sum_{j=1}^\infty m_*(E_j)\)
+\end{proposition}
+\begin{proof}
+First we may assume that each \(m_*(E_j)<\infty\) for otherwise the inequality
+clearly holds. For any \(\epsilon>0\) the definition of the exterior measure
+yields for each \(j\) a covering \(E_j\subset\bigcup_{k=1}^\infty Q_{k,j}\) by
+closed cubes with
+\begin{equation*}
+\displaystyle\sum_{k=1}^\infty\abs{Q_{k,j}}\le m_*(E_j)+\frac{\epsilon}{2^j}
+\end{equation*}
+Then, \(E\subset\bigcup_{j,k=1}^\infty Q_{k,j}\) is a covering of \(E\) by closed
+cubes and therefore
+\begin{align*}
+m_*(E)\le \displaystyle\sum_{j,k}\abs{Q_{k,j}}=&\displaystyle\sum_{j=1}^\infty
+\displaystyle\sum_{k=1}^\infty\abs{Q_{k,j}}\\
+&\le \displaystyle\sum_{j=1}^\infty(m_*(E_j)+\frac{\epsilon}{2^j})\\
+&=\displaystyle\sum_{j=1}^\infty m_*(E_j)+\epsilon
+\end{align*}
+\end{proof}
+
+\begin{proposition}[]
+If \(E\subset\R^d\), then \(m_*(E)=\inf m_*(\calo)\) where the infimum is taken
+over all open sets \(\calo\) containing \(E\)
+\end{proposition}
+
+\begin{proof}
+By monotonicity, it is clear that \(m_*(E)\le\inf m_*(\calo)\) holds. For the
+reverse inequality, let \(\epsilon>0\) and choose cubes \(Q_j\) s.t.
+\(E\subset\bigcup_{j=1}^\infty Q_j\) with
+\begin{equation*}
+\displaystyle\sum_{j=1}^\infty\abs{Q_j}\le m_*(E)+\frac{\epsilon}{2}
+\end{equation*}
+
+Let \(Q_j^0\) denote an open cube containing \(Q_j\), and s.t. 
+\(\abs{Q_j^0}\le\abs{Q_j}+\frac{\epsilon}{2^{j+1}}\). Then 
+\(\calo=\bigcup_{j=1}^\infty Q_j^0\) is open, and by Proposition \ref{ob2}
+\begin{align*}
+m_*(\calo)\le \displaystyle\sum_{j=1}^\infty m_*(Q_j^0)&=
+\displaystyle\sum_{j=1}^\infty\abs{Q_j^0}\\
+&\le \displaystyle\sum_{j=1}^\infty(\abs{Q_j}+\frac{\epsilon}{2^{j+1}})\\
+&\le \displaystyle\sum_{j=1}^\infty\abs{Q_j}+\frac{\epsilon}{2}\\
+&\le m_*(E)+\epsilon
+\end{align*}
+\end{proof}
+
+\begin{proposition}[]
+If \(E=E_1\cup E_2\) and \(d(E_1,E_2)>0\), then
+\begin{equation*}
+m_*(E)=m_*(E_1)+m_*(E_2)
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+By Proposition \ref{ob2}, we already know that \(m_*(E)\le m_*(E_1)+m_*(E_2)\).
+First select \(d(E_1,E_2)>\delta>0\). Next we choose a covering
+\(E\subset\bigcup_j=1^\infty Q_j\) by closed cubes with 
+\(\sum_{j=1}^\infty\abs{Q_j}\le m_*(E)+\epsilon\)
+\end{proof}
+\end{document}
