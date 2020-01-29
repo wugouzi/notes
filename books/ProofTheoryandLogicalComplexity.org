@@ -1,0 +1,302 @@
+#+TITLE: Proof Theory and Logical Complexity
+#+AUTHOR: Jean-Yves Girard
+
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \usepackage{bussproofs}
+#+LATEX_HEADER: \def \EBA {\EnableBpAbbreviations}
+#+LATEX_HEADER: \def \RL[#1]{\RightLabel{#1}}
+#+LATEX_HEADER: \setcounter{tocdepth}{2}
+#+EXPORT_FILE_NAME: ../latex/ProofTheoryandLogicalComplexity/ProofTheoryandLogicalComplexity.tex
+
+* Preliminaries
+** Languages
+A (first-order) language is defined as follows: $\bL$ is built up from the
+following atmoic symbols:
+1. for all integers $n$, *predicate letters* $p_j^n$ ($p_j^n$ is /n-ary/)
+2. for all integers $n$, *function letters* $f_j^n$ ($f_j^n$ is /n-ary/). A /0-ary/
+   function letter is a *constant*
+3. the *connectives* $\wedge,\vee,\neg,\to$
+4. variables $x_j$ ($j\in\N$)
+5. the quantifiers $\forall$ and $\exists$
+
+   
+We shall always assume that our languages are *denumerable*; this means that the
+set of function and predicate letters is denumerable.
+
+The *terms* of $\bL$ are inductively defined as follows:
+1. a variable $x_j$ is a term
+2. if $t_1,\dots,t_n$ are terms and $f_j^n$ is an n-ary function letter, then
+   $f_j^nt_1\dots t_n$ is a term
+3. the only terms of $\bL$ are given by (1) and (2)
+
+   
+The *formulas* of $\bL$ are inductively defined as follows:
+1. if $t_1,\dots,t_n$ are terms and $p_j^n$ is an n-ary function letter, then
+   $p_j^nt_1\dots t_n$ is a formula (*atomic formula*)
+2. if $A$ and $B$ are formulas, so are $\wedge AB,\vee AB,\to AB,\neg A$
+3. if $A$ is a formula and $x_j$ is a variable, $\forall x_jA$ and $\exists
+   x_jA$ are formulas
+4. the only formulas of $\bL$ are given by (1)-(3)
+** occurrences
+1. in $\forall x(px\to pfx)$ there are
+   - three occurrences of $x$
+   - two occurrences of $p$
+   - one occurrence of $\forall$
+   - one occurrence of $\to$
+   - one occurrence of $f$
+2. in $A,A\to A,A\vdash A$ there are
+   - three occurrences of $A$
+   - one occurrence of $A\to A$
+   - one occurrence of $\vdash$
+3. in the proof
+   \begin{gather*}
+   \EBA\AXC{$A\vdash A$}
+   \AXC{$A\vdash A$}\RL{$\wedge$I}
+   \BIC{$A,A\vdash A\wedge A$}
+   \AXC{$A\vdash A$}\RL{$\wedge$I}
+   \BIC{$A,A,A\vdash(A\wedge A)\wedge A$}\DP
+   \end{gather*}
+   - the sequent $A\vdash A$ occurs three times
+   - $A,A\vdash A\wedge A$ occurs once
+   - $A,A,A\vdash(A\wedge A)\wedge A$ occurs once
+   - $\wedge I$ occurs twice
+
+
+If one wants to distinguish between various occurrences of sequents and rules,
+one can add indices, say:
+\begin{gather*}
+\EBA\AXC{$A\vdash^1 A$}
+\AXC{$A\vdash^2 A$}\RL{$\wedge^1$I}
+\BIC{$A,A\vdash^1 A\wedge A$}
+\AXC{$A\vdash^3 A$}\RL{$\wedge^2$I}
+\BIC{$A,A,A\vdash^1(A\wedge A)\wedge A$}\DP
+\end{gather*}
+** free and bound variables
+We shall use square brackets to denote all free occurrences of variables of one
+or several variables in an expression; if $A$ is $A[x_1,\dots,x_n]$, then
+$A[x_1,\dots,x_n]$ denotes $A[t_1,\dots,t_n/x_1,\dots,x_n]$
+
+/A bound variable has no individuality/
+* The Fall of Hilbert Program
+** Hilbert's Program
+*** the formalist philosophy
+For the *formalist*, mathematical activity is /mechanical/: a machine could as well
+form sequences of strings of symbols, according to fixed laws.
+*** Hilbert's ontology
+The idea of Hilbert was to use this formal aspect of mathematics (which has the
+consequence that a mathematical proof can be viewed as a mathematical object
+itself) in order to /prove/ some general facts concerning mathematical activity.
+Hilbert's ontology of mathematics distinguished between:
+1. /Real/ (or /elementray/, /finitist/) objects which /do/ exists
+2. /Abstract/ objects which do not actually exist
+*** Hilbert's program
+/purity of methods/
+*** consistency proofs
+*** the fall
+** Recursive Functions
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+A function is *recursive* iff it maps $\N^k$ into $\N$ ($k\ge 0$), and is obtained
+by means of the following schemes:
+
+($R1$) $I_i^n(a_1,\dots,a_n)=a_i$, $a_1+a_2,a_1\cdot a_2,\chi_<(a_1,a_2)$
+
+($R2$) composition
+
+($R3$) *\mu-operator*
+#+END_definition
+
+
+*Church's Thesis*: /every computable function is recursive/.
+
+#+ATTR_LATEX: :options []
+#+BEGIN_theorem
+1. The set of recursive functions is denumerable
+2. the set of recursive functions cannot be enumerated by a recursive function
+#+END_theorem
+#+BEGIN_proof
+(2) means that if $(f_n)_{n\in\N}$ is an enumeration of all recursive functions,
+then the function $F(n,m)=f_n(m)$ is not recursive: one easily sees that the
+function $g(n)=F(n,m)+1$ would otherwise be recursive, but if $g=f_k$, one would
+have $g(k)=g(k)-1$
+#+END_proof
+
+#+ATTR_LATEX: :options []
+#+BEGIN_theorem
+($R4$) Constant functions are recursive
+
+($R5$) Let $F$ and $G$ be recursive functions with respectively $n$ and $n+2$
+arguments; then one can define a recursive function $H$, with $n+1$ arguments
+and such that
+\begin{align*}
+&H(a_1,\dots,a_n,0)=F(a_1,\dots,a_n)\\
+&H(a_1,\dots,a_n,k+1)=G(a_1,\dots,a_n,k,H(a_1,\dots,a_n,k))
+\end{align*}
+#+END_theorem
+
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+$F$ is *primitive recursive* if $F$ can be obtained by means of
+$(R1),(R2),(R4),(R5)$ 
+#+END_definition
+
+
+#+BEGIN_theorem
+1. the set of primitive recursive functions is denumerable
+2. the set of unary primitive recursive functions can be enumerated by means of
+   a recursive binary function, called the *Ackermann function*
+3. The Ackermann function is not primitive recursive
+#+END_theorem
+
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+1. A predicate $P$ is *recursive* iff its characteristic function $\chi_p$ is
+   recursive 
+2. A problem is *decidable* iff the predicate which represents the problem is
+   recursive 
+#+END_definition
+
+#+ATTR_LATEX: :options []
+#+BEGIN_examplle
+1. Predicate calculus is undecidable: if one encodes formulas by integers, then
+   the set of integers which are codes of theorems of predicate calculus is not
+   recursive
+2. The *word problem* is undecidable: take the free group $G$ generated by a
+   finite number of points, and let $g_1,\dots,g_k$ be elements of this group;
+   let $H$ be the normal subgroup generated by $g_1,\dots,g_k$; then the
+   equivalence relation $st^{-1}\in H$ is undecidable for a suitable choice of
+   $G$ and $g_1,\dots,g_k$
+#+END_examplle
+
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+$\bL_o$ is the language of arithmetic: constant: $\overline{o}$, one unary
+function letter $S$, two binary function letters $+$ and $\cdot$, and two binary
+predicate letters $=$ and $<$
+1. \sum is the smallest class formulas of $\bL_0$ s.t.
+   1. atomic formulas and their negation belong to \sum
+   2. if $A,B\in\sum$, then $A\wedge B,A\vee B\in\sum$
+   3. if $A\in\Sigma$, $x$ is not free in term $t$, then $\forall x<t\; A\in\sum$
+   4. if $A\in\sum$ and $x$ is a variable, then $\exists xA\in\sum$
+2. \prod with the following differences:
+   4. [@4] if $A\in\prod$ and $x$ is not free in term $t$, then $\exists
+      x<t\; A\in\prod$ 
+   5. if $A\in\prod$, then $\neg A\in\prod$
+3. A formula is $\sum^0_n$ (resp. $\prod_n^0$) iff it can be written 
+   $Q_0x_0\dots Q_{n-1}x_{n-1}A$ where $A$ is \prod and the quantifiers $Q_i$
+   are alternating, and $Q_0=\exists$ (resp. $Q_0=\forall$). For instance,
+   Fermat's last theorem for a given $n$ is $\prod_n^0$:
+   \begin{equation*}
+   \forall z\forall a<z\forall b<z\forall c<z(abc\neq\overline{o}\to
+   a^n+b^n\neq c^n)
+   \end{equation*}
+#+END_definition
+
+#+ATTR_LATEX: :options []
+#+BEGIN_proposition
+Any $\sum$ formula is equivalent to a \(\sum_1^0\)-formula
+#+END_proposition
+
+#+BEGIN_proof
+If $A\in\sum$, form $A^x$ by replacing all existential quantifiers $\exists z$
+of $A$ by bounded quantifiers $(\exists z<x:A^x)\in\Delta$. And $A$ is equivalent
+to the \(\sum_1^0\)-formula $\exists xA^x$
+#+END_proof
+
+#+ATTR_LATEX: :options []
+#+BEGIN_theorem
+The properties $F(x_1,\dots,x_n)=y$ and $P(x_1,\dots,x_n)$ when $F$ is a partial
+recursive function and $P$ and r.e. predicate, can be expressed by means of \sum
+formulas 
+#+END_theorem
+
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+1. Given integers $a_0,a_{n-1}$, one defines $\la
+   a_0,\dots,a_{n-1}\ra=2^{a_0+1}3^{a_1+1}\dots p_{n-1}^{a_{n-1}+1}$, $Seq(x)$
+   is the predicate: for some
+   $x_0,\dots,x_{n-1}$ , $x=\la x_0,\dots,x_{n-1}\ra$
+2. *length*
+   \begin{equation*}
+   lh(x)=
+   \begin{cases}
+   0&x\not\in Seq\\
+   n&x=\la x_0,\dots,x_{n-1}\ra
+   \end{cases}
+   \end{equation*}
+
+3. *projection*
+   \begin{equation*}
+   (x)_i=
+   \begin{cases}
+   a_i&i<lh(x)\\
+   0&i\ge lh(x)
+   \end{cases}
+   \end{equation*}
+4. *concatenation*
+   
+   $\la a_0,\dots,a_{n-1}\ra*\la b_0,\dots,b_{m-1}\ra=\la a_0,\dots,a_{n-1},b_0,\dots,b_{m-1}\ra$
+5. $\la a_0,\dots,a_{n-1}\ra\restriction i=\la a_0,\dots,a_{i-1}\ra$ if $i<n$,
+   otherwise $x\restriction i=0$
+#+END_definition
+
+
+#+ATTR_LATEX: :options []
+#+BEGIN_definition
+1. A *numeral* is a term of $\bL_o$ which canonically represents an integer;
+   $\overline{n}$ is the \(n\)th numeral; hence $\overline{0}$ is the constant
+   of $\bL_0$, and $\overline{n+1}=S\overline{n}$
+2. One defines the following prim. rec. predicates:
+   - $Term(a)$: $a$ is a term
+   - $Form(a)$: $a$ is a formula
+   - $Fr(a,b)$: $b$ is the Gödel number of a variable occurring freely in the
+     expression encoded by $a$
+   - $Cl(a)$: $a$ is the Gödel number of a closed expression $\bL_0$
+   - $Subst(a,b,c)$: $c$ is the Gödel number of a term substitutable for the
+     variable with Gödel $b$ in the formula with Gödel number $a$
+3. prim. rec. functions
+   - $Num(a)=\ulcorner\overline{a}\urcorner$, the Gödel number of the \(a\)th
+     numeral
+   - $Sub(a,b,c)=$ the Gödel number of $A[t/x_n]$ if $a=\ulcorner
+     A\urcorner,b=\ulcorner x_n\urcorner,c=\ulcorner t\urcorner$
+#+END_definition
+
+
+#+ATTR_LATEX: :options []
+#+BEGIN_theorem
+1. There exists a prim. rec. function $Val$ s.t. if $a$ is the Gödel number of a
+   closed term of $\bL_0$, $Val(a)$ is the integer represented by this term; in
+   particular, $Val(Num(a))=a$
+#+END_theorem
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,338 @@
+% Created 2020-01-30 四 05:15
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\usepackage{bussproofs}
+\def \EBA {\EnableBpAbbreviations}
+\def \RL[#1]{\RightLabel{#1}}
+\setcounter{tocdepth}{2}
+\author{Jean-Yves Girard}
+\date{\today}
+\title{Proof Theory and Logical Complexity}
+\hypersetup{
+ pdfauthor={Jean-Yves Girard},
+ pdftitle={Proof Theory and Logical Complexity},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3.1)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage
+\section{Preliminaries}
+\label{sec:orge81467b}
+\subsection{Languages}
+\label{sec:orgf5c8609}
+A (first-order) language is defined as follows: \(\bL\) is built up from the
+following atmoic symbols:
+\begin{enumerate}
+\item for all integers \(n\), \textbf{predicate letters} \(p_j^n\) (\(p_j^n\) is \emph{n-ary})
+\item for all integers \(n\), \textbf{function letters} \(f_j^n\) (\(f_j^n\) is \emph{n-ary}). A \emph{0-ary}
+function letter is a \textbf{constant}
+\item the \textbf{connectives} \(\wedge,\vee,\neg,\to\)
+\item variables \(x_j\) (\(j\in\N\))
+\item the quantifiers \(\forall\) and \(\exists\)
+\end{enumerate}
+
+
+We shall always assume that our languages are \textbf{denumerable}; this means that the
+set of function and predicate letters is denumerable.
+
+The \textbf{terms} of \(\bL\) are inductively defined as follows:
+\begin{enumerate}
+\item a variable \(x_j\) is a term
+\item if \(t_1,\dots,t_n\) are terms and \(f_j^n\) is an n-ary function letter, then
+\(f_j^nt_1\dots t_n\) is a term
+\item the only terms of \(\bL\) are given by (1) and (2)
+\end{enumerate}
+
+
+The \textbf{formulas} of \(\bL\) are inductively defined as follows:
+\begin{enumerate}
+\item if \(t_1,\dots,t_n\) are terms and \(p_j^n\) is an n-ary function letter, then
+\(p_j^nt_1\dots t_n\) is a formula (\textbf{atomic formula})
+\item if \(A\) and \(B\) are formulas, so are \(\wedge AB,\vee AB,\to AB,\neg A\)
+\item if \(A\) is a formula and \(x_j\) is a variable, \(\forall x_jA\) and \(\exists
+   x_jA\) are formulas
+\item the only formulas of \(\bL\) are given by (1)-(3)
+\end{enumerate}
+\subsection{occurrences}
+\label{sec:org29ef153}
+\begin{enumerate}
+\item in \(\forall x(px\to pfx)\) there are
+\begin{itemize}
+\item three occurrences of \(x\)
+\item two occurrences of \(p\)
+\item one occurrence of \(\forall\)
+\item one occurrence of \(\to\)
+\item one occurrence of \(f\)
+\end{itemize}
+\item in \(A,A\to A,A\vdash A\) there are
+\begin{itemize}
+\item three occurrences of \(A\)
+\item one occurrence of \(A\to A\)
+\item one occurrence of \(\vdash\)
+\end{itemize}
+\item in the proof
+\begin{gather*}
+\EBA\AXC{$A\vdash A$}
+\AXC{$A\vdash A$}\RL{$\wedge$I}
+\BIC{$A,A\vdash A\wedge A$}
+\AXC{$A\vdash A$}\RL{$\wedge$I}
+\BIC{$A,A,A\vdash(A\wedge A)\wedge A$}\DP
+\end{gather*}
+\begin{itemize}
+\item the sequent \(A\vdash A\) occurs three times
+\item \(A,A\vdash A\wedge A\) occurs once
+\item \(A,A,A\vdash(A\wedge A)\wedge A\) occurs once
+\item \(\wedge I\) occurs twice
+\end{itemize}
+\end{enumerate}
+
+
+If one wants to distinguish between various occurrences of sequents and rules,
+one can add indices, say:
+\begin{gather*}
+\EBA\AXC{$A\vdash^1 A$}
+\AXC{$A\vdash^2 A$}\RL{$\wedge^1$I}
+\BIC{$A,A\vdash^1 A\wedge A$}
+\AXC{$A\vdash^3 A$}\RL{$\wedge^2$I}
+\BIC{$A,A,A\vdash^1(A\wedge A)\wedge A$}\DP
+\end{gather*}
+\subsection{free and bound variables}
+\label{sec:org8cefafe}
+We shall use square brackets to denote all free occurrences of variables of one
+or several variables in an expression; if \(A\) is \(A[x_1,\dots,x_n]\), then
+\(A[x_1,\dots,x_n]\) denotes \(A[t_1,\dots,t_n/x_1,\dots,x_n]\)
+
+\emph{A bound variable has no individuality}
+\section{The Fall of Hilbert Program}
+\label{sec:orgbcbcbd6}
+\subsection{Hilbert's Program}
+\label{sec:org1d1ce37}
+\subsubsection{the formalist philosophy}
+\label{sec:orgf0c1ec9}
+For the \textbf{formalist}, mathematical activity is \emph{mechanical}: a machine could as well
+form sequences of strings of symbols, according to fixed laws.
+\subsubsection{Hilbert's ontology}
+\label{sec:org05c1d3c}
+The idea of Hilbert was to use this formal aspect of mathematics (which has the
+consequence that a mathematical proof can be viewed as a mathematical object
+itself) in order to \emph{prove} some general facts concerning mathematical activity.
+Hilbert's ontology of mathematics distinguished between:
+\begin{enumerate}
+\item \emph{Real} (or \emph{elementray}, \emph{finitist}) objects which \emph{do} exists
+\item \emph{Abstract} objects which do not actually exist
+\end{enumerate}
+\subsubsection{Hilbert's program}
+\label{sec:org2cec945}
+\emph{purity of methods}
+\subsubsection{consistency proofs}
+\label{sec:org92f7e63}
+\subsubsection{the fall}
+\label{sec:org27fc627}
+\subsection{Recursive Functions}
+\label{sec:orgcaec614}
+\begin{definition}[]
+A function is \textbf{recursive} iff it maps \(\N^k\) into \(\N\) (\(k\ge 0\)), and is obtained
+by means of the following schemes:
+
+(\(R1\)) \(I_i^n(a_1,\dots,a_n)=a_i\), \(a_1+a_2,a_1\cdot a_2,\chi_<(a_1,a_2)\)
+
+(\(R2\)) composition
+
+(\(R3\)) \textbf{\(\mu\)-operator}
+\end{definition}
+
+
+\textbf{Church's Thesis}: \emph{every computable function is recursive}.
+
+\begin{theorem}[]
+\begin{enumerate}
+\item The set of recursive functions is denumerable
+\item the set of recursive functions cannot be enumerated by a recursive function
+\end{enumerate}
+\end{theorem}
+\begin{proof}
+(2) means that if \((f_n)_{n\in\N}\) is an enumeration of all recursive functions,
+then the function \(F(n,m)=f_n(m)\) is not recursive: one easily sees that the
+function \(g(n)=F(n,m)+1\) would otherwise be recursive, but if \(g=f_k\), one would
+have \(g(k)=g(k)-1\)
+\end{proof}
+
+\begin{theorem}[]
+(\(R4\)) Constant functions are recursive
+
+(\(R5\)) Let \(F\) and \(G\) be recursive functions with respectively \(n\) and \(n+2\)
+arguments; then one can define a recursive function \(H\), with \(n+1\) arguments
+and such that
+\begin{align*}
+&H(a_1,\dots,a_n,0)=F(a_1,\dots,a_n)\\
+&H(a_1,\dots,a_n,k+1)=G(a_1,\dots,a_n,k,H(a_1,\dots,a_n,k))
+\end{align*}
+\end{theorem}
+
+\begin{definition}[]
+\(F\) is \textbf{primitive recursive} if \(F\) can be obtained by means of
+\((R1),(R2),(R4),(R5)\) 
+\end{definition}
+
+
+\begin{theorem}
+\begin{enumerate}
+\item the set of primitive recursive functions is denumerable
+\item the set of unary primitive recursive functions can be enumerated by means of
+a recursive binary function, called the \textbf{Ackermann function}
+\item The Ackermann function is not primitive recursive
+\end{enumerate}
+\end{theorem}
+
+\begin{definition}[]
+\begin{enumerate}
+\item A predicate \(P\) is \textbf{recursive} iff its characteristic function \(\chi_p\) is
+recursive
+\item A problem is \textbf{decidable} iff the predicate which represents the problem is
+recursive
+\end{enumerate}
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item Predicate calculus is undecidable: if one encodes formulas by integers, then
+the set of integers which are codes of theorems of predicate calculus is not
+recursive
+\item The \textbf{word problem} is undecidable: take the free group \(G\) generated by a
+finite number of points, and let \(g_1,\dots,g_k\) be elements of this group;
+let \(H\) be the normal subgroup generated by \(g_1,\dots,g_k\); then the
+equivalence relation \(st^{-1}\in H\) is undecidable for a suitable choice of
+\(G\) and \(g_1,\dots,g_k\)
+\end{enumerate}
+\end{examplle}
+
+\begin{definition}[]
+\(\bL_o\) is the language of arithmetic: constant: \(\overline{o}\), one unary
+function letter \(S\), two binary function letters \(+\) and \(\cdot\), and two binary
+predicate letters \(=\) and \(<\)
+\begin{enumerate}
+\item \(\sum\) is the smallest class formulas of \(\bL_0\) s.t.
+\begin{enumerate}
+\item atomic formulas and their negation belong to \(\sum\)
+\item if \(A,B\in\sum\), then \(A\wedge B,A\vee B\in\sum\)
+\item if \(A\in\Sigma\), \(x\) is not free in term \(t\), then \(\forall x<t\; A\in\sum\)
+\item if \(A\in\sum\) and \(x\) is a variable, then \(\exists xA\in\sum\)
+\end{enumerate}
+\item \(\prod\) with the following differences:
+\begin{enumerate}
+\setcounter{enumii}{3}
+\item if \(A\in\prod\) and \(x\) is not free in term \(t\), then \(\exists
+      x<t\; A\in\prod\)
+\item if \(A\in\prod\), then \(\neg A\in\prod\)
+\end{enumerate}
+\item A formula is \(\sum^0_n\) (resp. \(\prod_n^0\)) iff it can be written 
+\(Q_0x_0\dots Q_{n-1}x_{n-1}A\) where \(A\) is \(\prod\) and the quantifiers \(Q_i\)
+are alternating, and \(Q_0=\exists\) (resp. \(Q_0=\forall\)). For instance,
+Fermat's last theorem for a given \(n\) is \(\prod_n^0\):
+\begin{equation*}
+\forall z\forall a<z\forall b<z\forall c<z(abc\neq\overline{o}\to
+a^n+b^n\neq c^n)
+\end{equation*}
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[]
+Any \(\sum\) formula is equivalent to a \(\sum_1^0\)-formula
+\end{proposition}
+
+\begin{proof}
+If \(A\in\sum\), form \(A^x\) by replacing all existential quantifiers \(\exists z\)
+of \(A\) by bounded quantifiers \((\exists z<x:A^x)\in\Delta\). And \(A\) is equivalent
+to the \(\sum_1^0\)-formula \(\exists xA^x\)
+\end{proof}
+
+\begin{theorem}[]
+The properties \(F(x_1,\dots,x_n)=y\) and \(P(x_1,\dots,x_n)\) when \(F\) is a partial
+recursive function and \(P\) and r.e. predicate, can be expressed by means of \(\sum\)
+formulas 
+\end{theorem}
+
+\begin{definition}[]
+\begin{enumerate}
+\item Given integers \(a_0,a_{n-1}\), one defines \(\la
+   a_0,\dots,a_{n-1}\ra=2^{a_0+1}3^{a_1+1}\dots p_{n-1}^{a_{n-1}+1}\), \(Seq(x)\)
+is the predicate: for some
+\(x_0,\dots,x_{n-1}\) , \(x=\la x_0,\dots,x_{n-1}\ra\)
+\item \textbf{length}
+\begin{equation*}
+lh(x)=
+\begin{cases}
+0&x\not\in Seq\\
+n&x=\la x_0,\dots,x_{n-1}\ra
+\end{cases}
+\end{equation*}
+
+\item \textbf{projection}
+\begin{equation*}
+(x)_i=
+\begin{cases}
+a_i&i<lh(x)\\
+0&i\ge lh(x)
+\end{cases}
+\end{equation*}
+\item \textbf{concatenation}
+
+\(\la a_0,\dots,a_{n-1}\ra*\la b_0,\dots,b_{m-1}\ra=\la a_0,\dots,a_{n-1},b_0,\dots,b_{m-1}\ra\)
+\item \(\la a_0,\dots,a_{n-1}\ra\restriction i=\la a_0,\dots,a_{i-1}\ra\) if \(i<n\),
+otherwise \(x\restriction i=0\)
+\end{enumerate}
+\end{definition}
+
+
+\begin{definition}[]
+\begin{enumerate}
+\item A \textbf{numeral} is a term of \(\bL_o\) which canonically represents an integer;
+\(\overline{n}\) is the \(n\)th numeral; hence \(\overline{0}\) is the constant
+of \(\bL_0\), and \(\overline{n+1}=S\overline{n}\)
+\item One defines the following prim. rec. predicates:
+\begin{itemize}
+\item \(Term(a)\): \(a\) is a term
+\item \(Form(a)\): \(a\) is a formula
+\item \(Fr(a,b)\): \(b\) is the Gödel number of a variable occurring freely in the
+expression encoded by \(a\)
+\item \(Cl(a)\): \(a\) is the Gödel number of a closed expression \(\bL_0\)
+\item \(Subst(a,b,c)\): \(c\) is the Gödel number of a term substitutable for the
+variable with Gödel \(b\) in the formula with Gödel number \(a\)
+\end{itemize}
+\item prim. rec. functions
+\begin{itemize}
+\item \(Num(a)=\ulcorner\overline{a}\urcorner\), the Gödel number of the \(a\)th
+numeral
+\item \(Sub(a,b,c)=\) the Gödel number of \(A[t/x_n]\) if \(a=\ulcorner
+     A\urcorner,b=\ulcorner x_n\urcorner,c=\ulcorner t\urcorner\)
+\end{itemize}
+\end{enumerate}
+\end{definition}
+
+
+\begin{theorem}[]
+\begin{enumerate}
+\item There exists a prim. rec. function \(Val\) s.t. if \(a\) is the Gödel number of a
+closed term of \(\bL_0\), \(Val(a)\) is the integer represented by this term; in
+particular, \(Val(Num(a))=a\)
+\end{enumerate}
+\end{theorem}
+\end{document}

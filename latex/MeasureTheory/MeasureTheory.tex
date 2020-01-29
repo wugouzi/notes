@@ -1,0 +1,155 @@
+% Created 2020-01-12 日 20:27
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\author{Claudio Landim}
+\date{\today}
+\title{Measure Theory}
+\hypersetup{
+ pdfauthor={Claudio Landim},
+ pdftitle={Measure Theory},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage
+\section{Introduction: a non-measurable set}
+\label{sec:orgaf94a3a}
+Suppose we want a measure that satisfies:
+\begin{enumerate}
+\setcounter{enumi}{-1}
+\item \(\lambda:\calp(\R)\to\R_+\cup\{+\infty\}\)
+\item \(\lambda((a,b])=b-a\)
+\item \(A\subseteq\R,A+x=\{x+y:y\in A\}\)
+\begin{equation*}
+\forall A\subseteq\R\forall x\in\R,\lambda(A+x)=\lambda(A)
+\end{equation*}
+\item \(A=\bigcup_{j\ge 1}A_j,A_j\cap A_k=\emptyset\)
+\begin{equation*}
+\lambda(A)=\displaystyle\sum_{k\ge1}\lambda(A_k)
+\end{equation*}
+\end{enumerate}
+
+
+
+Define \(x\sim y\) for \(x,y\in\R\) if \(y-x\in\Q\). \(\Lambda=\R/\sim\) and
+\(\alpha,\beta\in\Lambda\). \(\Gamma\) is uncountable since each equivalent class
+is countable.
+
+By the \textbf{Axiom of Choice}, we have a \(\Omega\subseteq\R\) s.t. for each
+\([x]\in\R/\sim\), there is a \(x\in[x]\) s.t. \(x\in\Omega\). Hence we can assume
+\(\Omega\subseteq(0,1)\). 
+
+\begin{claim}
+For \(p,q\in\Q\), either \(\Omega+p=\Omega+q\) or
+\(\Omega+p\cap\Omega+q=\emptyset\).
+\end{claim}
+
+\begin{proof}
+Assume \((\Omega+p)\cap(\Omega+q)\neq\emptyset\), \(x=\alpha+p=\beta+q\). Hence
+\(\alpha-\beta=q-p\in\Q\), which implies \(\alpha=\beta\).
+\end{proof}
+
+\begin{claim}
+\(\Omega+q\subseteq(-1,2)\) since \(-1<q<1\).
+\end{claim}
+
+In particular,
+\begin{equation*}
+\displaystyle\bigcup_{\substack{q\in\Q\\-1<q<1}}(\Omega+q)\subseteq(-1,2)
+\end{equation*}
+
+\begin{claim}
+If \(E\subseteq F\), then \(\lambda(E)\le\lambda(F)\)
+\end{claim}
+
+\begin{proof}
+\(\lambda(F)=\lambda(E\cup(F-E))=\lambda(E)+\lambda(F-E)\)
+\end{proof}
+
+If \(q\neq p\),
+\begin{equation*}
+\lambda(\displaystyle\bigcup_{\substack{q\in\Q\\-1<q<1}}(\Omega+q))
+=\displaystyle\sum_{\substack{q\in\Q\\-1<q<1}}\lambda(\Omega+q)
+=\displaystyle\sum_{\substack{q\in\Q\\-1<q<1}}\lambda(\Omega)
+\le\lambda((-1,2))
+=3
+\end{equation*}
+
+Hence \(\lambda(\Omega)=0\)
+
+\begin{claim}
+\((0,1)\subseteq\sum_{q\in\Q,-1<q<1}(\Omega+q)\)
+\end{claim}
+
+\begin{proof}
+Fix \(x\in[0,1]\), \(\exists\alpha\in[x]\cap\Omega\) and \(\alpha\in(0,1)\). Hence
+\(\alpha-x=q\in\Q\). Then \(x\in\Omega+q\)
+\end{proof}
+
+Hence we have a contradiction and there is no such \(\lambda\) function.
+
+\section{Classes of subsets}
+\label{sec:orgcdbe658}
+\begin{definition}[]
+For \(\cals\subseteq\calp(\Omega)\), \(\cals\) is a \textbf{semi-algebra} if
+\begin{enumerate}
+\item \(\Omega\in\cals\)
+\item If \(A,B\in\cals\), then \(A\cap B\in\cals\)
+\item For all \(A\in\cals\), there are \(E_1,\dots,E_n\in\cals\) s.t. \(A^c=\sqcup E_j\)
+\end{enumerate}
+\end{definition}
+
+\begin{examplle}[]
+If \(\Omega=\R\) and 
+\begin{align*}
+\cals&=\R\cup\{(a,b]:a<b,a,b\in\R\}\\
+&\cup\{(-\infty,b]:b\in\R\}\\
+&\cup\{(a,\infty):a\in\R\}\\
+&\cup\emptyset
+\end{align*}
+then \(\cals\) is a semi-algebra
+\end{examplle}
+
+\begin{definition}[]
+Take \(\cala\subseteq\calp(\Omega)\), \(\cala\) is an \textbf{algebra} if
+\begin{enumerate}
+\item \(\Omega\in\cala\)
+\item If \(A,B\in\cala\), then \(A\cap B\in\cala\)
+\item If \(A\in\cala\), then \(A^c\in\cala\)
+\end{enumerate}
+\end{definition}
+
+If \(\cala\) is an algebra, then it is also semi-algebra.
+
+\begin{definition}[]
+\(\calf\subseteq\calp(\Omega)\) is a \textbf{\(\sigma\)-algebra} if
+\begin{enumerate}
+\item \(\Omega\in\calf\)
+\item If \(A_j\in\calf\) for \(j\ge 1\), then \(\bigcap_{j\ge1}A_j\in\calf\)
+\item If \(A\in\calf\), then \(A^c\in\calf\)
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[]
+Suppose \(\cala_\alpha\subseteq\calp(\Omega)\), \(\cala_\alpha\) is an algebra, 
+\(\alpha\in I\). Then \(\cala=\bigcap_{\alpha\in I}\cala_\alpha\) is an algebra
+\end{proposition}
+\end{document}

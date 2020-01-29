@@ -5,7 +5,14 @@
 
 #+LATEX_HEADER: \input{preamble.tex}
 #+LATEX_HEADER: \usepackage{bussproofs}
+#+LATEX_HEADER: \def \EBA {\EnableBpAbbreviations}
+#+LATEX_HEADER: \def \RL[#1]{\RightLabel{#1}}
 #+EXPORT_FILE_NAME: ../latex/BasicProofTheory/BasicProofTheory.tex
+#+LATEX_HEADER: \DeclareMathOperator{\Nm}{\textbf{Nm}}
+#+LATEX_HEADER: \DeclareMathOperator{\Ni}{\textbf{Ni}}
+#+LATEX_HEADER: \DeclareMathOperator{\Nc}{\textbf{Nc}}
+
+#+LATEX_HEADER: 
 
 * Introduction
 ** Preliminaries
@@ -535,6 +542,9 @@
     &\text{of }A\text{ into a proof }p(q)\text{ of }B
     \end{align*}
 
+    The BHK-interpretation of intuitionistic logic is based on the notion of *proof*
+    instead of truth
+
     A *logical law* of implication logic, according to the BHK-interpretation, is a
     formula for which we can give a proof, no matter how we interpret the atomic
     formulas. A *rule* is valid for this interpretation if we know how to construct
@@ -860,3 +870,358 @@
     \end{align*}
 
     The corresponding term system for $\tohm$ is $\cl_\bto$
+* N-systems and H-systems
+** Natural Deduction Systems
+   #+ATTR_LATEX: :options [\textit{The systems} $\Nm,\Ni,\Nc$ ]
+   #+BEGIN_definition
+   Assumptions are formula occurrences always appearing at the top of a branch
+   and are supposed to be labelled by markers. The set of assumptions of the
+   same form with the same marker forms an *assumption class*. Distinct formulas
+   must have distinct markers. _We permit empty assumption classes_.
+
+   Assumptions may be closed; assumption classes are always closed "en bloc",
+   that is to say, at each inference, either all assumptions in a class are
+   closed, or they are left open.
+
+   Deductions in the system of natural deduction are generated as follows.
+
+   \noindent /Basis/. The single-node tree with label $A$ is a (natural) *deduction*
+   from the open assumption $A$; there are no closed assumptions
+
+   \noindent /Inductive step/. Let $\cald_1,\cald_2,\cald_3$ be deductions. A
+   (natural) *deduction* $\cald$ may be constructed according to one of the rules
+   below. The class $[A]^u,[B]^v$ 
+
+   For $\wedge,\vee,\to,\forall,\exists$ we have *introduction rules* (*I-rules*)
+   and *elimination rules* (*E-rules*)
+   \begin{gather*}
+   \AxiomC{$\cald_1$}
+   \noLine
+   \UnaryInfC{$A$}
+   \AxiomC{$\cald_2$}
+   \noLine
+   \UnaryInfC{$B$}
+   \RightLabel{\(\wedge\)I}
+   \BinaryInfC{$A\wedge B$}
+   \DisplayProof\hspace{0.7cm}
+   \AxiomC{$\cald_1$}
+   \noLine
+   \UnaryInfC{$A\wedge B$}
+   \RightLabel{$\wedge\text{E}_{\text{R}}$}
+   \UnaryInfC{$A$}
+   \DisplayProof\hspace{0.7cm}
+   \AxiomC{$\cald_1$}
+   \noLine
+   \UnaryInfC{$A\wedge B$}
+   \RightLabel{$\wedge\text{E}_{\text{L}}$}
+   \UnaryInfC{$B$}
+   \DisplayProof\\
+   \AxiomC{$[A]^u$}
+   \noLine
+   \UnaryInfC{$\cald_1$}\noLine\UnaryInfC{$B$}
+   \RightLabel{$\to\text{I},u$}
+   \UnaryInfC{$A\to B$}\DisplayProof\hspace{1cm}
+   \AxiomC{$\cald_1$}
+   \noLine\UnaryInfC{$A\to B$}
+   \AxiomC{$\cald$}\noLine\UnaryInfC{$A$}
+   \RightLabel{$\to$E}\BinaryInfC{$B$}\DisplayProof\\
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$A$}
+   \RightLabel{$\vee\text{I}_{\text{R}}$}
+   \UnaryInfC{$A\vee B$}\DisplayProof\quad
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$B$}
+   \RightLabel{$\vee\text{I}_{\text{L}}$}
+   \UnaryInfC{$A\vee B$}\DisplayProof\quad
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$A\vee B$}
+   \AxiomC{$[A]^u$}\noLine\UnaryInfC{$\cald_2$}\noLine
+   \UnaryInfC{$C$}\AxiomC{$[B]^u$}\noLine\UnaryInfC{$\cald_3$}
+   \noLine\UnaryInfC{$C$}
+   \RightLabel{$\vee\text{E},u,v$}
+   \TrinaryInfC{$C$}\DisplayProof\\
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$A[x/y]$}
+   \RightLabel{$\forall$I}\UnaryInfC{$\forall xA$}\DisplayProof\quad
+   \parbox{11em}{In $\forall\text{I},y\equiv x$ or $y\not\in\fv(A)$, and $y$ is
+   not free in any assumption open in $\cald_1$}\hspace{0.9cm}
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$\forall xA$}
+   \RightLabel{$\forall$E}\UnaryInfC{$A[x/t]$}\DisplayProof\\
+   \AxiomC{$\cald_1$}\noLine\UnaryInfC{$A[x/t]$}
+   \RightLabel{$\exists$I}\UnaryInfC{$\exists xA$}\DisplayProof\hspace{0.9cm}
+   \AxiomC{$\cald_1$}
+   \noLine\UnaryInfC{$\exists xA$}\AxiomC{$[A[x/y]]^u$}\noLine
+   \UnaryInfC{$\cald_2$}\noLine\UnaryInfC{$C$}
+   \RightLabel{$\exists\text{E},u$}\BinaryInfC{$C$}\DisplayProof\quad
+   \parbox{11em}{In $\exists\text{I},y\equiv x$ or $y\not\in\fv(A)$, and $y$ is
+   not free  in $C$ nor in any assumption open in $\cald_2$ except in
+   $[A[x/y]]^u$}
+   \end{gather*}
+
+   This completes the description of the rules for the minimal logic $\Nm$. Note
+   that $\bot$ has not been mentioned in any of the above rules, and therefore
+   it behaves in minimal logic as an arbitrary unprovable propositional
+   constant.
+
+   To obtain the intuitionistic and classical system $\Ni$ and $\Nc$ we add the 
+   *intuitionistic absurdity rule* $\bot_\text{i}$ and the more general 
+   *classical absurdity rule* $\bot_\text{c}$ respectively:
+   \begin{equation*}
+   \AxiomC{$\cald_1$}
+   \noLine
+   \UnaryInfC{$\bot$}\RightLabel{$\bot_\text{i}$}
+   \UnaryInfC{$A$}\DisplayProof\hspace{1.5cm}
+   \AxiomC{$[\neg A]^u$}\noLine\UnaryInfC{$\cald_1$}
+   \noLine\UnaryInfC{$\bot$}\RightLabel{$\bot_{\text{c}},u$}\UnaryInfC{$A$}
+   \DisplayProof
+   \end{equation*}
+
+   ($\bot_{\text{c}}$ is more general than $\bot_{\text{i}}$ since $[\neg A]^u$
+   may be empty). In an E-rule application, the premise containing the occurence
+   of the logical operator being eliminated is called the *major* premise. The
+   other premise(s) are called the *minor* premise(s). As a standard convention in
+   displaying prooftrees, we place the major premises of elimination rule
+   applications in leftmost position.
+
+   As to individual variables which are considered to be free in deduction, we
+   stipulate
+   * The deduction consisting of assumption $A$ only has $\fv(A)$ as free
+     variables;
+   * at each rule application, the free individual variables are inherited from
+     the immediate subdeduction, except that
+   * in an application of \(\exists\)E the occurrences of the free variable
+     $y$ in $\cald_2$ become bound, and in an application of \(\forall\)I the
+     occurrences of variable $y$ in $\cald_1$ become bound, and
+   * in \(\to\)I the vairables in $\fv(A)$ have to be added in case $[A]^u$ is
+     empty, in $\vee\text{I}_\text{R}$ those in $\fv(B)$ have to be added, and
+     in $\vee\text{I}_\text{L}$ those in $\fv(A)$ have to be added
+
+
+   The individual variable becoming bound in an application \alpha of
+   \(\forall\)I or \(\exists\)E is said to be the *proper* variable of \alpha. 
+
+
+   If $A$ is among the open assumptions of a dduction $\cald$ with conclusion
+   $B$, then conclusion $B$ in $\cald$ is said to *depend* on $A$ in $\cald$. From
+   now on we regard "assumption of $\cald$" and "open assumption of $\cald$" as
+   synonymous. 
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A convenient global assumption in the presentation of a deduction is the 
+   *variable convention*. A deduction is said to satisfy the variable convention
+   if the proper variables of the application of \(\exists\)E and \(\forall\)I
+   are kept distinct.
+
+   If moreover the bound and free variables are kept distinct, the deduction is
+   said to be a *pure-variable* deduction.
+   #+END_definition
+
+   #+BEGIN_remark
+   Since in out notation for prooftrees, $[A]^u$ refers to all assumptions
+   $A$ labelled $u$, it is tacitly understood that in \(\vee\)E the label $u$
+   occurs in $\cald_2$ only, and $v$ in $\cald_3$ only.
+   #+END_remark
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The theories generated by $\Nm,\Ni$ and $\Nc$ are denoted by $\bM$ (minimal
+   logic), $\bI$ (intuitionistic logic) and $\bC$ (classical logic)
+   respectively.
+
+   $\Gamma\vdash_{\bS}A$ for $\bS=\bM,\bI,\bC$ iff $A$ is derivable from the set
+   of assumptions \Gamma in the N-systems for $\bS$
+   #+END_definition
+
+   #+BEGIN_remark
+   1. Sometimes it is more natural to write \(\forall\)E and \(\exists\)I as
+      two-premise rules, with the individual term as second premise
+      \begin{align*}
+      \AxiomC{$\forall xA$}
+      \AxiomC{$t$}
+      \BinaryInfC{$A[x/t]$}
+      \DisplayProof\hspace{1cm}
+      \AxiomC{$A[x/t]$}
+      \AxiomC{$t$}
+      \BinaryInfC{$\exists xA$}
+      \DisplayProof
+      \end{align*}
+   2. The statement of the rules \(\forall\)I and \(\exists\)E may be simplified
+      somewhat if we rely on convention that formulas differing only in the
+      naming of bound variables are equal. These rules may then be written as:
+      \begin{gather*}
+      \AxiomC{$\cald_1$}
+      \noLine\UnaryInfC{$A$}\RightLabel{$\forall$I}
+      \UnaryInfC{$\forall xA$}\DisplayProof\hspace{1cm}
+      \AxiomC{$\cald_1$}
+      \noLine\UnaryInfC{$\exists xA$}
+      \AxiomC{$[A]^u$}\noLine\UnaryInfC{$\cald_2$}\noLine
+      \UnaryInfC{$C$}\RightLabel{$\exists\text{E},u$}
+      \BinaryInfC{$C$}\DisplayProof
+      \end{gather*}
+      where in \(\forall\)I $x$ is not free in any assumption open in $\cald_1$
+      and and \(\exists\)E $x$ is not free in $C$ nor in any assumption open in
+      $\cald_2$ except in $[A]^u$
+   #+END_remark
+*** Natural deductions in sequent style
+    We call the set of open assumptions at a node the *context*. A context is a set
+    \begin{equation*}
+    u_1:A_1,u_2:A_2,\dots,u_n:A_n
+    \end{equation*}
+   where $u_i$ are pairwise distinct; the $A_i$ need not be distinct. The
+   deductions now become trees where each node is labelled with a sequent of the
+   form $\Gamma\Ra B$, \Gamma is a context. Below, when writing a union of
+   contexts such as $\Gamma\Delta$ (short for $\Gamma\cup\Delta$), it will
+   always be assumed that the union is *consistent*
+   \begin{alignat*}{2}
+   &u:A\Ra A\e(\text{Axiom})&&\\
+   &\AxiomC{$\Gamma[u:A]\Ra B$}\RightLabel{$\to$I}
+   \UnaryInfC{$\Gamma\Ra A\to B$}\DisplayProof&&
+   \AxiomC{$\Gamma\Ra A\to B$}
+   \AxiomC{$\Delta\Ra A$}\RightLabel{$\to$E}\BinaryInfC{$\Gamma\Delta\Ra B$}
+   \DisplayProof\\
+   &\AxiomC{$\Gamma\Ra A$}\AxiomC{$\Delta\Ra B$}\RightLabel{$\wedge$I}
+   \BinaryInfC{$\Gamma\Delta\Ra A\wedge B$}\DisplayProof\quad&&
+   \AxiomC{$\Gamma\Ra A_0\wedge A_1$}\RightLabel{$\wedge$E}
+   \UnaryInfC{$\Gamma\Ra A_i$}\DisplayProof\\
+   &\AxiomC{$\Gamma\Ra A_i$}\RightLabel{$\vee$I}
+   \UnaryInfC{$\Gamma\Ra A_0\vee A_1$}\DisplayProof&&
+   \def\defaultHypSeparation{\hskip 1pt}
+   \AxiomC{$\Gamma\Ra A\vee B$}
+   \AxiomC{$\Delta[u:A]\Ra C$}
+   \AxiomC{$\Delta'[v:B]\Ra C$}
+   \RightLabel{$\vee$E}
+   \TrinaryInfC{$\Gamma\Delta\Delta'\Ra C$}\DisplayProof\\
+   &\AxiomC{$\Gamma[x:\neg A]\Ra\bot$}\RightLabel{$\bot_\text{c}$}
+   \UnaryInfC{$\Gamma\Ra A$}\DisplayProof&&
+   \AxiomC{$\Gamma\Ra\bot$}\RightLabel{$\bot_{\text{i}}$}
+   \UnaryInfC{$\Gamma\Ra A$}\DisplayProof\\
+   &\EBA\AXC{$\Gamma\Ra[x/y]$}
+   \RightLabel{$\forall$I}
+   \UIC{$\Gamma\Ra\forall xA$}\DP&&\EBA
+   \AXC{$\Gamma\Ra\forall xA$}\RL{$\forall$E}
+   \UIC{$\Gamma\Ra A[x/t]$}\DP\\
+   &\EBA\AXC{$\Gamma\Ra A[x/t]$}
+   \RL{$\exists$I}\UIC{$\Gamma\Ra\exists xA$}\DP&&
+   \EBA\AXC{$\Gamma\Ra\exists yA[x/y]$}
+   \AXC{$\Delta[u:A]\Ra C$}\RL{$\exists$E}
+   \BIC{$\Gamma\delta\Ra C$}\DP
+   \end{alignat*}
+
+   Here $[u:C]$ means that the assumption $u:C$ in the context may be present or
+   absent.
+
+
+   #+BEGIN_exercise
+   Give proofs in $\Nm$ or in $\Ni$ of
+   \begin{align*}
+   &A\to(B\to A)\\
+   &(A\to A\vee B),B\to(A\vee B)\\
+   &(A\to C)\to[(B\to C)\to(A\vee B\to C)]\\
+   &A\wedge B\to A,A\wedge B\to B,A\to(B\to A\wedge B)\\
+   &\bot\to A\\
+   &\forall xA\to A[x/t];\quad A[x/t]\to\exists xA\\
+   &\forall x(B\to A)\leftrightarrow(B\to\forall yA[x/y])\e
+   (x\not\in\fv(B),y\equiv x\text{ or }y\not\in\fv(A))\\
+   &\forall x(A\to B)\leftrightarrow(\exists yA[x/y]\to B)\e
+   (x\not\in\fv(B),y\equiv x\text{ or }y\not\in\fv(A))
+   \end{align*}
+   #+END_exercise
+   #+BEGIN_proof
+   \begin{gather*}
+   \EBA\AXC{$A^u$}
+   \RL{${\to}\text{I},v$}\UIC{$B\to A$}
+   \RL{${\to}\text{I},u$}\UIC{$A\to(B\to A)$}\DP\quad
+   \EBA\AXC{$A^u$}\RL{$\forall\text{I}_\text{R}$}
+   \UIC{$A\vee B$}\RL{${\to}\text{I},u$}
+   \UIC{$A\to (A\vee B)$}\DP
+   \end{gather*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   Give proofs in $\Nm$ of 
+   \begin{align*}
+   &A\to\neg\neg A\\
+   &\neg\neg\neg A\leftrightarrow\neg A\\
+   &\neg\neg(A\to B)\to(\neg\neg A\to\neg\neg B)\\
+   &\neg\neg(A\wedge B)\leftrightarrow(\neg\neg A\wedge\neg\neg B)\\
+   &\neg(A\vee B)\leftrightarrow(\neg A\wedge \neg B)\\
+   &\neg\neg\forall xA\to\forall x\neg\neg A\\
+   \end{align*}
+   #+END_exercise
+   #+BEGIN_proof
+   \begin{gather*}
+   \EBA\AXC{$A\to\bot^u$}
+   \AXC{$A^v$}\RL{$\to$E}
+   \BIC{$\bot$}\RL{$\to,u$}
+   \UIC{$(A\to\bot)\to\bot$}\RL{$\to,v$}
+   \UIC{$A\to((A\to\bot)\to\bot)$}\DP\hspace{0.5cm}
+   \EBA\AXC{$\neg\neg\neg A^u$}
+   \AXC{$A^v$}
+   \noLine\UIC{$\cald$}\noLine\UIC{$\neg\neg A$}
+   \BIC{$\bot$}\DP
+   \end{gather*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   Give proofs in $\Nm$ of
+   1. $(B\to C)\to(A\to B)\to A\to C$ (*b*-axioms)
+   2. $(A\to B\to C)\to B\to A\to C$ (*c*-axioms)
+   3. $(A\to A\to B)\to A\to B$ (*w*-axioms)
+   #+END_exercise
+
+   #+ATTR_LATEX: :options [$\bigstar$]
+   #+BEGIN_exercise
+   Prove in $\Ni$ $(\neg\neg A\to\neg\neg B)\to\neg\neg(A\to B)$
+   #+END_exercise
+   #+BEGIN_proof
+   \begin{gather*}
+   \EBA\AXC{$(A\to B)\to\bot^v$}
+   \AXC{$\cald$}\noLine\UIC{$B\to(A\to B)$}
+   \AXC{$B^u$}
+   \BIC{$A\to B$}
+   \BIC{$\bot$}\RL{$\to,u$}
+   \UIC{$B\to\bot$}\DP
+   \end{gather*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   Prove in $\Nc$
+   1. $A\vee B\leftrightarrow\neg(\neg A\wedge\neg B)$
+   2. $\exists xA\leftrightarrow\neg\forall x\neg A$
+   3. $((A\to B)\to A)\to A$ (Peirce's law)
+   #+END_exercise
+   #+BEGIN_proof
+   \begin{gather*}
+   \EBA\AXC{$(\neg A\wedge\neg B)\to\bot^u$}
+   \AXC{$(\neg(A\vee B))^v$}
+   \noLine\UIC{$\cald$}\noLine
+   \UIC{$(\neg A\wedge\neg B)$}
+   \BIC{$\bot$}
+   \UIC{$A\vee B$}\DP
+   \end{gather*}
+   #+END_proof
+   #+BEGIN_exercise
+   Construct in $\tonm$ a proof of
+   \begin{equation*}
+   ((A\to B)\to C)\to(A\to C)\to C
+   \end{equation*}
+   from two instances of Peirce's law as assumptions: $((A\to B)\to A)\to A$ and 
+   $((C\to A)\to C)\to C$
+   #+END_exercise
+
+   #+BEGIN_exercise
+   Derive in $\tonm$ $P_{A,B\wedge C}$ from $P_{A,B}$ and $P_{A,C}$ where
+   $P_{X,Y}$ is $((X\to Y)\to X)\to X$
+   #+END_exercise
+
+   #+BEGIN_exercise
+   Let $F[*],G[*]$ be a positive and negative context respectively. Prove in
+   $\Nm$ that
+   \begin{align*}
+   &\vdash\forall\overrightarrow{x}(A\to B)\to(F[A]\to F[B])\\
+   &\vdash\forall\overrightarrow{x}(A\to B)\to(G[A]\to G[B])\\
+   \end{align*}
+   where $\overrightarrow{x}$ consists of the variables in $A\to B$ becoming
+   bound by substitution of $A$ and $B$ into $F[*]$ in the first line, and into
+   $G[*]$ in the second line
+   #+END_exercise
+*** The Complete Discharge Convention
+$wef$
