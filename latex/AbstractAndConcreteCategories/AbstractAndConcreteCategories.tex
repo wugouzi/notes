@@ -1,0 +1,153 @@
+% Created 2020-04-15 三 14:46
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{imakeidx}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{preamble.tex}
+\graphicspath{{../../images/CAT/}}
+\author{Jiří Adámek \& Horst Herrlich \& George E. Strecker}
+\date{\today}
+\title{\aunclfamily\Huge Abstract and Concrete Categories \\ The Joy of Cats \\ \includegraphics[scale=1.2]{cat.png}}
+\hypersetup{
+ pdfauthor={Jiří Adámek \& Horst Herrlich \& George E. Strecker},
+ pdftitle={\aunclfamily\Huge Abstract and Concrete Categories \\ The Joy of Cats \\ \includegraphics[scale=1.2]{cat.png}},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.3.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle \clearpage
+\setcounter{tocdepth}{2}
+\tableofcontents \clearpage\section{Categories, Functors, and Natural Transformations}
+\label{sec:org7de109f}
+\subsection{Categories and Functors}
+\label{sec:org28b13b6}
+\subsubsection{Categories}
+\label{sec:orgf070b17}
+\begin{definition}[]
+A \textbf{category} is a quadruple \(\bA=(\calo,\hom,id,\circ)\) consisting
+\begin{enumerate}
+\item a class \(\calo\), whose members are called \textbf{\(\bA\)-objects}
+\item for each pair \((A,B)\) of \(\bA\)-objects, a set \(\hom(A,B)\) whose
+members are called \textbf{\(\bA\)-morphisms from \(A\) to \(B\)}
+\end{enumerate}
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item The following \textbf{constructs}; i.e., categories of structured sets and
+structure-preserving functions between them
+\begin{enumerate}
+\item \(\Alg(\Omega)\) with objects all \textbf{\(\Omega\)-algebras} and morphisms all \par
+\textbf{\(\Omega\)-homomorphisms} between them. Here \(\Omega=(n_i)_{i\in I}\) is a
+family of natural numbers \(n_i\), indexed by a set \(I\). An
+\(\Omega\)-algebra is a pair \(X,(\omega_i)_{i\in I}\) consisting of a set
+\(X\) and a family of functions \(\omega_i:X^{n_i}\to X\), called \textbf{\(n_i\)-ary
+operations} on \(X\). An \(\Omega\)-homomorphism \(f:(X,(\omega_i)_{i\in
+         I}\to(\what{X},(\what{\omega}_i)_{i\in I})\) is a function \(f:X\to\what{X}\) for
+which the diagram
+\begin{center}
+\begin{tikzcd}
+X^{n_i}\arrow[r,"f^{n_i}"]\arrow[d,"\omega_i"']&
+\what{X}^{n_i}\arrow[d,"\what{\omega}_i"]\\
+X\arrow[r,"f"']&\what{X}
+\end{tikzcd}
+\end{center}
+commutes for each \(i\in I\).
+\item \textbf{\(\Sigma\)-Seq} with objects all (deterministic, sequential)
+\textbf{\(\Sigma\)-acceptor}, where \(\Sigma\) is a finite set of input symbols. Objects
+are quadruples \((Q,\delta,q_0,F)\) where \(Q\) is a finite set of states, 
+\(\delta:\Sigma\times Q\to Q\) is a transition map, \(q_0\in Q\) is the
+initial state, and \(F\subseteq Q\) is the set of final states.
+
+A morphism \(f:(Q,\delta,q_0,F)\to(Q',\delta',q_0',F')\) (called a
+\textbf{simulation}) is a function \(f:Q\to Q'\) that preserves
+\begin{enumerate}
+\item transitions, i.e., \(\delta'(\sigma,f(q))=f(\delta(\sigma,q))\)
+\item the initial state, i.e., \(f(q_0)=q_0'\)
+\item the final states, i.e., \(f[F]\subseteq F'\)
+\end{enumerate}
+\end{enumerate}
+\item The following categories where the objects and morphisms are \emph{not}
+constructed sets and structure-preserving functions:
+\begin{enumerate}
+\item \(\Mat\) with objects all natural numbers, and for which \(\hom(m,n)\) is
+the set of all real \(m\times n\) matrices, \(id_n:n\to n\) is the unit
+diagonal matrix, and composition is defined by \(A\circ B=BA\)
+
+\item \(\Aut\) with objects all (deterministic, sequential, Moore) \textbf{automata}.
+Objects are sectuples \((Q,\Sigma,Y,\delta,q_0,y)\), where \(Q\) is the set of
+states, \(\Sigma\) and \(Y\) are the sets of input symbols and output symbols,
+respectively, \(\delta:\Sigma\times Q\to Q\) is the transition map, 
+\(q_0\in Q\) is the initial state, and \(y:Q\to Y\) is the output map.
+Morphisms from an automaton \((Q,\Sigma,Y,\delta,q_0,y)\) to an automaton
+\((Q',\Sigma',Y',\delta',q_0',y')\) are triples \((f_Q,f_{\Sigma},f_Y)\) of
+functions satisfying the following conditions
+\begin{enumerate}
+\item preservation of transitions:
+\(\delta'(f_{\Sigma}(\sigma),f_Q(q))=f_Q(\delta(\sigma,q))\)
+
+\item preservation of outputs: \(f_Y(y(q))=y'(f_Q(q))\)
+
+\item preservation of initial state: \(f_Q(q_0)=q_0'\)
+\end{enumerate}
+\end{enumerate}
+\end{enumerate}
+\end{examplle}
+\subsection{The Dual Principle}
+\label{sec:org9ecfb95}
+\index{dual category}
+\begin{definition}[]
+For any category \(\bA=(\calo,\hom_{\bA},id,\circ)\) the \textbf{dual} (or \textbf{opposite})
+\textbf{category of \(\bA\)} is the category
+\(\bA^{\op}=(\calo,\hom_{\bA^{\op}},id,\circ^{\op})\), where
+\(\hom_{\bA^{\op}}(A,B)=\hom_{\bA}(B,A)\) and \(f\circ^{\op}g=g\circ f\)
+\end{definition}
+
+Consider the property of objects \(X\) in \(\bA\):
+\begin{equation*}
+\calp_{\bA}(X)\equiv \textit{ For any } \bA\textit{-object } A
+\textit{ there exists exactly one }
+\bA\textit{-morphism } f:A\to X
+\end{equation*}
+
+Step1: In \(\calp_{\bA}(X)\) replace all occurrences of \(\bA\) by \(\bA^{\op}\),
+thus obtaining the property
+\begin{equation*}
+\calp_{\bA^{\op}}(X)\equiv \textit{ For any } \bA^{\op}\textit{-object } A
+\textit{ there exists exactly one }
+\bA^{\op}\textit{-morphism } f:A\to X
+\end{equation*}
+
+Step2: Translate \(\calp_{\bA^{\op}}(X)\) into the logically equivalent
+statement
+\begin{equation*}
+\calp_{\bA}^{\op}(X)\equiv \textit{ For any } \bA\textit{-object } A
+\textit{ there exists exactly one }
+\bA\textit{-morphism } f:X\to A
+\end{equation*}
+
+The \textbf{Duality Principle for Categories} states
+\begin{center}
+\textit{Whenever a property \(\calp\) holds for all categories,}\\
+\textit{then the property \(\calp^{\op}\) holds for all categories.}
+\end{center}
+\section{Index}
+\label{sec:orgd7312ed}
+\renewcommand{\indexname}{}
+\printindex
+\end{document}

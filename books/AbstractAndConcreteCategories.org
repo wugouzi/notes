@@ -1,0 +1,125 @@
+#+TITLE: \aunclfamily\Huge Abstract and Concrete Categories @@latex:\\@@ The Joy of Cats @@latex:\\@@ \includegraphics[scale=1.2]{cat.png}
+#+AUTHOR: Jiří Adámek & Horst Herrlich & George E. Strecker
+#+OPTIONS: toc:2
+#+LATEX_HEADER: \input{preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/AbstractAndConcreteCategories/AbstractAndConcreteCategories.org
+#+LATEX_HEADER: \graphicspath{{../../images/CAT/}}
+* Categories, Functors, and Natural Transformations
+** Categories and Functors
+*** Categories
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *category* is a quadruple $\bA=(\calo,\hom,id,\circ)$ consisting
+   1. a class $\calo$, whose members are called *\(\bA\)-objects*
+   2. for each pair $(A,B)$ of \(\bA\)-objects, a set \(\hom(A,B)\) whose
+      members are called *\(\bA\)-morphisms from $A$ to $B$*
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   1. The following *constructs*; i.e., categories of structured sets and
+      structure-preserving functions between them
+      1. \(\Alg(\Omega)\) with objects all *\(\Omega\)-algebras* and morphisms all \par
+         *\(\Omega\)-homomorphisms* between them. Here \(\Omega=(n_i)_{i\in I}\) is a
+         family of natural numbers \(n_i\), indexed by a set $I$. An
+         \(\Omega\)-algebra is a pair \(X,(\omega_i)_{i\in I}\) consisting of a set
+         $X$ and a family of functions \(\omega_i:X^{n_i}\to X\), called *\(n_i\)-ary
+         operations* on $X$. An \(\Omega\)-homomorphism \(f:(X,(\omega_i)_{i\in
+         I}\to(\what{X},(\what{\omega}_i)_{i\in I})\) is a function \(f:X\to\what{X}\) for
+         which the diagram
+         \begin{center}
+         \begin{tikzcd}
+         X^{n_i}\arrow[r,"f^{n_i}"]\arrow[d,"\omega_i"']&
+         \what{X}^{n_i}\arrow[d,"\what{\omega}_i"]\\
+         X\arrow[r,"f"']&\what{X}
+         \end{tikzcd}
+         \end{center}
+         commutes for each $i\in I$.
+      2. *\(\Sigma\)-Seq* with objects all (deterministic, sequential)
+         *\(\Sigma\)-acceptor*, where \Sigma is a finite set of input symbols. Objects
+         are quadruples \((Q,\delta,q_0,F)\) where $Q$ is a finite set of states, 
+         \(\delta:\Sigma\times Q\to Q\) is a transition map, \(q_0\in Q\) is the
+         initial state, and \(F\subseteq Q\) is the set of final states.
+
+         A morphism \(f:(Q,\delta,q_0,F)\to(Q',\delta',q_0',F')\) (called a
+         *simulation*) is a function \(f:Q\to Q'\) that preserves
+         1. transitions, i.e., \(\delta'(\sigma,f(q))=f(\delta(\sigma,q))\)
+         2. the initial state, i.e., \(f(q_0)=q_0'\)
+         3. the final states, i.e., \(f[F]\subseteq F'\)
+   2. The following categories where the objects and morphisms are /not/
+      constructed sets and structure-preserving functions:
+      1. $\Mat$ with objects all natural numbers, and for which \(\hom(m,n)\) is
+         the set of all real \(m\times n\) matrices, \(id_n:n\to n\) is the unit
+         diagonal matrix, and composition is defined by \(A\circ B=BA\)
+
+      2. $\Aut$ with objects all (deterministic, sequential, Moore) *automata*.
+         Objects are sectuples \((Q,\Sigma,Y,\delta,q_0,y)\), where $Q$ is the set of
+         states, \Sigma and $Y$ are the sets of input symbols and output symbols,
+         respectively, \(\delta:\Sigma\times Q\to Q\) is the transition map, 
+         \(q_0\in Q\) is the initial state, and \(y:Q\to Y\) is the output map.
+         Morphisms from an automaton \((Q,\Sigma,Y,\delta,q_0,y)\) to an automaton
+         \((Q',\Sigma',Y',\delta',q_0',y')\) are triples \((f_Q,f_{\Sigma},f_Y)\) of
+         functions satisfying the following conditions
+         1. preservation of transitions:
+            \(\delta'(f_{\Sigma}(\sigma),f_Q(q))=f_Q(\delta(\sigma,q))\)
+
+         2. preservation of outputs: \(f_Y(y(q))=y'(f_Q(q))\)
+
+         3. preservation of initial state: \(f_Q(q_0)=q_0'\)
+   #+END_examplle
+** The Dual Principle
+   [[index:dual category]]
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any category \(\bA=(\calo,\hom_{\bA},id,\circ)\) the *dual* (or *opposite*)
+   *category of \(\bA\)* is the category
+   \(\bA^{\op}=(\calo,\hom_{\bA^{\op}},id,\circ^{\op})\), where
+   \(\hom_{\bA^{\op}}(A,B)=\hom_{\bA}(B,A)\) and \(f\circ^{\op}g=g\circ f\)
+   #+END_definition
+   
+   Consider the property of objects $X$ in \(\bA\):
+   \begin{equation*}
+   \calp_{\bA}(X)\equiv \textit{ For any } \bA\textit{-object } A
+   \textit{ there exists exactly one }
+   \bA\textit{-morphism } f:A\to X
+   \end{equation*}
+
+   Step1: In \(\calp_{\bA}(X)\) replace all occurrences of $\bA$ by $\bA^{\op}$,
+   thus obtaining the property
+   \begin{equation*}
+   \calp_{\bA^{\op}}(X)\equiv \textit{ For any } \bA^{\op}\textit{-object } A
+   \textit{ there exists exactly one }
+   \bA^{\op}\textit{-morphism } f:A\to X
+   \end{equation*}
+
+   Step2: Translate $\calp_{\bA^{\op}}(X)$ into the logically equivalent
+   statement
+   \begin{equation*}
+   \calp_{\bA}^{\op}(X)\equiv \textit{ For any } \bA\textit{-object } A
+   \textit{ there exists exactly one }
+   \bA\textit{-morphism } f:X\to A
+   \end{equation*}
+
+   The *Duality Principle for Categories* states
+   \begin{center}
+   \textit{Whenever a property \(\calp\) holds for all categories,}\\
+   \textit{then the property \(\calp^{\op}\) holds for all categories.}
+   \end{center}
+** Isomorphism
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A morphism \(f:A\to B\) in a category is called an *isomorphism* provided that
+   there exists a morphism \(g:B\to A\) with \(g\circ f=id_A\) and \(f\circ
+   g=id_B\). Such a morphism $g$ is called an *inverse* of $f$
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   If $f:A\to B,g:B\to A,h:B\to A$ are morphisms s.t. \(g\circ f=id_A\) and
+   \(f\circ h=id_B\), then \(g=h\)
+   #+END_proposition
+
+* Index
+  # This eliminates the duplicate Index section name
+  \renewcommand{\indexname}{}
+  [[printindex:nil]]
