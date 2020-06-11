@@ -117,6 +117,7 @@
 
    #+ATTR_LATEX: :options [Padding Lemma]
    #+BEGIN_lemma
+   label:lemma1.3.2
    Each partial recursive function $\varphi_x$ has $\aleph_0$ indices, and
    furthermore for each $x$ we can effectively find an infinite set $A_x$ of
    indices for the same partial function
@@ -236,6 +237,30 @@
    #+BEGIN_proof
    From Church's Thesis since they are all computable
    #+END_proof
+*** Exercises
+    #+BEGIN_exercise
+    label:ex1.3.11
+    Prove the following alternative definition of \(\varphi_{e,s}(x)=y\) also
+    satisfies Theorem ref:thm1.3.9 as well as the convenient properties:
+    \begin{equation*}
+    \varphi_{e,s}(x)=y\Longrightarrow e,x,y<s
+    \end{equation*}
+    and
+    \begin{equation*}
+    (\forall s)(\exists\text{ at most one }\la e,x,y\ra)[\varphi_{e,s}(x)=y\;\&\;
+    \varphi_{e,s-1}(x)\uparrow]
+    \end{equation*}
+    and hence
+    \begin{equation*}
+    (\forall s)(\exists \text{ at most one }\la e,x\ra)
+    [x\in W_{e,s+1}-W_{e,s}]
+    \end{equation*}
+
+    Define \(\varphi_{e,s}(x)=y\) by recursion on \(s\) on follows. Let
+    \(\varphi_{e,0}(x)\uparrow\) for all \(x\). Let \(\varphi_{e,s+1}(x)=y\) iff
+    \(\varphi_{e,s}(x)=y\), or \(s=\la e,x,y,t\ra\) for some \(t>0\) and \(y\)
+    is the output of \(\varphi_{e}(x)\) in \(\le t\) steps of the Turing program \(P_e\)
+    #+END_exercise
 ** Recursively Enumerable Sets and Unsolvable Problems
    [[index: recursively enumerable]]
    [[index: r.e.]]
@@ -651,6 +676,7 @@
    (all but finitely many) $x\in\omega$
    #+END_definition
 
+*** Exercises
    #+ATTR_LATEX: :options [$\times$]
    #+BEGIN_exercise
    Prove that the primitive recursive permutations do not form a group under composition
@@ -663,12 +689,66 @@
    #+END_proof
 
    #+BEGIN_exercise
+   label:ex1.5.8
    Let $\omega=\bigcup_nA_n=\bigcup_nB_n$ where the sequences
-   $\{A_n\}_{n\in\omega}$ and $\{B_n\_{n\in\omega}\}$ are each pairwise disjoint.
+   $\{A_n\}_{n\in\omega}$ and $\{B_n\}_{n\in\omega}$ are each pairwise disjoint.
    Let $f$ and $g$ be 1:1 recursive functions s.t. $f(A_n)\subseteq B_n$ and
    $g(B_n)\subseteq A_n$ for all $n$. Show that the construction of Theorem
    ref:thm5.4 produces a recursive permutation $h$ s.t. $h(A_n)=B_n$ for all $n$
    #+END_exercise
+
+   #+BEGIN_proof
+   /stage/ \(s+1=2x+1\): assume \(h_s\) is 1:1, \(\dom h_s\) is finite. Hence
+   there is \(a\in\omega\) not in \(\dom h_s\). Then by...
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Rogers]
+   #+BEGIN_exercise
+   label:ex1.5.9
+   Let \(\calp\) be the class of partial recursive functions of one variable. A
+   *numbering* of the p.r. function is a map \pi from \omega onto \(\calp\). The
+   numbering \(\{\varphi_e\}_{e\in\omega}\) is called the *standard numbering*.
+   Let \(\hat{\pi}\) be another numbering and let \(\psi_e\) denote
+   \(\hat{\pi}(e)\). Then \(\hat{\pi}\) is an *acceptable* numbering if there
+   are recursive functions \(f\) and \(g\) s.t.
+   1. \(\varphi_{f(x)}=\psi_x\)
+   2. \(\psi_{g(x)}=\varphi_x\)
+
+
+   Show that for any acceptable numbering \(\hat{\pi}\), there is a recursive
+   permutation \(p\) of \omega s.t. \(\varphi_x=\psi_{p(x)}\) for all \(x\)
+   #+END_exercise
+
+   #+BEGIN_proof
+   Define \(e_1\sim e_2\) if \(\varphi_{e_1}\) and \(\varphi_{e_2}\) computes
+   the same p.r. function. Then we get an enumeration
+   \(([e_i])_{i\in\omega}=A/\sim\). Define \(A_i=[e_i]\). Obviously
+   \(f(A_i)\subseteq B_i\) and vice versa
+
+   By exercise ref:ex1.5.8 with appropriate definitions of \(A_n\) and \(B_n\)
+   it suffices to convert \(f\) and \(g\) to a 1:1 recursive functions \(f_1\)
+   and \(g_1\) satisfying (1) and (2).
+
+   To define \(f_1\) from \(f\) use the Padding Lemma ref:lemma1.3.2. To define
+   \(g_1(x)\) we must be able (uniformly in \(x\))  to effectively generate an
+   infinite set \(S_x\) of indices s.t. for each \(y\in S_x\)
+   \(\psi_y=\psi_{g(x)}\). Take any two recursively inseparable r.e. sets \(A\)
+   and \(B\), such as those of Exercise ref:ex1.4.22, and define
+   \begin{equation*}
+   \varphi_{k(x,y)}(z)=
+   \begin{cases}
+   \varphi_x(z)&y\in A\\
+   0&y\in B\\
+   \text{undefined}&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   and similarly \(\varphi_{l(x,y)}\) with 1 in place of 0. Let
+   \(C_x=\{k(x,y):y\in A\}\) and \(D_x=\{l(x,y):y\in A\}\). If
+   \(\varphi_x\neq\lambda z[0]\), then \(g(C_x)\) cannot be finite or else \(A\)
+   and \(B\) are recursively separable. Hence \(S_x=g(C_x)\cup g(D_x)\) is
+   infinite. Note we do not have to know this in order to see that \(S_x\) is infinite
+   #+END_proof
+
 * Fundamentals of Recursively Enumerable Sets and the Recursion Theorem
 ** Equivalent Definitions of Recursively Enumerable Sets
    #+ATTR_LATEX: :options []
@@ -811,6 +891,7 @@
 
    #+ATTR_LATEX: :options [Reduction Principle for r.e. sets]
    #+BEGIN_corollary
+   label:cor2.1.10
    Given any two r.e. sets \(A\) and \(B\), there exist r.e. sets
    \(A_1\subseteq A\) and \(B_1\subseteq B\) s.t. \(A_1\cap B_1=\emptyset\) and
    \(A_1\cup B_1=A\cup B\)
@@ -1053,3 +1134,86 @@
    (If \psi exists, define \(\varphi_{f(x)}(s)=1\) if \(x\in K_{s+1}-K_s\) and
    \(\varphi_{f(x)}(s)=0\) otherwise. Thus \(\psi\circ f\) is actually the
    characteristic function of \(K\))
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A sequence \(\{V_n\}_{n\in\omega}\) of r.e. sets is *uniformly r.e.*
+      (*u.r.e*), also called *simultaneously r.e.* (*s.r.e.*) if there is a
+      recursive function \(f\) s.t. \(V_n=W_{f(n)}\) for all \(n\)
+   2. A sequence \(\{V_n\}_{n\in\omega}\) of recursive sets is *uniformly
+      recursive* if there is a recursive function \(g(x,n)\) s.t.
+      \(\lambda x[g(x,n)]\) is the characteristic function of \(V_n\) for all \(n\)
+   #+END_definition
+
+   From now on we assume that we have define \(\varphi_{e,s}\) and \(W_{e,s}\)
+   using Exercise ref:ex1.3.11
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *recursive enumeration* (usually called simply an *enumeration*) of an r.e.
+   set \(A\) consists of a strong array \(\{A_s\}_{s\in\omega}\) (of finite
+   sets) s.t. \(A_s\subseteq A_{s+1}\) and \(A=\bigcup_s A_s\)
+   #+END_definition
+
+   For example, \(\{W_{e,s}\}_{s\in\omega}\) is an enumeration of \(W_e\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A *simultaneous (recursive) enumeration* of a u.r.e. sequence
+      \(\{V_n\}_{n\in\omega}\) of r.e. sets is a strong array
+      \(\{V_{n,s}\}_{n,s\in\omega}\) s.t. for all \(s,n\in\omega\)
+      1. \(V_{n,s}\subseteq V_{n,s+1}\)
+      2. \(\abs{V_{n,s+1}-V_{n,s}}\le1\)
+      3. \(V_n=\bigcup_{s\in\omega}V_{n,s}\)
+   2. A *standard enumeration* (of the r.e. sets) is a simultaneous enumeration
+      of \(\{V_n\}_{n\in\omega}\) where \(\{V_n\}_{n\in\omega}\) is some
+      acceptable numbering of the r.e. sets as defined in Exercise ref:ex1.5.9
+   #+END_definition
+
+   For example, an easy way to give a simultaneous enumeration of any u.r.e.
+   sequence \(\{V_n\}_{n\in\omega}\) is to choose a 1:1 recursive function \(f\)
+   with range \(\{\la x,n\ra:x\in V_n\}\) and to define
+   \begin{equation*}
+   V_{n,s}=\{x: (\exists t<s)[f(t)=\la x,n\ra]\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\{X_s\}_{s\in\omega}\) and \(\{Y_s\}_{s\in\omega}\) be recursive
+   enumeration of r.e. sets \(X\) and \(Y\)
+   1. Define \(X\setminus Y=\{z: (\exists s)[z\in X_s-Y_s]\}\), the elements
+      enumerated in \(X\) before (if ever) being enumerated in \(Y\)
+   2. Define \(X\searrow Y=(X\setminus Y)\cap Y\), the elements enumerated in
+      \(X\) and later in \(Y\)
+   #+END_definition
+*** Exercises
+    #+BEGIN_exercise
+    label:2.2.10
+    1. Given recursive enumeration \(\{X_s\}_{s\in\omega}\) and
+       \(\{Y_s\}_{s\in\omega}\) of r.e. sets \(X\) and \(Y\) prove that both
+       \(X\setminus Y\) and \(X\searrow Y\) are r.e. sets
+    2. Prove that \(X\setminus Y=(X-Y)\cup(X\searrow Y)\)
+    3. Prove that if \(X-Y\) is nonrecursive then \(X\searrow Y\) is infinite
+    4. Give an alternative proof of Corollary ref:cor2.1.10 by letting
+       \(A_1=W_x\setminus W_y\) and \(B_1=W_y\setminus W_x\) where \(W_x=A\) and \(W_y=B\)
+    5. Let \(f\) be a 1:1 recursive function from \omega onto \(K_0\). Define
+       \begin{equation*}
+       W_{e,s}=\{x: (\exists t\le s)[f(t)=\la x,e\ra]\}
+       \end{equation*}
+       Show that \(\{W_{e,s}:e,s\in\omega\}\) satisfies condition
+       \begin{equation*}
+       (\forall s)(\exists\text{ at most one }\la e,x\ra)[x\in W_{e,s+1}-W_{e,s}]
+       \end{equation*}
+    #+END_exercise
+
+    #+BEGIN_proof
+    1. Prove \((x,z)\) is recursive
+    3. [@3]
+    4. [@4] \(W_x=\{W_{x,s}_{s\in\omega}\}\)
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex2.2.11
+    Prove that there is a recursive function \(f\) s.t.
+    \(\{W_{f(n)}}\}_{n\in\omega\) consists precisely of the recursive sets.
+    #+END_exercise
