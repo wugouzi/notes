@@ -131,7 +131,7 @@
    #+END_proof
    #+ATTR_LATEX: :options [Normal Form Theorem (Kleene]
    #+BEGIN_theorem
-   label:thm3.3
+   label:thm1.3.3
    There exist a predicate $T(e,x,y)$ (called the *Kleene T-predicate*) and a
    function $U(y)$ which are recursive (indeed primitive recursive) s.t.
    \begin{equation*}
@@ -140,7 +140,7 @@
    #+END_theorem
 
    #+BEGIN_proof
-   Informallz, the predicate \(T(e,x,y)\) asserts that \(y\) is the code number
+   Informally, the predicate \(T(e,x,y)\) asserts that \(y\) is the code number
    of some Turing computation according to program \(P_e\) with input \(x\). To
    see whether \(T(e,x,y)\) holds we first effectively recover from \(e\) the
    Program \(P_e\); then recover from \(y\) the computation
@@ -434,6 +434,7 @@
    $A$, for example if $A=\text{Tot}$
    #+ATTR_LATEX: :options [Rice's Theorem]
    #+BEGIN_corollary
+   label:cor1.4.13
    Let $\calc$ be any class of partial recursive functions. Then
    $\{n:\varphi_n\in\calc\}$ is recursive iff $\calc=\emptyset$ or $\calc$ is
    the set of all partial recursive functions
@@ -856,6 +857,7 @@
 
    #+ATTR_LATEX: :options [Listing Theorem]
    #+BEGIN_theorem
+   label:thm2.1.8
    A set \(A\) is r.e. iff \(A=\emptyset\) or \(A\) is the range of a total
    recursive function.. Furthermore, \(f\) can be found uniformly in an index
    for \(A\) as explained in Exercise ref:ex2.1.25
@@ -1209,11 +1211,330 @@
     #+BEGIN_proof
     1. Prove \((x,z)\) is recursive
     3. [@3]
-    4. [@4] \(W_x=\{W_{x,s}_{s\in\omega}\}\)
+    4. [@4] \(W_x=\{W_{x,s}\}_{s\in\omega}\)
     #+END_proof
 
     #+BEGIN_exercise
     label:ex2.2.11
     Prove that there is a recursive function \(f\) s.t.
-    \(\{W_{f(n)}}\}_{n\in\omega\) consists precisely of the recursive sets.
+    \(\{W_{f(n)}\}_{n\in\omega}\) consists precisely of the recursive sets.
+    Hence we can give an effective list of \(\Sigma_1\)-indices for the
+    recursive sets but not of \(\Delta_1\)-indices
     #+END_exercise
+
+    #+BEGIN_proof
+    Obtain \(W_{f(n)}\subseteq W_n\) by enumerating \(W_n\), placing in
+    \(W_{f(n)}\) only those elements enumerated in increasing order, and
+    applying Exercise ref:ex2.1.19. Note that we are using the uniformity shown
+    in Exercise ref:ex2.1.25
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex2.1.12
+    Prove that there is a recursive function \(f(e,s)\) s.t.
+    \(D_{f(e,s)}=W_{e,s}\) and hence that \(W_e=\bigcup_sD_{f(e,s)}\)
+    #+END_exercise
+
+    #+BEGIN_exercise
+    label:ex2.1.13
+    Prove that there are recursive functions \(f\) and \(g\) s.t.
+    \(D_x\cup D_y=D_{f(x,y)}\) and \(D_x\cap D_y=D_{g(x,y)}\)
+    #+END_exercise
+** The Recursion Theorem
+   #+ATTR_LATEX: :options [Recursion Theorem (Kleene)]
+   #+BEGIN_theorem
+   label:thm2.3.1
+   For every recursive function \(f\) there exists an \(n\) (called a *fixed
+   point* of \(f\)) s.t. \(\varphi_n=\varphi_{f(n)}\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Define the recursive "diagonal" function \(d(u)\) by
+   \begin{equation*}
+   \varphi_{d(u)}(z)=
+   \begin{cases}
+   \varphi_{\varphi_u(u)}(z)&\varphi_u(u)\text{ converges}\\
+   \text{undefined}&\text{otherwise}\\
+   \end{cases}
+   \end{equation*}
+   Note that \(d\) is 1:1 and total by the \(s\)-\(m\)-\(n\) theorem. Note also
+   that \(d\) is independent of \(f\).
+
+   Given \(f\), choose an index \(v\) s.t.
+   \begin{equation*}
+   \varphi_v=f\circ d
+   \end{equation*}
+   We claim that \(n=d(v)\) is a fixed point of \(f\). First note that \(f\)
+   total implies \(fd\) is total, so \(\varphi_v(v)\) converges and
+   \(\varphi_{d(v)}=\varphi_{\varphi_v(v)}\). Now
+   \begin{equation*}
+   \varphi_n=\varphi_{d(v)}=\varphi_{\varphi_v(v)}=\varphi_{fd(v)}=\varphi_{f(n)}
+   \end{equation*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   label:cor2.3.2
+   For every recursive function \(f\), there exists \(n\) s.t. \(W_n=W_{f(n)}\)
+   #+END_corollary
+
+   #+BEGIN_remark
+   From cite:DBLP:journals/ndjfl/Owings73.
+
+   In a typical diagonal argument there is a square array of objects
+   \(\{\alpha_{x,u}\}_{x,u\in\omega}\) and one constructs a sequence
+   \(D'=\{\alpha'_x\}_{x\in\omega}\) s.t. \(\alpha_x'\neq\alpha_{x,x}\), where
+   \(D=\{\alpha_{x,x}\}_{x\in\omega}\) is the diagonal sequence, and hence
+   \(D'\) is *not* one of the rows, \(R_u=\{\alpha_{x,u}\}_{x\in\omega}\).
+
+   Now
+   consider the matrix where \(\alpha_{x,u}=\varphi_{\varphi_u(x)}\), and where
+   it is understood that \(\alpha_{x,u}\) and \(\varphi_{\varphi_u(x)}\) denote
+   the totally undefined function if \(\varphi_u(x)\) diverges. Here the strong
+   closure properties of the partial recursive functions under the
+   \(s\)-\(m\)-\(n\) Theorem guarantee that the diagonal sequence
+   \(D=\{\alpha_{x,x}\}_{x\in\omega}\) *is* one of the rows, namely the \(e\)-th
+   row, \(R_e=\{\varphi_{\varphi_e(x)}\}_{x\in\omega}\), where \(\varphi_e=d\).
+   Equivalently, for any \(x\), \(d(x)=\varphi_x(x)\). This is obviously computable.
+   
+   Now any recursive function \(f\) induces a transformation on the rows
+   \(R_u=\{\varphi_{\varphi_u(x)}\}_{x\in\omega}\) of this matrix, mapping
+   \(R_u\) to the row \(\{\varphi_{f\varphi_u(x)}\}_{x\in\omega}\). In
+   particular, \(f\) maps the "diagonal" row
+   \(R_e=\{\varphi_{d(x)}\}_{x\in\omega}\) to
+   \(R_v=\{\varphi_{fd(x)}\}_{x\in\omega}\). Since \(R_e\) is the diagonal
+   sequence, the \(v\)th element of the sequence, namely
+   \(\varphi_{d(v)}=\varphi_{\varphi_v(v)}\), must be unchanged by this action
+   of \(f\), and hence \(\varphi_{d(v)}=\varphi_{fd(v)}\)
+   #+END_remark
+
+   A typical application of the Recursion Theorem is that there exists \(n\)
+   s.t. \(W_n=\{n\}\). (By the \(s\)-\(m\)-\(n\) Theorem define
+   \(W_{f(x)}=\{x\}\) and by the Recursion Theorem choose \(n\) s.t.
+   \(W_n=W_{f(n)}=\{n\}\))
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   In the Recursion Theorem, \(n\) can be computed from an index for \(f\) by a
+   1:1 recursive function \(g\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   Let \(v(x)\) be a recursive function s.t.
+   \(\varphi_{v(x)}=\varphi_x\circ d\). Let \(g(x)=d(v(x))\). Both \(d\) and
+   \(v\) are 1:1 by the \(s\)-\(m\)-\(n\) Theorem
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   In the Recursion Theorem, there is an infinite r.e. set of fixed points for \(f\).
+   #+END_proposition
+
+   #+BEGIN_proof
+   By the Padding Lemma ref:lemma1.3.2 there is an infinite r.e. set \(V\) of
+   indices \(v\) s.t. \(\varphi_v=f\circ d\), but \(d\) is 1:1 so
+   \(\{d(v)\}_{v\in V}\) in infinite and r.e.
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Recursion Theorem with Parameters (Kleene)]
+   #+BEGIN_theorem
+   label:thm2.3.5
+   If \(f(x,y)\) is a recursive function, then there is a recursive function
+   \(n(y)\) s.t. \(\varphi_{n(y)}=\varphi_{f(n(y),y)}\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Define a recursive function \(d\) by
+   \begin{equation*}
+   \varphi_{d(x,y)}(z)=
+   \begin{cases}
+   \varphi_{\varphi_x(x,y)}(z)&\varphi_x(x,y)\text{ converges}\\
+   \text{undefined}&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   Choose \(v\) s.t. \(\varphi_v(x,y)=f(d(x,y),y)\). Then \(n(y)=d(v,y)\) is a
+   fixed point, since \(\varphi_{d(v,y)}=\varphi_{\varphi_v(v,y)}=\varphi_{f(d(v,y),y)}\)
+   #+END_proof
+
+   Informally, the Recursion Theorem allows us to define a p.r. function
+   \(\varphi_n\) (or an r.e. set \(W_n\)) using its own index \(n\) in advance
+   as part of the algorithm, \(\varphi_n(z):\dots n\dots\). This circularity is
+   removed by the Recursion Theorem because we are really using the
+   \(s\)-\(m\)-\(n\) Theorem to define a function
+   \(f(x)\),\(\varphi_{f(x)}(z):\dots x\dots\) and then taking a fixed point
+   \(\varphi_n(z)=\varphi_{f(n)}(z):\dots n\dots\) The only restriction on the
+   informal method is that we cannot use in the program any special properties
+   of \(\varphi_n\) (such as \(\varphi_n\) being total or \(W_n\neq\emptyset\)).
+   For example, if for all \(x\) the function \(\varphi_{f(x)}\) being defined
+   is total, then the fixed point \(\varphi_{f(x)}=\varphi_n\) will be total.
+   However, the instructions for \(\varphi_{f(x)}\) must not say "wait until
+   \(\varphi_{x}(z)\) converges, take the value \(v=\varphi_x(z)\) and do \(\dots\)"
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm2.3.6
+   There is no r.e. function \psi s.t. if \(W_x\) is recursive then \(\psi(x)\)
+   converges and \(\varphi_{\psi(x)}\) is the characteristic function for
+   \(W_x\). Equivalent to Theorem ref:thm2.2.2
+   #+END_theorem
+
+   #+BEGIN_proof
+   Using the Recursion Theorem define a recursive set
+   \begin{equation*}
+   W_n=
+   \begin{cases}
+   \{0\}&\psi(n)\downarrow\;\&\;
+   \varphi_{\psi(n)}(0)\downarrow=0\\
+   \emptyset&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   Now \(\varphi_{\psi(n)}\) cannot be the characteristic function of \(W_n\)
+   because \(0\in W_n\) iff \(\varphi_{\psi(n)}(0)=0\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm2.3.7
+   If \(\psi(x,y)\) is a partial recursive function, then there is a recursive
+   function \(n(y)\) s.t.
+   \begin{equation*}
+   (\forall y)[\psi(n(y),y)\downarrow\Longrightarrow\varphi_{n(y)}=\varphi_{\psi(n(y),y)}]
+   \end{equation*}
+   #+END_theorem
+
+   #+BEGIN_proof
+   Same as Theorem ref:thm2.3.5
+   #+END_proof
+*** Exercises
+    #+BEGIN_exercise
+    label:ex2.3.8
+    A set \(A\) is *self-dual* if \(A\le_m\overbar{A}\). For example if
+    \(A=B\oplus\overbar{B}\) then \(A\) is self-dual
+    1. Use the Recursion Theorem to prove that no index set \(A\) can be self-dual
+    2. Give a short proof of Rice's Theorem ref:cor1.4.13
+    #+END_exercise
+
+    #+BEGIN_proof
+    1. Suppose \(f:A\le_m\overbar{A}\). \(f\) is recursive and there is some
+       \(n\) that \(\varphi_n=\varphi_{f(n)}\). However, \(x\in A\) iff \(f(x)\in\overbar{A}\)
+    2. If a recursive set is non-trivial, then it's self-dual
+
+       \begin{equation*}
+       f(x)=
+       \begin{cases}
+       \mu y(\chi_A(y)=0)&\chi_A(x)=1\\
+       \mu y(\chi_A(y)=1)&\chi_A(x)=0
+       \end{cases}
+       \end{equation*}
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex2.3.9
+    Show that for any p.r. function \(\psi(x,y)\) there is an \(n\) s.t. \(\varphi_n(y)=\psi(n,y)\)
+    #+END_exercise
+
+    #+BEGIN_proof
+    \(\psi(n,y)=\varphi_{f(n)}(y)=\varphi_n(y)\)
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex2.3.10
+    Show that Corollary ref:cor2.3.2 is equivalent to: For every r.e. set \(A\),
+    \((\exists n)[W_n=\{x:\la x,n\ra\in A\}]\)
+    #+END_exercise
+
+    #+BEGIN_proof
+    Suppose \(A=W_e\) and \(\varphi_{f(n)}(x)=\varphi_e(x,n)\). Hence
+    there exists \(n'\) s.t. \(\varphi_{n'}(x)=\varphi_e(x,n')\)
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex2.3.11
+    Use the informal technique in Theorem ref:thm2.3.6 to show that there is no
+    p.r. function \(\varphi_e\) s.t. if \(\varphi_x\) is the characteristic
+    function of a finite set \(F\), then \(\varphi_e(x)\downarrow=\max(F)\).
+    #+END_exercise
+
+    #+BEGIN_proof
+    Define
+    \begin{equation*}
+    \varphi_n(t+1)=
+    \begin{cases}
+    1&t=(\mu s)[\varphi_{e,s}(n)\downarrow]\\
+    0&\text{otherwise}
+    \end{cases}
+    \end{equation*}
+    Note that
+    \begin{equation*}
+    \varphi_{e,s}(x)=y\Longrightarrow e,x,y<s
+    \end{equation*}
+    #+END_proof
+** Complete Sets, Productive Sets and Creative Sets
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(r=1\), \(m\) or \(T\). A set \(A\) is *\(r\)-complete* if \(A\) is r.e.
+   and \(W\le_r A\) for every r.e. set \(W\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm2.4.2
+   The sets \(K,K_0,K_1\) are all 1-complete
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A set \(P\) is *productive* if there is a p.r. function \(\psi(x)\),
+      called a *productive function* for \(P\), s.t.
+      \begin{equation*}
+      (\forall x)[W_x\subseteq P\Longrightarrow[\psi(x)\downarrow\;
+      \&\;\psi(x)\in P-W_x]]
+      \end{equation*}
+   2. An r.e. set \(C\) is *creative* if \(\overbar{C}\) is productive
+   #+END_definition
+
+   For example, the set \(K\) is creative since \(\overbar{K}\) is productive
+   via the identity function \(\psi(x)=x\). Since \(K\equiv K_0\equiv K_1\), we
+   know that \(K_0\) and \(K_1\) are also creative
+
+   A creative set \(C\) is "effectively nonrecursive" in the sense that for any
+   candidate \(W_x\) for \(\overbar{C}\), \(\psi(x)\) is an effective
+   counterexample; namely \(\psi(x)\in\overbar{C}-W_x\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Any productive set \(P\) has a 1:1 total recursive productive function \(p\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Let \(P\) be productive via \psi. First obtain a *total* productive function
+   \(q\) for \(P\) as follows. Define a recursive function \(g\) s.t.
+   \begin{equation*}
+   W_{g(x)}=
+   \begin{cases}
+   W_x&\psi(x)\downarrow\\
+   \emptyset&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   Define \(q(x)\) to be either \(\psi(x)\) or \(\psi(g(x))\), whichever
+   converges first. Now if \(W_x\subseteq P\), then \(\psi(x)\) converges and
+   \(W_{g(x)}=W_x\) so both \(\psi(g(x))\) and \(\psi(x)\) are in \(P-W_x\).
+
+   Now convert \(q\) to a 1:1 productive function \(p\). Let
+   \(W_{h(x)}=W_x\cup\{q(x)\}\). Note that
+   \begin{equation*}
+   W_x\subseteq P\Longrightarrow W_{h(x)}\subseteq P
+   \end{equation*}
+   Define \(p(0)=q(0)\). To compute \(p(x+1)\), enumerate the set
+   \(\{q(x+1),qh(x+1),qh^2(x+1),\dots\}\) until either: some \(y\) not in
+   \(\{p(0),\dots,p(x)\}\) is found; or a repetition occurs. In the former case,
+   set \(p(x+1)=y\). In the latter case, \(W_{x+1}\subsetneq P\), and we can set
+   \(p(x+1)=(\mu y)[y\not\in\{p(0),\dots,p(x)\}]\)
+   #+END_proof
+
+
+
+
+* Reference
+  bibliographystyle:alpha
+  bibliography:/media/wu/file/stuuudy/notes/references.bib
