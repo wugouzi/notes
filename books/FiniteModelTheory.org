@@ -1,0 +1,166 @@
+#+TITLE: Finite Model Theory
+#+AUTHOR: Heinz-Dieter Ebbinghaus@@latex:\\@@Jörg Flum
+
+#+LATEX_HEADER: \input{preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/FiniteModelTheory/FiniteModelTheory.tex
+
+
+* Preliminaries
+
+** Structures
+   *Vocabularies* are finite sets that consist of *relation symbols* and
+   *constant symbols*. We denote vocabularies by \tau, \sigma,\(\dots\). A
+   *vocabulary is *relational if it does not contain constants.
+
+
+*** Graph
+   Let \(\tau=\{E\}\) with a binary relation symbol \(E\). A *graph* (or
+   *undirected graph*) is a \tau-structure \(\calg=(G,E^G)\) satisfying
+   1. for all \(a\in G\): not \(E^Gaa\)
+   2. for all \(a,b\in G\): if \(E^Gab\) then \(E^Gba\)
+
+
+   By GRAPH we denote the class of *finite* graphs. If only (1) is required, we
+   speak of a *digraph*
+
+   A subset \(X\) of the universe of a graph \(\calg\) is a *clique*, if
+   \(E^Gab\) for all \(a,b\in X\), \(a\neq b\)
+
+
+   Let \(\calg\) be a digraph. If \(n\ge1\) and
+   \begin{equation*}
+   E^Ga_0a_1,E^Ga_1a_2,\dots,E^Ga_{n-1}a_n
+   \end{equation*}
+   then \(a_0,\dots,a_n\) is a *path* from \(a_0\) to \(a_n\) of *length* \(n\).
+   If \(a_0=a_n\), then \(a_0,\dots,a_n\) is a *cycle*. A path \(a_0,\dots,a_n\)
+   is *Hamiltonian* if \(G=\{a_0,\dots,a_n\}\) and \(a_i\neq a_j\) for
+   \(i\neq j\). If, in addition, \(E^Ga_na_0\) we speak of a *Hamiltonian
+   circuit*
+
+   Let \(\calg\) be a graph. Write \(a\sim b\) if \(a=b\) or if there is a path
+   from \(a\) to \(b\). The equivalence class of \(a\) is called the
+   *(connected) component* of \(a\). Let CONN be the class of finite connected
+   graphs
+
+   Denote by \(d(a,b)\) the length of a shortest path from \(a\) to \(b\); more
+   precisely, define the *distance function* \(d:G\times G\to\N\cup\{\infty\}\)
+   by
+   \begin{equation*}
+   d(a,b)=\infty\text{ iff }a\not\sim b,\quad d(a,b)=0\text{ iff }a=b
+   \end{equation*}
+   and otherwise
+   \begin{equation*}
+   d(a,b)=\min\{n\ge1\mid\text{there is a path from $a$ to $b$ of length $n$}\}
+   \end{equation*}
+
+   We give the following definitions only for *finite* digraphs. A vertex \(b\)
+   is a successor of a vertex \(a\) if \(E^Gab\). The *in-degree* of a vertex is
+   the number of its predecessors, the *out-degree* the number of its
+   successors.
+
+   A *root* of a digraph is a vertex with in-degree 0 and a *leaf* a vertex with
+   out-degree 0.
+
+   A *forest* is an acyclic digraph where each vertex has in-degree at most 1. A
+   *tree* is a forest with connected underlying graph. Let TREE be the class of
+   finite trees.
+
+*** Syntax and Semantics of First-Order Logic
+    Denote \(\FO[\tau]\) the set of formulas of first-order logic of vocabulary
+    \tau.
+
+    When only taking into consideration finite structures, we use the notation
+    \(\Phi\models_{\fin}\psi\)
+
+    The *quantifier rank* \(\qr(\varphi)\) of a formula \varphi is the maximum
+    number of nested quantifiers occurring in it
+
+    It can be shown that every first-order formula is logically equivlent to a
+    formula in prenex normal form, that is, to a formula of the form
+    \(Q_1x_1,\dots,Q_sx_s\psi\) where \(Q_1,\dots,Q_s\in\{\forall,\exists\}\),
+    and where \psi is quantifier-free. Such a formula is called \(\Sigma_n\) if
+    the string of \(n\) consecutive blocks, where in each block all quantifiers
+    all of the same type, adjacent blocks contain quantifiers of different type,
+    and the first block is existential. \(\Pi_n\) formulas are defined in the
+    same way but now we require that the first block consists of universal
+    quantifiers. A \(\Delta_n\)-formula is a formula logically equivalent to
+    both a \(\Sigma_n\)-formula and a \(\Pi_n\)-formula
+
+    Given a formula \(\varphi(x,\overbar{z})\) and \(n\ge1\),
+    \begin{equation*}
+    \exists^{\ge n}x\varphi(x,\overbar{z})
+    \end{equation*}
+    is an abbreviation for the formula
+    \begin{equation*}
+    \exists x_1,\dots\exists x_n(
+    \bigwedge_{1\le i\le n}\varphi(x_i,\overbar{z})\wedge
+    \bigwedge_{1\le i<j\le n}\neg x_i=x_j)
+    \end{equation*}
+
+    We set
+    \begin{equation*}
+    \varphi_{\ge n}:=\exists^{\ge n}x\;x=x
+    \end{equation*}
+    Clearly
+    \begin{equation*}
+    \cala\models\varphi_{\ge n}\quad\text{ iff }\quad\norm{A}\ge n
+    \end{equation*}
+
+*** Some Classical Results of First-Order Logic
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:thm1.0.2
+    The set of logically valid sentences of first-order logic is r.e.
+    #+END_theorem
+    #+ATTR_LATEX: :options [Compactness Theorem]
+    #+BEGIN_theorem
+    label:thm1.0.3
+    \Phi is satisfiable iff every finite subset of \Phi is satisfiable
+    #+END_theorem
+
+    Neither Theorem ref:thm1.0.2 nor ref:thm1.0.3 remain valid if one only
+    considers finite structures. A counterexample for the Compactness Theorem is
+    given by the set \(\Phi_\infty:=\{\varphi_{\ge n}\mid n\ge1\}\): Each finite
+    subset of \(\Phi_\infty\) has a finite model, but \(\Phi_\infty\) has no
+    finite model
+
+    The failure of Theorem ref:thm1.0.2 is documented by
+    #+ATTR_LATEX: :options [Trahtenbrot's Theorem]
+    #+BEGIN_theorem
+    The set of sentences of first-order logic valid in all finite structures is
+    not r.e.
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(\varphi\in\FO[\tau]\) and for \(i\in I\), let
+    \(\Phi^i\subseteq\FO[\tau]\). Assume that
+    \begin{equation*}
+    \models\varphi\leftrightarrow\bigvee_{i\in I}\bigwedge\Phi^i
+    \end{equation*}
+    Then there is a finite \(I_0\subseteq I\) and for every \(i\in I_0\), a
+    finite \(\Phi^i_0\subseteq\Phi^i\) s.t.
+    \begin{equation*}
+    \models\varphi\leftrightarrow\bigvee_{i\in I_0}\bigwedge\Phi^i_0
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    For simplicity we assume that \varphi is a sentence and that every
+    \(\Phi^i\) is a set of sentences. By hypothesis, for some \(i\in I\), we
+    have \(\Phi^i\models\varphi\); hence, by the Compactness Theorem,
+    \(\Phi^i_0\models\varphi\) for some finite \(\Phi^i_0\subseteq\Phi^i\).
+
+    If there is not such \(I_0\) with \(\models\varphi\to\bigvee_{i\in
+    I_0}\bigwedge\Phi_0^i\), then each finite subset of
+    \(\{\varphi\}\cup\{\neg\bigwedge\Phi^i_0\mid i\in I}\) has a model. Hence by
+    the Compactness Theorem, there is a contradiction
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \Phi be a set of first-order sentences. Assume that any two structures
+    that satisfy the same sentences of \Phi are elementarily equivalent. Then
+    any first-order sentence is equivalent to a boolean combination of sentences
+    of \Phi
+    #+END_corollary

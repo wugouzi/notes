@@ -5,7 +5,7 @@
 #+EXPORT_FILE_NAME: ../latex/RecursivelyEnumerableSetsAndDegrees/RecursivelyEnumerableSetsAndDegrees.tex
 #+LATEX_HEADER: %\\tf{\([^\}]*\)} \*\1\*
 * Recursive Functions
-** Formal Definitions of Computable Functions
+** Formal Definitions of Computable Functions label:sec-1.2
 *** Primitive Recursive Functions
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -1532,6 +1532,265 @@
    \(p(x+1)=(\mu y)[y\not\in\{p(0),\dots,p(x)\}]\)
    #+END_proof
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   1. If \(P\) is productive, then \(P\) is not r.e.
+   2. If \(P\) is productive, then \(P\) contains an infinite r.e. set \(W\)
+   3. If \(P\) is productive and \(P\le_m A\) then \(A\) is productive
+   #+END_theorem
+
+   #+BEGIN_proof
+   2. [@2] Let \(W_n=\emptyset\), and \(W_{h(x)}=W_x\cup\{p(x)\}\). Define
+      \begin{equation*}
+      W=\{p(n),ph(n),ph^2(n),\dots\}
+      \end{equation*}
+   3. Let \(P\le_m A\) via \(f\), and \(p\) is a productive function for \(P\).
+      Let \(W_{g(x)}=f^{-1}(W_x)\). Then \(fpg\) is a productive function for \(A\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Myhill]
+   #+BEGIN_theorem
+   1. If \(P\) is productive then \(\overbar{K}\le_1 P\)
+   2. If \(C\) is creative then \(C\) is 1-complete and \(C\equiv K\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   1. Let \(p\) be a total 1:1 productive function for \(P\). Define the
+      recursive function \(f\) by
+      \begin{equation*}
+      W_{f(x,y)}=
+      \begin{cases}
+      \{p(x)\}&y\in K\\
+      \emptyset&\text{otherwise}
+      \end{cases}
+      \end{equation*}
+      By the Recursion Theorem with Parameters ref:thm2.3.5, there is a 1:1
+      recursive function \(n(y)\) s.t.
+      \begin{equation*}
+      W_{n(y)}=W_{f(n(y),y)}=
+      \begin{cases}
+      \{p(n(y))\}&y\in K\\
+      \emptyset&\text{otherwise}
+      \end{cases}
+      \end{equation*}
+      Now
+      \begin{equation*}
+      y\in K\Longrightarrow W_{n(y)}=\{pn(y)\}\Longrightarrow
+      W_{n(y)}\not\subseteq P\Longrightarrow pn(y)\in\overbar{P}
+      \end{equation*}
+      and
+      \begin{equation*}
+      y\in\overbar{K}\Longrightarrow W_{n(y)=\emptyset}\Longrightarrow
+      W_{n(y)}\subseteq P\Longrightarrow pn(y)\in P
+      \end{equation*}
+   2. Follows from (1)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   The following are equivalent
+   1. \(P\) is productive
+   2. \(\overbar{K}\le_1 P\)
+   3. \(\overbar{K}\le_m P\)
+   #+END_corollary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   The following are equivalent
+   1. \(C\) is creative
+   2. \(C\) is 1-complete
+   3. \(C\) is \(m\)-complete
+   #+END_corollary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \((A_1,A_2)\) and \((B_1,B_2)\) be two pairs of sets s.t.
+   \(A_1\cap A_2=\emptyset=B_1\cap B_2\). Then \((B_1,B_2)\le_m(A_1,A_2)\) if
+   there is a recursive function s.t. \(f(B_1)\subseteq A_1\),
+   \(f(B_2)\subseteq A_2\) and
+   \(f(\overbar{B_1\cup B_2})\subseteq\overbar{A_1\cup A_x}\). We write
+   \(\le_1\) if \(f\) is 1:1
+   #+END_definition
+* Turing Reducibility and the Jump Operator
+** Definitions of Relative Computability
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(A\subseteq\omega\). A partial function \psi is *partial recursive in
+   \(A\)* (*\(A\)-partial recursive*) if there is a derivation of \psi using
+   schemata (1)-(6) of Section ref:sec-1.2 with \(\chi_A\) added as a new
+   initial function
+   #+END_definition
+
+   An *oracle Turing machine* is a Turing machine with an extra "read only"
+   tape, called the *oracle tape*, upon which is written the characteristic
+   function of some set \(A\) (called the *oracle*), and whose symbols cannot be
+   printed over. The old tape is called the *work tape*. The reading head moves
+   along both tapes simultaneously. As before, let \(Q\) be a finite set of
+   states, \(\Sigma_1\) the oracle tape alphabet \(\{B,0,1\}\), \(\Sigma_2\) the
+   work tape alphabet \(\{B,1\}\) and \(\{R,L\}\). A *Turing program* is now
+   simply a partial map
+   \begin{equation*}
+   \delta:Q\times\Sigma_1\times\Sigma_2\to Q\times\Sigma_2\times\{R,L\}
+   \end{equation*}
+   where \(\delta(q,a,b)=(p,c,X)\) indicates that the machine in state \(q\)
+   reading symbol \(a\) on the oracle tape and symbol \(b\) on the work tape
+   passes to state \(p\), prints "\(c\)" over "\(b\)" on the work tape and moves
+   one space right (left) on both tapes if \(X=R\) (\(X=L\))
+
+   #+BEGIN_center
+   \begin{tikzpicture}[every node/.style={block},
+        block/.style={minimum height=2em,outer sep=0pt,draw,rectangle,node distance=0pt}]
+   \node (A) [block] {1};
+   \node (B) [left=of A,block,label={[label distance=1cm]180:work tape}] {B};
+   \node (D) [right=of A,block] {1};
+   \node (E) [right=of D,block] {1};
+   \node (H) [right=of E,block] {B};
+   \node (F) [above = 0.75cm of A,thick,block,label={[label distance=1.46cm]180:reading head}] {\textsf q,p};
+   \node (I) [above = 0.75cm of F,block] {$\chi_A(0)$};
+   \node (J) [left=of I,block,label={[label distance=1cm]180:oracle tape}] {B};
+   \node (K) [right=of I,block] {$\chi_A(1)$};
+   \node (L) [right=of K,block] {$\chi_A(2)$};
+   \node (N) [right=of L,block] {$\chi_A(3)$};
+   \draw[-latex] (F) -- (A);
+   \draw[-latex] (F) -- (I);
+   \draw (B.north west) -- ++(-1cm,0) (B.south west) -- ++ (-1cm,0)
+                 (H.north east) -- ++(1cm,0) (H.south east) -- ++ (1cm,0);
+   \draw (J.north west) -- ++(-1cm,0) (J.south west) -- ++ (-1cm,0)
+                 (N.north east) -- ++(1cm,0) (N.south east) -- ++ (1cm,0);
+   \end{tikzpicture}
+   #+END_center
+
+
+   Let \(y+1\) be the number of nonblank cells on the oracle tape which are
+   scanned be the reading head during the computation. (Namely, \(y\) is the
+   maximum integer which is tested for membership in \(A\)). We say that the
+   elements \(z\le y\) are *used* in the computation
+
+   These new oracle Turing programs being finite sets of 6-tuples of the above
+   symbols can be effectively coded. Let \(\widehat{P}_e\) denote the \(e\)th
+   such program under some effective coding. Note that \(\widehat{P}_e\) is
+   *independent* of the oracle \(A\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A partial function \psi is *Turing computable in \(A\)* (*\(A\)-Turing
+      computable*), written \(\psi\le_T A\), if there is a program
+      \(\widehat{P}_e\) s.t. if the machine has \(\chi_A\) written on the oracle
+      tape, then for all \(x\) and \(y\), \(\psi(x)=y\) iff \(\widehat{P}_e\) on
+      input \(x\) halts and yields output \(y\). In this case, we write
+      \(\psi=\{e\}^A\), or equivalently \(\psi=\Phi_e^A\), or
+      \(\psi=\Phi_e(A)\). We say \(\psi(x)\) *diverges* (written
+      \(\psi(x)\uparrow\)) iff \(\widehat{P}_e\) on input \(x\) never halts
+   2. We also allow (total) functions as oracles by defining \(\{e\}^f\) to be
+      \(\{e\}^A\) where \(A=\graph(f)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   A partial function \psi is \(A\)-partial recursive iff \psi is \(A\)-Turing computable
+   #+END_theorem
+
+   #+ATTR_LATEX: :options [Relativized Enumeration Theorem]
+   #+BEGIN_theorem
+   There exists \(z\in\omega\) s.t. for all sets \(A\subseteq\omega\) and for
+   all \(x,y\in\omega\) the \(A\)-partial recursive function \(\Phi_z^A(x,y)\)
+   satisfies \(\Phi_z^A(x,y)=\Phi_x^A(y)\)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options [Relativized $s$-$m$-$n$ Theorem]
+   #+BEGIN_theorem
+   For every \(m,n\ge1\) there exists a 1:1 recursive function \(s_n^m\) of
+   \(m+1\) variables s.t. for all sets \(A\subseteq\omega\) and for all
+   \(x,y_1,\dots,y_m\in\omega\),
+   \begin{equation*}
+   \Phi_{s^m_n(x,y_1,\dots,y_m)}^A=\lambda z_1,\dots,z_n[
+   \Phi_x^A(y_1,\dots,y_m,z_1,\dots,z_n)]
+   \end{equation*}
+   #+END_theorem
+
+   #+ATTR_LATEX: :options [Relativized Recursion Theorem]
+   #+BEGIN_theorem
+   1. For all sets \(A\subseteq\omega\) and all \(x,y\in\omega\), if \(f(x,y)\)
+      is an \(A\)-recursive function, then there is a recursive function
+      \(n(y)\) s.t. \(\Phi_{n(y)}^A=\Phi_{f(n(y),y)}^A\)
+   2. Furthermore, \(n(y)\) does not depend upon the oracle \(A\), namely if
+      \begin{equation*}
+      f(x,y)=\{e\}^A(x,y)
+      \end{equation*}
+      then the recursive function \(n(y)\) can be found uniformly in \(e\)
+   #+END_theorem
+
+   Note that the strings \sigma of 0's and 1's, namely \(\sigma\in2^{<\omega}\),
+   are to be viewed as finite initial segments of characteristic functions. We
+   identify a set \(A\) with its characteristic function and write
+   \(\sigma\subset A\) if \(\sigma\subseteq\chi_A\) as a partial function,
+   namely \(\sigma(x)=\chi_A(x)\) for all \(x\in\dom\sigma\). Then *length* of
+   \sigma, written \(\lh(\sigma)\), is \(\abs{\dom\sigma}\). Note that
+   \(\lh(\sigma)=\mu x[\sigma(x)\uparrow]\). If \(n=\lh(\sigma)\), then
+   \(\sigma=\sigma\restriction n\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. We write \(\{e\}_s^A(x)=y\) if \(x,y,e<s\),\(s>0\),\(\{e\}^A(x)=y\) in
+      \(<s\) steps according to program \(\widehat{P}_e\), and only numbers
+      \(z<s\) are used in the computation
+   2. The *use function* \(u(A;e,x,s)\) is 1+ the maximum number used in the
+      computation if \(\{e\}^A_s(x)\downarrow\), and =0 otherwise. The use
+      function \(u(A;e,x)\) is \(u(A;e,x,s)\) if \(\{e\}_s^A(x)\downarrow\) for
+      some \(s\), and is undefined if \(\{e\}^A(x)\uparrow\)
+   3. We write \(\{e\}_s^\sigma(x)=y\) if \(\{e\}_s^A(x)=y\) for some
+      \(A\supset\sigma\) and only elements \(z<\lh(\sigma)\) are used in the
+      computation. If such \(\sigma=A\restriction u\) we also write
+      \(\{e\}_s^{A\restriction u}(x)=y\). (The definition in (2) was arranged
+      so that if \(\{e\}_s^A(x)=y\) then \(\{e\}_s^\sigma(x)=y\) where
+      \(\sigma=A\restriction u(A;e,x,s)\))
+   4. \(\{e\}^\sigma(x)=y\) if \((\exists s)[\{e\}_s^\sigma(x)=y]\)
+   #+END_definition
+
+   Note that this definition guarantees that
+   \begin{equation}
+   \{e\}_s^A(x)=y\Longrightarrow x,y,e<s;\quad u(A;e,x,s)\le s\label{eq3.1.1}
+   \end{equation}
+   and
+   \begin{align}
+   \{e\}_s^A(x)=y\Longrightarrow&(\forall t\ge s)[\{e\}_t^A(x)=y\\
+   &\;\&\;u(A;e,x,t)=u(A;e,x,s)]\nonumber\label{eq3.1.2}
+   \end{align}
+
+   Note that if \(A\) is recursive, then \(u(A;e,x,s)\) is a recursive function
+   and its index may be found uniformly in a \(\Delta_0\)-index for \(A\).
+
+   #+ATTR_LATEX: :options [Master Enumeration Theorem]
+   #+BEGIN_theorem
+   1. \(\{\la e,\sigma,x,s\ra:\{e\}_s^\sigma(x)\downarrow\}\) is recursive
+   2. \(L:=\{\la e,\sigma,x\ra:\{e\}^\sigma(x)\downarrow\}\) r.e.
+   #+END_theorem
+
+   #+BEGIN_proof
+   1. Perform the Turing computation according to \(\widehat{P}_e\) on input
+      \(x\) with \sigma written on the oracle tape until an output occurs or the
+      first \(s\) steps have been completed
+   2. \(L\) is \(\Sigma_1\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Use Principle]
+   #+BEGIN_theorem
+   1. \(\{e\}^A(x)=y\Longrightarrow(\exists s)(\exists \sigma\subset A)
+      [\{e\}_s^\sigma(x)=y]\)
+   2. \(\{e\}_s^\sigma(x)=y\Longrightarrow(\forall t\ge
+      s)(\forall\tau\supseteq\sigma
+      [\{e\}_t^\tau(x)=y])\)
+   3. \(\{e\}^\sigma(x)=y\Longrightarrow(\forall A\supset\sigma)[\{e\}^A(x)=y]\)
+   #+END_theorem
+
+   It follows from eqref:eq3.1.1 and the Use Principle that
+   \begin{equation}
+   [\{e\}_s^A(x)=y\;\&\;A\restriction u=B\restriction u]
+   \Longrightarrow\{e\}_s^B(x)=y\label{eq3.1.3}
+   \end{equation}
+   where \(u=u(A;e,x,s)\) because eqref:eq3.1.1 asserts that only elements
+   \(z<u\) are used in computation
+   
 
 
 
