@@ -1,5 +1,5 @@
 (TeX-add-style-hook
- "FiniteModelTheory"
+ "IntroductionToCommutativeAlgebra"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
@@ -18,7 +18,7 @@
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
-    "preamble"
+    "../preamble"
     "article"
     "art11"
     "inputenc"
@@ -36,17 +36,18 @@
     "hyperref"
     "minted")
    (LaTeX-add-labels
-    "sec:org5835688"
-    "sec:orgeb2f0cf"
-    "sec:orge75c1a5"
-    "sec:org16bb348"
-    "sec:org14a6b13"
-    "thm1.0.2"
-    "thm1.0.3"
-    "sec:org8b57e7c"
-    "sec:orga927361"
-    "sec:orgf607dd6"
-    "sec:org2f5b5be"
-    "sec:org5b44346"))
+    "sec:org070d898"
+    "sec:org3ffacf2"
+    "sec:org3f1ebc0"
+    "eq1.3.1"
+    "sec:orgfc3ee0a"
+    "sec:org52682ce"
+    "sec:org6cb078c"
+    "sec:org0980c22"
+    "eq1.8.1"
+    "sec:org1264a72"
+    "sec:orgecd79b9"
+    "sec:org571cfce"
+    "ex1.13"))
  :latex)
 

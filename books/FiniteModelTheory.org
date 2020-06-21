@@ -13,7 +13,7 @@
    *vocabulary is *relational if it does not contain constants.
 
 
-*** Graph
+** Graph
    Let \(\tau=\{E\}\) with a binary relation symbol \(E\). A *graph* (or
    *undirected graph*) is a \tau-structure \(\calg=(G,E^G)\) satisfying
    1. for all \(a\in G\): not \(E^Gaa\)
@@ -65,7 +65,7 @@
    *tree* is a forest with connected underlying graph. Let TREE be the class of
    finite trees.
 
-*** Syntax and Semantics of First-Order Logic
+** Syntax and Semantics of First-Order Logic
     Denote \(\FO[\tau]\) the set of formulas of first-order logic of vocabulary
     \tau.
 
@@ -106,7 +106,7 @@
     \cala\models\varphi_{\ge n}\quad\text{ iff }\quad\norm{A}\ge n
     \end{equation*}
 
-*** Some Classical Results of First-Order Logic
+** Some Classical Results of First-Order Logic
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
     label:thm1.0.2
@@ -153,7 +153,7 @@
 
     If there is not such \(I_0\) with \(\models\varphi\to\bigvee_{i\in
     I_0}\bigwedge\Phi_0^i\), then each finite subset of
-    \(\{\varphi\}\cup\{\neg\bigwedge\Phi^i_0\mid i\in I}\) has a model. Hence by
+    \(\{\varphi\}\cup\{\neg\bigwedge\Phi^i_0\mid i\in I\}\) has a model. Hence by
     the Compactness Theorem, there is a contradiction
     #+END_proof
 
@@ -164,3 +164,180 @@
     any first-order sentence is equivalent to a boolean combination of sentences
     of \Phi
     #+END_corollary
+
+    #+BEGIN_proof
+    For any structure \(\cala\) set
+    \begin{equation*}
+    \Phi(\cala):=\{\psi\mid\psi\in\Phi,\cala\models\psi\}\cup
+    \{\neg\psi\mid\psi\in\Phi,\cala\models\neg\psi\}
+    \end{equation*}
+    Let \(\varphi\) be any first-order sentence. By the preceding lemma it
+    suffices to show that
+    \begin{equation*}
+    \models\varphi\leftrightarrow\bigvee_{\cala\models\phi}\bigwedge\Phi(\cala)
+    \end{equation*}
+    If \(\calb\models\varphi\) then
+    \(\calb\models\bigvee_{\cala\models\varphi}\bigwedge\Phi(\cala)\). Suppose
+    \(\cala\models\bigvee_{\cala\models\varphi}\bigwedge\Phi(\cala)\). Then for
+    some model \(\cala\) of \varphi, \(\calb\models\Phi(\cala)\). By the
+    definition of \(\Phi(\cala)\), \(\cala\) and \(\calb\) satisfy the same
+    sentences of \Phi
+    #+END_proof
+
+** Model Classes and Global Relations
+    Fix a vocabulary \tau. For a sentence \varphi of \(\FO[\tau]\) we denote by
+    \(\Mod(\varphi)\) the class of *finite* models of \varphi.
+
+    \(\Mod(\varphi)\) is closed under isomorphisms
+
+    For \(\varphi(x_1,\dots,x_n)\in\FO[\tau]\) and a structure \(\cala\) let
+    \begin{equation*}
+    \varphi^{\cala}(-):=\{(a_1,\dots,a_n)\mid\cala\models\varphi[a_1,\dots,a_n]\}
+    \end{equation*}
+    be the set of \(n\)-tuples *defined by \varphi in \(\cala\)*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(K\) be a class of \tau-structures. An \(n\)-ary
+    *global relation
+    \Gamma on \(K\)* is a mapping assigning to each \(A\in K\) an \(n\)-ary
+    relation \(\Gamma(\cala)\) on \(\cala\) satisfying
+    \begin{equation*}
+    \Gamma(\cala)a_1\dots a_n\quad\text{ iff }\quad\Gamma(\calb)\pi(a_1)\dots\pi(a_n)
+    \end{equation*}
+    for every isomorphism \(\pi:\cala\cong\calb\) and every
+    \(a_1,\dots,a_n\in A\). If \(K\) is the class of all finite \tau-structures,
+    then we just speak of an \(n\)-ary *global relation*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    1. Any formula \(\varphi(x_1,\dots,x_n)\in\FO[\tau]\) defines the global
+       relation
+       \(\cala\mapsto\varphi^{\cala}(-)\)
+    2. The "transitive closure relation" TC is the binary global relation on
+       GRAPH with
+       \begin{equation*}
+       \TC(\calg):=\{(a,b)\mid a,b\in G,\text{ there is a path from $a$ to $b$}\}
+       \end{equation*}
+    #+END_examplle
+
+** Relational Databases and Query Languages
+
+* Ehrenfeucht–Fraïssé Method
+
+** Elementary Classes
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Every finite structure can be characterized in first-order logic up to
+   isomorphism, i.e., for every finite structure \(\cala\) there is a sentence
+   \(\varphi_\cala\) of first-order logic s.t. for all structures \(\calb\) we
+   have
+   \begin{equation*}
+   \calb\models\varphi_{\cala}\quad\text{ iff }\quad\cala\cong\calb
+   \end{equation*}
+   #+END_proposition
+
+   #+BEGIN_proof
+   Suppose \(A=\{a_1,\dots,a_n\}\). Set \(\overbar{a}=a_1\dots a_n\). Let
+   \begin{align*}
+   \Theta_n:=\{\psi\mid\psi\text{ has the form }&Rx_1\dots x_k,x=y\text{ or }c=x,\\
+   &\text{and variables among }v_1,\dots,v_n\}
+   \end{align*}
+   and
+   \begin{align*}
+   \varphi_{\cala}&:=\exists v_1\dots\exists v_n(\bigwedge\{\psi\mid\psi\in\Theta_n,
+   \cala\models\psi[\overbar{a}]\}\wedge\\
+   &\bigwedge\{\neg\psi\mid\psi\in\Theta_n,\cala\models\neg\psi[\overbar{a}]\}\wedge
+   \forall v_{n+1}(v_{n+1}=v_n\vee\dots\vee v_{n+1}=v_n))
+   \end{align*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let \(K\) be a class of finite structures. Then there is a set \Phi of
+   first-order sentences s.t.
+   \begin{equation*}
+   K=\Mod(\Phi)
+   \end{equation*}
+   that is, \(K\) is the class of finite models of \Phi
+   #+END_corollary
+
+   #+BEGIN_proof
+   For each \(n\) there is only a finite number of pairwise nonisomorphic
+   structures of cardinality \(n\). Let \(\cala_1,\dots,\cala_k\) be a maximal
+   subset of \(K\) of pairwise nonisomorphic structures of cardinality \(n\).
+   Set
+   \begin{equation*}
+   \psi_n:=(\varphi_{=n}\to(\varphi_{\cala_1}\vee\dots\vee\varphi_{\cala_k}))
+   \end{equation*}
+   Then \(K=\Mod(\{\psi_n\mid n\ge1\})\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(K\) be a class of finite structures. \(K\) is called
+   *axiomatizable in first-order logic* or *elementary* if there is a setence
+   \varphi of first-order logic s.t. \(K=\Mod(\varphi)\)
+   #+END_definition
+
+   For structures \(\cala\) and \(\calb\) and \(m\in\N\) we write
+   \(\cala\equiv_m\calb\) and say that \(\cala\) and \(\calb\) are
+   *\(m\)-equivalent* if \(\cala\) and \(\calb\) satisfy the same first-order
+   sentences of quantifier rank \(\le m\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \(K\) be a class of finite structures. Suppose that for every \(m\) there
+   are fintie structures \(\cala\) and \(\calb\) s.t.
+   \begin{equation*}
+   \cala\in K,\calb\not\in K,\text{ and }\cala\equiv_m\calb
+   \end{equation*}
+   Then \(K\) is not axiomatizable in first-order logic
+   #+END_theorem
+
+   #+BEGIN_proof
+   Let \(\varphi\) be any first-order sentence. Set \(m:=\qr(\varphi)\) and \(\cala\equiv_m\calb\)
+   #+END_proof
+
+** Ehrenfeucht's Theorem
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Assume \(\cala\) and \(\calb\) are structures. Let \(p\) be a map with
+   \(\dom(p)\subseteq A\) and \(\im(p)\subseteq B\). Then \(p\) is said to be a
+   *partial isomorphism* from \(\cala\) to \(\calb\) if
+   * \(p\) is injective
+   * for every \(c\in\tau\): \(c^A\in\dom(p)\) and \(p(c^A)=c^B\)
+   * for every \(n\)-ary \(R\in\tau\) and all \(a_1,\dots,a_n\in\dom(p)\)
+     \begin{equation*}
+     R^Aa_1\dots a_n \quad\text{ iff }\quad R^Bp(a_1)\dots p(a_n)
+     \end{equation*}
+
+
+   We write \(\Part(\cala,\calb)\) for the set of partial isomorphisms from
+   \(\cala\) to \(\calb\)
+   #+END_definition
+
+
+   Let \(\cala\) and \(\calb\) be \tau-structures, \(\bar{a}\in A^s\),
+   \(\overbar{b}\in B^s\), and \(m\in\N\). The *Ehrenfeucht game*
+   \(G_m(\cala,\overbar{a},\calb,\overbar{b})\) is played by two players called
+   the *spoiler* and the *duplicator*. Each player has to make \(m\) moves in
+   the course of a play. In his \(i\)-th move the spoiler first selects a
+   structure, \(\cala\) or \(\calb\), and an element in this structure. If the
+   spoiler chooses \(e_i\) in \(\cala\) then the duplicator in his \(i\)-th move
+   must choose an element \(f_i\) in \(\calb\). If the spoiler chooses \(f_i\)
+   in \(\calb\) then the duplicator must choose an element \(e_i\) in \(\cala\)
+
+   #+ATTR_LATEX: :align cc|c
+   |               | \(\cala,\overbar{a}\) | \(\calb,\overbar{b}\) |
+   |---------------+-----------------------+-----------------------|
+   | first move    | \(e_1\)               | \(f_1\)               |
+   | second move   | \(e_2\)               | \(f_2\)               |
+   | \(\vdots\)    | \(\vdots\)            | \(\vdots\)            |
+   | \(m\)-th move | \(e_m\)               | \(f_m\)               |
+
+   The duplicator *wins* iff
+   \(\overbar{a}\overbar{e}\mapsto\overbar{b}\overbar{f}\in\Part(\cala,\calb)\).
+
+   If \(s=0\), we denote the game by \(G_m(\cala,\calb)\)
