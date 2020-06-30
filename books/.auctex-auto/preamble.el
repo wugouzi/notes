@@ -4,7 +4,7 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most") ("fontenc" "B1" "T1") ("mtpro2" "lite")))
+                     '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most") ("fontenc" "B1" "T1")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
@@ -22,16 +22,14 @@
     "amsthm"
     "amsmath"
     "commath"
-    "amsfonts"
     "amssymb"
-    "bbm"
     "mathrsfs"
+    "mathabx"
     "stmaryrd"
     "empheq"
     "tikz"
     "tikz-cd"
     "tcolorbox"
-    "actuarialsymbol"
     "threeparttable"
     "scalerel"
     "stackengine"
@@ -39,7 +37,6 @@
     "tabularx"
     "dsfont"
     "fontenc"
-    "newpxtext"
     "enumitem"
     "siunitx"
     "subcaption"
@@ -47,13 +44,12 @@
     "auncial"
     "float"
     "fancyhdr"
-    "mtpro2"
+    "unicode-math"
     "imakeidx"
     "hyperref"
     "soul"
     "graphicx")
    (TeX-add-symbols
-    '("overbar" 1)
     '("stcomp" 1)
     '("interior" 1)
     '("rom" 1)
@@ -169,6 +165,8 @@
     "Frac"
     "rad"
     "nil"
+    "Ann"
+    "End"
     "bigtimes"
     "odiv"
     "subsetsim"
