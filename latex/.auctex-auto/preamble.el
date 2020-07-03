@@ -5,13 +5,13 @@
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most") ("fontenc" "B1" "T1")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "xcolor"
@@ -151,6 +151,8 @@
     "Sets"
     "Met"
     "Aut"
+    "RMod"
+    "RAlg"
     "LF"
     "op"
     "Diag"
@@ -184,7 +186,9 @@
     "simsubsetsim"
     "zallman")
    (LaTeX-add-environments
-    '("claim" 1))
+    '("claim" 1)
+    "bsm"
+    "psm")
    (LaTeX-add-amsthm-newtheorems
     "dummy"
     "definition"
