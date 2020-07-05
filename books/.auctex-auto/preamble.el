@@ -5,13 +5,13 @@
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most") ("fontenc" "B1" "T1")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "xcolor"
@@ -45,11 +45,19 @@
     "float"
     "fancyhdr"
     "unicode-math"
+    "ifthen"
+    "xargs"
     "imakeidx"
     "hyperref"
     "soul"
     "graphicx")
    (TeX-add-symbols
+    '("altxleftarrow" ["argument"] 1)
+    '("altxrightarrow" ["argument"] 1)
+    '("yLeftarrow" ["argument"] 1)
+    '("yRightarrow" ["argument"] 1)
+    '("yleftarrow" ["argument"] 1)
+    '("yrightarrow" ["argument"] 1)
     '("stcomp" 1)
     '("interior" 1)
     '("rom" 1)
@@ -143,6 +151,8 @@
     "Sets"
     "Met"
     "Aut"
+    "RMod"
+    "RAlg"
     "LF"
     "op"
     "Diag"
@@ -167,6 +177,8 @@
     "nil"
     "Ann"
     "End"
+    "coim"
+    "coker"
     "bigtimes"
     "odiv"
     "subsetsim"
@@ -174,7 +186,9 @@
     "simsubsetsim"
     "zallman")
    (LaTeX-add-environments
-    '("claim" 1))
+    '("claim" 1)
+    "bsm"
+    "psm")
    (LaTeX-add-amsthm-newtheorems
     "dummy"
     "definition"
