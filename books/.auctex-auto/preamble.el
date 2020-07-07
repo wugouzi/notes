@@ -179,6 +179,8 @@
     "End"
     "coim"
     "coker"
+    "Bil"
+    "Tril"
     "bigtimes"
     "odiv"
     "subsetsim"
