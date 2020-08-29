@@ -1,0 +1,408 @@
+#+TITLE: Modal Logic
+#+AUTHOR: wugouzi
+
+#+EXPORT_FILE_NAME: ../latex/ModalLogic/ModalLogic.tex
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../images/ModalLogic}}
+
+* Basic Concepts
+** Modal Languages
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The *basic modal language* is defined using  a set of *proposition letters* \Phi
+   whose elements are usually denoted \(p,q,r\) and so on, and a unary modal
+   operator \(\lozenge\). The well-formed *formulas* \phi of the basic modal
+   language are given by the rule
+   \begin{equation*}
+   \phi::=p\mid\bot\mid\neg\phi\mid\psi\vee\phi\mid\lozenge\phi
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *modal similarity type* is a pair \(\tau=(O,\rho)\) where \(O\) is a non-empty
+   set, and \rho is a function \(O\to\N\). The elements of \(O\) are called *modal
+   operators*; we use \(\triangle\), \(\triangle_0,\triangle_1,\dots\) to denote
+   elements of \(O\). The function \rho assigns to each operator \(\delta\in O\) a
+   finite *arity*
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *modal language* \(ML(\tau,\Phi)\) is built up using a modal similarity type
+   \(\tau=(O,\rho)\) and a set of proposition letters \Phi. The set \(Form(\tau,\Phi)\) of
+   *modal formulas* over \tau and \Phi is given by the rule
+   \begin{equation*}
+   \phi:=p\mid\bot\mid\neg\phi\mid\phi_1\vee\phi_2\mid\triangle(\phi_1,\dots,\phi_{\rho(\triangle)})
+   \end{equation*}
+   where \(p\) ranges over elements of \Phi
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For each \(\triangle\in O\) the *dual* \(\triangledown\) of \(\triangle\) is defined
+   as \(\triangledown(\phi_1,\dots,\phi_n):=\neg\triangle(\neg\phi_1,\dots,\neg\phi_n)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [The Basic Temporal Language]
+   #+BEGIN_examplle
+   The basic temporal language is built using a set of unary operators \(O=\{\la
+   F\ra,\la P\ra\}\). The intended interpretation of a formula \(\la F\ra\phi\)
+   is ' \phi will be true at some Future time' and the intended interpretation of
+   \(\la P\ra\phi\) is ' \phi was true at some Past time.' This language is called
+   the *basic temporal language*. Their duals are written as \(G\) and \(H\) ('it
+   is Going to be the case' and 'it always Has been the case')
+   #+END_examplle
+
+** Models and Frames
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *frame* for the basic modal language is a pair \(\fF=(W,R)\) s.t.
+   1. \(W\) is a non-empty set
+   2. \(R\) is a binary relation on \(W\)
+
+
+   A *model* for the basic modal language is a pair \(\fM=(\fF,V)\), where \(\fF\)
+   is a frame for the basic modal language and \(V\) is a function assigning to
+   each proposition letter \(p\) in \Phi a subset \(V(p)\) of \(W\). The function
+   \(V\) is called a *valuation*. \(\fM\) is *based on* the frame \(\fF\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Suppose \(w\) is a state in a model \(\fM=(W,R,V)\). Then \phi is *satisfied* in
+   \(\fM\) at state \(w\) if
+   \begin{align*}
+   \fM,w\Vdash p&\quad\text{iff}\quad
+   w\in V(p),\text{ where } p\in\Phi\\
+   \fM,w\Vdash\bot&\quad\text{iff}\quad\text{never}\\
+   \fM,w\Vdash\neg\phi&\quad\text{iff}\quad
+   \text{not }\fM,w\Vdash\phi\\
+   \fM,w\Vdash\phi\vee\psi&\quad\text{iff}\quad
+   \fM,w\Vdash\phi\text{ or }\fM,w\Vdash\psi\\
+   \fM,w\Vdash\lozenge\phi&\quad\text{iff}\quad
+   \text{ for some }v\in W\text{ with }Rwv\text{ we have }\fM,v\Vdash\phi
+   \end{align*}
+   It follows that \(\fM,w\Vdash\Box\phi\) iff for all \(v\in W\) s.t.
+   \(Rwv\), we have \(\fM,v\Vdash\phi\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \tau be a modal similarity type. A *\(\tau\)-frame* is a tuple \(\fF\)
+   consisting of the following ingredients
+   1. a non-empty set \(W\)
+   2. for each \(n\ge0\), and each \(n\)-ary modal operator \(\triangle\) in the
+      similarity type \tau, an \((n+1)\)-ary relation \(R_{\triangle}\)
+   #+END_definition
+
+   \phi is *satisfied at a state \(w\)* in a model
+   \(\fM=(W,\{R_{\triangle}\mid\triangle\in\tau\},V)\) when
+   \(\rho(\triangle)\iffalse<\fi>0\) if
+   \begin{align*}
+   \fM,w\Vdash\triangle(\phi_1,\dots,\phi_n)\quad\text{iff}\quad&
+   \text{for some }v_1,\dots,v_n\in W\text{ with } R_{\triangle} wv_1\dots v_n\\
+   &\text{we have, for each }i,\fM,v_i\Vdash\phi_i
+   \end{align*}
+
+   When \(\rho(\triangle)=0\) we define
+   \begin{equation*}
+   \fM,w\Vdash\triangle \quad\text{ iff }\quad
+   w\in R_{\triangle}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+  The set of all formulas that are valid in a class of frames \(\sfF\)is called
+  the *logic* of \(\sfF\) (notation: \(\Lambda_{\sfF}\))
+   #+END_definition
+
+** General Frames
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Given an \((n+1)\)-ary relation \(R\) on a set \(W\), we define the following
+   \(n\)-ary operation \(m_R\) on the power set \(\calp(W)\) of \(W\):
+   \begin{equation*}
+   m_R(X_1,\dots,X_n)=\{w\in W\mid Rww_1\dots w_n\text{ for some }
+   w_1\in X_1,\dots,w_n\in X_n\}
+   \end{equation*}
+   #+END_definition
+
+* Models
+** Invariance Results
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\fM\) and \(\fM'\) be models of the same modal similarity type \tau, and
+   let \(w\) and \(w'\) be states in \(\fM\) and \(\fM'\) respectively. The
+   *\(\tau\)-theory* (or *\(\tau\)-type*) *of* \(w\) is the set of all
+   \(\tau\)-formulas satisfied at \(w\): that is,
+   \(\{\phi\mid\fM,w\Vdash\phi\}\). We say that \(w\) and \(w'\) are *(modally)
+   equivalent* (\(w\leftrightsquigarrow w'\)) if they have the same \(\tau\)-theories
+
+   The *\(\tau\)-theory* of the model \(\fM\) is the set of all \(\tau\)-formulas
+   satisfied by all states in \(fM\); that is, \(\{\phi\mid\fM\Vdash\phi\}\)
+   Models \(\fM\) and \(\fM'\) are called
+   *(modally) equivalent* (\(\fM\leftrightsquigarrow\fM'\)) if their theories are identical
+   #+END_definition
+
+*** Disjoint Unions
+*** Generated submodels
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(\fM=(W,R,V)\) and \(\fM'=(W',R',V')\) be two models; we say that
+    \(\fM'\) is a *submodel* of \(\fM\) if \(W'\susbeteq W\), \(R'\) is the
+    restriction of \(R\) to \(W'\), and \(V'\) is the restriction of \(V\) to
+    \(\fM'\). We say that \(\fM'\) is a *generated submodel* of \(\fM\)
+    (\(\fM'\rightarrowtail\fM\)) if \(\fM'\) is a submodel of \(\fM\) and for
+    all points \(w\) the following closure condition holds
+    \begin{equation*}
+    \text{if }w\text{ is in }\fM'\text{ and }Rwv,\text{ then }v\text{ is in }\fM'
+    \end{equation*}
+
+    Let \(fM\) be a model, and \(X\) a subset of the domain of \(\fM\); the
+    *submodel generated by* \(X\) is the smallest generated submodel of \(\fM\)
+    whose domain contains \(X\). A *rooted* or *point generated* model is a model
+    that is generated by a singleton set, the element of which is called the
+    *root* of the frame
+    #+END_definition
+
+*** Morphism for modalities
+    #+ATTR_LATEX: :options [Homomorphisms]
+    #+BEGIN_definition
+    Let \tau be a modal similarity type and let \(\fM\) and \(\fM'\) be
+    \tau-models. By a *homomorphism* \(f:\fM\to\fM'\), we mean a function \(f:W\to
+    W'\) satisfying
+    1. For each proposition letter \(p\) and each element \(w\) from \(\fM\), if
+       \(w\in V(p)\), then \(f(w)\in V'(p)\)
+    2. For each \(n\ge0\) and each \(n\)-ary \(\triangle\in\tau\) and
+       \((n+1)\)-tuple \(\bbar{w}\) from \(\fM\), if \((w_0,\dots,w_n)\in
+       R_{\triangle}\), then \((f(w_0),\dots,f(w_n))\in R_{\triangle}'\) (the
+       *homomorphic condition*)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Strong Homomorphisms, Embeddings and Isomorphisms]
+    #+BEGIN_definition
+    Let \tau be a modal similarity type and let \(\fM\) and \(\fM'\) be
+    \tau-models. By a *strong homomorphism* \(f:\fM\to\fM'\), we mean a function \(f:W\to
+    W'\) satisfying
+    1. For each proposition letter \(p\) and each element \(w\) from \(\fM\) iff
+       \(w\in V(p)\), then \(f(w)\in V'(p)\)
+    2. For each \(n\ge0\) and each \(n\)-ary \(\triangle\in\tau\) and
+       \((n+1)\)-tuple \(\bbar{w}\) from \(\fM\) iff \((w_0,\dots,w_n)\in
+       R_{\triangle}\), then \((f(w_0),\dots,f(w_n))\in R_{\triangle}'\) (the
+       *strong homomorphic condition*)
+
+
+    An *embedding* of \(\fM\) into \(\fM'\) is a strong homomorphism
+    \(f:\fM\to\fM'\) which is injective. An *isomorphism* is a bijective strong homomorphism
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \tau be a modal similarity type and let \(\fM\) and \(\fM'\) be
+    \tau-models. Then the following holds
+    1. for all elements \(w\) and \(w'\) of \(\fM\) and \(\fM'\), respectively,
+       if there exists a surjective strong homomorphism \(f:\fM\to\fM'\) with
+       \(f(w)=w'\), then \(w\) and \(w\) are modally equivalent
+    2. If \(\fM\cong\fM'\), then \(\fM\leftrightsquigarrow\fM'\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options [Bounded Morphisms - the Basic Case]
+    #+BEGIN_definition
+    Let \(\fM\) and \(\fM'\) be models for the basic modal language. A mapping
+    \(f:\fM=(W,R,V)\to\fM'=(W',R',V')\) is a *bounded morphsim* if it satisfies
+    1. \(w\) and \(f(w)\) satisfy the same proposition letters
+    2. \(f\) is a homomorphism w.r.t. the relation \(R\) (if \(Rwv\) then \(R'f(w)f(v)\))
+    3. If \(R'f(w)v'\) then there exists \(v\) s.t. \(Rwv\) and \(f(v)=v'\) (the
+       *back condition*)
+
+
+    If there is a *surjective* bounded morphism from \(\fM\) to \(\fM'\), then we
+    say that \(\fM'\) is a *bounded morphic image* of \(\fM\), and write \(\fM\twoheadrightarrow\fM'\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \tau be a modal similarity type and let \(\fM\) and \(\fM'\) be
+    \(\tau\)-models s.t. \(f:\fM\to\fM'\) is a bounded morphism. Then for each
+    modal formula \phi, and each element \(w\) of \(\fM\) we have
+    \(\fM,w\Vdash\phi\) iff \(\fM',f(w)\Vdash\phi\).
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Assume that \tau is a modal similarity type containing only diamonds. Then for
+    any rooted \(\tau\)-models \(\fM\) there exists a tree-like \(\tau\)-models
+    \(\fM'\) s.t. \(\fM'\twoheadrightarrow\fM\). Hence any satisfiable
+    \(\tau\)-formula is satisfiable in a tree-like model
+    #+END_proposition
+
+
+
+
+
+** Bisimulations
+   #+ATTR_LATEX: :options [Bisimulation - the Basic Case]
+   #+BEGIN_definition
+   Let \(\fM=(W,R,V)\) and \(\fM=(W',R',V')\) be two models
+
+   A non-empty binary relation \(Z\subseteq W\times W'\) is called a *bisimulation
+   between* \(\fM\) and \(\fM'\) (notation: \(Z:\fM\leftrightarroweq\fM')\) if
+   1. If \(wZw'\) then \(w\) and \(w'\) satisfy the same proposition letters
+   2. If \(wZw'\) and \(Rwv\), then there exists \(v'\) (in \(\fM'\)) s.t.
+      \(vZv'\) and \(R'w'v'\) (the *forth condition*)
+   3. The converse of (2): if \(wZw'\) and \(R'w'v'\), then there exists \(v\)
+      (in \(\fM\)) s.t. \(vZv'\) and \(Rwv\) (the *back condition*)
+
+
+   When \(Z\) is a bisimulation linking two states \(w\) in \(\fM\) and \(w'\)
+   in \(\fM'\) we say that \(w\) and \(w'\) are *bisimilar*, and we write
+   \(Z:\fM,w\leftrightarroweq \fM',w'\). If there is a bisimulation, we sometimes
+   write \(\fM,w\leftrightarroweq \fM',w'\) or \(w\leftrightarroweq w'\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Bisimulation - the General Case]
+   #+BEGIN_definition
+   Let \tau be a modal similarity type, and let
+   \(\fM=(W,R_{\triangle},V)_{\triangle\in\tau}\) and
+   \(\fM'=(W',R_{\triangle}',V')_{\triangle\in\tau}\) be \(\tau\)-models. A
+   non-empty binary relation \(Z\subseteq W\times W'\) is called a *bisimulation*
+   between \(\fM\) and \(\fM'\) (\(Z:\fM\leftrightarroweq\fM'\)) if the above
+   condition 1 is satisfied and
+   2. [@2] If \(wZw'\) and \(R_{\triangle}wv_1\dots v_n\) then there are
+      \(v_1',\dots,v_n'\in W'\) s.t. \(R'_{\triangle}w'v_1'\dots v_n'\) and for
+      all \(i\) (\(1\le i\le n\)) \(v_iZv_i'\) (the *forth* condition)
+   3. If \(wZw'\) and \(R'_{\triangle}w'v_1'\dots v_n'\) then there are
+      \(v_1,\dots,v_n\in W\) s.t. \(R_{\triangle}wv_1\dots v_n\) and for
+      all \(i\) (\(1\le i\le n\)) \(v_iZv_i'\) (the *back* condition)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Let \tau be a modal similarity type, and let \(\fM,\fM'\) and \(\fM_i\) (\(i\in
+   I\)) be \(\tau\)-models
+   1. If \(\fM\cong\fM'\), then \(\fM\leftrightarroweq\fM'\)
+   2. For every \(i\in I\), and every \(w\) in \(\fM_i\),
+      \(\fM_i,w\leftrightarroweq\biguplus_i\fM_i,w\)
+   3. If \(\fM'\rightarrowtail\fM\), then \(\fM',w\leftrightarroweq\fM,w\) for
+      all \(w\) in \(\fM'\)
+   4. If \(f:\fM\twoheadrightarrow\fM'\), then
+      \(\fM,w\leftrightarroweq\fM',f(w)\) for all \(w\) in \(\fM\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   Suppose \(\fM=(W,R_{\triangle},V)_{\triangle\in\tau}\) and
+   \(\fM'=(W',R_{\triangle}',V')_{\triangle\in\tau}\) 
+
+   1. Suppose \(f:\fM\cong\fM'\), then we define \(wZw'\) iff \(w'=f(w)\) where
+      \(w\in W,w'\in W'\). Bisimulation comes from the definition of the isomorphism
+   2. Define the relation \(Z=\{(w,w)\mid
+      w\in\fM_i\}\subseteq\fM_i\times\biguplus\fM_i\). The first condition comes
+      from the invariance. The forth condition is obvious. For the back
+      condition, if \(R_{\triangle}'w'v_1'\dots v_n'\) and \(w'\in W\), then
+      \(v_1',\dots,v_n'\in W\) since each \(R_{\triangle,i}\) is disjoint and we
+      have \(R_{\triangle,i}w'v_1'\dots v_n'\)
+   3. Define the relation \(Z=\{(w,w)\mid w\in\fM'\}\subseteq\fM'\times\fM\).
+      The first condition comes from the invariance. Forth condition is obvious.
+      For the back condition, suppose \(wZw\) and \(R'_{\triangle}wv_1'\dots
+      v_n'\), by the definition, \(v_1',\dots,v_n'\in W\) and
+      \(R_{\triangle}wv_1'\dots v_n'\)
+   4. Define \(Z=\{(w,f(w)\mid w\in W)\}\). The first condition comes from the
+      definition. If \(wZw'\) and \(R_{\triangle}wv_1\dots v_n\), then
+      \(R'_{\triangle}f(w)f(v_1)\dots f(v_n)\). If \(wZw'\) and
+      \(R_{\triangle}'w'v_1'\dots v_n\), then there is \(v_1,\dots,v_n\) s.t.
+      \(R_{\triangle}wv_1,\dots,v_n\) and \(f(v_i)=v_i'\) for \(1\le i\le n\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm2.20
+   Let \tau be a modal similarity type, and let \(\fM, \fM'\) be \(\tau\)-models.
+   Then, for every \(w\in W\) and \(w'\in W'\), \(w\leftrightarroweq w'\)
+   implies that \(w\leftrightsquigarrow w'\). In other words, modal formulas are
+   invariant under bisimulation
+   #+END_theorem
+
+   #+BEGIN_proof
+   Induction on the complexity of \phi.
+
+   Suppose \phi is \(\diamond\psi\), we have \(\fM,w\Vdash\diamond\psi\) iff there
+   exists a \(v\) in \(\fM\) s.t. \(Rwv\) and \(\fM,v\Vdash\psi\). As
+   \(w\leftrightarroweq w'\), there exists a \(v'\) in \(\fM'\) s.t. \(R'w'v'\)
+   and \(v\leftrightarroweq v'\). By the I.H., \(\fM',v'\Vdash\psi\), hence \(\fM',w'\Vdash\diamond\psi\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Bisimulation and First-Order Logic]
+   #+BEGIN_examplle
+   label:example2.22
+
+    [[/media/wu/file/stuuudy/notes/images/ModalLogic/BisimilarModels.png]]
+
+
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   label:example2.23
+
+   [[/media/wu/file/stuuudy/notes/images/ModalLogic/NotBisimilar.png]]
+   #+END_examplle
+
+   \(\fM\) is *image-finite* if for each state \(u\) in \(\fM\) and each relation
+   \(R\) in \(\fM\), the set \(\{(v_1,\dots,v_n)\mid Ruv_1\dots v_n\}\) is
+   finite
+
+   #+ATTR_LATEX: :options [Hennessy-Milner Theorem]
+   #+BEGIN_theorem
+   label:thm2.24
+   Let \tau be a modal similarity type and let \(\fM\) and \(\fM'\) be two
+   image-finite \(\tau\)-models. Then for every \(w\in W\) and \(w'\in W'\),
+   \(w\leftrightarroweq w'\) iff \(w\leftrightsquigarrow w'\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Assume that our similarity type \tau only contains a single diamond. The
+   direction from left to right follows from Theorem ref:thm2.20
+
+   Suppose \(w\leftrightsquigarrow w'\). The first condition is immediate. If
+   \(Rwv\), assume there is no \(v'\) in \(\fM'\) with \(R'w'v'\) and
+   \(v\leftrightsquigarrow v'\). Let \(S'=\{u'\mid R'w'u'\}\). Note that \(S'\)
+   must be non-empty, for otherwise \(\fM',w'\Vdash\Box\bot\), which would
+   contradict \(w\leftrightsquigarrow w'\) since \(\fM,w\Vdash\diamond\top\).
+   Furthermore, as \(\fM'\) is image-finite, \(S'\) must be finite, say
+   \(S'=\{w_1',\dots,w_n'\}\). By assumption, for every \(w_i'\in S'\) there
+   exists a formula \(\psi_i\) s.t. \(\fM,v\Vdash\psi_i\), but
+   \(\fM',w_i'\not\Vdash\psi_i\). It follows that
+   \begin{equation*}
+   \fM,w\Vdash\diamond(\psi_1\wedge\dots\wedge\psi_n)\quad\text{ and }\quad
+   \fM',w'\not\Vdash\diamond(\psi_1\wedge\dots\wedge \psi_n)
+   \end{equation*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex2.2.8
+   Suppose that \(\{Z_i\mid i\in I\}\) is a non-empty collection of
+   bisimulations between \(\fM\) and \(\fM'\). Prove that the relation
+   \(\bigcup_{i\in I}Z_i\) is also a bisimulation between \(\fM\) and \(\fM'\).
+   Conclude that if \(\fM\) and \(\fM'\) are bisimilar, then there is a maximal
+   bisimulation between \(\fM\) and \(\fM'\).
+   #+END_exercise
+
+   #+BEGIN_proof
+   1. If \((w,w')\in\bigcup_{i\in I}Z_i\), then \((w,w')\in Z_j\) for some
+      \(j\in I\) and hence they satisfy the same propositional letters
+   2. If \((w,w')\in\bigcup_{i\in I}Z_i\) and \(R_{\triangle}wv_1\dots v_n\),
+      since \((w,w')\in Z_j\) for some \(j\in I\), we have
+      \(R'_{\triangle}w'v_1'\dots v_n'\) and \(v_iZ_jv_i'\) for all \(1\le i\le
+      n\), which means \((v_i,v_i')\in\bigcup_{i\in I}Z_i\) for all \(1\le i\le n\)
+   3. similarly
+   #+END_proof
+
+* COMMENT Completion
+  definition
+
+  corollary
+
+  lemma
+
+  theorem

@@ -58,6 +58,7 @@
     '("yRightarrow" ["argument"] 1)
     '("yleftarrow" ["argument"] 1)
     '("yrightarrow" ["argument"] 1)
+    '("bbar" 1)
     '("stcomp" 1)
     '("interior" 1)
     '("rom" 1)
@@ -179,6 +180,8 @@
     "End"
     "coim"
     "coker"
+    "Bil"
+    "Tril"
     "bigtimes"
     "odiv"
     "subsetsim"

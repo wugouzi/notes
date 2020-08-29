@@ -1,5 +1,5 @@
 (TeX-add-style-hook
- "BasicTopology"
+ "ModalLogic"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
@@ -35,40 +35,17 @@
     "capt-of"
     "hyperref"
     "minted")
-   (TeX-add-symbols
-    '("DrawLatitudeCircle" ["argument"] 1)
-    '("DrawLongitudeCircle" ["argument"] 1)
-    '("LatitudePlane" ["argument"] 2)
-    '("LongitudePlane" ["argument"] 2)
-    '("pgfmathsinandcos" 3)
-    "R"
-    "angEl"
-    "angAz"
-    "angPhi"
-    "angBeta")
    (LaTeX-add-labels
-    "sec:org6c5c16d"
-    "sec:org8668b44"
-    "sec:org03c2e17"
-    "sec:orgdcac23d"
-    "sec:orgf2e0762"
-    "ex2.1.5"
-    "ex2.1.10"
-    "ex2.1.11"
-    "ex2.1.12"
-    "sec:orgc0847c8"
-    "thm2.6"
-    "lemma2.10"
-    "sec:org0c32276"
-    "ex2.13"
-    "ex2.25"
-    "ex2.16"
-    "sec:orgdeb4cf4"
-    "sec:org67e3bc0"
-    "sec:orgfbe928e"
-    "ex2.4.27")
-   (LaTeX-add-index-entries
-    "continuous"
-    "limit point"))
+    "sec:org53cf6fc"
+    "sec:orgb54707c"
+    "sec:orgef72200"
+    "sec:orgbf65876"
+    "sec:orgb40f312"
+    "sec:org64483be"
+    "sec:org242bdd1"
+    "sec:org96db830"
+    "sec:org25ad0b8"
+    "sec:orgb900a79"
+    "thm2.20"))
  :latex)
 
