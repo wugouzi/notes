@@ -181,7 +181,7 @@
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     Let \(\fM=(W,R,V)\) and \(\fM'=(W',R',V')\) be two models; we say that
-    \(\fM'\) is a *submodel* of \(\fM\) if \(W'\susbeteq W\), \(R'\) is the
+    \(\fM'\) is a *submodel* of \(\fM\) if \(W'\subseteq W\), \(R'\) is the
     restriction of \(R\) to \(W'\), and \(V'\) is the restriction of \(V\) to
     \(\fM'\). We say that \(\fM'\) is a *generated submodel* of \(\fM\)
     (\(\fM'\rightarrowtail\fM\)) if \(\fM'\) is a submodel of \(\fM\) and for
@@ -523,8 +523,26 @@
     letters, and let \(\fM\) and \(\fM'\) be models for this language. Then for
     every \(w\) in \(\fM\) and \(w'\) in \(\fM'\), the following are equivalent
     1. \(w\leftrightarroweq_nw'\)
-    2. \(w\) and \(w'\) agree on all modal formulas of degree at most \(n\)
+    2. \(w\) and \(w'\) agree on all modal formulas of degree at most \(n\).
     #+END_proposition
+
+    #+BEGIN_proof
+    \(2\to 1\). if \(n=0\), obvious.
+
+    If \(n=k\) and the proposition holds. Now suppose \(n=k+1\). Now \(w\) and
+    \(w'\) agree on all modal formulas of degree at most \(n+1\). If
+    there is not \(v,v'\) s.t. \(v\) and \(v'\) agree on all modal formulas of
+    degree at most \(n\) and \(Rwv\) and \(Rwv'\). Let \(S'=\{u'\mid R'w'u'\}\)
+    and \(S'\) is finite, say \(S'==\{w_1',\dots,w_n'\}\). By assumption, for
+    every \(w_i'\in S'\) there exists a formula \(\psi_i\)  of degree at most
+    \(n\) s.t. \(\fM,v\Vdash\psi_i\) but \(\fM',w_i'\not\Vdash\psi_i\). It
+    follows that
+    \begin{equation*}
+    \fM,w\Vdash\diamond(\psi_1\wedge\dots\wedge\psi_n)
+    \text{ and }
+    \fM',w'\not\Vdash\diamond(\psi_1\wedge\dots\wedge\psi_n)
+    \end{equation*}
+    #+END_proof
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -630,7 +648,8 @@
     \(\fM_\Sigma^f\) is called a *filtration of \(fM\) through* \Sigma; we will
     often suppress subscripts and write \(\fM^f\) instead of \(\fM_\Sigma^f\)
     #+END_definition
-
+    label:def2.36
+    #+ATTR_LATEX: :width 6cm
     [[/media/wu/file/stuuudy/notes/images/ModalLogic/Filtration.png]]
 
     Let \(\fM=(\N,R,V)\) , where \(R=\{(0,1),(0,2),(1,3)\}\cup\{(n,n+1)\mid
@@ -651,6 +670,201 @@
     denotes the size of \Sigma)
     #+END_proposition
 
+    #+BEGIN_proof
+    The states of \(\fM^f\) are the equivalence classes in \(W_\Sigma\). Let
+    \(g\) be the function with domain \(W_\Sigma\) and range \(\calp(\Sigma)\)
+    defined by \(g(\abs{w})=\{\phi\in\Sigma\mid\fM,w\Vdash\phi\}\). It follows
+    from the definition of \(\leftrightsquigarrow_\Sigma\) that \(g\) is well
+    defined and injective. Thus \(\abs{W_\Sigma}\le 2^n,n=\abs{\Sigma}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Filtration Theorem]
+    #+BEGIN_theorem
+    Consider the basic modal language. Let \(\fM^f=(W_\Sigma,R^f,V^f)\) be a
+    filtration of \(\fM\) through a subformula closed set \Sigma. Then for all
+    formulas \(\phi\in\Sigma\), and all nodes \(w\) in \(\fM\), we have
+    \(\fM,w\Vdash\phi\) iff \(\fM^f,\abs{w}\Vdash\phi\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose \(\diamond\phi\in\Sigma\) and \(\fM,w\Vdash\diamond\phi\). Then there
+    is a \(v\) s.t. \(Rwv\) and \(\fM,v\Vdash\phi\). As \(\fM^f\) is a
+    filtration, \(R^f\abs{w}\abs{v}\). As \Sigma is a subformula closed,
+    \(\phi\in\Sigma\), thus by the inductive hypothesis
+    \(\fM^f,\abs{v}\Vdash\phi\). Hence \(\fM^f,\abs\Vdash\diamond\phi\)
+
+    Suppose \(\diamond\phi\in\Sigma\) and \(\fM^f,\abs{w}\Vdash\diamond\phi\).
+    Thus there is a state \(\abs{v}\) in \(\fM^f\) s.t. \(R^f\abs{w}\abs{v}\)
+    and \(\fM^f,\abs{v}\Vdash\phi\). As \(\phi\in\Sigma\), we have
+    \(\fM,v\Vdash\phi\). By the definition, we have \(\fM,w\Vdash\diamond\phi\)
+    #+END_proof
+
+    Note that clauses 2 and 3 of Definition ref:def2.36 are designed to make the
+    modal case of the inductive step go through.
+
+    Define
+    1. \(R^s\abs{w}\abs{v}\) iff \(\exists w'\in\abs{w}\exists v'\in\abs{v}Rw'v'\)
+    2. \(R^l\abs{w}\abs{v}\) iff for all formulas \(\diamond\phi\in\Sigma\):
+       \(\fM,v\Vdash\phi\) implies \(\fM,w\Vdash\diamond\phi\)
+
+
+    These relations give rise to the *smallest* and *largest* filtrations respectively
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Consider the basic modal language. Let \(\fM\) be any model, \Sigma any
+    subformula closed set of formulas, \(W_\Sigma\) the set of equivalence
+    classes induced by \(\leftrightsquigarrow_\Sigma\), and \(V^f\) the standard
+    valuation on \(W_\Sigma\). Then both \((W_\Sigma,R^s,V^f)\) and
+    \((W_\Sigma,R^l,V^f)\) are filtrations of \(\fM\) through \Sigma. Furthermore, if
+    \((W_\Sigma, R^f,V^f)\) is any filtration of \(\fM\) through \Sigma, then
+    \(R^s\subseteq R^f\subseteq R^l\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    If \(Rwv\), if \(\fM,v\Vdash\phi\), then \(\fM,w\Vdash\diamond\phi\), hence
+    \(R^l\abs{w}\abs{v}\)
+
+    For any \((W_\Sigma,R^f,V^f)\). \(R^s\subseteq R^f\) by clause 2.
+    \(R^f\subseteq R^l\) by clause 2
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Finite Model Property - via Filtrations]
+    #+BEGIN_theorem
+    Let \phi be a basic modal formula. if \phi is satisfiable, then it is satisfiable
+    on a finite model. Indeed, it is satisfiable on a finite model containing at
+    most \(2^m\) nodes, where \(m\) is the number of subformulas of \phi
+    #+END_theorem
+
+    #+BEGIN_proof
+    Assume that \phi is satisfiable on a model \(\fM\); take any filtration of
+    \(\fM\) through the set of subformulas .
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(\fM\) be a model, \Sigma a subformula closed set of formulas, and
+    \(W_\Sigma\) the set of equivalence classes induced on \(\fM\) by
+    \(\leftrightsquigarrow_\Sigma\). Let \(R^t\) be the binary relation on
+    \(W_\Sigma\) defined by
+    \begin{equation*}
+    R^t\abs{w}\abs{v} \text{ iff for all }\phi, \text{ if }\diamond\phi\in\Sigma
+    \text{ and }\fM,v\Vdash\phi\vee\diamond\phi\text{ then }\fM,w\Vdash\diamond\phi
+    \end{equation*}
+    If \(R\) is transitive then \((W_\Sigma,R^t,V^f)\) is a filtration and
+    \(R^t\) is transitive
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \((W,R,V)\) be a transitive frame. A *cluster* on \((W,R,V)\) is a
+    maximal, nonempty equivalence class under \(R\). That is, \(C\subseteq W\)
+    is a cluster if the restriction of \(R\) to \(C\) is an equivalence relation
+
+    A cluster is *simple* if it consists of a single reflexive point, and *proper*
+    if it consists more than one point
+    #+END_definition
+** The Standard Translation
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For \tau a modal similarity type and \Phi a collection of proposition letters, let
+   \(\call_\tau^1(\Phi)\) be the first-order language (with equality) which has
+   unary predicates \(P_0,P_1,\dots\) corresponding to the proposition letters
+   \(p_0,p_1,\dots\) in \Phi, and an \((n+1)\)-ary relation symbol \(R_\triangle\)
+   for each (\(n\)-ary) modal operator \(\triangle\) in our similarity type. We
+   write \(\alpha(x)\) to denote a first-order formula \alpha with one free variable, \(x\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Standard Translation]
+   #+BEGIN_definition
+   Let \(x\) be a first-order variable. The *standard translation* \(ST_x\) taking
+   modal formulas to first-order formulas in \(\call_\tau^1(\Phi)\) is defined as
+   \begin{align*}
+   ST_x(p)&\quad\text{=}\quad Px\\
+   ST_x(\bot)&\quad\text{=}\quad x\neq x\\
+   ST_x(\neg\phi)&\quad\text{=}\quad \neg ST_x(\phi)\\
+   ST_x(\phi\vee\psi)&\quad\text{=}\quad ST_x(\phi)\vee ST_x(\psi)\\
+   ST_x(\triangle(\phi_1,\dots,\phi_n))&\quad\text{=}\quad \exists y_1\dots
+   \exists y_n(R_{\triangle} xy_1\dots y_n\wedge\\
+   &\hspace{2cm}ST_{y_1}(\phi_1)\wedge\dots\wedge ST_{y_n}(\phi_n) )
+   \end{align*}
+   where \(y_1,\dots,y_n\) are fresh variables.
+   #+END_definition
+
+   \begin{gather*}
+   ST_x(\diamond\phi)=\exists y(Rxy\wedge ST_y(\phi))\\
+   ST_x(\box\phi)=\forall y(Rxy\to ST_y(\phi))
+   \end{gather*}
+
+   #+ATTR_LATEX: :options [Local and Global Correspondence on Models]
+   #+BEGIN_proposition
+   Fix a modal similarity type \tau, and let \phi be a \(\tau\)-formula. Then
+   1. For all \(\fM\) and all states \(w\) of \(\fM\): \(\fM,w\Vdash \phi\) iff
+      \(\fM\models ST_x(\phi)[w]\)
+   2. For all \(\fM\): \(\fM\Vdash\phi\) iff \(\fM\models\forall x ST_x(\phi)\)
+   #+END_proposition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   1. Let \tau be a modal similarity type that only contains diamonds. Then, every
+      \(\tau\)-formula \phi is equivalent to a first-order formula containing at
+      most two variables
+   2. If \tau does not contain modal operators \(\triangle\) whose arity exceeds
+      \(n\), all \(\tau\)-formulas are equivalent to first-order formulas
+      containing at most \((n+1)\) vairables
+   #+END_proposition
+
+   #+BEGIN_proof
+   Assume \tau contains only diamonds \(\la a\ra,\la b\ra\). Fix two distinct
+   variables \(x\) and \(y\). Define two variants \(ST_x\) and \(ST_y\) of the
+   standard translation as follows
+   \begin{alignat*}{2}
+   &ST_x(p)=Px&&ST_y(p)=Py\\
+   &ST_x(\bot)=x\neq x\quad&&ST_y(\bot)=y\neq y\\
+   &ST_x(\neg\phi)=\neg ST_x(\phi)&&ST_y(\neg\phi)=\neg ST_y(\phi)\\
+   &ST_x(\phi\vee\psi)=ST_x(\phi)\vee ST_x(\psi)&&ST_y(\phi\vee\psi)=ST_y(\phi)\vee ST_y(\psi)\\
+   &ST_x(\la a\ra\phi)=\exists y(R_axy\wedge ST_y(\phi))\quad&&
+   ST_y(\la a\ra\phi)=\exists x(R_ayx\wedge ST_x(\phi))
+   \end{alignat*}
+   Then for any \(\tau\)-formula \phi, its \(ST_x\)-translation contains at most
+   the two variables \(x\) and \(y\), and \(ST_x(\phi)\) is equivalent to the
+   original standard translation of \phi
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   \begin{align*}
+   ST_x(\diamond(\box p\to q))&=
+   \exists y(Rxy\wedge ST_y(\box p\to q))\\
+   &=\exists y(Rxy\wedge(\forall x(Ryx\to ST_x(p))\to Qy))\\
+   &=\exists y(Rxy\wedge(\forall x(Ryx\to Px)\to Qy))
+   \end{align*}
+   #+END_examplle
+
+   \(Rxx\) is not equivalent to any modal formula. Suppose \phi is a modal formula
+   s.t. \(ST_x(\phi)\) is equivalent to \(Rxx\). Let \(\fM\) be a singleton
+   reflexive model and let \(w\) be the unique state in \(\fM\); obviously
+   \(\fM\models Rxx[w]\). Let \(\fN\) be a model based on the strict ordering of
+   the integers; for every integer \(v\), \(\fN\models\neg Rxx[v]\). Let \(Z\)
+   be the relation which links every integer with the unique state in \(fM\),
+   and assume that the valuations in \(\fN\) and \(\fM\) are s.t. \(Z\) is a
+   bisimulation.
+   \begin{equation*}
+   \fM\models Rxx[w]\Rightarrow\fM,w\Vdash\phi\Rightarrow\fN,v\Vdash\phi
+   \Rightarrow\fN\models Rxx[v]
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \tau be a modal similarity type, \(\sfC\) a class of \(\tau\)-models, and \Gamma
+   a set of formulas over \tau. We say that \Gamma *defines* of *characterizes* a class
+   \(\sfK\) of models *within* \(\sfC\) if for all models \(\fM\) in \(\sfC\) we
+   have that \(\fM\) is in \(\sfK\) iff \(\fM\Vdash\Gamma\). If \(\sfC\) is the
+   class of all \(\tau\)-models, we simply say that \Gamma defines or characterizes
+   \(\sfK\); we omit brackets whenever \Gamma is a singleton. We say that a formula \phi
+   defines a *property* whenever \phi defines the class of models satisfying the property
+   #+END_definition
+** Modal Saturation via Ultrafilter Extensions
 
 * COMMENT Completion
   definition
