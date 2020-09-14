@@ -20,6 +20,7 @@
     "mathtools"
     "pgfplots"
     "amsthm"
+    "amsbsy"
     "amsmath"
     "commath"
     "amssymb"
@@ -65,6 +66,7 @@
     '("bbar" 1)
     '("stcomp" 1)
     '("interior" 1)
+    '("und" 1)
     '("rom" 1)
     '("trcl" 1)
     '("LRarrow" 1)
@@ -88,6 +90,10 @@
     "bh"
     "bc"
     "br"
+    "bi"
+    "bj"
+    "bn"
+    "be"
     "bo"
     "bU"
     "bL"
@@ -109,7 +115,7 @@
     "bw"
     "bT"
     "bF"
-    "bm"
+    "bmm"
     "bW"
     "bR"
     "bC"
@@ -189,6 +195,8 @@
     "coker"
     "Bil"
     "Tril"
+    "vect"
+    "vecbar"
     "bigtimes"
     "odiv"
     "subsetsim"
