@@ -1,0 +1,387 @@
+% Created 2020-09-19 六 12:54
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage{minted}
+\input{../preamble.tex}
+\author{C. C. Chang \& H. Jerome Keisler}
+\date{\today}
+\title{Model Theory}
+\hypersetup{
+ pdfauthor={C. C. Chang \& H. Jerome Keisler},
+ pdftitle={Model Theory},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 26.3 (Org mode 9.4)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents \clearpage
+\section{Models Constructed From Constants}
+\label{sec:orgf683279}
+
+\subsection{Completeness and Compactness}
+\label{sec:org1f7da0f}
+\begin{definition}[]
+Let \(T\) be a set of sentences of \(\call\) and let \(C\) be a set of
+constant symbols of \(\call\). We say that \(C\) is a \textbf{set of witnesses} for
+\(T\) iff for every formula \(\varphi\) of \(\call\) with at most one free variable,
+say ,\(x\), there is a constant \(c\in C\) s.t.
+\begin{equation*}
+T\vdash(\exists x)\varphi \to\varphi(c)
+\end{equation*}
+We say that \(T\) \textbf{has witnesses} in \(\call\) iff \(T\) has some set \(C\) of
+witness in \(\call\)
+\end{definition}
+
+\begin{lemma}[]
+\label{lemma2.1.1}
+Let \(T\) be a consistent set of sentences of \(\call\). Let \(C\) be a set
+of new constant symbols of power \(\abs{C}=\norm{\call}\), and let
+\(\bbar{\call}=\call\cup C\) be the simple extension of \(\call\) formed by
+adding \(C\). Then \(T\) can be extended to a consistent set of sentences
+\(\bbar{T}\) in \(\bbar{\call}\) which has \(C\) as a set of witnesses in \(\bbar{\call}\)
+\end{lemma}
+
+\begin{proof}
+Let \(\alpha=\norm{\call}\). For each \(\beta<\alpha\), let \(c_\beta\) be a
+constant symbol which does not occur in \(\call\) and s.t. \(\c_\beta\neq
+   c_\gamma\) if \(\beta<\gamma<\alpha\). Let \(C=\{c_\beta:\beta<\alpha\}\),
+\(\bbar{\call}=\call\cup C\). Clearly \(\norm{\bbar{\call}}=\alpha\), so we
+may arrange all formulas of \(\bbar{\call}\) with at most one free variable
+in a sequence \(\varphi_\xi,\xi<\alpha\). We now define an increasing sequence
+of sets of sentences of \(\bbar{\call}\):
+\begin{equation*}
+T=T_0\subset T_1\subset\dots\subset T_\xi\subset\dots,\quad\xi<\alpha
+\end{equation*}
+and a sequence \(d_\xi,\xi<\alpha\) of constants from \(C\) s.t.
+\begin{enumerate}
+\item each \(T_\xi\) is consistent in \(\bbar{\call}\)
+\item if \(\xi=\xi+1\), then \(T_\xi=T_\zeta\cup\{(\exists
+      x_\zeta)\varphi_\zeta\to\varphi_\zeta(d_\zeta)\}\); \(\xi_\zeta\) is the
+free variable in \(\varphi_\zeta\) if it has one, otherwise \(x_\xi=v_0\)
+\end{enumerate}
+3.if \(\xi\) is a limit ordinal different from 0, then
+\(T_\xi=\bigcup_{\zeta<\xi}T_\zeta\)
+
+
+Let \(d_\zeta\) be the first element of \(C\) which has not yet occurred in
+\(T_\zeta\). We show that
+\begin{equation*}
+T_{\zeta+1}=T_\zeta\cup\{(\exists x_\zeta)\varphi_\zeta\to\varphi_\zeta(d_\zeta)\}
+\end{equation*}
+is consistent. If this were not the case, then
+\begin{equation*}
+   T_\zeta\vdash\neg((\exists x_\zeta)\varphi_\zeta\to\varphi_\zeta(d_\zeta))
+\end{equation*}
+By propositional logic
+\begin{equation*}
+T_\zeta\vdash(\exists x_\zeta)\varphi_\zeta\wedge\neg\varphi_\zeta(d_\zeta)
+\end{equation*}
+As \(d_\zeta\) does not occur in \(T_\zeta\), we have by predicate logic
+\begin{gather*}
+T_\zeta\vdash(\forall x_\zeta)((\exists x_\zeta)\varphi_\zeta\wedge\neg\varphi_\zeta
+(x_\zeta))\\
+T_\zeta\vdash(\exists x_\zeta)\varphi_\zeta\wedge\neg(\exists x_\zeta)\varphi_\zeta
+\end{gather*}
+which contradicts the consistency of \(T_\zeta\). If \(\xi\) is a nonzero limit
+ordinal, and each member of the increasing chain \(T_\zeta,\zeta<\xi\) is
+consistent, then \(T_\xi\) is consistent.
+
+Now let \(\bbar{T}=\bigcup_{\xi<\alpha}T_\xi\). Suppose \(\varphi\) is a formula of
+\(\bbar{\call}\) with at most the variable \(x\) free. Then we may assume
+that \(\varphi=\varphi_xi\) and \(x=x_\xi\) for some \(\xi<\alpha\). Whence the
+sentence
+\begin{equation*}
+(\exists x_\xi)\varphi_xi\to\varphi_\xi(d_\xi)
+\end{equation*}
+belongs to \(T_{\xi+1}\) and so to \(\bbar{T}\)
+\end{proof}
+
+\begin{lemma}[]
+\label{lemma2.1.2}
+Let \(T\) be a consistent set of sentences and \(C\) be a set of witnesses
+for \(T\) in \(\call\). Then \(T\) has a model \(\fA\) s.t. every element of
+\(\fA\) is an interpretation of a constant \(c\in C\)
+\end{lemma}
+
+\begin{proof}
+If a set of sentences \(T\) has a set \(C\) of witnesses in \(\call\), then
+\(C\) is also a set of witnesses for every extension of \(T\). Second, if an
+extension of \(T\) has a model \(\fA\), then \(fA\) is also a model of \(T\).
+So we may assume that \(T\) is maximal consistent in \(\call\)
+
+For two constants \(c,d\in C\), define
+\begin{equation*}
+c\sim d \quad\text{ iff }\quad
+c\equiv d\in T
+\end{equation*}
+Because \(T\) is maximal consistent, we see that \(\sim\) is an equivalence
+relation on \(C\). For each \(c\in C\), let
+\begin{equation*}
+\widetilde{c}=\{d\in C:d\sim c\}
+\end{equation*}
+be the equivalence class of \(c\). We propose to construct a model \(\fA\)
+whose set of elements \(A\) is the set of all these equivalence classes
+\(\widetilde{c}\), for \(c\in C\); so we define
+\begin{enumerate}
+\item \(A=\{\widetilde{c}:c\in C\}\)
+\end{enumerate}
+
+
+
+\begin{enumerate}
+\setcounter{enumi}{1}
+\item For each \(n\)-placed relation symbol \(P\) in \(\call\), we define an
+\(n\)-placed relation \(R'\) on the set \(C\) by: for all \(c_1,\dots,c_n\in
+      C\)
+
+\(R'(c_1,\dots, c_n)\) iff \(P(c_1,\dots,c_n)\in T\)
+
+By our axioms of identity, we have
+
+\begin{equation*}
+\vdash P(c_1,\dots,c_n)\wedge c_1\equiv d_1\wedge\dots\wedge c_n\equiv d_n\to
+P(d_1,\dots,d_n)
+\end{equation*}
+So \(\sim\) is what is called a \textbf{congruence relation}.
+\(R(\widetilde{c}_1,\dots,\widetilde{c}_n)\) iff
+\(P(c_1,\dots,c_n)\in T\)
+\item Now consider a constant symbol \(d\) of \(\call\). From predicate logic, we
+have
+\begin{equation*}
+\vdash(\exists v_0)(d\equiv v_0)
+\end{equation*}
+So \((\exists v_0)(d\equiv v_0)\in T\), and because \(T\) has witnesses,
+there is a constant \(c\in C\) s.t.
+\begin{equation*}
+(d\equiv c)\in T
+\end{equation*}
+
+the constant \(c\) may not be unique, but its equivalence class is unique
+ because
+\begin{equation*}
+\vdash(d\equiv c\wedge d\equiv c'\to c\equiv c')
+\end{equation*}
+
+\item Let \(F\) be any \(m\)-placed function symbol of \(\call\), and let
+\(c_1,\dots,c_m\in C\). We have
+\begin{equation*}
+(\exists v_0)(F(c_1,\dots,c_m)\equiv v_0)\in T
+\end{equation*}
+hence there is a constant \(c\in C\) s.t.
+\begin{equation*}
+(F(c_1,\dots ,c_m)\equiv c)\in T
+\end{equation*}
+We use our axioms of identity to obtain
+\begin{equation*}
+\vdash (F(c_1\dots c_m)\equiv c\wedge
+c_1\equiv d_1\wedge\dots\wedge c_m\equiv d_m\wedge c\equiv d)\to
+F(d_1\dots d_m)\equiv d
+\end{equation*}
+Hence we define
+
+\(G(\widetilde{c}_1\dots\widetilde{c}_m)\) iff
+\((F(c_1\dots c_m)\equiv c)\in T\)
+
+By induction
+\begin{equation*}
+\fA\models t\equiv c \quad\text{ iff }\quad
+(t\equiv c)\in T
+\end{equation*}
+Since \(C\) is a set of witness for \(T\), we have: for any terms
+\(t_1,t_2\) of \(\call\) with no free variables
+\begin{equation*}
+\fA\models t_1\equiv t_2 \quad\text{ iff }\quad
+(t_1\equiv t_2)\in T
+\end{equation*}
+
+for any atomic formula \(P(t_1\dots t_n)\) of \(\call\) containing no free
+variables
+\begin{equation*}
+\fA\models P(t_1\dots t_n) \quad\text{ iff }\quad
+P(t_1\dots t_n)\in T
+\end{equation*}
+
+Hence for any sentence \(\varphi\) of \(\call\)
+\begin{equation*}
+\fA\models\varphi \quad\text{ iff }\quad
+\varphi\in T
+\end{equation*}
+
+Suppose \(\varphi=(\exists x)\psi\). If \(fA\models\varphi\), then for
+some \(\widetilde{c}\in A,\fA\models\psi[\widetilde{c}]\). This means that
+\(\fA\models\psi(c)\). So \(\psi(c)\in T\) and because
+\begin{equation*}
+\vdash\psi(c)\to(\exists x)\psi
+\end{equation*}
+we have \(\varphi\in T\). On the other hand, if \(\varphi\in T\), then
+because \(T\) has witnesses, there exists a constant \(c\in C\) s.t.
+\(\psi(c)\in T\), so \(\fA\models\psi(c)\). This gives
+\(\fA\models\psi[\widetilde{c}]\) and \(\fA\models\varphi\)
+\end{enumerate}
+\end{proof}
+
+\begin{lemma}[]
+\label{lemma2.1.3}
+Let \(C\) be a set of constant symbols of \(\call\), and let \(T\) be a
+set of sentences of \(\call\). If \(T\) has a model \(\fA\) s.t. every
+element of \(\fA\) is an interpretation of some constant \(c\in C\), then
+\(T\) can be extended to a consistent \(\bbar{T}\) in \(\call\) for which
+\(C\) is a set of witnesses
+\end{lemma}
+
+\begin{proof}
+Let \(\bbar{T}\) be the sentences of \(\call\) true in \(\fA\)
+\end{proof}
+
+\begin{theorem}[Extended Completeness Theorem]
+   \label{thm1.3.21} 
+Let \(\Sigma\) be a set of sentences of \(\call\). Then \(\Sigma\) is consistent iff \(\Sigma\) has a model
+\end{theorem}
+
+\begin{proof}
+Assume \(\Sigma\) is consistent.  By Lemma \ref{lemma2.1.1} we consider extensions
+\(\bbar{\Sigma}\) of \(\Sigma\) and \(\bbar{\call}\) of \(\call\), so that \(\bbar{\Sigma}\) has
+witnesses in \(\bbar{\call}\). By Lemma \ref{lemma2.1.2} let \(\fA\) be the
+model of \(\bbar{\Sigma}\). Let \(\fB\) be the model for \(\call\) which is the
+reduct of \(\fA\) to \(\call\).
+\end{proof}
+
+\begin{corollary}[Downward Löwenheim–Skolem Theorem]
+
+
+Every consistent theory \(T\) in \(\call\) has a model of power at most \(\norm{\call}\)
+\end{corollary}
+
+\begin{proof}
+Choose \(\fA\) so that every element is a constant.
+
+\(\abs{B}=\abs{A}\le\norm{\bbar{\call}}=\norm{\call}\)
+\end{proof}
+
+\begin{theorem}[Gödel's Completeness Theorem]
+\label{thm1.3.20}
+A sentence of \(\call\) is a theorem of \(\call\) iff it is valid
+\end{theorem}
+
+\begin{proof}
+If a sentence \(\sigma\) is not a theorem of \(\call\), then \(\{\neg\sigma\}\) is
+consistent in \(\call\). By Theorem \ref{thm1.3.21}, \(\{\neg\sigma\}\) will
+have a model where \(\sigma\) cannot hold. Hence \(\sigma\) is not valid
+\end{proof}
+
+\begin{theorem}[Compactness Theorem]
+\label{thm1.3.22}
+A set of sentences \(\Sigma\) has a model iff every finite subset of \(\Sigma\) has a model
+\end{theorem}
+
+\begin{proof}
+If every finite subset of \(\Sigma\) has a model, then every finite subset of \(\Sigma\) is
+consistent. So \(\Sigma\) is consistent and has a model by Theorem \ref{thm1.3.21}
+\end{proof}
+
+\begin{corollary}[]
+If a theory \(T\) has arbitrarily large finite models, then it has an
+infinite model
+\end{corollary}
+
+\begin{proof}
+Consider the expansion \(\call'=\call\cup\{c_n:n\in\omega\}\)  where \(c_n\)
+is a list of distinct constant symbols not in \(\call\). Consider the set \(\Sigma\)
+of \(\call'\) defined by
+\begin{equation*}
+\Sigma=T\cup\{\neg(c_n\equiv c_m):n<m<\omega\}
+\end{equation*}
+Any finite subset \(\Sigma'\) of \(\Sigma\) will involve at most the constants
+\(c_0,\dots,c_m\) for some \(m\). Let \(\fA\) be  a model of \(T\) with at
+least \(m+1\) elements, and let \(a_0,\dots,a_m\) be a list of \(m+1\)
+distinct elements of \(\fA\). The model \((\fA,a_0,\dots,a_m)\) for the
+finite expansion \(\call''=\call\cup\{c_0,\dots,c_m\}\) of \(\call\) is a
+model of (\(\Sigma\)'). So by Theorem \ref{thm1.3.22} \(\Sigma\) has a model.
+\end{proof}
+
+\begin{corollary}[Upward Löwenheim–Skolem-Tarski Theorem]
+If \(T\) has infinite models, then it has infinite models of any given power \(\alpha\ge\norm{\call}\)
+\end{corollary}
+
+
+\textbf{Method of diagrams}. Let \(\fA\) be a model of \(\call\). We expand the
+language \(\call\) to a new language
+\begin{equation*}
+\call_A=\call\cup\{c_a:a\in A\}
+\end{equation*}
+by If \(a\neq b\) and \(c_a,c_b\) are different symbols, we may then expand
+\(\fA\) to the model
+\begin{equation*}
+\fA_A=(\fA,a)_{a\in A}
+\end{equation*}
+The \textbf{diagram of} \(\fA\), denote by \(\varlrtriangle_{\fA}\), is the set of all
+atomic sentences and negations of atomic sentences of \(\call_A\) which hold
+in the model \(\fA_A\)
+
+If \(X\) is a subset of \(A\), then we let \(\call_X=\call\cup\{c_a:a\in
+   X\}\) and \(\fA_X=(\fA,a)_{a\in X}\). If \(f\) is a mapping from \(X\) into
+the set of elements \(B\) of a model \(\fB\) for \(\call\), then
+\((\fB,fa)_{a\in X}\) is the expansion of \(\fB\) to a model for \(\call_X\)
+
+\begin{proposition}[]
+Let \(\fA,\fB\) be models for \(\call\) and let \(f:A\to B\). Then the
+following are equivalent:
+\begin{enumerate}
+\item \(f\) is an isomorphic embedding of \(\fA\) into \(\fB\)
+\item There is an extension \(\fC\supset\fA\) and an isomorphism
+\(g:\fC\cong\fB\) s.t. \(g\supset f\)
+\item \((\fB,fa)_{a\in A}\) is a model of the diagram of \(\fA\)
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\(1\to2\). Extend the set \(A\) to a set \(C\) and extend the function \(f\)
+to a one-to-one function \(g\) from \(C\) onto \(B\). Then define the
+relations
+\begin{equation*}
+\fC\models R[c_1\dots c_n] \quad\text{ iff }\quad
+\fB\models R[gc_1\dots gc_n]
+\end{equation*}
+
+\(1\leftrightarrow2\). For each formula \(\varphi(x_1\dots x_n)\) and all
+\(a_1,\dots,a_n\in A\)
+\begin{equation*}
+\fA\models\varphi[a_1\dots a_n] \quad\text{ iff }\quad
+\fA_A\models\varphi(a_1\dots a_n)
+\end{equation*}
+and
+\begin{equation*}
+\fB\models\varphi[fa_1\dots fa_n] \quad\text{ iff }\quad
+(\fB,fa)_{a\in A}\models\varphi(a_1\dots a_n)
+\end{equation*}
+\end{proof}
+
+\begin{corollary}[]
+Suppose that \(\call\) has no function or constant symbols. Let \(T\) be a
+theory in \(\call\) and \(\fA\) be a model for \(\call\). Then \(\fA\) is
+isomorphically embedded in some model of \(T\) iff every finite submodel of
+\(\fA\) is isomorphically embedded in some model of \(T\)
+\end{corollary}
+
+\begin{proof}
+Suppose every finite submodel of \(\fA\) is isomorphically embedded in some
+model of \(T\). We show that the set \(\Sigma=T\cup\varlrtriangle_{\fA}\) is
+consistent. Every finite subset \(\Sigma'\) of \(\Sigma\) contains at most a finite
+number of the new constants
+\end{proof}
+\end{document}

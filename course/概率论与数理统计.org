@@ -584,6 +584,28 @@
     \end{equation*}
 ** 随机变量的函数的分布
    #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   设随机变量\(X\)具有概率密度\(f_X(x),-\infty<x<\infty\)，求\(Y=X^2\)的概率密度
+
+   分别记\(X,Y\)的分布函数为\(F_X(x),F_Y(y)\)，当\(y>0\)时
+   \begin{align*}
+   F_Y(y)&=P\{Y\le y\}=\{X^2\le y\}\\
+   &=P\{-\sqrt{y}\le X\le\sqrt{y}\}\\
+   &=F_X(\sqrt{y})-F_X(-\sqrt{y})
+   \end{align*}
+   因此
+   \begin{equation*}
+   f_Y(y)=
+   \begin{cases}
+   \frac{1}{2\sqrt{y}}[f_X(\sqrt{y}+f_X(-\sqrt{y}))]&y>0\\
+   0&y\le 0
+   \end{cases}
+   \end{equation*}
+   #+END_examplle
+
+
+
+   #+ATTR_LATEX: :options []
    #+BEGIN_theorem
    设随机变量\(X\)具有概率密度\(f_X(x),-\infty<x<\infty\)，又设函数\(g(x)\)处处
    可导且恒有\(g'(x)>0\)（或恒有\(g'(x)<0\)），则\(Y=g(x)\)是连续型随机变量，其
@@ -827,11 +849,54 @@
     F_z(z)=\int_{-\infty}^\infty\left[
     \int_{-\infty}^{z}f(u-y,y)du\right]dy\\
     F_z(z)=\int_{-\infty}^{z}\left[\int_{-\infty}^\infty
-    f(u-y,y)dy\right]du\\
+    f(u-y,y)dy\right]du
     \end{gather*}
     #+END_proof
 
     有限个相互独立的正态随机变量的线性组合仍服从正态分布
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    设随机变量\(X,Y\)相互独立，且分别服从参数为\(\alpha,\theta;\beta,\theta\)的  \Gamma 分布（分别
+    记成\(X\sim\Gamma(a,\theta),Y\sim\Gamma(\beta,\theta)\)），\(X,Y\)的概率密度分别为
+    \begin{align*}
+    &f_X(x)=
+    \begin{cases}
+    \frac{1}{\theta^\alpha\Gamma(\alpha)}x^{\alpha-1}e^{-x/\theta}&x>0\\
+    0&
+    \end{cases},\alpha>0,\theta>0\\
+    &f_Y(y)=
+    \begin{cases}
+    \frac{1}{\theta^\beta\Gamma(\beta)}y^{\beta-1}e^{-y/\theta}&y>0\\
+    0&
+    \end{cases},\beta>0,\theta>0\\
+    \end{align*}
+    其中\(\Gamma(n)=(n-1)!\)
+    
+    试证明\(X+Y\sim \Gamma(\alpha+\beta,\theta)\)
+
+    \begin{equation*}
+    f_Z(z)=\int_{-\infty}^\infty f_X(x)f_Y(z-x)dx
+    \end{equation*}
+    仅当\(0<x<z\)时被积函数不等于零，当\(z<0\)时\(f_Z(z)=0\)，当\(z>0\)有
+    \begin{align*}
+    f_Z(z)&=\int_0^x\frac{1}{\theta^\alpha\Gamma(\alpha)}x^{\alpha-1}e^{-x/\theta}
+    \frac{1}{\theta^\beta\Gamma(\beta)}(z-x)^{\beta-1}e^{-(z-x)/\theta}ds\\
+    &=\frac{e^{-z/\theta}}{\theta^{\alpha+\beta}\Gamma(\alpha)\Gamma(\beta)}
+    \int_0^zx^{\alpha-1}(z-x)^{\beta-1}dx(\text{let }x=zt)\\
+    &=\frac{z^{\alpha+\beta-1}e^{-z/\theta}}{\theta^{\alpha+\beta}\Gamma(\alpha)\Gamma(\beta)}
+    \int^1_0t^{\alpha-1}(1-t)^{\beta-1}dt\\
+    &=Az^{\alpha+\beta-1}e^{-z/\theta}
+    \end{align*}
+    其中
+    \(A=\frac{1}{\theta^{\alpha+\beta}\Gamma(\alpha)\Gamma(\beta)}\int^1_0t^{\alpha-1}(1-t)^{\beta-1}dt\)
+    由概率密度的性质得
+    \begin{align*}
+    1&=\int_{-\infty}^\infty f_Z(z)dz=\int_0^\infty Az^{\alpha+\beta-1}e^{-z/\theta}dz\\
+    &=A\theta^{\alpha+\beta}\int_0^\infty(z/\theta)^{\alpha+\beta-1}e^{-z/\theta}d(z/\theta)\\
+    &=A\theta^{\alpha+\beta}\Gamma(\alpha+\beta)
+    \end{align*}
+    #+END_examplle
 *** \(Z=\frac{Y}{X},Z=XY\)的分布
     \begin{align*}
     f_{Y/X}(z)&=\int_{-\infty}^\infty \abs{x}f(x,xz)dx\\
@@ -1145,7 +1210,214 @@
    存在，称它为\(X,Y\)的 *\(k+l\)阶混合中心矩*
    #+END_definition
 * 大数定律及中心极限定理
+** 大数定律
+   #+ATTR_LATEX: :options [弱大数定理（辛钦大数定理）]
+   #+BEGIN_theorem
+   设\(X_1,X_2,\dots\)是相互独立，服从同一分布的随机变量序列，且具有数学期望
+   \(E(X_k)=\mu\)，作前\(n\)个变量的算术平均\(\frac{1}{n}\sum_{k=1}^nX_k\)，则对
+   于任意\(\epsilon>0\)，有
+   \begin{equation*}
+   \lim_{n\to\infty}P\left\{
+   \abs{\frac{1}{n}\sum_{k=1}^nX_k-\mu}<\epsilon
+   \right\}=1
+   \end{equation*}
+   #+END_theorem
 
+   对于独立同分布且具有均值 \mu 的随机变量\(X_1,\dots,X_n\)，当\(n\)很大时它们的算
+   术平均\(\frac{1}{n}\sum_{k=1}^nX_k\)很可能接近 \mu
+
+   设\(Y_1,\dots,Y_n,\dots\)是一个随机变量序列，\(a\)是一个常数，若对于任意正数
+   \epsilon ，有
+   \begin{equation*}
+   \lim_{n\to\infty}P\{\abs{Y_n-a}<\epsilon\}=1
+   \end{equation*}
+   则称序列\(Y_1,\dots,Y_n,\dots\) *依概率收敛于* \(a\)，记为
+   \begin{equation*}
+   Y_n\xrightarrow{P}a
+   \end{equation*}
+   设\(X_n\xrightarrow{P}a,Y_n\xrightarrow{P}b\)，又设函数\(g(x,y)\)在点
+   \((a,b)\)连续，则
+   \begin{equation*}
+   g(X_n,Y_n)\xrightarrow{P}g(a,b)
+   \end{equation*}
+   这样上述定理可叙述为
+   #+ATTR_LATEX: :options [弱大数定理（辛钦大数定理）]
+   #+BEGIN_theorem
+   设随机变量\(X_1,\dots,X_n,\dots\)相互独立，服从同一分布且具有数学期望
+   \(E(X_k)=\mu\)，则序列\(\bbar{X}=\frac{1}{n}\sum_{k=1}^nX_k\)一概率收敛于 \mu
+   ，即 \(\bbar{X}\xrightarrow{P}\mu\)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options [伯努利大数定理]
+   #+BEGIN_theorem
+   设\(f_A\)是\(n\)次独立重复试验中事件\(A\)发生的次数，\(p\)是事件\(A\)在每次试
+   验中发生的概率，则对于任意正数\(\epsilon>0\)，有
+   \begin{equation*}
+   \lim_{n\to\infty}P\left\{
+   \abs{\frac{f_A}{n}-p}<\epsilon
+   \right\}=1
+   \end{equation*}
+   或
+   \begin{equation*}
+   \lim_{n\to\infty}P\left\{
+   \abs{\frac{f_A}{n}-p}\ge \epsilon
+   \right\}=0
+   \end{equation*}
+   #+END_theorem
+** 中心极限定理
+   #+ATTR_LATEX: :options [独立同分布的中心极限定理]
+   #+BEGIN_theorem
+   设随机变量\(X_1,\dots,X_n,\dots\)相互独立，服从同一分布，且具有数学期望和方差：
+   \(E(X_k)=\mu,D(X_k)=\sigma^2>0\)，则随机变量之和\(\sum_{k=1}^nX_k\)的标准化变
+   量
+   \begin{equation*}
+   Y_n=\frac{\sum_{k=1}^nX_k-E(\sum_{k=1}^nX_k)}{\sqrt{D(\sum_{k=1}^nX_k)}}=
+   \frac{\sum_{k=1}^nX_k-n\mu}{\sqrt{n}\sigma}
+   \end{equation*}
+   的分布函数\(F_n(x)\)对于任意\(x\)满足
+   \begin{align*}
+   \lim_{n\to\infty}F_n(x)&=
+   \lim_{n\to\infty}P\left\{
+   \frac{\sum_{k=1}^nX_k-n\mu}{\sqrt{n}\sigma}
+   \le x
+   \right\}\\
+   &=\int_{-\infty}^x\frac{1}{\sqrt{2\pi}}e^{-t^2/2}dt=\Phi(x)
+   \end{align*}
+   #+END_theorem
+   因此当\(n\)充分大时，有
+   \begin{equation*}
+   \frac{\sum_{k=1}^nX_k-n\mu}{\sqrt{n}\sigma}\sim N(0,1)
+   \end{equation*}
+   或
+   \begin{equation*}
+   \bbar{X}\sim N(\mu,\sigma^2/n)
+   \end{equation*}
+
+   #+ATTR_LATEX: :options [李雅普诺夫定理]
+   #+BEGIN_theorem
+   设随机变量\(X_1,\dots,X_n,\dots\)相互独立，它们具有数学期望和方差
+   \begin{equation*}
+   E(X_k)=\mu_k,D(X_k)=\sigma^2_k>0
+   \end{equation*}
+   记
+   \begin{equation*}
+   B_n^2=\sum_{k=1}^n\sigma^2_k
+   \end{equation*}
+   若存在正数 \delta 使得当\(n\to\infty\)时
+   \begin{equation*}
+   \frac{1}{B_n^{2+\delta}}\sum_{k=1}^nE\{\abs{X_k-\mu_k}^{2+\delta}\}\to0
+   \end{equation*}
+   则随机变量之和\(\sum_{k=1}^nX_k\)的标准化变量
+   \begin{equation*}
+   Z_n=\frac{\sum_{k=1}^nX_k-E(\sum_{k=1}^nX_k)}{\sqrt{D(\sum_{k=1}^nX_k)}}=
+   \frac{\sum_{k=1}^nX_k-\sum_{k=1}^n\mu_k}{B_n}
+   \end{equation*}
+   的分布函数\(F_n(x)\)对于任意\(x\)满足
+   \begin{align*}
+   \lim_{n\to\infty}F_n(x)&=
+   \lim_{n\to\infty}P\left\{
+   \frac{\sum_{k=1}^nX_k-\sum_{k=1}^n\mu_k}{B_n}\le x
+   \right\}\\
+   &=\int_{-\infty}^x\frac{1}{\sqrt{2\pi}}e^{-t^2/2}dt=\Phi(x)
+   \end{align*}
+   #+END_theorem
+
+   定理表明，在定理的条件下，随机变量
+   \begin{equation*}
+   Z_n=\frac{\sum_{k=1}^nX_k-\sum_{k=1}^n\mu_k}{B_n}
+   \end{equation*}
+   当\(n\)很大时，近似服从正态分布\(N(0,1)\)
+
+   #+ATTR_LATEX: :options [棣莫弗-拉普拉斯定理]
+   #+BEGIN_theorem
+   设随机变量\(\eta_n\)服从参数为\(n,p\)的二项分布，则对于任意\(x\)有
+   \begin{equation*}
+   \lim_{n\to\infty}P\left\{
+   \frac{\eta_n-np}{\sqrt{np(1-p)}}\le x
+   \right\}=\int_{-\infty}^x\frac{1}{\sqrt{2\pi}}e^{-t^2/2}dt=\Phi(x)
+   \end{equation*}
+   #+END_theorem
+* 样本及抽样分布
+** 随机样本
+   我们将试验的全部可能的观察值称为 *总体* ,每一个可能观察值称为 *个体* ，总体中所包
+   含的个体的个数称为总体的 *容量* ，容量为有限的称为 *有限总体* ，容量为无限的称为
+   *无限总体*
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   设\(X\)是具有分布函数\(F\)的随机变量，若\(X_1,\dots,X_n\)是具有同一分布函数
+   \(F\)的、相互独立的随机变量，则称\(X_1,\dots,X_n\)为从分布函数\(F\)得到的 *容*
+   *量为\(n\)的简单随机样本* ，简称为 *样本* ，它们的观察值\(x_1,\dots,x_n\)称为 *样
+   本值* ,又称为\(X\)的 \(n\)个 *独立的观察值*
+   #+END_definition
+** 抽样分布
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   设\(X_1,\dots,X_n\)是来自总体\(X\)的一个样本\(g(X_1,\dots,X_n)\)是
+   \(X_1,\dots,X_n\)的函数，若\(g\)中不含未知参数，则称\(g(X_1,\dots,X_n)\)是一
+   *统计量*
+   #+END_definition
+
+   \(g(x_1,\dots,x_n)\)是\(g(X_1,\dots,X_n)\)的观察值
+
+   定义
+
+   *样本平均值*
+   \begin{equation*}
+   \bbar{X}=\frac{1}{n}\sum_{i=1}^nX_i
+   \end{equation*}
+
+   *样本方差*
+   \begin{equation*}
+   S^2=\frac{1}{n-1}\sum_{i=1}^n(X_i-\bbar{X})^2=\frac{1}{n-1}
+   (\sum_{i=1}^nX_i^2-n\bbar{X}^2)
+   \end{equation*}
+
+   *样本标准差*
+   \begin{equation*}
+   S=\sqrt{S^2}=\sqrt{\frac{1}{n-1}\sum_{i=1}^n(X_i-\bbar{X})^2}
+   \end{equation*}
+
+   *样本\(k\)阶（原点）矩*
+   \begin{equation*}
+   A_k=\frac{1}{n}\sum_{i=1}^nX_i^k,k=1,2,\dots
+   \end{equation*}
+
+   *样本\(k\)阶中心矩*
+   \begin{equation*}
+   B_k=\frac{1}{n}\sum_{i=1}^n(X_i-\bbar{X})^k,k=2,3,\dots
+   \end{equation*}
+
+   若总体\(X\)的\(k\)阶矩\(E(X^k)=\mu_k\)存在，则当\(n\to\infty\)时，
+   \(A_k\xrightarrow{P}\mu_k\)，这时因为\(X_1,\dots,X_n\)独立且与\(X\)同分布，所
+   以\(X_1^k,\dots,X_n^k\)独立且与\(X_k\)同分布，故有
+   \begin{equation*}
+   E(X_1^k)=\dots=E(X_n^k)=\mu_k
+   \end{equation*}
+   从而由辛钦大数定理
+   \begin{equation*}
+   A_k=\frac{1}{n}\sum_{i=1}^nX_i^k\xrightarrow{P}\mu_k
+   \end{equation*}
+   进而由依概率收敛的序列的性质知道
+   \begin{equation*}
+   g(A_1,\dots,A_k)\xrightarrow{P}g(\mu_1,\dots,\mu_k)
+   \end{equation*}
+
+*** \(\chi^2\)分布
+    设\(X_1,\dots,X_n\)是来自总体\(N(0,1)\)的样本，则称统计量
+    \begin{equation*}
+    \chi^2=X_1^2+\dots+X_n^2
+    \end{equation*}
+    服从自由度为\(n\)的 *\(\chi^2\)分布* ，记为\(\chi^2\sim\chi^2(n)\)
+
+    \(\chi^2(n)\)分布的概率密度为
+    \begin{equation*}
+    f(y)=
+    \begin{cases}
+    \frac{1}{2^{n/2}\Gamma(n/2)}y^{n/2-1}e^{-y/2}&y>0\\
+    0&
+    \end{cases}
+    \end{equation*}
 * COMMENT wefew
   definition
 
