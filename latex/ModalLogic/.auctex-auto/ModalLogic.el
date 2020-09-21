@@ -8,13 +8,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -39,35 +39,35 @@
     "ue"
     "ua")
    (LaTeX-add-labels
-    "sec:orge5802a0"
-    "sec:orgfa76639"
-    "sec:org20f0e4c"
-    "sec:org17f344d"
-    "sec:orgcbc128f"
-    "sec:orgfd7aa4a"
-    "sec:org9b78be9"
-    "sec:org5381564"
-    "sec:org064dd20"
+    "sec:org81a26ce"
+    "sec:org03a75d2"
+    "sec:org478c6d5"
+    "sec:orgbfbbdec"
+    "sec:org117ebe1"
+    "sec:org8931c3c"
+    "sec:org716b17a"
+    "sec:org0e21262"
+    "sec:org90935d3"
     "prop2.15"
-    "sec:org77a4cf3"
+    "sec:org559c5be"
     "def2.16"
     "thm2.20"
     "example2.22"
     "example2.23"
     "thm2.24"
     "ex2.2.8"
-    "sec:orgbc872d9"
-    "sec:org577e6ec"
+    "sec:org6fdfb41"
+    "sec:org534a43d"
     "prop2.29"
     "prop2.31"
     "lemma2.33"
-    "sec:org47766dc"
+    "sec:org14e948e"
     "def2.36"
-    "sec:org7fe600f"
-    "sec:org84b41ca"
-    "sec:orgc4325cb"
+    "sec:org6ff11c2"
+    "sec:org846d7c5"
+    "sec:orga291349"
     "prop2.54"
-    "sec:org57a4a42"
+    "sec:org4f68a75"
     "eqA.2"
     "eqA.3"
     "example2.58"
@@ -75,9 +75,9 @@
     "prop2.61"
     "ex2.5.4"
     "ex2.5.5"
-    "sec:org543ebed"
-    "sec:orgaddfa07"
-    "sec:orgac78c8a"
-    "sec:orgada7bac"))
+    "sec:org7347964"
+    "sec:orgbaeb6d1"
+    "sec:orga07d194"
+    "sec:org075a3af"))
  :latex)
 
