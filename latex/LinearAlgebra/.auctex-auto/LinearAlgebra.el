@@ -8,13 +8,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem") ("ctex" "UTF8")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -37,10 +37,10 @@
     "minted"
     "ctex")
    (LaTeX-add-labels
-    "sec:org50586e6"
-    "sec:orgbe7dc48"
-    "sec:org068960c"
-    "sec:org06c85e7"
+    "sec:orgb637c50"
+    "sec:org26e5052"
+    "sec:org73115ab"
+    "sec:org8ca9b6f"
     "eq1.1"
     "eq1.2"
     "eq1.11"
@@ -49,42 +49,60 @@
     "eq1.1.4.2"
     "prop2.1.5"
     "cor2.1.5.2"
-    "sec:org1aaeb37"
-    "sec:org514c179"
-    "sec:orge08d53f"
-    "sec:org96c2cc8"
-    "sec:orgc9db673"
-    "sec:org3fa3e7e"
+    "sec:org9366655"
+    "sec:org992fc13"
+    "sec:org739fb3a"
+    "sec:orgc3e202d"
+    "sec:orga24eb08"
+    "sec:org7b08180"
     "eq2.4.3.1"
     "eq2.4.3.2"
-    "sec:orgd0d8c21"
-    "sec:org4800e80"
-    "sec:orgc845665"
-    "sec:org889f7ee"
-    "sec:orge2a727f"
-    "sec:orga81fc3f"
-    "sec:org137dfc6"
-    "sec:orgfd3caeb"
-    "sec:org64e8bdc"
-    "sec:orga86f122"
+    "sec:org85f0fd6"
+    "prop2.4.6"
+    "sec:org2200dd1"
+    "sec:orgead6cce"
+    "sec:orgf1d471a"
+    "sec:orgcc2a6d4"
+    "sec:org1a06aca"
+    "sec:orgdc56d5b"
+    "sec:orgee63107"
+    "sec:org8061bb0"
+    "sec:orga9c9b1c"
     "prop2.6"
-    "sec:org4b87dfa"
-    "sec:org04d82c1"
-    "sec:org804a3d4"
-    "sec:orgcf7e6e1"
+    "sec:org06d518c"
+    "sec:orga6f6cb6"
+    "sec:orgc6e522d"
+    "sec:orgd6bd73a"
     "prop3.2"
-    "sec:org18549d9"
-    "sec:orge80e5a3"
-    "sec:org1c93d15"
-    "sec:org4584842"
+    "sec:org653c031"
+    "sec:org0347605"
+    "sec:org34bfd91"
+    "sec:org05d7841"
     "eq4.1.1"
     "eq4.1.1.2"
     "example4.1.15"
     "prop4.1.2"
-    "sec:orgdd28668"
-    "sec:orga7afd6a"
+    "sec:org4a86c2d"
+    "sec:org09ed561"
     "prop4.3.6"
+    "prop4.3.7"
     "prop4.3.8"
-    "sec:org46406ce"))
+    "sec:org5db0f71"
+    "sec:orgae922cb"
+    "sec:org0319a02"
+    "prop4.1.1"
+    "cor4.1.1"
+    "thm4.1.1"
+    "sec:org193eb1d"
+    "eq4.2.2"
+    "prop4.2.2"
+    "cor4.2.2"
+    "sec:orge4c9336"
+    "sec:org68f218b"
+    "sec:orgca86239"
+    "sec:org773648c"
+    "prop4.4.1")
+   (LaTeX-add-index-entries
+    "过渡矩阵"))
  :latex)
 
