@@ -1,12 +1,10 @@
 (TeX-add-style-hook
- "ModelTheory"
+ "考研题目本"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
-   (TeX-add-to-alist 'LaTeX-provided-class-options
-                     '(("article" "11pt")))
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem")))
+                     '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem") ("ctex" "UTF8")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
@@ -20,7 +18,7 @@
     "latex2e"
     "../preamble"
     "article"
-    "art11"
+    "art10"
     "inputenc"
     "fontenc"
     "graphicx"
@@ -34,17 +32,9 @@
     "amssymb"
     "capt-of"
     "hyperref"
-    "minted")
+    "minted"
+    "ctex")
    (LaTeX-add-labels
-    "sec:orga9126ac"
-    "sec:org415ca7b"
-    "lemma2.1.1"
-    "lemma2.1.2"
-    "lemma2.1.3"
-    "thm1.3.21"
-    "thm1.3.20"
-    "thm1.3.22"
-    "prop2.1.8"
-    "sec:orgca79c4f"))
+    "sec:orga8507a7"))
  :latex)
 
