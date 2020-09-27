@@ -3,10 +3,13 @@
 
 #+EXPORT_FILE_NAME: ../latex/LogicLanguageAndMeaning/LogicLanguageAndMeaning.tex
 #+LATEX_HEADER: \input{../preamble.tex}
-
+#+LATEX_HEADER: \DeclareMathOperator{\VAR}{VAR}
+#+LATEX_HEADER: \DeclareMathOperator{\CON}{CON}
+#+LATEX_HEADER: \DeclareMathOperator{\WE}{WE}
 * The Theory of Types and Categorical Grammar
 
 ** The Theory of Types
+*** Type Distinctions in Natural Language
    1. If John is self-satisfied, then there is at least one thing he has in
       common with Peter
 
@@ -75,3 +78,165 @@
    expresses something which is generally false. The relative adjective *small*
    works the same way as the predicate adverbial *quickly*. When applied to the
    predicate *elephant*, it results in a new predicate *small elephant*
+*** Syntax
+    As our two basic types we have \(e\), which is the type of those expressions
+    which refer to entities, and \(t\), the type of those expressions which
+    refer to truth values.
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\bT\), the set of types, is the smallest set s.t.
+    1. \(e,t\in\bT\)
+    2. if \(a,b\in\bT\), then \(\la a,b\ra\in\bT\)
+    #+END_definition
+
+    An expression of type \(\la a,b\ra\) is an expression which when applied to
+    an expression of type \(a\) results in an expression of type \(b\). If \alpha is
+    an expression of type \(\la a,b\ra\) and \beta is an expression of type \(a\),
+    then \(\alpha(\beta)\) will be an expression of type \(b\). This process of applying
+    an \alpha of type \(\la a,b\ra\) to a \beta of type \(a\) is called
+    *(functional) application of \alpha to \beta*
+
+    The *vocabulary* of a type-theoretical language L contains some symbols which
+    are shared by all such languages and a number of symbols which are
+    characteristic of \(L\). The shared part consists of:
+    1. For every type \(a\), an infinite set \(\VAR_a\) of variables of type \(a\)
+    2. The usual connectives \(\wedge,\vee,\to,\neg,\leftrightarrow\)
+    3. The quantifiers \(\forall\) and \(\exists\)
+    4. Two brackets ( and )
+    5. The symbol for identity =
+
+
+    The part of the vocabulary which is characteristic of \(L\) contains
+    6. [@6] for every type \(a\), a (possibly empty) set \(\CON_a^L\) of
+       constants of type \(a\)
+
+
+    We will write \(v_a\) for variables of type \(a\) and \(c_a\) for constants
+    of type \(a\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. If \alpha is a variable or a constant of type \(a\) in \(L\), then \alpha is an
+       expression of type \(a\) in \(L\)
+    2. If \alpha is an expression of type \(\la a,b\ra\) in \(L\), and \beta is an
+       expression of type \(a\) in \(L\), then \((\alpha(\beta))\) is an expression of
+       type \(b\) in \(L\)
+    3. If \phi and \psi are expressions of type \(t\) in \(L\), then so are
+       \(\neg\phi,(\phi\wedge\psi),(\phi\vee\psi)\),\((\phi\to\psi)\) and \(\phi\leftrightarrow\psi\)
+    4. If \phi is an expression of type \(t\) in \(L\) and \(v\) is a variable (of
+       arbitrary type \(a\)), then \(\forall x\phi\) and \(\exists v\phi\) are
+       expressions of type \(t\) in \(L\)
+    5. If \alpha and \beta are expressions in \(L\) which belong to the same (arbitrary)
+       type, then \((\alpha=\beta)\) is an expression of type \(t\) in \(L\)
+    6. Every expression in \(L\) is to be constructed by means of (1) - (5) in a
+       finite number of steps
+    #+END_definition
+
+    We refer to the set of all expressions in \(L\) of type \(a\) as \(\WE_a^L\)
+    or, if it is clear which \(L\) is meant, as \(\WE_a\). The *formulas* are the
+    elements of \(\WE_t\)
+*** Semantics
+    Given a domain \(D\), one-place predicates are interpreted as the
+    characteristic functions of subsets of that domain.
+
+    The domain of interpretation of expressions of type \(a\), given a domain
+    \(D\), is written as \(\bD_{a,D}\) and is defined as follows
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. \(\bD_{e,D}=D\)
+    2. \(\bD_{t,D}=\{0,1\}\)
+    3. \(\bD_{\la a,b\ra,D}=\bD_{b,D}^{\bD_{a,D}}\)
+    #+END_definition
+
+    For example, in the theory of types, a two-place predicate \(L(loves)\) is
+    an expression of type \(\la e,\la e,t\ra\ra\). The corresponding
+    interpretation domain \(\bD_{\la e,\la e,t\ra\ra}\) is \((\{0,1\}^D)^D\)
+
+    Consider the second-order predicate \(\calc(color)\), which is of type
+    \(\la\la e,t\ra,t\ra\). The interpretation domain \(\bD_{\la\la
+    e,t\ra,t\ra}\) is the set of functions \(\{0,1\}^{\{0,1\}^D}\)
+
+    A model \(\bM\) for an language \(L\) for the theory of types consists of a
+    nonempty domain set \(D\) together with an interpretation function \(I\).
+    For each type \(a\), \(I\) is a function from \(\CON_a^L\) into \(\bD_{a,D}\).
+
+    We must define the concept of *the interpretation of \alpha w.r.t. a model \(\bM\)*
+    *and an assignment* \(g\), to be written as
+    \(\llbracket\alpha\rrbracket_{\bM,g}\). The interpretation
+    function\(\llbracket\;\rrbracket_{\bM,g}\) can be seen as a function which
+    for all types \(a\), maps \(\WE^L_a\) into \(\bD_{a,D}\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. If \(\alpha\in \CON_a^L\), then
+       \(\llbracket\alpha\rrbracket_{\bM,g}=I(\alpha)\)
+
+       If \(\alpha\in \VAR_a\), then \(\llbracket\alpha\rrbracket_{\bM,g}=g(\alpha)\)
+
+    2. If \(\alpha\in \WE^L_{\la a,b\ra},\beta\in \WE^L_a\), then
+       \(\llbracket\alpha(\beta)\rrbracket_{\bM,g}=\llbracket\alpha\rrbracket_{\bM,g}(
+       \llbracket\beta\rrbracket_{\bM,g})\)
+
+    3. If \(\phi,\psi\in \WE_t^L\), then
+
+       \(\llbracket\neg\phi\rrbracket_{\bM,g}=1\) iff
+       \(\llbracket\phi\rrbracket_{\bM,g}=0\)
+
+       \(\llbracket\phi\wedge\psi\rrbracket_{\bM,g}=1\) iff
+       \(\llbracket\phi\rrbracket_{\bM,g}=\llbracket\psi\rrbracket_{\bM,g}=1\)
+
+       \(\llbracket\phi\to\psi\rrbracket_{\bM,g}=0\) iff
+       \(\llbracket\phi\rrbracket_{\bM,g}=1\) and
+       \(\llbracket\psi\rrbracket_{\bM,g}=0\)
+
+       \(\llbracket\phi\leftrightarrow\psi\rrbracket_{\bM,g}\) iff
+       \(\llbracket\phi\rrbracket_{\bM,g}=\llbracket\psi\rrbracket_{\bM,g}\)
+
+    4. if \(\phi\in \WE_t^l,v\in \VAR_a\), then
+
+       \(\llbracket\forall v\phi\rrbracket_{\bM,g}=1\) iff for all
+       \(d\in\bD_{a,D}\):
+       \(\llbracket\phi\rrbracket_{M,g[v/d]}=1\)
+
+       \(\llbracket\exists v\phi\rrbracket_{\bM,g}=1\) iff there is at least one
+       \(d\in\bD_{a,D}\) s.t.: \(\llbracket\phi\rrbracket_{\bM,g[v/d]}=1\)
+
+    5. If \(\alpha,\beta\in \WE_a^L\), then
+       \(\llbracket\alpha=\beta\rrbracket_{\bM,g}=1\) iff
+       \(\llbracket\alpha\rrbracket_{\bM,g}=\llbracket\beta\rrbracket_{\bM,g}\)
+    #+END_definition
+
+    A sentence \phi is said to be *true with respect to* \(\bM\) just in case
+    \(\llbracket\phi\rrbracket_{\bM}=1\) . A sentence \phi is said to be
+    *universally valid* just in case \(\llbracket\phi\rrbracket_{\bM}=1\) for
+    every appropriate \(\bM\) and once again the notation is \(\models\phi\). We
+    also say that two sentences \phi and \psi are *equivalent* iff
+    \(\models\phi\leftrightarrow\psi\) that is to say iff
+    \(\llbracket\phi\rrbracket_{\bM}=\llbracket\psi\rrbracket_{\bM}\) for every \(\bM\).
+
+    Consider the formula \(W(j)\), our representation of the sentence /John is
+    walking/. Here \(W\) is a constant of type \(\la e,t\ra\), while \(j\) is a
+    constant of type \(e\). Hence \(\llbracket W(j)\rrbracket_{\bM,g}=\llbracket
+    W\rrbracket_{\bM,g}(\llbracket j\rrbracket_{\bM,g})\). And we have
+    \(\llbracket W\rrbracket_{\bM,g}=I(W)\) and \(\llbracket
+    j\rrbracket_{\bM,g}=I(j)\). According to the definition of the
+    interpretation function \(I\), we know that \(I(W)\) is an element of the
+    set of functions \(\bD_t^{\bD_e}=\{0,1\}^D\). And the interpretation of the
+    constant \(I(j)\) is an element of \(\bD_e\)
+
+    As an example of *higher-order quantification*, consider the formula
+    \(\exists\calx(\calx(R)\wedge\calx(G))\), the representation of the sentence
+    /Red and green have something in common/. \(R\) and \(G\) are constants of
+    type \(\la e,t\ra\) and \(\calx\) is a variable of type \(\la\la
+    e,t\ra,t\ra\). The interpretation of
+    \(\exists\calx(\calx(R)\wedge\calx(G))\) runs as follows:
+    \(\llbracket\exists\calx(\calx(R)\wedge\calx(G))\rrbracket_{\bM,g}=1\) iff
+    there is a \(d\in\bD_{\la\la e,t\ra,t\ra}\) s.t.
+    \(\llbracket\calx(R)\wedge\calx(G)\rrbracket_{\bM,g[\calx/d]}=1\).
+    \(\bD_{\la\la e,t\ra,t\ra}\) is the set of functions
+    \(\bD_t^{(\bD_t^{\bD_e})}\).
+    \(\llbracket\calx(R)\rrbracket_{\bM,g[\calx/d]}=1\) iff
+    \(\llbracket\calx\rrbracket_{\bM,g[\calx/d]}(\llbracket
+    R\rrbracket_{\bM,g[\calx/d]})=1\). Note that
+    \(\llbracket R\rrbracket_{\bM,g[\calx/d]}=I(R)\) and that
+    \(\llbracket\calx\rrbracket_{\bM,g[\calx/d]}=g[\calx/d](\calx)=d\)
