@@ -35,6 +35,9 @@
     "minted"
     "ctex")
    (LaTeX-add-labels
-    "sec:org1eff487"))
+    "sec:orgfd07bc2"
+    "sec:orgd9815c8"
+    "sec:orgb7a70bb"
+    "sec:org40708f7"))
  :latex)
 
