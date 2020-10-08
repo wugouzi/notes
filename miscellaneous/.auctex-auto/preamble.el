@@ -4,7 +4,7 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("esvect" "f") ("xcolor" "dvipsnames") ("tcolorbox" "most") ("appendix" "toc" "page")))
+                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
@@ -33,7 +33,6 @@
     "nicematrix"
     "siunitx"
     "esvect"
-    "xcolor"
     "pgfplots"
     "tikz"
     "tikz-cd"
@@ -211,6 +210,9 @@
     '("claim" 1)
     "bsm"
     "psm")
+   (LaTeX-add-xcolor-definecolors
+    "ccqqqq"
+    "qqwuqq")
    (LaTeX-add-mathtools-DeclarePairedDelimiters
     '("abss" "")
     '("normm" ""))
