@@ -1,5 +1,5 @@
 (TeX-add-style-hook
- "LogicLanguageAndMeaning"
+ "AbstractAndConcreteCategories"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
@@ -36,25 +36,19 @@
     "hyperref"
     "minted")
    (TeX-add-symbols
-    "VAR"
-    "CON"
-    "WE")
+    "Rel"
+    "Sym")
    (LaTeX-add-labels
-    "sec:org9797873"
-    "sec:org57fa18c"
-    "sec:org44304eb"
-    "sec:org5d992f2"
-    "def4.2.2"
-    "sec:org82fa0c1"
-    "def4.2.3"
-    "sec:orgfb1cb15"
-    "sec:org44d51de"
-    "sec:org1ea78eb"
-    "sec:org2ada5df"
-    "sec:org994edd1"
-    "sec:orgc9eaf0a"
-    "sec:org72ee213"
-    "sec:org130acb5"
-    "sec:org7b3a94a"))
+    "sec:org367830c"
+    "sec:org0d7482a"
+    "sec:orgeb4f845"
+    "sec:orgd156492"
+    "sec:orgd91d43e"
+    "sec:org5b0e140"
+    "prop4.20"
+    "sec:orgefbffb3"
+    "sec:org02d09cc")
+   (LaTeX-add-index-entries
+    "dual category"))
  :latex)
 

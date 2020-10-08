@@ -1,4 +1,4 @@
-% Created 2020-04-15 三 14:46
+% Created 2020-10-02 五 19:12
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -13,11 +13,12 @@
 \usepackage{textcomp}
 \usepackage{amssymb}
 \usepackage{capt-of}
-\usepackage{imakeidx}
 \usepackage{hyperref}
 \usepackage{minted}
-\input{preamble.tex}
+\input{../preamble.tex}
 \graphicspath{{../../images/CAT/}}
+\DeclareMathOperator{\Rel}{\textbf{Rel}}
+\DeclareMathOperator{\Sym}{\textbf{Sym}}
 \author{Jiří Adámek \& Horst Herrlich \& George E. Strecker}
 \date{\today}
 \title{\aunclfamily\Huge Abstract and Concrete Categories \\ The Joy of Cats \\ \includegraphics[scale=1.2]{cat.png}}
@@ -26,18 +27,18 @@
  pdftitle={\aunclfamily\Huge Abstract and Concrete Categories \\ The Joy of Cats \\ \includegraphics[scale=1.2]{cat.png}},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 26.3 (Org mode 9.3.6)}, 
+ pdfcreator={Emacs 26.3 (Org mode 9.4)}, 
  pdflang={English}}
 \begin{document}
 
-\maketitle \clearpage
+\maketitle
 \setcounter{tocdepth}{2}
 \tableofcontents \clearpage\section{Categories, Functors, and Natural Transformations}
-\label{sec:org7de109f}
+\label{sec:org367830c}
 \subsection{Categories and Functors}
-\label{sec:org28b13b6}
+\label{sec:org0d7482a}
 \subsubsection{Categories}
-\label{sec:orgf070b17}
+\label{sec:orgeb4f845}
 \begin{definition}[]
 A \textbf{category} is a quadruple \(\bA=(\calo,\hom,id,\circ)\) consisting
 \begin{enumerate}
@@ -58,13 +59,13 @@ family of natural numbers \(n_i\), indexed by a set \(I\). An
 \(\Omega\)-algebra is a pair \(X,(\omega_i)_{i\in I}\) consisting of a set
 \(X\) and a family of functions \(\omega_i:X^{n_i}\to X\), called \textbf{\(n_i\)-ary
 operations} on \(X\). An \(\Omega\)-homomorphism \(f:(X,(\omega_i)_{i\in
-         I}\to(\what{X},(\what{\omega}_i)_{i\in I})\) is a function \(f:X\to\what{X}\) for
+         I}\to(\widehat{X},(\widehat{\omega}_i)_{i\in I})\) is a function \(f:X\to\widehat{X}\) for
 which the diagram
 \begin{center}
 \begin{tikzcd}
 X^{n_i}\arrow[r,"f^{n_i}"]\arrow[d,"\omega_i"']&
-\what{X}^{n_i}\arrow[d,"\what{\omega}_i"]\\
-X\arrow[r,"f"']&\what{X}
+\widehat{X}^{n_i}\arrow[d,"\widehat{\omega}_i"]\\
+X\arrow[r,"f"']&\widehat{X}
 \end{tikzcd}
 \end{center}
 commutes for each \(i\in I\).
@@ -108,8 +109,8 @@ functions satisfying the following conditions
 \end{enumerate}
 \end{enumerate}
 \end{examplle}
-\subsection{The Dual Principle}
-\label{sec:org9ecfb95}
+\subsubsection{The Dual Principle}
+\label{sec:orgd156492}
 \index{dual category}
 \begin{definition}[]
 For any category \(\bA=(\calo,\hom_{\bA},id,\circ)\) the \textbf{dual} (or \textbf{opposite})
@@ -146,8 +147,559 @@ The \textbf{Duality Principle for Categories} states
 \textit{Whenever a property \(\calp\) holds for all categories,}\\
 \textit{then the property \(\calp^{\op}\) holds for all categories.}
 \end{center}
+\subsubsection{Isomorphism}
+\label{sec:orgd91d43e}
+\begin{definition}[]
+A morphism \(f:A\to B\) in a category is called an \textbf{isomorphism} provided that
+there exists a morphism \(g:B\to A\) with \(g\circ f=id_A\) and \(f\circ
+   g=id_B\). Such a morphism \(g\) is called an \textbf{inverse} of \(f\)
+\end{definition}
+
+\begin{proposition}[]
+If \(f:A\to B,g:B\to A,h:B\to A\) are morphisms s.t. \(g\circ f=id_A\) and
+\(f\circ h=id_B\), then \(g=h\)
+\end{proposition}
+
+\begin{definition}[]
+Let \(F:\bA\to\bB\)  be a functor
+\begin{enumerate}
+\item \(F\) is called an \textbf{embedding} provided that \(F\) is injective on morphisms
+\item \(F\) is called \textbf{faithful} provided that all the hom-set restrictions
+\begin{equation*}
+F:\hom_{\bA}(A,A')\to\hom_{\bB}(FA,FA')
+\end{equation*}
+are injective
+\item \(F\) is called \textbf{full} provided that all hom-set restrictions are surjective
+\item \(F\) is called \textbf{amnestic} provided that an \(\bA\)-isomorphism \(f\) is an
+identity whenever \(Ff\) is an identity
+\end{enumerate}
+\end{definition}
+
+\subsection{Subcategories}
+\label{sec:org5b0e140}
+\begin{definition}[]
+A category \(\bA\) is said to be a \textbf{subcategory} of a category \(\bB\) provided
+that the following conditions are satisfied
+\begin{enumerate}
+\item \(Ob(\bA)\subseteq Ob(\bB)\)
+\item for each \(A,A'\in Ob(\bA)\), \(\hom_{\bA}(A,A')\subseteq\hom_{\bB}(A,A')\)
+\item for each \(\bA\)-object \(A\), the \(\bB\)-identity on \(A\) is the
+\(\bA\)-identity on \(A\)
+\item the composition law in \(\bA\) is the restriction of the composition law
+in \(\bB\) to the morphisms of \(\bA\)
+\end{enumerate}
+
+
+\(\bA\) is called a \textbf{full subcategory} of \(\bB\) if in addition to the above,
+for each \(A,A'\in Ob(A)\), \(\hom_{\bA}(A,A')=\hom_{\bB}(A,A')\)
+\end{definition}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item A functor \(F:\bA\to\bB\) is a (full) embedding if and only if there exists a
+(full) subcategory \(\bC\) of \(\bB\) with inclusion function \(E:\bC\to\bB\)
+and an isomorphism \(G:\bA\to\bC\) with \(F=E\circ G\)
+
+\item A functor \(F:\bA\to\bB\) is faithful iff there exists embeddings
+\(E_1:\bD\to\bB\) and \(E_2:\bA\to\bC\) and an equivalence \(G:\bC\to\bD\)
+s.t. the diagram
+\begin{center}\begin{tikzcd}
+\bA\arrow[r,"F"]\arrow[d,"E_2"]&\bB\\
+\bC\arrow[r,"G"]&\bD\arrow[u,"E_1"]
+\end{tikzcd}\end{center}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\begin{enumerate}
+\item Let \(E_1:\bD\to\bB\) be the inclusion of the full subcategory \(\bD\) of
+\(\bB\) that has as objects all images of \(\bA\)-objects. Let \(\bC\) be
+the category with \(Ob(\bC)=Ob(\bA)\), with
+\begin{equation*}
+\hom_{\bC}(A,A')=\hom_{\bB}(FA,FA')
+\end{equation*}
+Now define functors \(E_2:\bA\to\bC\) and \(G:\bC\to\bD\) by
+\begin{equation*}
+E_2(A\xrightarrow{f}A')=A\xrightarrow{Ff}A' \quad\text{ and }\quad
+G(C\xrightarrow{g}C')=FC\xrightarrow{g}FC'
+\end{equation*}
+Then \(E_2\) is an embedding, \(G\) is an equivalence and \(F=E_1\circ
+      G\circ E_2\)
+\end{enumerate}
+\end{proof}
+
+\begin{definition}[]
+A category \(\bA\) is said to be \textbf{fully embeddable} into \(\bB\) provided that
+there exists a full embedding \(\bA\to\bB\)
+\end{definition}
+
+\begin{definition}[]
+A full subcategory \(\bA\) of a category \(\bB\) is called
+\begin{enumerate}
+\item \textbf{isomorphism-closed} provided that every \(\bB\)-object that is isomorphic
+to some \(\bA\)-object is itself an \(\bA\)-object
+\item \textbf{isomorphism-dense} provided that every \(\bB\)-object is isomorphic to
+\end{enumerate}
+some \(\bA\)-object
+\end{definition}
+
+\begin{remark}
+If \(\bA\) is a full subcategory of \(\bB\), then the following conditions
+are equivalent
+\begin{enumerate}
+\item \(\bA\) is an isomorphism-dense subcategory of \(\bB\)
+\item the inclusion functor \(\bA\hookrightarrow\bB\) is isomorphism-dense
+\item the inclusion functor \(\bA\hookrightarrow\bB\) is an equivalence
+\end{enumerate}
+\end{remark}
+
+\begin{examplle}[]
+The full subcategory of \(\Set\) with the single object \(\N\) is neither
+isomorphism-closed nor isomorphism-dense in \(\Set\). It is equivalent to the
+isomorphism-closed full subcategory of \(\Set\) consisting of all countable
+infinite sets.
+\end{examplle}
+
+\begin{definition}[]
+A \textbf{skeleton} of a category is a full, isomorphism-dense subcategory in which no
+two distinct objects are isomorphic
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item The full subcategory of all cardinal numbers is a skeleton for \(\Set\)
+\end{enumerate}
+\end{examplle}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item Every category has a skeleton
+\item Any two skeletons of a category are isomorphic
+\item Any skeleton of a category \(\bC\) is equivalent to \(\bC\)
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\begin{enumerate}
+\item This follows from the Axiom of Choice applied to the equivalence relation
+``is isomorphic to'' on the class of objects of the category
+\end{enumerate}
+\end{proof}
+
+\begin{corollary}[]
+Two categories are equivalent iff they have isomorphic skeletons
+\end{corollary}
+
+\begin{definition}[]
+Let \(\bA\) be a subcategory of \(\bB\), and let \(B\) be a \(\bB\)-object
+\begin{enumerate}
+\item An \textbf{\(\bA\)-reflection} (or \textbf{\(\bA\)-reflection arrow}) for \(B\) is a
+\(\bB\)-morphism \(B\xrightarrow{r}A\) from \(B\) to an \(\bA\)-object
+\(A\) with the following universal property:
+
+for any \(\bB\)-morphism \(B\xrightarrow{f}A'\) from \(B\) into some
+\(\bA\)-object \(A'\), there exists a unique \(\bA\)-morphism \(f':A\to
+      A\) s.t. the triangle
+\begin{center}\begin{tikzcd}
+B\arrow[r,"r"]\arrow[dr,"f"]&A\arrow[d,"f'"]\\
+&A'
+\end{tikzcd}\end{center}
+commutes
+\item \(\bA\) is called a \textbf{reflective subcategory} of \(\bB\) provided that each
+\(\bB\)-object has an \(\bA\)-reflection
+\end{enumerate}
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item \textbf{Modifications of the Structure}
+\begin{enumerate}
+\item Making a relation symmetric: \(\bB=\Rel,\bA=\Sym\), the full subcategory
+of symmetric relations, \((X,\rho)\xrightarrow{id_X}(X,\rho\cup\rho^{-1})\)
+is an \(\bA\)-reflection for \((X,\rho)\)
+\end{enumerate}
+\item \textbf{Improving Objects by Forming Quotients}
+\begin{enumerate}
+\item Making a reachable acceptor minimal: \(\bB=\) the full subcategory of
+\textbf{\(\Sigma\)-Seq} consisting of all \textbf{reachable acceptors} (i.e., those for
+which each state can be reached from the initial one by an input word),
+\(\bA=\) the full subcategory of \(\bB\) consisting of all \textbf{minimal
+acceptors} (i.e. those reachable acceptors with the property that no two
+different states are \textbf{observably equivalent}. The observability
+equivalence \(\approx\) on a reachable acceptor \(B\) is given by:
+\(q\approx q'\) provided that whenever the initial state of \(B\) is
+changed to \(q\), the resulting acceptor recognizes the same language
+as it does when the initial state is changed to \(q'\)). Then the
+canonical map \(B\to B/\approx\) is an \(\bA\)-reflection for \(B\)
+\end{enumerate}
+\item \textbf{Completions}
+\end{enumerate}
+\end{examplle}
+
+\begin{proposition}[]
+Reflections are essentially unique, i.e.
+\begin{enumerate}
+\item if \(B\xrightarrow{r}A\) and \(B\xrightarrow{\hat{r}}\hat{A}\) are
+\(\bA\)-reflections for \(B\), then there exists an \(\bA\)-isomorphism
+\(k:A\to\hat{A}\) s.t. the triangle
+\begin{center}\begin{tikzcd}
+B\arrow[r,"r"]\arrow[rd,"\hat{r}"']&A\arrow[d,"k"]\\
+&\hat{A}
+\end{tikzcd}\end{center}
+commutes
+\item if \(B\xrightarrow{r}A\) is an \(\bA\)-reflection for \(B\) and
+\(A\xrightarrow{k}\hat{A}\) is an \(\bA\)-isomorphism, then
+\(B\xrightarrow{k\circ r}\hat{A}\) is an \(\bA\)-reflection for \(B\)
+\end{enumerate}
+\end{proposition}
+
+\begin{proposition}[]
+\label{prop4.20}
+If \(\bA\) is reflective subcategory of \(\bB\), then the following
+conditions are equivalent
+\begin{enumerate}
+\item \(\bA\) is a full subcategory of \(\bB\)
+\item for each \(\bA\)-object \(A\), \(A\xrightarrow{id_A}A\) is an \(\bA\)-reflection
+\item for each \(\bA\)-object \(A\), \(\bA\)-reflection arrows
+\(A\xrightarrow{r_A}A^*\) are \(\bA\)-isomorphism
+\item for each \(\bA\)-object \(A\), \(\bA\)-reflection arrows
+\(A\xrightarrow{r_A}A^*\) are \(\bA\)-morphisms
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\(2\to3\).
+\begin{center}\begin{tikzcd}
+A\arrow[r,"r_A"]\arrow[ddr,"r_A"']&A^*\arrow[d,"f"]\\
+&A\arrow[d,"r_A"]\\
+&A^*
+\end{tikzcd}\end{center}
+\end{proof}
+
+\begin{proposition}[]
+Let \(\bA\) be a reflective subcategory of \(\bB\), and for each
+\(\bB\)-object \(B\) let \(r_B:B\to A_B\) be an \(\bA\)-reflection arrow.
+Then there exists a unique functor \(R:\bB\to\bA\) s.t. the following
+conditions are satisfied
+\begin{enumerate}
+\item \(R(B)=A_B\) for each \(\bB\)-object \(B\)
+\item for each \(\bB\)-morphism \(f:B\to B'\) the diagram
+\begin{center}\begin{tikzcd}
+B\arrow[r,"r_B"]\arrow[d,"f"']&R(B)\arrow[d,"R(f)"]\\
+B'\arrow[r,"r_{B'}"']&R(B')
+\end{tikzcd}\end{center}
+commutes
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Show that functor is well-defined and preserves identities and compositions
+\end{proof}
+
+\begin{definition}[]
+A functor \(R:\bB\to\bA\) constructed according to the above proposition is
+called a \textbf{reflector for \(\bA\)}
+\end{definition}
+
+\begin{definition}[]
+Let \(\bA\) be a subcategory of \(\bB\) and let \(B\) be a \(\bB\)-object
+\begin{enumerate}
+\item An \textbf{\(\bA\)-coreflection} (or \textbf{\(A\)-coreflection arrow}) for \(B\) is a
+\(\bB\)-morphism \(A\xrightarrow{c}B\) form an \(\bA\)-object \(A\) to
+\(B\) with the following universal property:
+
+for any \(\bB\)-morphism \(A'\xrightarrow{f}B\) from some \(\bA\)-object
+\(A'\) to \(B\) there exists a unique \(\bA\)-morphism \(f':A'\to A\) s.t.
+the triangle
+\begin{center}\begin{tikzcd}
+A'\arrow[d,"f'"']\arrow[dr,"f"]\\
+A\arrow[r,"c"']&B
+\end{tikzcd}\end{center}
+commutes
+
+\item \(\bA\) is called a \textbf{coreflective subcategory} of \(\bB\) provided that each
+\(\bB\)-object has an \(\bA\)-coreflection
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[]
+If \(\bA\) is a coreflective subcategory of \(\bB\) and for each
+\(\bB\)-object \(B\), \(A_B\xrightarrow{c_B}B\) is an \(\bA\)-coreflection
+arrow, then there exists a unique functor \(C:\bB\to\bA\) (called a
+\textbf{coreflector for} \(\bA\)) s.t. the following conditions are satisfied
+\begin{enumerate}
+\item \(C(B)=A_B\) for each \(\bB\)-object \(B\)
+\item for each \(\bB\)-morphism \(f:B\to B'\) the diagram
+\begin{center}\begin{tikzcd}
+C(B)\arrow[r,"c_B"]\arrow[d,"C(f)"']&
+B\arrow[d,"f"]\\
+C(B')\arrow[r,"c_{B'}"']&B'
+\end{tikzcd}\end{center}
+commutes
+\end{enumerate}
+\end{proposition}
+
+\begin{exercise}
+A subcategory \(\bA\) of a category \(\bB\) is called \textbf{isomorphism-closed}
+provided that every \(\bB\)-isomorphism with domain in \(\bA\) belongs to
+\(\bA\). Show that every subcategory \(\bA\) of \(\bB\) can be embedded into
+a smallest isomorphism-closed subcategory \(\bA'\) of \(\bB\) that contains
+\(\bA\). The inclusion functor \(\bA\hookrightarrow\bA'\) is an equivalence
+iff all \(\bB\)-isomorphisms between \(\bA\)-objects belong to \(\bA\)
+\end{exercise}
+
+\begin{exercise}
+\begin{enumerate}
+\item Show that a category is discrete iff each of its subcategories is full
+\item Show that in a poset, considered as a category
+\begin{itemize}
+\item every subcategory is isomorphism-closed
+\item every (co)reflective subcategory is full
+\end{itemize}
+\end{enumerate}
+\end{exercise}
+\subsection{Concrete categories and concrete functors}
+\label{sec:orgefbffb3}
+\begin{definition}[]
+Let \(\bX\) be a category. A \textbf{concrete category} over \(\bX\) is a pair
+\((\bA,U)\) where \(\bA\) is the category and \(U:\bA\to\bX\) is a faithful
+functors. Sometimes \(U\) is called the \textbf{forgetful} (or \textbf{underlying}) \textbf{functor} of
+the concrete category and \(\bX\) is called the \textbf{base category} for \((\bA,U)\)
+
+A concrete category over \(\Set\) is called a \textbf{construct}
+\end{definition}
+
+\begin{remark}
+We adopt the following conventions:
+\begin{enumerate}
+\item Since faithful functors are injective on hom-sets, we usually assume that
+\(\hom_{\bA}(A,B)\) is a subset of \(\hom_{\bX}(UA,UB)\) for each pair
+\((A,B)\) of \(\bA\)-objects. This allows one to express the property that
+``for \(bA\)-objects \(A\) and \(B\) and an \(\bX\)-morphism
+\(UA\xrightarrow{f}UB\) there exists a (necessarily unique)
+\(\bA\)-morphism \(A\to B\) with \(U(A\to B)=UA\xrightarrow{f}UB\)'' much
+more succinctly, by stating
+\begin{equation*}
+UA\xrightarrow{f}UB\text{ is an $\bA$-morphism (from $A$ to $B$)}
+\end{equation*}
+Observe, however, that since \(U\) doesn't need to be injective on
+objects, the expression
+\begin{equation*}
+UA\xrightarrow{id_X}UB\text{ is an $\bA$-morphism (from $A$ to $B$)}
+\end{equation*}
+does not imply that \(A=B\) or that \(id_X=id_A\), although it does imply
+that \(UA=UB=X\). We call an \(\bA\)-morphism \(A\xrightarrow{f}B\)
+\textbf{identity-carried} if \(Uf=id_X\)
+\item Sometimes we will write \(\bA\) for the concrete category \((\bA,U)\) over
+\(\bX\), when \(U\) is clear from the context. In these cases the
+underlying object of an \(\bA\)-object \(A\) will sometimes be denoted by \(\abs{A}\)
+\item If \(P\) is a property of categories (or of functors), then we will say
+that a concrete category \((\bA,U)\) \textbf{has property} \(P\) provided that
+\(\bA\) (or \(U\)) has property \(P\)
+\end{enumerate}
+\end{remark}
+
+\begin{definition}[]
+Let \((\bA,U)\) be a concrete category over \(\bX\)
+\begin{enumerate}
+\item The \textbf{fibre} of an \(\bX\)-object \(X\) is the preordered class consisting of
+all \(\bA\)-objects \(A\) with \(U(A)=X\) ordered by
+\begin{equation*}
+A\le B \quad\text{ iff }\quad
+id_X:UA\to UB\text{ is an $\bA$-morphism}
+\end{equation*}
+\item \(\bA\)-objects \(A,B\) are \textbf{equivalent} if \(A\le B\) and \(B\le A\)
+\item \((\bA,U)\) is said to be \textbf{amnestic} provided that its fibres are partially
+ordered classes; i.e., no two different \(\bA\)-objects are equivalent
+\item \((\bA,U)\) is said to be \textbf{fibre-small} provided that each of its fibres is
+small, i.e., a preordered set
+\end{enumerate}
+\end{definition}
+
+\begin{remark}
+A concrete category \((\bA,U)\) is amnestic iff the functor \(U\) is
+amnestic. Most of the familiar concrete categories are both amnestic and
+fibre-small. 
+\end{remark}
+
+\begin{definition}[]
+A concrete category is called
+\begin{enumerate}
+\item \textbf{fibre-complete} provided that its fibres are (possibly large) complete lattices
+\item \textbf{fibre-discrete} provided that its fibres are ordered by equality
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[]
+A concrete category \((\bA,U)\) over \(\bX\) is fibre-discrete iff \(U\)
+\textbf{reflects identities} (i.e. if \(U(k)\) is an \(\bX\)-identity, then \(k\) must
+be an \(\bA\)-identity)
+\end{proposition}
+
+\begin{definition}[]
+If \((\bA,U)\) and \((\bB,V)\) are concrete categories over \(\bX\), then a
+\textbf{concrete functor from} \((\bA,U)\) \textbf{to} \((\bB,V)\) is a functor \(F:\bA\to\bB\)
+with \(U=V\circ F\). We denote such a functor by \(F:(\bA,U)\to(\bB,V)\)
+\end{definition}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item Every concrete functor is faithful
+\item Every concrete functor is completely determined by its values on objects
+\item Objects that are identified by a full concrete functor are equivalent
+\item Every full concrete functor with amnestic domain is an embedding
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\begin{enumerate}
+\item \(U\) and \(V\) are faithful
+\item Suppose that \(G:(\bA,U)\to(\bB,V)\) is a concrete functor with
+\(G(A)=F(A)\) for each \(\bA\)-object \(A\). Then for any \(\bA\)-morphism
+\(A\xrightarrow{f}A'\) we have the \(\bB\)-morphism
+\begin{center}\begin{tikzcd}
+GA=FA\arrow[r,shift left,"Ff"]\arrow[r,shift right,"Gf"']
+&FA'=GA'
+\end{tikzcd}\end{center}
+with \(V(Ff)=U(f)=V(Gf)\). Since \(V\) is faithful, \(Ff=Gf\). Hence \(F=G\)
+\item Let \(A\)  and \(A'\) be \(\bA\)-objects with \(FA=FA'\). Then
+\(id_B:FA\to FA'\) can be lifted to an \(\bA\)-isomorphism \(g:A\to A'\).
+Hence \(A\) and \(A'\) are equivalent
+\end{enumerate}
+\end{proof}
+
+\begin{remark}
+If \(F:(\bA,U)\to(\bB,V)\) is a concrete isomorphism, then its inverse
+\(F^{-1}:\bB\to\bA\) is concrete from \((\bB,V)\) to \((\bA,U)\).
+Unfortunately, the corresponding result does not hold for concrete
+equivalences. If \(F:(\bA,U)\to(\bB,V)\) is a concrete equivalence from
+\((\bB,V)\) to \((\bA,U)\) even though there are equivalences from \(\bB\) to
+\(\bA\). For example, the embedding of the skeleton of cardinal numbers into
+\(\Set\) is such a concrete categories over \(\bX\) that is not invertible
+\end{remark}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item The identity functor on a concrete category is a concrete isomorphism
+\item Any composite of concrete functors over \(\bX\) is a concrete functor over \(\bX\)
+\end{enumerate}
+\end{proposition}
+
+\begin{definition}[]
+The quansicategory that has as objects all concrete categories over \(\bX\)
+and as morphisms all concrete functors between them is denoted by
+\(\CAT(\bX)\). In particular, \(\CONST=\CAT(\Set)\) is the quasicategory of
+all constructs.
+\end{definition}
+
+\begin{definition}[]
+If \(F\) and \(G\) are both concrete functors from \((\bA,U)\) to
+\((\bB,V)\), then \(F\) is \textbf{finer than} \(G\) (or \(G\) is \textbf{coaser than \(F\)}),
+denoted by \(F\le G\), provided that \(F(A)\le G(A)\) for each \(\bA\)-object \(A\)
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item For order-preserving functions considered as concrete functors over
+\(\bone\), \(f\le g\) iff this relation holds pointwise
+\end{enumerate}
+\end{examplle}
+
+\begin{remark}
+For every concrete category \((\bA,U)\) over \(\bX\), its dual
+\((\bA^{\op},U^{\op})\) is a concrete category over \(\bX^{\op}\). Moreover,
+for every concrete functor \(F:(\bA,U)\to(\bB,V)\) over \(\bX\) its dual
+functor \(F^{\op}:(\bA^{\op},U^{\op})\to(\bB^{\op},V^{\op})\) is a concrete
+functor over \(\bX^{\op}\). However, unless \(\bX=\bX^\op\) there is \textbf{no}
+duality for concrete categories over a fixed base category \(\bX\). In
+particular, we don't have a duality principle for constructs. However, since
+\(\bone=\bone^\op\), there is a duality principle for concrete categories
+over \(\bone\) (i.e., for preordered classes)
+\end{remark}
+
+If \((\bB,U)\) is a concrete category over \(\bX\) and \(\bA\) is a
+subcategory of \(\bB\) with inclusion \(E:\bA\hookrightarrow\bB\), then
+\(\bA\) will often be regarded (via the functor \(U\circ E\)) as a concrete
+category \((\bA,U\circ E)\) over \(\bX\). In such cases we will call
+\((\bA,U\circ E)\) a \textbf{concrete subcategory} of \((\bB,U)\). In the case that
+the base category is \(\Set\), we will call \((\bA,U\circ E)\) a \textbf{subconstruct}
+of \((\bB,U)\)
+
+\begin{definition}[]
+A concrete subcategory \((\bA,U)\) of \((\bB,V)\) is called \textbf{concretely
+reflective} in \((\bB,V)\) provided that for each \((\bB)\)-object there
+exists an identity-carried \(\bA\)-reflection arrow
+
+Relectors induced by identity-carried reflection arrows are called \textbf{concrete reflectors}
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item Let \(\bX\) be a category consisting of a single object \(X\) and two
+morphisms \(id_X\) and \(s\) with \(s\circ s=id_X\). Let \(\bA\) be the
+concrete category over \(\bX\), consisting of two objects \(A_0\) and
+\(A_1\) and the morphism sets
+\begin{equation*}
+\hom_{\bA}(A_i,A_j)=
+\begin{cases}
+\{id_X\}&i=j\\
+\{s\}&i\neq j
+\end{cases}
+\end{equation*}
+Consider \(\bA\) as a concretely reflective subcategory of itself. Then
+\(id_{\bA}:\bA\to\bA\) is a concrete reflector, and the concrete functor
+\(R:\bA\to\bA\), defined by \(R(A_i)=A_{1-i}\) is a reflector that is not
+a concrete reflector
+\end{enumerate}
+\end{examplle}
+
+\begin{proposition}[]
+Every concretely reflective subcategory of an amnestic concrete category is a
+full subcategory
+\end{proposition}
+
+\begin{proof}
+Let \((\bA,U)\) be a concretely reflective subcategory of an amnestic
+\((\bB,V)\), let \(A\) be an \(r:A\to A^*\) be an identity-carried
+\(\bA\)-reflection arrow for \(A\). We wish to show that \(r=id_A\) so that
+Proposition \ref{prop4.20} can be applied. By reflectivity there exists a
+unique \(\bA\)-morphism \(s:A^*\to A\) s.t. the diagram
+\begin{center}\begin{tikzcd}
+A\arrow[r,"r"]\arrow[rd,"id_A"]&A^*\arrow[d,"s"]\\
+&A
+\end{tikzcd}\end{center}
+commutes.
+
+Since \(r\) is identity-carried, \(V(r)=id_{VA}\). Since also
+\(V(id_A)=id_{VA}\), we conclude that \(V(s)=id_{VA}\). Faithfulness of \(V\)
+gives us \(r\circ s=id_{A^*}\). Hence \(r\) is a \(\bB\)-isomorphism with
+\(V(r)=id_{VA}\). Amnesticity of \((\bB,V)\) yields \(r=id_A\). 
+\end{proof}
+
+\begin{proposition}[]
+For a concrete full subcategory \((\bA,U)\) of a concrete category
+\((\bB,V)\) over \(\bX\), with inclusion functor
+\(E:(\bA,U)\hookrightarrow(\bB,V)\), the following are equivalent
+\begin{enumerate}
+\item \((\bA,U)\) is concretely reflective in \((\bB,V)\)
+\item there exists a concrete functor \(R:(\bB,V)\to(\bA,U)\) that is a
+reflector with \(R\circ E=id_{\bA}\) and \(id_{\bB}\le E\circ R\)
+\item there exists a concrete functor \(R:(\bB,V)\to(\bA,U)\) with \(R\circ E\le
+      id_{\bA}\) and \(id_{\bB}\le E\circ R\)
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\(1\to2\).
+\end{proof}
+
+
+
+
+
+
 \section{Index}
-\label{sec:orgd7312ed}
+\label{sec:org02d09cc}
 \renewcommand{\indexname}{}
 \printindex
 \end{document}
