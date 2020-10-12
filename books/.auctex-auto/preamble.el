@@ -4,57 +4,53 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("xcolor" "dvipsnames") ("inputenc" "utf8") ("tcolorbox" "most") ("fontenc" "B1" "T1") ("appendix" "toc" "page")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
-    "xcolor"
-    "forest"
     "inputenc"
+    "fontenc"
     "mathtools"
-    "pgfplots"
     "amsthm"
     "amsbsy"
     "amsmath"
-    "commath"
     "amssymb"
     "mathrsfs"
-    "mathabx"
     "stmaryrd"
     "empheq"
+    "unicode-math"
+    "scalerel"
+    "stackengine"
+    "stackrel"
+    "tensor"
+    "blkarray"
+    "nicematrix"
+    "siunitx"
+    "esvect"
+    "pgfplots"
     "tikz"
     "tikz-cd"
     "tikz-qtree"
     "tcolorbox"
     "threeparttable"
-    "scalerel"
-    "stackengine"
-    "stackrel"
     "tabularx"
-    "dsfont"
-    "fontenc"
     "enumitem"
-    "siunitx"
     "subcaption"
     "caption"
     "auncial"
     "float"
     "fancyhdr"
-    "unicode-math"
     "ifthen"
     "xargs"
-    "tensor"
     "imakeidx"
     "hyperref"
     "soul"
-    "blkarray"
-    "nicematrix"
     "graphicx"
     "appendix")
    (TeX-add-symbols
@@ -79,6 +75,7 @@
     '("bl" 1)
     '("arc" 1)
     "arc"
+    "abs"
     "widehatsym"
     "lowerwidehatsym"
     "cupdot"
@@ -164,16 +161,12 @@
     "Ab"
     "Alg"
     "Rng"
-    "CAT"
-    "CONST"
     "Sets"
-    "Set"
     "Met"
     "Aut"
     "RMod"
     "RAlg"
     "LF"
-    "obj"
     "op"
     "Diag"
     "el"
@@ -197,7 +190,6 @@
     "nil"
     "Ann"
     "End"
-    "Mor"
     "coim"
     "coker"
     "Bil"
@@ -218,6 +210,9 @@
     '("claim" 1)
     "bsm"
     "psm")
+   (LaTeX-add-xcolor-definecolors
+    "ccqqqq"
+    "qqwuqq")
    (LaTeX-add-mathtools-DeclarePairedDelimiters
     '("abss" "")
     '("normm" ""))
