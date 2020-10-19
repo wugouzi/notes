@@ -8,13 +8,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -38,23 +38,27 @@
    (TeX-add-symbols
     "VAR"
     "CON"
-    "WE")
+    "WE"
+    "Int")
    (LaTeX-add-labels
-    "sec:org9797873"
-    "sec:org57fa18c"
-    "sec:org44304eb"
-    "sec:org5d992f2"
+    "sec:org8636a7d"
+    "sec:orge286054"
+    "sec:orgc01b32c"
+    "sec:org654404d"
     "def4.2.2"
-    "sec:org82fa0c1"
+    "sec:org6af96f0"
     "def4.2.3"
-    "sec:orgfb1cb15"
-    "sec:org44d51de"
-    "sec:org1ea78eb"
-    "sec:org2ada5df"
-    "sec:org994edd1"
-    "sec:orgc9eaf0a"
-    "sec:org72ee213"
-    "sec:org130acb5"
-    "sec:org7b3a94a"))
+    "sec:org7827fb3"
+    "sec:org7597f65"
+    "sec:org2d471cf"
+    "sec:org865b745"
+    "sec:org601423a"
+    "sec:orgf91a4ba"
+    "sec:org30290b9"
+    "sec:org57cc3cb"
+    "sec:org82111f2"
+    "sec:orgd778aa1"
+    "sec:org26b40eb"
+    "sec:orgf4efa98"))
  :latex)
 
