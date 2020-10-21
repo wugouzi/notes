@@ -6,13 +6,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem") ("ctex" "UTF8")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -35,20 +35,27 @@
     "minted"
     "ctex")
    (LaTeX-add-labels
-    "sec:org4ce3581"
-    "sec:org5720885"
-    "sec:org79afdfc"
-    "sec:org4ed5ce3"
-    "sec:org003f85e"
-    "sec:org62e9327"
-    "sec:org81de80e"
-    "sec:org49d1285"
-    "sec:org118c763"
-    "sec:org6df5849"
-    "sec:orgb4ebd0f"
-    "sec:orgde81a07"
-    "sec:orgb4d5344"
-    "sec:orgda5b96d"
-    "sec:orga13aa22"))
+    "sec:org9b966b7"
+    "sec:orgb419a81"
+    "sec:org1664a2c"
+    "sec:orgaf32b02"
+    "sec:org4cbf2e2"
+    "sec:orgf9762c6"
+    "sec:orgb0d91cd"
+    "sec:org071305a"
+    "sec:org145c20d"
+    "sec:org87fec9d"
+    "sec:org5498573"
+    "sec:org79e74fc"
+    "sec:org062d065"
+    "sec:orgee22cf6"
+    "sec:org0cd5cbc"
+    "sec:org4b4920e"
+    "sec:orgea803cb"
+    "sec:org1141639"
+    "sec:org8ab5282"
+    "sec:orgbb1ff0b"
+    "sec:org30eb6a2"
+    "sec:org93cb949"))
  :latex)
 

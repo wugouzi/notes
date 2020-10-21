@@ -4,7 +4,7 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
+                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
@@ -16,10 +16,10 @@
    (TeX-run-style-hooks
     "inputenc"
     "fontenc"
+    "xcolor"
     "mathtools"
     "amsthm"
     "amsbsy"
-    "amsmath"
     "amssymb"
     "mathrsfs"
     "stmaryrd"
@@ -73,6 +73,7 @@
     '("wt" 1)
     '("Wt" 1)
     '("bl" 1)
+    '("norm" 1)
     '("arc" 1)
     "arc"
     "abs"
@@ -204,8 +205,7 @@
     "zallman"
     "bigzero"
     "rvline"
-    "oldabs"
-    "oldnorm")
+    "oldabs")
    (LaTeX-add-environments
     '("claim" 1)
     "bsm"

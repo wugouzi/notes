@@ -464,6 +464,42 @@
 
     如果\(N\)件产品中含有\(M\)件次品，从中一件接一件有放回地取\(n\)次，则\(X\)服
     从\(B(n,\frac{M}{N})\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(C_{m+n}^r=\displaystyle\sum_{t=0}^rC^{r-t}_mC_n^t\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    \begin{align}
+      (x+y)^{m+n} &= (x+y)^m (x+y)^n \\
+      \sum\limits_{r=0}^{m+n} C_{m+n}^r x^r y^{m+n-r}
+      &= \left[ \sum\limits_{s=0}^m C_m^s x^s y^{m-s} \right]
+      \left[ \sum\limits_{t=0}^n C_n^t x^t y^{n-t} \right] \\
+      \sum\limits_{r=0}^{m+n} C_{m+n}^r  x^r y^{m+n-r}
+      &= \sum\limits_{s=0}^m \sum\limits_{t=0}^n C_m^sC_n^t
+      x^{s+t} y^{m+n-s-t}
+    \end{align}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(E(X)=\frac{nM}{N}\)
+    #+END_proposition
+    x=k,s=M,N=N,n=n
+    #+BEGIN_proof
+    \begin{align*}
+    E(X)&=\sum_{k=0}^nkP\{X=k\}=\sum_{k=0}^n\frac{kC_M^kC_{N-M}^{n-k}}{C_N^n}\\
+    &=\sum_{k=0}^nC_{N-M}^{n-k}\frac{kM!}{k!(M-k)!}\frac{n!(N-n)!}{N!}\\
+    &=\sum_{k=1}^nC_{N-M}^{n-k}\frac{M(M-1)!}{(k-1)!(M-k)!}\frac{n(n-1)!(N-n)!}{N(N-1)!}\\
+    &=\frac{nM}{N}\sum_{k=1}^n\frac{C_{N-M}^{n-k}C_{M-1}^{k-1}}{C_{N-1}^{n-1}}\\
+    &=\frac{nM}{N}\frac{1}{C_{N-1}^{n-1}}\sum_{k=1}^nC_{N-M}^{n-k}C_{M-1}^{k-1}\\
+    &=\frac{nM}{N}\frac{1}{C_{N-1}^{n-1}}\sum_{k=0}^{n-1}C_{N-M}^{n-k-1}C_{M-1}^{k}\\
+    &=\frac{nM}{N}\frac{C_{N-1}^{n-1}}{C_{N-1}^{n-1}}\\
+    &=\frac{nM}{N}
+    \end{align*}
+    #+END_proof
+
 ** 随机变量的分布函数
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -1172,7 +1208,7 @@
    解得
    \begin{align*}
    b_0&=\frac{Cov(X,Y)}{D(X)}\\
-   a_0=E(Y)-b_0E(X)
+   a_0&=E(Y)-b_0E(X)
    \end{align*}
    代入得
    \begin{align*}
@@ -1519,6 +1555,68 @@
    4. \(\frac{\bbar{X}}{S/\sqrt{n}}\sim t(n-1)\)
    #+END_theorem
 
+   #+BEGIN_proof
+   2. [@2] 设\(Z_i=\frac{X_i-\mu}{\sigma}\)，则\(Z_1,\dots,Z_n\)相互独立，而
+      \begin{gather*}
+      \bbar{Z}=\frac{1}{n}\sum_{i=1}^nZ_i=\frac{\bbar{X}-\mu}{\sigma}\\
+      \frac{(n-1)S^2}{\sigma^2}=\frac{\sum_{i=1}^n(X_i-\bbar{X})^2}{\sigma^2}=
+      \sum_{i=1}^n\left[
+      \frac{(X_i-\mu)-(\bbar{X}-\mu)}{\sigma}\right]^2\\
+      =\sum_{i=1}^n(Z_i-\bbar{Z})^2=\sum_{i=1}^nZ_i^2-n\bbar{Z}^2
+      \end{gather*}
+      取一\(n\)阶正交矩阵\(\bA=(a_{ij})\)，其中第一行的元素均为\(1/\sqrt{n}\)，
+      作正交变换
+      \begin{equation*}
+      \bY=\bA\bZ
+      \end{equation*}
+      其中
+      \begin{equation*}
+      \bY=
+      \begin{bmatrix}
+      Y_1\\\vdots\\Y_n
+      \end{bmatrix},\bZ=
+      \begin{bmatrix}
+      Z_1\\\vdots\\Z_n
+      \end{bmatrix}
+      \end{equation*}
+      由于\(Y_i=\displaystyle\sum_{j=1}^na_{ij}Z_j\)，故\(Y_1,\dots,Y_n\)仍为正
+      交变量，由\(Z_i\sim N(0,1)\)知
+      \begin{equation*}
+      E(Y_i)=E(\sum_{j=1}^na_{ij}Z_j)=0
+      \end{equation*}
+      又由\(Cov(Z_i,Z_j)=\delta_{ij}\)，知
+      \begin{align*}
+      Cov(Y_i,Y_k)&=Cov(\sum_{j=1}^na_{ij}Z_j,\sum_{l=1}^1a_{kl}Z_l)\\
+      &=\sum_{j=1}^n\sum_{l=1}^na_{ija_{kl}}Cov(Z_j,Z_l)=\sum_{j=1}^na_{ij}a_{kj}=\delta_{jk}
+      \end{align*}
+      故\(Y_1,dots,Y_n\)两两不相关，又由\(n\)维随机变量\((Y_1,\dots,Y_n)\)是由
+      \(n\)维正态随机变量\((X_1,\dots,X_n)\)经由线性变换得到的，因此
+      \((Y_1,\dots,Y_n)\)也是\(n\)维正态随机变量，因此\(Y_1,\dots,Y_n\)相互独立，
+      且有\(Y_i\sim N(0,1)\)，而
+      \begin{gather*}
+      Y_1=\sum_{j=1}^na_{1j}Z_j=\sum_{j=1}^n\frac{1}{\sqrt{n}}Z_j=\sqrt{n}\bbar{Z}\\
+      \sum_{i=1}^nY_i^2=\bY^T\bY=(\bA\bZ)^T(\bA\bZ)=\bZ(\bA^T\bA)\bZ=
+      \bZ^T\bE\bZ=\bZ^T\bZ=\sum_{i=1}^nZ_i^2
+      \end{gather*}
+      于是
+      \begin{equation*}
+      \frac{(n-1)S^2}{\sigma^2}=\sum_{i=1}^nZ_i^2-n\bbar{Z}^2=\sum_{i=1}^nY_i^2-y_1^2=
+      \sum_{i=2}^nY_i^2
+      \end{equation*}
+      
+   3. \(\bbar{X}=\sigma\bbar{Z}+\mu=\frac{\sigma Y_1}{\sqrt{n}}+\mu\)仅依赖于\(Y_1\)
+   4. 由 1，2，3
+      \begin{equation*}
+      \frac{\bbar{X}-\mu}{\sigma/\sqrt{n}}\sim N(0,1),\quad
+      \frac{(n-1)S^2}{\sigma^2}\sim\chi^2(n-1)
+      \end{equation*}
+      且两者独立，由\(t\)分布的定义知
+      \begin{equation*}
+      \left.\frac{\bbar{X}-\mu}{\sigma/\sqrt{n}}\middle/\sqrt{\frac{(n-1)S^2}{\sigma^2(n-1)}}\right.
+      \sim t(n-1)
+      \end{equation*}
+   #+END_proof
+
    #+ATTR_LATEX: :options []
    #+BEGIN_theorem
    label:thm6.3.4
@@ -1535,6 +1633,40 @@
       \end{equation*}
       其中 \(S_w^2=\frac{(n_1-1)S_1^2+(n_2-1)S_2^2}{n_1+n_2-2},S_w=\sqrt{S_w^2}\)
    #+END_theorem
+
+   #+BEGIN_proof
+   1. \(\hspace{1cm}\)
+      \begin{equation*}
+      \frac{(n_1-1)S_1^2}{\sigma_1^2}\sim\chi^2(n_1-1),\frac{(n_2-1)S_2^2}{\sigma_2^2}\sim
+      \chi^2(n_2-1)
+      \end{equation*}
+      由假设\(S_1,S_2\)相互独立，因此
+      \begin{equation*}
+      \left.\frac{(n_1-1)S_1^2}{(n_1-1)\sigma_1^1}\middle/
+      \frac{(n_2-1)S_2^2}{(n_2-1)\sigma_2^2}\right.
+      \sim F(n_1-1,n_2-1)
+      \end{equation*}
+      即
+      \begin{equation*}
+      \frac{S_1^2/S_2^2}{\sigma_1^2/\sigma_2^2}\sim F(n_1-1,n_2-1)
+      \end{equation*}
+   2. 易知\(\bbar{X}-\bbar{Y}\sim
+      N\left(\mu_1-\mu_2,\frac{\sigma^2}{n_1}+\frac{\sigma^2}{n_2}\right)\)，即有
+      \begin{equation*}
+      U=\frac{(\bbar{X}-\bbar{Y})-(\mu_1-\mu_2)}{
+      \sigma\sqrt{\frac{1}{n_1}+\frac{1}{n_2}}}\sim N(0,1)
+      \end{equation*}
+      又因为
+      \begin{equation*}
+      \frac{(n_1-1)S_1^2}{\sigma^2}\sim\chi^2(n_1-1),\frac{(n_2-1)S^2_2}{\sigma^2}
+      \sim\chi^2(n_2-1)
+      \end{equation*}
+      且它们相互独立，故由\(\chi^2\)分布的可加性知
+      \begin{equation*}
+      V=\frac{(n_1-1)S_1^2}{\sigma^2}+\frac{(n_2-1)S_2^2}{\sigma^2}\sim\chi^2(n_1+n_2-2)
+      \end{equation*}
+      \(U,V\)独立
+   #+END_proof
 
 * 参数估计
 ** 点估计
