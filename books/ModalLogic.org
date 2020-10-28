@@ -11,10 +11,10 @@
 ** Modal Languages
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
-   The *basic modal language* is defined using  a set of *proposition letters* \Phi
-   whose elements are usually denoted \(p,q,r\) and so on, and a unary modal
-   operator \(\lozenge\). The well-formed *formulas* \phi of the basic modal
-   language are given by the rule
+    The *basic modal language* is defined using  a set of *proposition letters* \Phi
+    whose elements are usually denoted \(p,q,r\) and so on, and a unary modal
+    operator \(\lozenge\). The well-formed *formulas* \phi of the basic modal
+    language are given by the rule
    \begin{equation*}
    \phi:=p\mid\bot\mid\neg\phi\mid\psi\vee\phi\mid\lozenge\phi
    \end{equation*}
@@ -67,6 +67,51 @@
    \fM,t\Vdash P\phi \quad&\text{ iff }\quad
    \exists s(R^\smallsmile ts\wedge \fM,s\Vdash\phi)
    \end{align*}
+   #+END_examplle
+
+   #+ATTR_LATEX: :options [Propositional Dynamic Logic]
+   #+BEGIN_examplle
+   Each of these diamonds has the form \(\la\pi\ra\), where \pi denotes a
+   (non-deterministic) *program*. The intended interpretation of \(\la\pi\ra\) is
+   'some terminating execution of \pi from the present state leas to a state
+   bearing the information \phi '. The dual assertion \([\pi]\phi\) states that
+   'every execution of \pi from the present state leads to a state bearing the
+   information \phi '
+
+   Suppose we have fixed some set of basic programs \(a,b,c\) and so on. Then we
+   are allowed to define complex programs \pi over this base as follows
+   1. *Choice*. If \(\pi_1,\pi_2\) are programs, then so is \(\pi_1\cup\pi_2\)
+   2. *Composition*. so is \(\pi_1;\pi_2\)
+   3. *Iteration*. so is \(\pi^*\)
+
+
+   This is called *regular* PDL. There are also
+   1. *Intersection* if \(\pi_1,\pi_2\) are programs, then so is
+      \(\pi_1\cap\pi_2\)
+
+      execute both \(\pi_1,\pi_2\), in parallel
+
+   2. *test* if \phi is a formula, then so is \(\phi?\)
+
+      test whether \phi holds, and if so, continues; if not, it fails
+   
+   The language of PDL has an infinite collection of diamonds, each indexed by a
+   program \pi build from basic programs using the constructor \(\cup,;\) and
+   \(^*\).
+   \begin{align*}
+    &R_{\pi_1\cup\pi_2}=R_{\pi_1}\cup R_{\pi_2}\\
+    &R_{\pi_1;\pi_2}=R_{\pi_1}\circ R_{\pi_2}\\
+    &R_{\pi_1^*}=(R_{\pi_1})^*
+    \end{align*}
+
+   Suppose  we have fixed a set of basic programs. Let \Pi be the set of programs
+   containing the basic programs and all the programs constructed over them
+   using the regular constructors \(\cup,;,^*\). Then a *regular frame for* \Pi is
+   a labeled transitive system \((W,\{R_\pi\mid\pi\in\Pi\})\) s..t \(R_a\) is an
+   arbitrary binary  relation for each basic program \(a\), and for all complex
+   programs \pi, \(R_{\pi}\) is the binary relation inductively constructed in
+   accordance with the previous clauses. A *regular model* for \Pi is a model built
+   over a regular frame.
    #+END_examplle
 
    #+ATTR_LATEX: :options [An Arrow Language]
@@ -1950,14 +1995,17 @@
    each others (global) frame *correspondents*
    #+END_definition
 
+   For example the basic modal formula \(p\to\Diamond p\) and the first-order
+   sentence \(\forall xRxx\) are correspondents
+
    #+ATTR_LATEX: :options []
    #+BEGIN_examplle
-   Read \(\diamond\phi\) as 'it is *possibly* the case that \phi ' and \(\Box\phi\) as
+   Read \(\Diamond\phi\) as 'it is *possibly* the case that \phi ' and \(\Box\phi\) as
    '*necessarily* \phi  '.
    \begin{itemize}
    \item [(T)] \(p\to\Box p\)
-   \item [(4)] \(\diamond\diamond p\to\diamond p\)
-   \item [(5)] \(\diamond p\to\Box\diamond p\)
+   \item [(4)] \(\Diamond\Diamond p\to\Diamond p\)
+   \item [(5)] \(\Diamond p\to\Box\Diamond p\)
    \end{itemize}
 
    Our first claim is that for any frame \(\fF=(W,R)\), the axiom T corresponds
@@ -1996,16 +2044,19 @@
    \node[n] (u) at (0,0) {};
    \node[n] (v) at (2,1) {};
    \node[n] (w) at (2,-1) {};
+   \node[n] (v') at (3,1) {};
    \node[left] at (u.west) {$u$};
-   \node[right] at (v.east) {$v$};
+   \node[right] at (v'.east) {$v'$};
+   \node[above] at (v.north) {$v$};
    \node[right] at (w.east) {$w$};
    \draw[->] (u) --(v);
    \draw[->](u) --  (w);
+   \draw[->] (v) -- (v');
    \draw[->] (v)--node[strike out,draw,-]{} (w);
    \end{tikzpicture}
    We will try to falsify 5 in \(u\); for this purpose we have to find a
-   valuation \(V\) s.t. \((\fF,V),u\Vdash\diamond p\) and
-   \((\fF,V),u\not\Vdash\Box\diamond p\). In other words, we have to make \(p\)
+   valuation \(V\) s.t. \((\fF,V),u\Vdash\Diamond p\) and
+   \((\fF,V),u\not\Vdash\Box\Diamond p\). In other words, we have to make \(p\)
    *true* at some \(R\)-successor \(x\) of \(u\), and *false* at all
    \(R\)-successors of some \(R\)-successor \(y\) of \(u\). The constaints on
    \(V\) are
@@ -2017,8 +2068,8 @@
    \begin{equation*}
    V(p)=\{z\in W\mid\text{ it is not the case that }Rvz\}
    \end{equation*}
-   Now \(v\not\Vdash\diamond p\), so \(u\not\Vdash\Box\diamond p\). On the other
-   hand, we have \(w\Vdash p\), so \(u\Vdash\diamond p\)
+   Now \(v\not\Vdash\Diamond p\), so \(u\not\Vdash\Box\Diamond p\). On the other
+   hand, we have \(w\Vdash p\), so \(u\Vdash\Diamond p\)
    #+END_examplle
 
    #+ATTR_LATEX: :options []
@@ -2041,8 +2092,58 @@
 
    #+END_examplle
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Suppose we are working with a similarity type with three binary operators
+   \(\triangle_1,\triangle_2, \triangle_3\), and that we are interested in the
+   class of frames in which the three ternary accessibility relations (denoted
+   by \(R_1,R_2,R_3\) respectively, if \(R_1stu\) and \(s\Vdash p,t\Vdash
+   q,s\Vdash r\), then \(s\Vdash q\triangle_1 r\)).
 
+   We want
+   \begin{equation*}
+    R_1stu \quad\text{ iff }\quad R_2tus \quad\text{ iff }\quad
+    R_3ust
+   \end{equation*}
+   to hold for all \(s,t,u\) in such frames. Can we define this class of frames?
 
+   We can. We will show that for all frames \(\calf=(W,R_1,R_2,R_3)\) we have
+   \begin{equation*}
+    \calf\Vdash p\wedge(q\triangle_1 r)\to(q\wedge r\triangle_2 p)
+    \triangle_1 r
+    \quad\text{ iff }\quad \calf\Vdash\forall xyz(R_1xyz\to R_2yzx)
+   \end{equation*}
+
+   Suppose that the modal formula \(p\wedge(q\triangle_1 r)\to(q\wedge
+   r\triangle_2 p)\triangle_1 r\) is valid in \(\calf\), and consider states
+   \(s,t,u\) with \(R_1stu\). Consider a valuation \(V\) with
+   \(V(p)=\{s\},V(q)=\{t\},V(r)=\{u\}\). Then \((\calf,V),s\Vdash p\wedge
+   q\triangle_1 r\), so \(s\Vdash(q\wedge r\triangle_2p)\triangle_1 r\). Hence
+   there must be states \(t',u'\) with \(R_1st'u'\), \(t'\Vdash q\wedge
+   r\triangle_2p\) and \(u'\Vdash r\).
+   #+END_examplle
+
+   #+BEGIN_exercise
+   label:ex3.1,1
+   Consider a language with two diamonds \(\la1\ra\) and \(\la2\ra\). Show that
+   \(p\to[2]\la1\ra p\)  is valid on precisely those frame for the language
+   satisfy the condition \(\forall xy(R_2xy\to R_1yx)\). What sort of frames does
+   \(p\to[1]\la1\ra p\) define?
+   #+END_exercise
+
+   #+BEGIN_proof
+   Define \(V(p)=\{w\}\) to prove left to right.
+
+   \(R_1xy\to R_1yx\)
+   #+END_proof
+
+   #+BEGIN_exercise
+   Consider a language with three diamonds \(\la1\ra,\la2\ra,\la3\ra\). Show
+   that the modal formula \(\la3\ra p\leftrightarrow\la1\ra\la2\ra p\) is valid
+   on a frame for this language iff the frame satisfies the condition \(\forall
+   xy(R_3xy\left\rightarrow \exists z(R_1xz\wedge R_2zy))\)
+   #+END_exercise
+   
 ** Frame Definability and Second-Order Logic
    #+ATTR_LATEX: :options []
    #+BEGIN_examplle
@@ -2100,7 +2201,17 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_examplle
-   We will show that the McKinsey formula (M) \(\Box\diamond p\to\diamond\Box
+   PDL can be interpreted on any transition system of the form
+   \(\calf=(W,R_\pi)_{\pi\in\Pi}\). Let's call such a frame \(*\)-*proper* if the
+   transition relation \(R_{\pi^*}\) of each program \(\pi^*\) is the reflexive and
+   transitive closure of the transitive relation \(R_\pi\) of \(\pi\).
+
+   Consider the following set of formulas 
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   We will show that the McKinsey formula (M) \(\Box\Diamond p\to\Diamond\Box
    p\) does not correspond to a first-order condition by show that it violates
    the Löwenheim-Skolem Theorem
    #+END_examplle

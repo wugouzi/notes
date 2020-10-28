@@ -5,18 +5,19 @@
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "inputenc"
     "fontenc"
     "xcolor"
+    "amsmath"
     "mathtools"
     "amsthm"
     "amsbsy"
@@ -24,15 +25,15 @@
     "mathrsfs"
     "stmaryrd"
     "empheq"
-    "unicode-math"
     "scalerel"
     "stackengine"
     "stackrel"
+    "nicematrix"
     "tensor"
     "blkarray"
-    "nicematrix"
     "siunitx"
     "esvect"
+    "unicode-math"
     "pgfplots"
     "tikz"
     "tikz-cd"
@@ -202,9 +203,11 @@
     "subsetsim"
     "simsubset"
     "simsubsetsim"
-    "zallman"
     "bigzero"
     "rvline"
+    "zallman"
+    "elzevier"
+    "isoto"
     "oldabs")
    (LaTeX-add-environments
     '("claim" 1)

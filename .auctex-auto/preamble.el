@@ -33,7 +33,7 @@
     "blkarray"
     "siunitx"
     "esvect"
-    "unicode-math"
+    "libertine"
     "pgfplots"
     "tikz"
     "tikz-cd"
