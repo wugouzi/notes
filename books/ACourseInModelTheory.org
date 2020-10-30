@@ -38,7 +38,7 @@
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
    label:lemma1.1.8
-   Let \(h:\fA \xrightarrow {\sim}\fA'\) be an isomorphism and \(\fB\) an
+   Let \(h:\fA \isoto\fA'\) be an isomorphism and \(\fB\) an
    extension of \(\fA\). Then there exists an extension \(\fB'\) of \(\fA'\) and
    an isomorphism \(g:\fB \isoto\fB' \) extending \(h\)
    #+END_lemma
@@ -63,13 +63,374 @@
     h_1:\fA_1\isoto\fA_2
    \end{equation*}
    Continuing in this way we obtain a chain 
-   \(\fA_0\subseteq \fA_1\susbeteq\fA_2\subseteq\dots\)
+   \(\fA_0\subseteq \fA_1\subseteq\fA_2\subseteq\dots\)
    and an increasing sequence
    \(h_i:\fA_i\isoto\fA_{i+1}\) of isomorphism
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \((\fA_i)_{i\in I}\) be a directed family of \(L\)-structures. Then
+   \(A=\bigcup_{i\in I}A_i\) is the universe of a (uniquely determined)
+   \(L\)-structure
+   \begin{equation*}
+   \fA=\bigcup_{i\in I}\fA_i
+   \end{equation*}
+   which is an extension of all \(\fA_i\)
+   #+END_lemma
+   
+   A subset \(K\) of \(L\) is called a *sublanguage*. An \(L\)-structure becomes a
+   \(K\)-structure, the *reduct*.
+   \begin{equation*}
+   \fA\restriction K=(A,(Z^{\fA})_{Z\in K})
+   \end{equation*}
+   Conversely we call \(\fA\) an *expansion* of \(\fA\restriction K\).
+   1. Let \(B\subseteq A\) , we obtain a new language
+      \begin{equation*}
+      L(B)=L\cup B
+      \end{equation*}
+      and the \(L(B)\)-structure 
+      \begin{equation*}
+      \fA_B=(\fA,b)_{b\in B}
+      \end{equation*}
+      Note that \(\Aut(\fA_B)\) is the group of automorphisms of \(\fA\) fixing
+      \(B\) elementwise. We denote this group by \(\Aut(\fA/B)\)
+      
+      
+   Let \(S\) be a set, which we call the set of sorts. An \(S\)-sorted
+   language \(L\) is given by a set of constants for each sort in \(S\), and
+   typed function and relations. For any tuple \((s_1,\dots,s_n)\) and
+   \((s_1,\dots,s_n,t)\) there is a set of relation symbols and function
+   symbols respectively. An \(S\)-sorted structure is a pair
+   \(\fA=(A,(Z^{\fA})_{Z\in L})\), where 
+   \begin{alignat*}{2}      
+   &A&&\text{if a family $(A_s)_{s\in S}$ of non-empty sets}\\
+   &Z^{\fA}\in A_s&&\text{if $Z$ is a constant of sort $s\in S$}\\
+   &Z^{\fA}:A_{s_1}\times\dots\times A_{s_n}\to A_t&&\text{if $Z$ is a
+   function symbol of type $(s_1,\dots,s_n,t)$}\\
+   &Z^{\fA}\subseteq A_{s_1}\times\dots\times A_{s_n}&&\text{if $Z$ is a
+   relation symbol of type $(s_1,\dots,s_n)$}
+   \end{alignat*}
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Consider the two-sorted language \(L_{Perm}\) for permutation groups with a
+   sort \(x\) for the set and a sort \(g\) for the group. The constants and
+   function symbols for \(L_{Perm}\) are those of \(L_{Group}\) restricted to
+   the sort \(g\) and an additional function symbol \varphi of type \((x,g,x)\). Thus
+   an \(L_{Perm}\)-structure \((X,G)\) is given by a set \(X\) and an
+   \(L_{Group}\)-structure \(G\) together with a function \(X\times G\to X\)
+   #+END_examplle
+
+** Language
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma1.2.11
+   Suppose \(\vv{b}\) and \(\vv{c}\) agree on all variables which are free
+   in \varphi. Then 
+   \begin{equation*}
+   \fA\models\varphi[\vv{b}]\Leftrightarrow\fA\models\varphi[\vv{c}]
+   \end{equation*}
+   #+END_lemma
+
+   We define
+   \begin{equation*}
+   \fA\models\varphi[a_1,\dots,a_n]
+   \end{equation*}
+   by \(\fA\models\varphi[\vv{b}]\), where \(\vv{b}\) is an assignment
+   satisfying \(\vv{b}(x_i)=a_i\). Because of Lemma ref:lemma1.2.11 this is
+   well defined.
+
+   
+
+
+   Thus \(\varphi(x_1,\dots,x_n)\) defines an \(n\)-ary relation
+   \begin{equation*}
+   \varphi(\fA)=\{\bbar{a}\mid\fA\models\varphi[\bbar{a}]\}
+   \end{equation*}
+   on \(A\), the *realisation set* of \varphi. Such realisation sets are called
+   *0-definable subsets* of \(A^n\), or 0-definable relations
+
+   Let \(B\) be a subset of \(A\). A *\(B\)-definable* subset of \(\fA\) is a set
+   of the form \(\varphi(\fA)\) for an \(L(B)\)-formula \(\varphi(x)\). We also say that \varphi
+   are defined *over* \(B\) and that the set \(\varphi(\fA)\) is defined by \varphi. We call
+   two formulas *equivalent* if in every structure they define the same set.
+
+   Atomic formulas and their negations are called *basic*. Formulas without
+   quantifiers are Boolean combinations of basic formulas. It is convenient to
+   allow the empty conjunction and the empty disjunction. For that we introduce
+   two new formulas: the formula \(\top\), which is always true, and the formula
+   \(\bot\), which is always false. We define
+   \begin{align*}
+   &\bigwedge_{i<0}\pi_i=\top\\
+   &\bigvee_{i<0}\pi_i=\bot
+   \end{align*}
+
+   A formula is in *negation normal form* if it is built from basic formulas using
+   \(\wedge,\vee,exists,\forall\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A formula in negation normal form which does not contain any existential
+   quantifier is called *universal*. Formulas in negation normal form without
+   universal quantifiers are called *existential*
+   #+END_definition
+
+   
+   Let \(\fA\) be an \(L\)-structure. The *atomic diagram* of \(\fA\) is
+   \begin{equation*}
+   \Diag(\fA)=\{\varphi\text{ basic $L(A)$-sentence}\mid\fA_A\models\varphi\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   The models of \(\Diag(\fa)\) are precisely those structures
+   \((\fB,h(a))_{a\in A}\) for embeddings \(h:\fA\to\fB\)
+   #+END_lemma
+
+** Theories
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   An *\(L\)-theory* \(T\) is a set of \(L\)-sentences
+   #+END_definition
+   
+   A theory which has a model is a *consistent* theory. We call a set \Sigma of
+   \(L\)-formulas *consistent* if there is an \(L\)-structure and an assignment
+   \(\vv{b}\) s.t. \(\fA\models[\vv{b}]\) for all \(\varphi\in\Sigma\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma1.3.4
+   1. If \(T\models\varphi\) and \(T\models(\varphi\to\psi)\), then \(T\models\psi\)
+   2. If \(T\models\varphi(c_1,\dots,c_n)\) and the constants \(c_1,\dots,c_n\)
+      occur neither in \(T\) nor in \(\varphi(x_1,\dots,x_n)\), then \(T\models\forall
+      x_1\dots x_n\varphi(x_1,\dots,x_n)\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   2. [@2] Let \(L'=L\setminus\{c_1,\dots,c_n\}\). If the \(L'\)-structure is a
+      model of \(T\) and \(a_1,\dots,a_n\) are arbitrary elements, then
+      \((\fA,a_1,\dots,a_n)\models\varphi(c_1,\dots,c_n)\). This means
+      \(\fA\models\forall x_1\dots x_n\varphi(x_1,\dots,x_n)\).
+   #+END_proof
 * Elementary Extensions and Compactness
+** Elementary substructures
+   Let \(\fA,\fB\) be two \(L\)-structures. A map \(h:A\to B\) is called
+   *elementary* if for all \(a_1,\dots,a_n\in A\) we have
+   \begin{equation*}
+   \fA\models\varphi[a_1,\dots,a_n]\Leftrightarrow
+   \fB\models\varphi[h(a_1),\dots,h(a_n)]
+   \end{equation*}
+   We write
+   \begin{equation*}
+   h:\fA\embto\fB
+   \end{equation*}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma2.1.1
+   The models of \(\Th(\fA_A)\) are exactly the structures of the form
+   \((\fB,h(a))_{a\in A}\) for elementary embeddings \(h:\fA\embto\fB\)
+   #+END_lemma
 
+   We call \(\Th(\fA_A)\) the *elemantary diagram* of \(\fA\)
+
+   A substructure \(\fA\) of \(\fB\) is called *elementary* if the inclusion map
+   is elementary. In this case we write
+   \begin{equation*}
+   \fA\prec\fB
+   \end{equation*}
+
+   #+ATTR_LATEX: :options [Tarski's Test]
+   #+BEGIN_theorem
+   Let \(\fB\) be an \(L\)-structure and \(A\) a subset of \(B\). Then \(A\) is
+   the universe of an elementary substructure iff every \(L(A)\)-formula
+   \(\varphi(x)\) which is satisfiable in \(\fB\) can be satisfied by an element of \(A\)
+   #+END_theorem
+
+   We use Tarski's Test to construct small elementary substructures
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Suppose \(S\) is a subset of the \(L\)-structure \(\fB\). Then \(\fB\) has a
+   elementary substructure \(\fA\) containing \(S\) and of cardinality at most
+   \begin{equation*}
+   \max(\abs{S},\abs{L},\aleph_0)
+   \end{equation*}
+   #+END_corollary
+
+   #+BEGIN_proof
+   We construct \(A\) as the union of an ascending sequence \(S_0\subseteq
+   S_1\subseteq\dots\) of subsets of \(B\). We start with \(S_0=S\). If \(S_i\)
+   is already defined, we choose an element \(a_\varphi\in B\) for every
+   \(L(S_i)\)-formula \(\varphi(x)\) which is satisfiable in \(\fB\) and define
+   \(S_{i+1}\) to be \(S_i\) together with these \(a_{\varphi}\).
+
+   An \(L\)-formula is a finite sequence of symbols from \(L\), auxiliary
+   symbols and logical symbols. These are
+   \(\abs{L}+\aleph_0=\max(\abs{L},\aleph_0)\) many symbols and there are
+   exactly\(\max(\abs{L},\aleph_0)\) many \(L\)-formulas
+
+   Let \(\kappa=\max(\abs{S},\abs{L},\aleph_0)\). There are \kappa many
+   \(L(S)\)-formulas: therefore \(\abs{S_1}\le\kappa\). Inductively it follows
+   for every \(i\) that \(\abs{S_i}\le\kappa\). Finally we have \(\abs{A}\le\kappa\cdot\aleph_0=\kappa\)
+   #+END_proof
+
+   A directed family \((\fA_i)_{i\in I}\) of structures is *elementary* if
+   \(\fA_i\prec\fA_j\) for all \(i\le j\)
+
+   #+ATTR_LATEX: :options [Tarski's Chain Lemma]
+   #+BEGIN_theorem
+   label:thm2.1.4
+   The union of an elementary directed family is an elementary extension of all
+   its members
+   #+END_theorem
+
+   #+BEGIN_proof
+   Let \(\fA=\bigcup_{i\in I}(\fA_i)_{i\in I}\). We prove by induction on
+   \(\varphi(\bbar{x})\) that for all \(i\) and \(\bbar{a}\in\fA_i\)
+   \begin{equation*}
+   \fA_i\models\varphi(\bbar{a})\Leftrightarrow\fA\models\varphi(\bbar{a})
+   \end{equation*}
+   #+END_proof
+
+
+** The Compactness Theorem
+   #+ATTR_LATEX: :options [Compactness Theorem]
+   #+BEGIN_theorem
+   Finitely satisfiable theories are consistent
+   #+END_theorem
+   
+   Let \(L\) be a language and \(C\) a set of new constants. An \(L(C)\)-theory
+   \(T'\) is called a *Henkin theory* if for every \(L(C)\)-formula \(\varphi(x)\) there
+   is a constant \(c\in C\) s.t.
+   \begin{equation*}
+   \exists x\varphi(x)\to\varphi(c)\in T'
+   \end{equation*}
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Every finitely satisfiable \(L\)-theory \(T\) can be extended to a finitely
+   complete Henkin theory \(T^*\)
+   #+END_lemma
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Every finitely complete Henkin theory \(T^*\) has a model \(\fA\) (unique up
+   to isomorphism) consisting of constants; i.e.,
+   \begin{equation*}
+   (\fA,a_c)_{c\in C}\models T^*
+   \end{equation*}
+   with \(A=\{a_c\mid c\in C\}\)
+   #+END_lemma
+   
+
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   A set of formulas \(\Sigma(x_1,\dots,x_n)\) is consistent with \(T\) if and only
+   if every finite subset of \Sigma is consistent with \(T\)
+   #+END_corollary
+   
+   #+BEGIN_proof
+   Introduce new constants \(c_1,\dots,c_n\). Then \Sigma is consistent with \(T\) is
+   and only if \(T\cup\Sigma(c_1,\dots,c_n)\) is consistent. Now apply the
+   Compactness Theorem
+   #+END_proof
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\fA\) be an \(L\)-structure and \(B\subseteq A\). Then \(a\in A\)
+   *realises* a set of \(L(B)\)-formulas \(\Sigma(x)\) if \(a\) satisfied all formulas
+   from \(\Sigma\). We write 
+   \begin{equation*}
+   \fA\models\Sigma(a)
+   \end{equation*}
+   
+   We call \(\Sigma(x)\) *finitely satisfiable* in \(\fA\) if every finite subset of \Sigma
+   is realised in \(\fA\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma2.2.7
+   The set \(\Sigma(x)\) is finitely satisfiable in \(\fA\) iff there is an
+   elementary extension of \(\fA\) in which \(\Sigma(x)\) is realised
+   #+END_lemma
+
+   #+BEGIN_proof
+   By Lemma ref:lemma2.1.1 \Sigma is realised in an elementary extension of \(\fA\)
+   iff \Sigma is consistent with \(\Th(\fA_A)\). So the lemma follows from the
+   observation that a finite set of \(L(A)\)-formulas is consistent with
+   \(\Th(\fA_A)\) iff it is realised in \(\fA\)
+   #+END_proof
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\fA\) be an \(L\)-structure and \(B\) a subset of \(A\). A set \(p(x)\)
+   of \(L(B)\)-formulas is a *type* over \(B\) if \(p(x)\) is maximal finitely
+   satisfiable in \(\fA\). We call \(B\) the *domain* of \(p\). Let
+   \begin{equation*}
+   S(B)=S^{\fA}(B)
+   \end{equation*}
+   denote the set of types over \(B\).
+   #+END_definition
+
+   Every element \(a\) of \(\fA\) determines a type
+   \begin{equation*}
+   \tp(a/B)=tp^{\fA}(a/B)=\{\varphi(x)\mid\fA\models\varphi(a),\varphi\text{ an $L(B)$-formula}\}
+   \end{equation*}
+   So an element \(a\) realises the type \(p\in S(B)\) exactly if
+   \(p=\tp(a/B)\). If \(\fA'\) is an elementary extension of \(\fA\), then
+   \begin{equation*}
+   S^{\fA}(B)=S^{\fA'}(B)\quad\text{ and }\quad
+   \tp^{\fA'}(a/B)=\tp^{\fA}(a/B)
+   \end{equation*}
+   If \(\fA'\models p(x)\) then \(\fA'\models\exists xp(x)\), so
+   \(\fA\models\exists xp(x)\).
+
+   We use the notation \(\tp(a)\) for \(\tp(a/\emptyset)\)
+
+   Maximal finitely satisfiable sets of formulas in \(x_1,\dots,x_n\) are called
+   *\(n\)-types* and
+   \begin{equation*}
+   S_n(B)=S_N^{\fA}(B)
+   \end{equation*}
+   denotes the set of \(n\)-types over \(B\).
+   \begin{equation*}
+   \tp(C/B)=\{\varphi(x_{c_1},\dots,x_{c_n})\mid\fA\models\varphi(c_1,\dots,c_n),\varphi
+   \text{ an $L(B)$-formula}\}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Every structure \(\fA\) has an elementary extension \(\fB\) in which all
+   types over \(A\) are realised
+   #+END_corollary
+
+   #+BEGIN_proof
+   We choose for every \(p\in S(A)\) a new constant \(c_p\). We have to find a
+   model of
+   \begin{equation*}
+   \Th(\fA_A)\cup\bigcup_{p\in S(A)}p(c_p)
+   \end{equation*}
+   This theory is finitely satisfiable since every \(p\) is finitely satisfiable
+   in \(\fA\).
+
+   Or use Lemma ref:lemma2.2.7. Let \((p_\alpha)_{\alpha<\lambda}\) be an enumeration of
+   \(S(A)\). Construct an elementary chain
+   \begin{equation*}
+   \fA=\fA_0\prec\fA_1\prec\dots\prec\fA_\beta\prec\dots(\beta\le\lambda)
+   \end{equation*}
+   s.t. each \(p_\alpha\) is realised in \(\fA_{\alpha+1}\) (by recursion
+   theorem on ordinal numbers)
+
+   Suppose that the elementary chain \((\fA_{\alpha'})_{\alpha'<\beta}\) is already
+   constructed. If \beta is a limit ordinal, we let
+   \(\fA_\beta=\bigcup_{\alpha<\beta}\fA_\alpha\), which is elementary by Lemma ref:thm2.1.4. If
+   \(\beta=\alpha+1\) we  first note that \(p_\alpha\) is also finitely
+   satisfiable in \(\fA_\alpha\), therefore we can realise \(p_\alpha\) in a
+   suitable elementary extension \(\fA_\beta\succ\fA_\alpha\) by Lemma
+   ref:lemma2.2.7. Then \(\fB=\fA_\lambda\) is the model we were looking for
+   #+END_proof
 * Quantifier Elimination
 ** Preservation theorems
    #+ATTR_LATEX: :options [Separation Lemma]
@@ -80,8 +441,8 @@
    1. There is a sentence \(\varphi\in\calh\) which separates \(T_1\) from
       \(T_2\). This means
       \begin{equation*}
-        T_1\vdash\varphi \quad\text{ and }\quad
-        T_2\vdash\neg\varphi
+        T_1\models\varphi \quad\text{ and }\quad
+        T_2\models\neg\varphi
       \end{equation*}
    2. All models \(\fA_1\) of \(T_1\) can be separated from all models \(\fA_2\)
       of \(T_2\) by a sentence \(\varphi\in\calh\). This means
@@ -99,8 +460,171 @@
    \begin{equation*}
     T_1\cup\{\neg\varphi_{\fA_1}\mid\fA_1\models T_1\}
    \end{equation*}
-   is inconsistent
+   is inconsistent. Again by compactness \(T_1\) implies a disjunction \varphi of
+   finitely many of the \(\varphi_{\fA_1}\)
    #+END_proof
 
-   lambda \lambda
+   For structures \(\fA,\fB\) and a map \(f:A\to B\) preserving all formulas
+   from a set of formulas \Delta, we use the notation
+   \begin{equation*}
+   f:\fA\to_\Delta\fB
+   \end{equation*}
+   We also write
+   \begin{equation*}
+   \quad\fA\Rightarrow_\Delta\fB
+   \end{equation*}
+   to express that all sentences from \Delta true in \(\fA\) are also true in \(\fB\)
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma3.1.2
+   Let \(T\) be a theory, \(\fA\) a structure and \Delta a set of formulas, closed
+   under existential quantification, conjunction and substitution of variables.
+   Then the following are equivalent
+   1. All sentences \(\varphi\in\Delta\) which are true in \(\fA\) are
+      consistent with \(T\) (There is a model \(\fB\models\Delta\cup T\) and \(\fA\Rightarrow_\Delta\fB\))
+   2. There is a model \(\fB\models T\) and a map \(f:\fA\to_\Delta\fB\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   \(1\to2\). Consider \(\Th_\Delta(\fA_A)\), the set of all sentences
+   \(\delta(\bbar{a})\)
+   (\(\delta(\bbar{x})\in\Delta\)), which are true in \(\fA_A\). The models
+   \((\fB,f(a)_{a\in A})\) of this theory correspond to maps
+   \(f:\fA\to_\Delta\fB\). *This means that we have to find a model of*
+   \(T\cup\Th_\Delta(\fA_A)\). To show finite satisfiability it is enough to
+   show that \(T\cup D\) is consistent for every finite subset \(D\) of
+   \(\Th_\Delta(\fA_A)\). Let \(\delta(\bbar{a})\) be the conjunction of the elements
+   of \(D\). Then \(\fA\) is a model of \(\varphi=\exists\bbar{x}\delta(\bbar{x})\)
+   #+END_proof
+
+   Lemma ref:lemma3.1.2 applied to \(T=\Th(\fB)\) shows that
+   \(\fA\Rightarrow_\Delta\fB\) iff there exists a map \(f\) and a structure
+   \(\fB'\equiv\fB\) s.t. \(f:\fA\to_\Delta\fB'\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thm3.1.3
+   Let \(T_1\) and \(T_2\) be two theories. Then the following are equivalent
+   1. There is a universal sentence which separates \(T_1\) from \(T_2\)
+   2. No model of \(T_2\) is a substructure of a model of \(T_1\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   \(2\to1\). If \(T_1\) and \(T_2\) cannot be separated by a universal
+   sentence, then they have models \(\fA_1\) and \(\fA_2\) which cannot be separated
+   by a universal sentence. This can be denoted by
+   \begin{equation*}
+   \fA_2\Rightarrow_\exists\fA_1
+   \end{equation*}
+   Now Lemma ref:lemma3.1.2 implies that \(\fA_2\) there is a map
+   \(\fA_2\to_\exists\fA_1'\) where \(\fA_1'\models T_1\)
+  . Hence \(\fA_2\) has an extension \(\fA_2'\) s.t. \(\fA_2'\equiv\fA_1'\).
+  Then \(\fA'\) is gain a model of \(T_1\) contradicting (2)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any \(L\)-theory \(T\), the formulas \(\varphi(\bbar{x}),\psi(\bbar{x})\) are said
+   to be *equivalent* modulo \(T\) (or relative to \(T\)) if \(T\models\forall\bbar{x}(\varphi(\bbar{x})\leftrightarrow\psi(\bbar{x}))\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let \(T\) be a theory
+   1. Consider a formula \(\varphi(x_1,\dots,x_n)\). The following are equivalent
+      1. \(\varphi(x_1,\dots,x_n)\) is, modulo \(T\), equivalent to a universal formula
+      2. If \(\fA\subseteq\fB\) are models of \(T\) and \(a_1,\dots,a_n\in A\),
+         then \(\fB\models\varphi(a_1,\dots,a_n)\) implies \(\fA\models\varphi(a_1,\dots,a_n)\)
+   2. We say that a theory which consists of universal sentences is universal.
+      Then \(T\) is equivalent to a universal theory iff all substructures of
+      models of \(T\) are again models of \(T\)
+   #+END_corollary
+
+   #+BEGIN_proof
+   1. Assume (2). We extend \(L\) by an \(n\)-tuple \(\bbar{c}\) of new
+      constants \(c_1,\dots,c_n\) and consider theory
+      \begin{equation*}
+      T_1=T\cup\{\varphi(\bbar{c})\}\quad\text{ and }\quad
+      T_2=T\cup\{\neg\varphi(\bbar{c})\}
+      \end{equation*}
+      Then (2) says the substructures of models of \(T_1\) cannot be models of
+      \(T_2\). By Theorem ref:thm3.1.3 \(T_1\) and \(T_2\) can be separated by a
+      universal \(L(\bbar{c})\)-sentence \(\psi(\bbar{c})\). By Lemma
+      ref:lemma1.3.4, \(T_1\models\psi(\bbar{c})\) implies
+      \begin{equation*}
+      T\models\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))
+      \end{equation*}
+      and from \(T_2\models\neg\psi(\bbar{c})\) we see
+      \begin{equation*}
+      T\models\forall\bbar{x}(\neg\varphi(\bbar{x})\to\neg\psi(\bbar{x}))
+      \end{equation*}
+   2. Suppose a theory \(T\) has this property. Let \varphi be an axiom of \(T\). If
+      \(\fA\) is a substructure of \(\fB\), it is not possible for \(\fB\) to be
+      a model of \(T\) and for \(\fA\) to be a model of \(\neg\psi\) at the same
+      time. By Theorem ref:thm3.1.3 there is a universal sentence \psi with
+      \(T\models\psi\) and \(\neg\varphi\models\neg\psi\). Hence all axioms of
+      \(T\) follow from
+      \begin{equation*}
+      T_\forall=\{\psi\mid T\models\psi,\psi\text{ universal}\}
+      \end{equation*}
+   #+END_proof
+
+   An \(\forall\exists\)-formula is of the form
+   \begin{equation*}
+   \forall x_1\dots x_n\psi
+   \end{equation*}
+   where \psi is existential
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Suppose \varphi is an \(\forall\exists\)-sentence, \((\fA_i)_{i\in I}\) is a
+   directed family of models of \varphi and \(\fB\) the union of the \(\fA_i\). Then
+   \(\fB\) is also a model of \varphi.
+   #+END_lemma
+
+   #+BEGIN_proof
+   Write
+   \begin{equation*}
+   \varphi=\forall\bbar{x}\psi(\bbar{x})
+   \end{equation*}
+   where \psi is existential. For any \(\bbar{a}\in B\) there is an \(A_i\)
+   containing \(\bbar{a}\), clearly \(\psi(\bbar{a})\) holds in \(\fA_i\). As
+   \(\psi(\bbar{a})\) is existential it must also hold in \(\fB\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   We call a theory \(T\) *inductive* if the union of any directed family of
+   models of \(T\) is again a model
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \(T_1\) and \(T_2\) be two theories. Then the following are equivalent
+   1. there is an \(\forall\exists\)-sentence which separates \(T_1\) and \(T_2\)
+   2. No model of \(T_2\) is the union of a chain (or of a directed family) of
+      models of \(T_1\)
+   #+END_theorem
+
+
+   #+BEGIN_proof
+   \(2\to1\). If (1) is not true, \(T_1,T_2\) have models which cannot be
+   separated by an \(\forall\exists\)-sentence. Since
+   \(\exists\forall\)-formulas are equivalent to negated
+   \(\forall\exists\)-formulas (since \(\forall\) is too strong), we have
+   \begin{equation*}
+   \fB^0\Rightarrow_{\exists\forall}\fA
+   \end{equation*}
+   By Lemma ref:lemma3.1.2 there is a map
+   \begin{equation*}
+   f:\fB^0\to_{\forall}\fA^0
+   \end{equation*}
+   with \(\fA^0\equiv\fA\). We can assume that\(\fB^0\subseteq\fA^0\) and \(f\)
+   is the inclusion map. Then
+   \begin{equation*}
+   \fA_B^0\Rightarrow_{\exists}\fB^0_B
+   \end{equation*}
+   #+END_proof
+
+
+   
