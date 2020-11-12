@@ -2236,8 +2236,87 @@
    #+ATTR_LATEX: :options []
    #+BEGIN_examplle
    We will show that the McKinsey formula (M) \(\Box\Diamond p\to\Diamond\Box
-   p\) does not correspond to a first-order condition by show that it violates
+   p\) does not correspond to a first-order condition by show
+   that it violates 
    the Löwenheim-Skolem Theorem
+
+   Consider the frame \(\fF=(W,R)\), where
+   \begin{equation*}
+   W=\{w\}\cup\{v_n,v_{(n,i)}\mid n\in\N,i\in\{0,1\}\cup
+   \{z_f\mid f:\N\to\{0,1\}\}\}
+   \end{equation*}
+   and
+   \begin{align*}
+   R&=\{(w,v_n),(v_n,v_{(n,i)}),(v_{(n,i)},v_{(n,i)})\mid n\in\N,i\in\{0,1\}\}\cup\\
+   &\quad\{(w,z_f),(z_f,v_{(n,f(n))})\mid n\in\N,f:\N\to\{0,1\}\}
+   \end{align*}
+   In a picture
+   \begin{center}
+   \begin{tikzpicture}
+    [n/.style={circle,fill=black,inner sep=0pt,minimum size=2mm}]
+    \node[n] (n0) at (0,0) {};
+    \node[n] (n1) at (4,0) {};
+    \node[n] (n) at (2,-1) {};
+    \node[n] (w) at (2,-3) {};
+    \node[n] (zf) at (8,1) {};
+    \node[right] at (n0.north) {$v_{(n,0)}$};
+    \node[left] at (n1.north) {$v_{(n,1)}$};
+    \node[right] at (n.south) {$v_{n}$};
+    \node[right] at (w.south) {$w$};
+    \node[right] at (zf.north) {$z_f$};
+    \draw[->] (n) -- (n0);
+    \draw[->] (n) -- (n1);
+    \draw[->] (w) -- (n);
+    \draw[->] (w) -- (zf);
+    \draw[->,dashed] (zf) to [out=170,in=110] (n0);
+    \draw[->,dashed] (zf) to [out=170,in=110] (n1);
+    \draw[->] (n1.south) arc (180:500:4mm);
+    \draw[->] (n0.south) arc (360:60:4mm);
+    \end{tikzpicture}
+   \end{center}
+   Note that \(\abs{W}=\aleph_1\)
+   
+   Our first observation is that \(\fF\Vdash\Box\Diamond p\to\Diamond\Box p\).
+   
+   If \(\fF,v_n\Vdash\Box\Diamond p\), then both two
+   \(\fF,v_{(n,i)}\Vdash\Diamond p\), which means
+   \(\{v_{(n,0)},v_{(n,1)}\}\subseteq V(p)\). Hence \(\fF,v_{(n,i)}\Vdash\Box
+   p\) and \(\fF,v_n\Vdash\Box\Diamond p\to\Diamond\Box p\).
+
+   If \(\fF,z_f\Vdash\Box\Diamond p\), then for each \(n\in\N\), there is a
+   \(i=0\text{ or }1\) s.t. \(\fF,v_{(n,i)}\Vdash\Diamond p\). Then
+   \(\fF,v_{(n,i)}\Vdash p\)
+
+   If \(\fF,w\Vdash\Box\Diamond p\), then either \(v_{(n,0)}\in V(p)\) or
+   \(v_{(n,1)}\in V(p)\). Choose \(f:\N\to\{0,1\}\) s.t.
+   \(\fF,v_{(n,f(n))}\Vdash p\) for each \(n\in N\). Then clearly
+   \(\fF,z_f\Vdash\Box p\), and so \(\fF,w\Vdash\Diamond\Box p\)
+
+   In order to show that \(\Box\Diamond p\to\Diamond\Box p\) does not define a
+   first-order frame condition, let us view the frame \(\fF\) as a first-order
+   model with domain \(W\). By the downward Löwenheim-Skolem Theorem, there must
+   be a countable elementary submodel \(\fF'\) of \(\fF\) whose domain \(W'\)
+   contains \(w\) and each \(v_n,v_{(n,0)},v_{(n,1)}\). As \(W\) is uncountable
+   and \(W'\) countable, there must be a mapping \(f:\N\to\{0,1\}\) s.t.
+   \(z_f\not\in W'\). Now if the McKinsey formula was equivalent to a
+   first-order formula it would be valid on \(\fF'\). But we will show that the
+   McKinsey formula is *not* valid on \(\fF'\), hence it cannot be equivalent to a
+   first-order formula
+
+   Let \(V'\) be a valuation on \(\fF'\) s.t. \(V'(p)=\{v_{(n,f(n))}\mid
+   n\in\N\}\), here  \(f\) is a mapping s.t. \(z_f\not\in W'\).
+
+   First, \((\fF',V'),w\not\Vdash\Diamond\Box p\).
+
+   Then we need to show that \((\fF',V'),w\Vdash\Box\Diamond p\). Consider
+   arbitrary element \(z_g\) of \(W'\). Call two states \(z_h\) and \(z_k\) of
+   \(\fF\) *complementary* if for all \(n\), \(h(n)=1-k(n)\). Now suppose \(z_g\)
+   is complement to \(z_f\); since complementary states are unique, the fact
+   that \(\fF'\) is an elementary submodel of \(\fF\) would imply that \(z_f\)
+   exists in \(\fF'\) (\(\fF'\models\forall f\exists g(f,g\text{ are
+   complement})\)). Hence we may conclude tha \(z_g\) is *not* complementary to
+   \(z_f\). Hence there exists some \(n\in\N\) s.t. \(g(n)=f(n)\). Therefore
+   \((\fF',V'),z_g\Vdash\Diamond p\). Then \((\fF',V'),w\Vdash\Box\Diamond p\)
    #+END_examplle
 
    #+BEGIN_center
@@ -2259,9 +2338,29 @@
    #+END_proposition
 
    #+BEGIN_proof
-   Let \(\fM=(\fF,V)\) be any model based on \(\fF\)
+   Let \(\fM=(\fF,V)\) be any model based on \(\fF\), and let \(w\) be any state
+   in \(\fF\). Then we have that
+   \begin{equation*}
+   (\fF,V),w\Vdash\phi \quad\text{ iff }\quad
+   \fF\models ST_x(\phi)[w,P_1,\dots,P_n]
+   \end{equation*}
+   where the notation \([w,P_1,\dots,P_n]\) means 'assign \(w\) to the free
+   first-order variable \(x\) in \(ST_x(\phi)\), and \(V(p_1),\dots,V(p_n)\) to the
+   free monadic second-order variables.' 
    #+END_proof
 
+   Refer to \(\forall P_1\dots\forall P_n\forall xST_x(\phi)\) a the
+   *second-ordertranslation*  of \phi
+
+   A general frame can be viewed as a *generalized model* for (monadic)
+   second-order logic. A generalized model for second-order logic is a model in
+   which the second-order quantifiers are viewed as ranging not over *all*
+   subsets, but only over a pre-selected sub-collection of subsets. This means
+   the following equivalence holds
+   \begin{equation*}
+   (\fF,A)\Vdash\phi \quad\text{ iff }\quad
+   (\fF,A)\models\forall P_1\dots\forall P_n\forall x ST_x(\phi)
+   \end{equation*}
    #+BEGIN_exercise
    label:ex3.2.1
    1. Consider a modal language with two diamonds \(\la1\ra\) and \(\la2\ra\).
@@ -2285,8 +2384,85 @@
       .Since \(x\Vdash\la2\ra\la1\ra p\), we have \(x\Vdash\la1\ra p\). Hence we
       must have \(R_1xy\)
 
-      
+      *Left to right*.
+      If \(R_1\) is the transitive closure of \(R_2\). \(p\to\la1\ra p\) and
+      \(\la2\ra\la1\ra p\to\la1\ra p\) is obvious.
    #+END_proof
+
+   #+BEGIN_exercise
+   Show that Grzegorczyk's formula, \(\Box(\Box(p\to\Box p)\to p)\to p\),
+   characterizes the class of frames \(\fF=(W,R)\) satisfying
+   1. \(R\) is reflexive
+   2. \(R\) is transitive
+   3. there is no infinite paths \(x_0Rx_1Rx_2R\dots\) s.t. for all \(i,x_i\neq x_{i+1}\)
+   #+END_exercise
+
+   #+BEGIN_proof
+   Suppose \(\fF\Vdash\Box(\Box(p\to\Box p)\to p)\to p\).
+   1. If \(\(R\) is not reflexive, we need to find a valuation s.t.
+      \((\fF,V),w\Vdash\Box(\Box(p\to\Box p)\to p)\) but 
+      \((\fF,V),w\Vdash \neg p\). This is done by \(V(p)=W-\{w\}\)
+   2. If \(R\) is reflexive but not transitive, then there is \(wRuRv\) but not
+      \(wRv\).
+      Let \(V\) be an evaluation on \(\fF\) s.t. \(V(p)=W-\{w,v\}\). Then
+      \((\fF,V),u\Vdash p\wedge\Diamond\neg p\) and hence
+      \((\fF,V),w\Vdash\Diamond(p\wedge\Diamond\neg p)\). This is equivalent to
+      \((\fF,V),w\not\Vdash\Box(p\to\Box p)\), from which it follows that
+      \((\fF,V),w\Vdash\Box(p\to\Box p)\to p\). Thus for all \(x\in w\uparrow\),
+      \((\fF,V),x\Vdash\Box(p\to\Box p)\to p\) and hence
+      \((\fF,V),w\Vdash\Box(\Box(p\to\Box p)\to p)\) but \((\fF,V),w\not\Vdash p\)
+   3. If \(R\) is reflexive and transitive, but there is some infinite path
+      \(x_0Rx_1Rx_2R\dots\) s.t. for all \(i\), \(x_i\neq x_{i+1}\), then let
+      \(V\) be an evaluation on \(\fF\) s.t. \(V(p)=W-\{x_{2k}\mid k\in\N\}\).
+      For all \(x_{2k}\) with some \(k\in\N\), \((\fF,V),x_{2k+2}\Vdash\neg p\)
+      and \((\fF,V),x_{2k+1}\Vdash p\). It follows that \((\fF,V),x_{2k+1}\Vdash
+      p\wedge\Diamond\neg p\) and
+      \((\fF,V),x_{2k}\Vdash\Diamond(p\wedge\Diamond\neg p)\). Hence
+      \((\fF,V),x_{2k}\Vdash\Box(p\to\Box p)\to p\). For all \(u\in
+      W-\{x_{2k}\mid k\in\N\}\), \((\fF,V),u\Vdash\Box(p\to\Box p)\to p\)
+
+
+   Now to prove \(\fF\Vdash\Box(\Box(p\to\Box p)\to p)\to p\). Suppose there is
+   an evaluation \(V\) and a point \(w\) s.t.
+   \((\fF,V),w\not\Vdash\Box(\Box(p\to\Box p)\to p)\to p\). It follows
+   \((\fF,V),w\Vdash\Box(\Box(p\to\Box p)\to p)\) and \((\fF,V),w\Vdash\neg
+   p\).
+   Then for all \(u\in w\uparrow\), \((\fF,V),u\Vdash\Box(p\to\Box p)\to p\).
+   Since \(R\) is reflexive and transitive, \((\fF,V),w\Vdash\Box(p\to\Box p)\to
+   p\). It follows that
+   \((\fF,V),w\Vdash\Diamond(p\wedge\neg\Box p)\). Hence there is a point \(v\in
+   w\uparrow\) s.t. \((\fF,V),v\Vdash p\wedge\neg\Box p\). Since
+   \((\fF,V),w\Vdash\neg p\), \(v\new w\). And there is some point \(v'\in
+   v\uparrow\), \((\fF,V),v'\Vdash\neg p\), this also shows that \(v'\neq v\).
+   By the transitivity, \(v'\in w\uparrow\), \((\fF,V),v'\Vdash\Box(p\to\Box
+   p)\to p\). Similarly we can find a distinct point \(v''\in v'\uparrow\) s.t.
+   \((\fF,V),v''\Vdash p\wedge p\wedge\neg\Box p\). By repeating this line of
+   reasoning, we can find an infinite pathsin which each point is different from
+   its successor. This contradicts 3.
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex3.2.3
+   Consider the basic temporal language. Recall that a frame \(\fF=(W,R_F,R_P)\)
+   for this language is called *bidirectional* if \(R_P\) is the converse of
+   \(R_F\)
+   1. Prove that among the finite bidirectional frames, the formula \(G(Gp\to
+      p)\to Gp\) together with its converse, \(H(Hp\to p)\to Hp\) defines the
+      transitive and irreflexive frames
+   #+END_exercise
+
+   #+BEGIN_proof
+   1. Let \(\fF=(W,R)\) be an finite frame and suppose that \(\fF\) is
+      transitive and irreflexive. Suppose \((\fF,V),w\Vdash G(Gp\to p)\) and
+      \((\fF,V),w\Vdash\neg Gp\). We can find an infinite chain
+
+      If \(\fF\) is not transitive, then there are points \(w,u,v\) s.t. \(Rwu\)
+      and \(Ruv\) but not in the case that \(Rwv\). Let \(V\) be an evaluation
+      on \(\fF\) s.t. \(V(p)=W-\{u,v\}\). Then \((\fF,V),v\Vdash\neg p\) and
+      \((\fF,V),u\Vdash\neg Gp\) and hence \((\fF,V),u\Vdash Gp\to p\). Since
+      \(v\not\in w\uparrow\), we have \((\fF,V),w\Vdash G(Gp\to p)\)
+   #+END_proof
+
 
 * COMMENT Completion
   definition
