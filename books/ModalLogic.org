@@ -207,6 +207,38 @@
    \end{equation*}
    #+END_definition
 
+** Normal Modal Logics
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *\(\bK\)-proof* is a finite sequence of formulas, each of which is an *axiom*,
+   or follows from one or more earlier items in the sequence by applying a *rule
+   of proof*. The axioms of \(\bK\) are *all instances of propositional
+   tautologies* plus
+   \begin{alignat*}{2}
+   &\text{(K)}&&\Box(p\to q)\to(\Box p\to\Box q)\\
+   &\text{(Dual)}\quad&&\Diamond\leftrightarrow\neg\Box\neg p
+   \end{alignat*}
+   The rules of proof of \(\bK\) are
+   * *Modus ponens*: given \phi and \(\phi\to\psi\) prove \psi
+   * *Uniform substitution*: given \phi, prove \theta, where \theta is obtained from \phi by
+     uniformly replacing propostion letters in \phi by arbitrary formulas
+   * *Generalization*: given \phi, prove \(\Box\phi\)
+
+
+   A formula \phi is *\(\bK\)-provable* if it occurs as the last items of some
+   \(\bK\)-proof, and if this is the case we write \(\vdash_{\bK}\phi\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Normal Modal Logics]
+   #+BEGIN_definition
+   A *normal modal logic* \Lambda is a set of formulas that contains all
+   tautologies, \(\Box(p\to q)\to(\Box p\to\Box q)\) and \(\Diamond
+   p\leftrightarrow\neg\Box\neg p\), and that is closed under modus ponens,
+   uniform substitution and generalization. We call the smallest normal modal
+   logic \(\bK\)
+   #+END_definition
+
+
 * Models
 ** Invariance Results
    #+ATTR_LATEX: :options []
@@ -693,7 +725,7 @@
        \(p\) in \Sigma
 
 
-    \(\fM_\Sigma^f\) is called a *filtration of \(fM\) through* \Sigma; we will
+    \(\fM_\Sigma^f\) is called a *filtration of \(\fM\) through* \Sigma; we will
     often suppress subscripts and write \(\fM^f\) instead of \(\fM_\Sigma^f\)
     #+END_definition
     label:def2.36
@@ -728,6 +760,7 @@
 
     #+ATTR_LATEX: :options [Filtration Theorem]
     #+BEGIN_theorem
+    label:thm2.39
     Consider the basic modal language. Let \(\fM^f=(W_\Sigma,R^f,V^f)\) be a
     filtration of \(\fM\) through a subformula closed set \Sigma. Then for all
     formulas \(\phi\in\Sigma\), and all nodes \(w\) in \(\fM\), we have
@@ -2141,7 +2174,7 @@
    Consider a language with three diamonds \(\la1\ra,\la2\ra,\la3\ra\). Show
    that the modal formula \(\la3\ra p\leftrightarrow\la1\ra\la2\ra p\) is valid
    on a frame for this language iff the frame satisfies the condition \(\forall
-   xy(R_3xy\left\rightarrow \exists z(R_1xz\wedge R_2zy))\)
+   xy(R_3xy\leftrightarrow \exists z(R_1xz\wedge R_2zy))\)
    #+END_exercise
    
 ** Frame Definability and Second-Order Logic
@@ -2399,7 +2432,7 @@
 
    #+BEGIN_proof
    Suppose \(\fF\Vdash\Box(\Box(p\to\Box p)\to p)\to p\).
-   1. If \(\(R\) is not reflexive, we need to find a valuation s.t.
+   1. If \(R\) is not reflexive, we need to find a valuation s.t.
       \((\fF,V),w\Vdash\Box(\Box(p\to\Box p)\to p)\) but 
       \((\fF,V),w\Vdash \neg p\). This is done by \(V(p)=W-\{w\}\)
    2. If \(R\) is reflexive but not transitive, then there is \(wRuRv\) but not
@@ -2432,7 +2465,7 @@
    p\). It follows that
    \((\fF,V),w\Vdash\Diamond(p\wedge\neg\Box p)\). Hence there is a point \(v\in
    w\uparrow\) s.t. \((\fF,V),v\Vdash p\wedge\neg\Box p\). Since
-   \((\fF,V),w\Vdash\neg p\), \(v\new w\). And there is some point \(v'\in
+   \((\fF,V),w\Vdash\neg p\), \(v\neq w\). And there is some point \(v'\in
    v\uparrow\), \((\fF,V),v'\Vdash\neg p\), this also shows that \(v'\neq v\).
    By the transitivity, \(v'\in w\uparrow\), \((\fF,V),v'\Vdash\Box(p\to\Box
    p)\to p\). Similarly we can find a distinct point \(v''\in v'\uparrow\) s.t.
@@ -2472,12 +2505,20 @@
    1. Let \(\{\fF_i\mid i\in I\}\) be a family of frames. Then
       \(\biguplus\fF_i\Vdash\phi\) if \(\fF_i\Vdash\phi\) for every \(i\) in \(I\)
    2. Assume that \(\fF'\rightarrowtail\fF\). Then \(\fF'\Vdash\phi\) if \(\fF\Vdash\phi\)
-   3. Assume that \(\fF\twoheadrightarrow\fF'\). Then \(\fF\Vdash\phi\) if \(\fF\Vdash\phi\)
+   3. Assume that \(\fF\twoheadrightarrow\fF'\). Then \(\fF'\Vdash\phi\) if \(\fF\Vdash\phi\)
    #+END_theorem
 
    #+BEGIN_proof
-   1. 
-   2. 
+   1. Assume that \(\fF_i\Vdash\phi\) for every \(i\) in \(I\) but
+      \(\biguplus\fF_i\not\Vdash\phi\). Then there is a valuation \(V\) and a
+      state \(w\) s.t. \((\biguplus\fF_i,V),w\Vdash\neg\phi\). If \(w\) is a
+      state in \(\fF_i\), then define a valuation \(V'\) on \(\fF_i\)
+      \begin{equation*}
+      V'(p_i)=\{x\in W_i\mid x\in V(p_i)\}
+      \end{equation*}
+      Then \((\fF_i,V'),w\not\Vdash\phi\)
+   2. Suppose there is a valuation and a state in \(\fF'\) s.t.
+      \((\fF',V),w\not\Vdash\phi\). Then \((\fF,V),w\not\Vdash\phi\)
    3. Assume that \(f\) is a surjective bounded morphism from \(\fF\) onto
       \(\fF'\) and that \(\fF\Vdash\phi\). We had to show that
       \(\fF'\Vdash\phi\). Suppose that \phi is not valid in \(\fF'\). Then there
@@ -2506,12 +2547,13 @@
    \end{tikzcd}\end{center}
    As \(w\) is reflexive, \(\fF\Vdash\Delta\). Now consider the generated
    subframe \(\fF_v\) of \(\fF\).
-
+   
    Consider the following two frames: \(\fF=(\omega,S)\), the natural numbers with
    the successor relation and \(\fG=(\{e,o\},\{(e,o),(o,e)\})\) as
-
    \begin{center}\begin{tikzpicture}
    [n/.style={circle,fill=black,inner sep=0pt,minimum size=2mm}]
+   \node (f) at (-1.5,0) {$\fF$};
+   \node (g) at (-1.5,-2.5) {$\fG$};
    \node[n] (0) at (0,0) {};
    \node[n] (1) at (1.5,0) {};
    \node[n] (2) at (3,0) {};
@@ -2545,11 +2587,453 @@
    \draw[->,transform canvas={yshift=3pt}] (e) -- (o);
    \draw[->,transform canvas={yshift=-3pt}] (o) -- (e);
    \end{tikzpicture}\end{center}
-
+   No property \(P\) is modally definable if \(\fF\) has \(P\) and \(\fG\)
+   lacks. This shows that there is no set of formulas characterizing the
+   asymmetric frames \(\forall(Rxy\to\neg Ryx)\)
    #+END_examplle
 
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let \tau be a modal similarity type, \(\fF\) a \(\tau\)-frame, and \phi a
+   \(\tau\)-formula. Then \(\fF\Vdash\phi\) if \(\ue\fF\Vdash\phi\)
+   #+END_corollary
    
-   
+   #+BEGIN_proof
+   Assume that \phi is not valid in \(\fF\). That is, there is a valuation \(V\)
+   and a state \(w\) s.t. \((\fF,V),w\Vdash\neg\phi\). By Proposition
+   ref:prop2.59 \(\neg\phi\) is true at \(u_w\) in the ultrafilter extension of
+   \(\fM\). 
+   #+END_proof
+
+   We claim that every state has a reflexive successor \(\forall x\exists
+   y(Rxy\wedge Ryy)\) is not modally definable, even though it is preserved
+   under taking disjoint unions, generated subframes and bounded morphic images.
+   Consider the frame in Example ref:example2.58.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \tau be a modal similarity type, and \(\fF\) a \(\tau\)-frame. Then \(\fF\)
+   has an ultrapower \(\prod_U\fF\) s.t. \(\prod_U\fF\twoheadrightarrow\ue\fF\).
+   In a diagram
+   \begin{center}\begin{tikzcd}
+   \prod_U\fF\arrow[d, dash]\arrow[rd,two heads]\\
+   \fF&\ue\fF
+   \end{tikzcd}\end{center}
+
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let \tau be a modal similarity type, and \phi a \(\tau\)-formula. If \phi defines a
+   first-order property of frames, then frame validity of \phi is preserved under
+   taking ultrafilter extensions
+   #+END_corollary
+
+   #+BEGIN_proof
+   Let \phi be a modal formula which defines a first-order property of frames, and
+   let \(\fF\) be a frame s.t. \(\fF\Vdash\phi\). By the previous theorem, there
+   is an ultrapower \(\prod_U\fF\) of \(\fF\) s.t.
+   \(\prod_U\fF\twoheadrightarrow\ue\fF\). As first-order properties are
+   preserved under ultrapowers, \(\fF_U\fF\Vdash\phi\). But then \(\ue\fF\Vdash\phi\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Goldblatt-Thomason Theorem]
+   #+BEGIN_theorem
+   Let \tau be a modal similarity type. A first-order definable class \(\sfK\) of
+   \(\tau\)-frames is modally definable iff it is closed under taking bounded
+   morphic images, generated subframes, disjoint unions and reflects ultrafilter extensions
+   #+END_theorem
+
+
+   #+BEGIN_exercise
+   label:ex3.3.2
+   Consider the basic modal language. Show that the following properties of
+   frames are not modally definable
+   1. antisymmetry \((\forall xy)(Rxy\wedge Ryx\to x=y)\)
+   2. \(\abs{W}>23\)
+   3. \(\abs{W}<23\)
+   4. acyclicity
+   5. every state has at most one predecessor
+   6. every state has at least two successors
+   #+END_exercise
+
+   #+BEGIN_proof
+   1. Consider the frame in the example of bounded morphism
+   2. bounded morphism
+   3. Disjoint union
+   4. bounded morphism. Consider the following two frames: \(\fF=(\omega,S)\), the natural numbers with
+        the successor relation \(S=\{(n,m)\mid m=n+1\}\) and \par
+        \(\fG=(\{e,o\},\{(e,o),(o,e)\})\) as
+        \begin{center}\begin{tikzpicture}
+        [n/.style={circle,fill=black,inner sep=0pt,minimum size=2mm}]
+        \node (f) at (-1.5,0) {$\fF$};
+        \node (g) at (-1.5,-2.5) {$\fG$};
+        \node[n] (0) at (0,0) {};
+        \node[n] (1) at (1.5,0) {};
+        \node[n] (2) at (3,0) {};
+        \node[n] (3) at (4.5,0) {};
+        \node[n] (4) at (6,0) {};
+        \node[n] (5) at (7.5,0) {};
+        \node (dot) at (9,0) {};
+        \node[above] at (0.north) {0};
+        \node[above] at (1.north) {1};
+        \node[above] at (2.north) {2};
+        \node[above] at (3.north) {3};
+        \node[above] at (4.north) {4};
+        \node[above] at (5.north) {5};
+        \node[right] at (dot.east) {$\dots$};
+        \node[n] (e) at (3,-2.5) {};
+        \node[n] (o) at (6.75,-2.5) {};
+        \node[left] at (e.west) {$e$};
+        \node[right] at (o.east) {$o$};
+        \draw[->,dashed] (0) to [out=300,in=160] (e);
+        \draw[->,dashed] (2) to [out=240,in=100] (e);
+        \draw[->,dashed] (4) to [out=-100,in=30] (e);
+        \draw[->,dashed] (1) to [out=-60,in=160] (o);
+        \draw[->,dashed] (3) to [out=-40,in=90] (o);
+        \draw[->,dashed] (5) to [out=-80,in=45] (o);
+        \draw[->] (0) -- (1);
+        \draw[->] (1) -- (2);
+        \draw[->] (2) -- (3);
+        \draw[->] (3) -- (4);
+        \draw[->] (4) -- (5);
+        \draw[->] (5) -- (dot);
+        \draw[->,transform canvas={yshift=3pt}] (e) -- (o);
+        \draw[->,transform canvas={yshift=-3pt}] (o) -- (e);
+        \end{tikzpicture}\end{center}
+
+   5. bounded morphism. Consider two frames \par
+      \(\fM=(\{a,b,c,d\},\{(a,c),(b,d)\})\) and
+      \(\fN=(\{a',b',c'\},\{(a',c'),(b',c')\})\) with surjective bounded
+      morphism
+      \(f(a)=a',f(b)=b',f(c)=f(d)=c'\). In \(\fM\) every state has at most one
+      predecessor, but not in \(\fN\)
+   6. bounded morphism. Consider two frames \par
+      \(\fM=(\{a,b,c\},\{(a,b),(a,c),(b,a),(b,c),(c,a),(c,b)\})\) and
+      \(\fN=(\{e\},\{(e,e)\})\) with bounded morphism \(f(a)=f(b)=f(c)=e\). In
+      \(\fM\), every state has two successors but in \(\fN\) there is only one
+   #+END_proof
+
+** Finite Frames
+*** Finite transitive frames
+    Let \(\fF=(W,R)\) be a point-generated finite transitive frame for the basic
+    modal similarity type, and let \(w\) be a root of \(\fF\). The Jankov-Fine
+    formula \(\phi_{\fF,w}\) is a description of \(\fF\) that has the following
+    property: it is satisfiable on a frame iff \(\fF\) is a bounded morphic
+    image of a generated subframe of \(\fG\)
+
+    We build Jankov-Fine formulas as follows. Enumerate the states of \(\fF\) as
+    \(w_0,\dots,w_n\), where \(w=w_0\). Associate each state \(w_i\) with a
+    distinct proposition letter \(p_i\). Let \(\phi_{\fF,w}\) be the conjunction
+    of the following formulas:
+    1. \(p_0\)
+    2. \(\Box(p_0\vee\dots\vee p_n)\)
+    3. \((p_i\to\neg p_j)\wedge\Box(p_i\to\neg p_j)\) for each \(i\neq j\le n\)
+    4. \((p_i\to\Diamond p_j)\wedge\Box(p_i\to\Diamond p_j)\) for each \(i,j\)
+       with \(Rw_iw_j\)
+    5. \((p_i\to\neg\Diamond p_j)\wedge\Box(p_i\to\neg\Diamond p_j)\) for each
+       \(i,j\) with \(\neg Rw_iw_j\)
+
+
+    Note that as \(R\) is transitive, each node in \(\fF\) is accessible in one
+    step from \(w\). It followss that when formulas of the form
+    \(\psi\wedge\Box\psi\) are satisfied at \(w\) , \psi is true throughout \(\fF\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(\fF\) be a trainsitive, finite, point-generated frame, let \(w\) be a
+    root of \(\fF\), and let \(\phi_{\fF,w}\) be the Jankov-Fine formula for
+    \(\fF\) and \(w\). Then for any transitive frame \(\fG\) we have the
+    following equivalence: there is a valuation \(V\) and a node \(v\) s.t.
+    \((\fG,V),v\Vdash\phi_{\fF,w}\) iff there exists a bounded morphism from
+    \(\fG_v\) onto \(\fF\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Left to right. Suppose there is a valuation \(V\) and a node \(v\) s.t.
+    \((\fG,V),v\Vdash\phi_{\fF,w}\).  1 shows that \(v\in V(p_0)\). 2 and 3
+    shows that each of states satisfies exactly one of propostion letter
+    \(p_i\). Hence we build a function \(f:\fG_v\to\fF\) as \(f(v_i)=w_j\) if
+    \(v_i\in V(p_j)\) for each \(v_i\in\fG\). 2 and 3 show that this function is
+    well-defined.
+
+    Suppose \(R_{\fG}v_iv_j\) and \(\neg R_{\fF}w_iw_j\), then \((\fG,V),g\Vdash
+    p_i\to\neg\Diamond p_j\) for all \(g\in\fG\). However, \((\fG,V),v_i\Vdash
+    p_i\) and \((\fG,V),v_j\Vdash p_j\)
+
+    If \(R_{\fF}f(v_i)w_j\), then \((\fG,V),v_i\Vdash p_{f(v_i)}\to\Diamond
+    p_j\). Hence there is a successor \(v_j\) of \(v_i\) s.t. \(f(v_j)=w_j\).
+    Therefore we find \(R_{\fG}v_iv_j\) and \(f\) is a bounded morphism
+
+    Right to left. Suppose there is a bounded morphism \(f\) from \(\fG_v\) onto
+    \(\fF\). Then clearly \(f(v)=w_0\). Let \(V(v_i)=\{f(v_i)\}\) for all
+    \(v_i\in\fG\). Then \((\fG,V),v\Vdash p_0\wedge\Box(p_0\vee\dots\vee p_n)
+    \wedge(p_i\to\neg p_j)\wedge\Box(p_i\to\neg p_j)\).If \(R_{\fF}w_iw_j\) and
+    there is a \(v_i\in\fG\) s.t. \(f(v_i)=w_i\), then there is a \(f(v_j)=w_j\)
+    s.t. \(R_{\fG}v_iv_j\). Hence \((\fF,V),v\Vdash (p_i\to\Diamond
+    p_j)\wedge\Box(p_i\to\Diamond p_j)\) for each \(i,j\) with \(Rw_iw_j\). 5 is
+    the same
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Recall that \(\tau_0\) denotes the basic modal similarity type. Let \(\sfK\)
+    be a class of finite, transitive \(\tau_0\)-frames. Then \(\sfK\) is
+    definable within the class of finite, transitive \(\tau_0\)-frames iff it is
+    closed under taking (finite) disjoint unions, generated subframes and
+    bounded morphic images
+    #+END_theorem
+
+    #+BEGIN_proof
+    Assume that \(\sfK\) is a class of finite, transitive \(\tau_0\)-frames and
+    satisfies the stated closure conditions. Let \(\Lambda_{\sfK}\) be the logic
+    of \(\sfK\); that is, \(\Lambda_{\sfK}=\{\phi\mid\fF\Vdash\phi,\text{ for
+    all }\fF\in\sfK\}\). We will show that \(\Lambda_{\sfK}\) defines \(\sfK\).
+    We need to show that if \(\fF\Vdash\Lambda_{\sfK}\), where \(\fF\) is finite
+    and transitive, then \(\fF\in\sfK\).
+
+    First suppose \(\fF\) is point-generated with root \(w\). Consider the
+    Jankov-Fine formula \(\phi_{\fF,w}\) for \(\fF\) and \(w\). Clearly
+    \(\phi_{\fF,w}\) is satisfiable in \(\fF\) at \(w\), so
+    \(\neg\phi_{\fF,w}\not\in\Lambda_{\sfK}\). Hence there is some
+    \(\fG\in\sfK\) s.t. \(\fG\not\Vdash\neg\phi_{\fF,w}\); hence there is some
+    valuation \(V\) and state \(v\) s.t. \((\fG,V),v\Vdash\phi_{\fF,w}\). Thus
+    by the previous lemma, \(\fF\) is a bounded morphic image of the
+    point-generated subframe \(\fG_v\) of \(\fG\). By the closure condition on
+    \(\sfK\), it follows that \(\fF\in\sfK\).
+
+    Suppose that \(\fF\) is not point-generated. But then as
+    \(\fF\Vdash\Lambda_{\sfK}\), so does each point-generated subframe of
+    \(\fF\), hence all these subframes belongs to \(\sfK\). \(\fF\) is a bounded
+    morphic image of the disjoint union of its rooted generated subfrmaes,
+    #+END_proof
+*** The finite frame property
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A normal modal logic \Lambda has the finite model property w.r.t. some class of
+    models \(\sfM\) if \(\sfM\Vdash\Lambda\) and every formula *not* in \Lambda is
+    refuted in a *finite* model \(\fM\) in \(\sfM\). \Lambda has the finite model
+    property if it has the finite model property w.r.t. some class of models
+    #+END_definition
+
+    Informally, if a normal modal logic has the finite model property, it has a finite
+    semantic characterization: *it is precisely the set of formulas that some collection of*
+    *finite models makes globally true*
+    
+    #+ATTR_LATEX: :options [Finite Frame Property]
+    #+BEGIN_definition
+    Let \Lambda be a normal modal logic and \(\sfF\) a class of finite frames. We say
+    \Lambda has the *finite frame property w.r.t.* \(\sfF\) if and only if
+    \(\sfF\Vdash\Lambda\), and for every formula \phi s.t. \(\phi\not\in\Lambda\)
+    there is some \(\fF\in\sfF\) s.t. \phi is falsifiable on \(\fF\). We say \Lambda has
+    the *finite frame property* iff it hasthe finite frame property w.r.t. some
+    class of finite frames
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Definable Variant]
+    #+BEGIN_definition
+    Let \(\fM=(W,R,V)\) be a model and \(U\subseteq W\). We say \(U\) is
+    *definable in* \(\fM\) iff there is a formula \(\phi_U\) s.t. for all states
+    \(w\in W\), \(\fM,w\Vdash\phi_U\) iff \(w\in U\)
+
+    Any model \(\fM'\) based on the frame \((W,R)\) is called a *variant* of
+    \(\fM\). A variant \((W,R,V')\) of \(\fM\) is *definable in* \(\fM\) iff for
+    all propostion symbols \(p\), \(V'(p)\) is definable in \(\fM\). If \(\fM'\)
+    is a variant of \(\fM\) that is definable in \(\fM\), we call \(\fM'\) a
+    *definable variant* of \(\fM\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(\fM=(\fF,V)\) be a model and \(\fM'=(\fF,V')\) be a definable variant
+    of \(\fM\). For any formula \phi, let \(\phi'\) be the result of uniformly
+    replacing each atomic symbol \(p\) in \phi by \(\phi_{V'(p)}\), where
+    \(\phi_{V'(p)}\) defines \(V'(p)\) in \(\fM\). Then for all formulas \phi, and
+    all normal modal logics \Lambda:
+    1. \(\fM',w\Vdash\phi\) iff \(\fM,w\Vdash\phi'\)
+    2. If every substitution instance of \phi is true in \(\fM\), then every
+       substitution instance of \phi is true in \(\fM'\)
+    3. If \(\fM\Vdash\Lambda\) then \(\fM'\Vdash\Lambda\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Induction on \phi. For the base case we have \(\fM',w\Vdash p\) iff
+       \(\fM,w\Vdash\phi_{V'(p)}\). And
+       \((\neg\phi)'=\neg\phi'\),\((\phi\vee\psi)' =\phi'\vee\psi'\), and
+       \((\Diamond\phi)' =\Diamond\phi'\)
+    2. Let \psi be a substitution instance of \phi and suppose that
+       \(\fM'\not\Vdash\psi\). Thus there is some \(w\) in \(\fM\) s.t.
+       \(\fM',w\not\Vdash\psi\). By 1, this means \(\fM,w\not\Vdash\psi'\),
+       which means that \(\fM\not\Vdash\psi'\). But as \(\psi'\) is a
+       substitution instance of \psi and \psi is a substitution instance of \phi, we have
+       that \(\psi'\) is a substitution instance of \phi
+    3. Normal modal logic are closed under uniform substitution    
+    
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Distinguishing Model]
+    #+BEGIN_definition
+    A model \(\fM\) is *distinguishing* if the relation \(\leftrightsquigarrow\)
+    of modal equivalence between states of \(\fM\) is the identity relation
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma2.37
+    Let \(\fM=(\fF,V)\) be a a fintie distinguishing model. Then
+    1. For every state \(w\) in \(\fM\) there is a formula \(\phi_w\) that is
+       true at and only at \(w\)
+    2. \(\fM\) can define any subsets of \(\fF\). Hence \(\fM\) can define all
+       its variants
+    3. If \(\fM\Vdash\phi\) then \(\fF\Vdash\phi\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    3. [@3] Suppose \(\fM\Vdash\phi\), then we have \(\fM'\Vdash\phi\) for some
+       definable variant of \(\fM\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    A normal modal logic has the finite frame property iff it has the finite
+    model property
+    #+END_theorem
+
+
+    #+BEGIN_proof
+    Suppose that \Lambda is a normal modal logic with the finite model property. and
+    assume that \(\Lambda\subset Form(\tau,\Phi)\)
+
+    Take a formula in the language \(ML(\tau,\Phi)\) that does not belong to \Lambda. We
+    will show that \phi can be refuted on a finite frame \(\fF\) s.t.
+    \(\fF\Vdash\Lambda\)
+
+    As \Lambda has the finite model property, there is a finite model \(\fM\) s.t.
+    \(\fM\Vdash\Lambda\) and \(\fM,w\not\Vdash\phi\) for some state \(w\) \in
+    \(\fM\). Let \Sigma be the set of all subformulas of formulas in
+    \(\{\phi\}\cup\Lambda\) and let \(\fM^f\) be any filtration of \(\fM\)
+    through \Sigma. As \(\fM\) is finite, so is \(\fM^f\). As \(\fM^f\) is a
+    filtration, it is a distinguishing model. By the Filtration Theorem
+    ref:thm2.39, \(\fM^f,\abs{w}\not\Vdash\phi\). Moreover
+    \(\fM^f\Vdash\Lambda\). Let \(\fF\) be the (finite) frame underlying
+    \(\fM^f\). By Lemma ref:3.27 \(\fF\Vdash\Lambda\)
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex3.4.2
+    Let \(\fM\) be a model, let \(\fM^f\) be any filtration of \(\fM\) through
+    some finite set of formulas \Sigma, and let \(f\) be the natural map associated
+    with the filtration. If \(u\) is a point in the filtration, show that
+    \(f^{-1}[u]\) is definable in \(\fM\)
+    #+END_exercise
+
+    #+BEGIN_proof
+    \(f^{-1}[u]=\{w\mid w\leftrightsquigarrow_\Sigma u\}\). Since \(\fM^f\) is
+    distinguishing, there is a formula \(\phi_u\) that is true at, and only at,
+    \(u\). Then \(\fM,w\Vdash\phi_u\) iff \(w\in f^{-1}[u]\)
+    #+END_proof
+* Completeness
+** Preliminaries
+   #+ATTR_LATEX: :options [Modal Logics]
+   #+BEGIN_definition
+   A *modal logic* \Lambda is a set of modal formulas that contains all
+   propositional tautologies and is closed under *modus ponens* and *uniform
+   substitution*. If \(\phi\in\Lambda\) we say that \phi is a *theorem* of \Lambda and write
+   \(\vdash_\Lambda\phi\). If \(\Lambda_1\) and \(\Lambda_2\) are modal logics
+   s.t. \(\Lambda_1\subseteq\Lambda_2\), we say that \(\Lambda_2\) is an
+   *extension* of \(\Lambda_1\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\psi_1,\dots,\psi_n,\phi\) be modal formulas. We say that \phi is
+   *deducible in propositional calculus from assumptions* \(\psi_1,\dots,\psi_n\)
+   if \((\psi_1\wedge\dots\wedge\psi_n)\to\phi\) is a tautology
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   If \(\Gamma\cup\{\phi\}\) is a set of formulas then \phi *is deducible in \Lambda from
+   \Gamma* if \(\vdash_\Lambda\phi\) or there are formulas
+   \(\psi_1,\dots,\psi_n\in\Gamma\) s.t.
+   \begin{equation*}
+   \vdash_\Lambda(\psi_1\wedge\dots\wedge\psi_n)\to\phi
+   \end{equation*}
+   A set of formulas \Gamma is *\(\Lambda\)-consistent* if \(\Gamma\not\vdash_\Lambda\bot\).
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A modal logic \Lambda is *normal if it contains the formulas
+   \begin{alignat*}{2}
+   &\text{(K)}&&\Box(p\to q)\to(\Box p\to\Box q)\\
+   &\text{(Dual)}\quad&&\Diamond\leftrightarrow\neg\Box\neg p
+   \end{alignat*}
+   and is closed under generalization
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For any normal logic \Lambda, if \(\vdash_\Lambda\phi\leftrightarrow\psi\) then
+   \(\vdash_\Lambda\Diamond\phi\leftrightarrow\Diamond\psi\)
+   #+END_lemma
+
+   The normal logic generated by the empty set is called \(\bK\). If \Gamma is a
+   non-empty set of formulas we usually denote the normal logic generated by \Gamma
+   by \(\bK\bGamma\)
+
+
+   #+ATTR_LATEX: :options [Soundness]
+   #+BEGIN_definition
+   Let \(\sfS\) be a class of frames. A normal modal logic \Lambda is *sound* w.r.t.
+   \(\sfS\) if \(\Lambda\subseteq\Lambda_{\sfS}\). (Equivalently: \Lambda is *sound*
+   w.r.t. \(\sfS\) if for all formulas \phi, and all structures \(\fS\in\sfS\),
+   \(\vdash_\Lambda\phi\) implies \(\fS\Vdash\phi\)). If \Lambda is sound w.r.t.
+   \(\sfS\) we say that \(\sfS\) *is a class of frames for \Lambda*
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Completeness]
+   #+BEGIN_definition
+   Let \(\sfS\) be a class of frames. A logic \Lambda is *strongly complete* w.r.t.
+   \(\sfS\) if for any set of formulas \(\Gamma\cup\{\phi\}\), if
+   \(\Gamma\Vdash_{\sfS}\phi\) then \(\Gamma\vdash_\Lambda\phi\).
+
+   A logic \Lambda is *weakly complete* w.r.t. \(\sfS\) if for any formula \phi, if
+   \(\sfS\Vdash\phi\) then \(\vdash_\Lambda\phi\).
+   #+END_definition
+
+   A weakly complete w.r.t. \(\sfS\) if \(\Lambda_{\sfS}\subseteq\Lambda\). Thus
+   if we prove that a syntactically specified logic \Lambda is both sound and weakly
+   complete w.r.t. some class of structures \(\sfS\), we have \(\Lambda=\Lambda_{\sfS}\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   A logic \Lambda is strongly complete w.r.t. a class of structures \(\sfS\) iff
+   every \(\Lambda\)-consistent set of formulas is satisfiable on some
+   \(\fS\in\sfS\). \Lambda is weakly complete w.r.t. a class of structures \(\sfS\)
+   iff every \(\Lambda\)-consistent formula is satisfiable on some \(\fS\in\sfS\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   Suppose \Lambda is not strongly complete w.r.t. \(\sfS\). There is a set of
+   formulas \(\Gamma\cup\{\phi\}\) s.t. \(\Gamma\Vdash_{\sfS}\phi\) but
+   \(\Gamma\not\vdash_\Lambda\phi\).  Then \(\Gamma\cup\{\neg\phi\}\) is
+   \(\Lambda\)-consistent but not satisfiable on any structure in \(\sfS\).
+
+   Suppose there is a \(\Lambda\)-consistent set \Gamma of formulas is not
+   satisfiable on all \(\fS\in\sfS\). Then \(\Gamma\Vdash_{\sfS}\phi\) is always true
+   #+END_proof
+** Canonical Models
+   #+ATTR_LATEX: :options [$\Lambda$-MCSs]
+   #+BEGIN_definition
+   A set of formulas \Gamma is *maximal \(\Lambda\)-consistent* if \Gamma is
+   \(\Lambda\)-consistent, and any set of formulas properly containing \Gamma is
+   \(\Lambda\)-inconsistent. 
+   #+END_definition
+
 
 
 
