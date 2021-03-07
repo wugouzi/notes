@@ -1,0 +1,277 @@
+% Created 2021-03-06 六 14:54
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{../preamble.tex}
+\def \EQ {\text{EQ}}
+\def \Truth {\text{Truth}}
+\def \EQUAL {\text{EQUAL}}
+\def \Table {\text{Table}}
+\author{wugouzi}
+\date{\today}
+\title{Graduation Paper Collection}
+\hypersetup{
+ pdfauthor={wugouzi},
+ pdftitle={Graduation Paper Collection},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 27.1 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Mining stock price using fuzzy rough set system}
+\label{sec:org522293b}
+\subsection{Preliminaries}
+\label{sec:orgca4a0f3}
+To store data, we have to define our fuzzy relational model. A fuzzy
+relational schema \(R(A_1,\dots,A_n,u_r)\) is made up by a relation name
+\(R\) and a list of attributes \(A_1,\dots,A_n,u_r\). Each attribute \(A_i\)
+is the name of a role played by some domain, \(\dom(A_i)\), and \(u_r\) is
+characterized by the following membership function:
+\begin{equation*}
+u_r:\dom(A_1)\times\dots\times\dom(A_n)\to[0,1]
+\end{equation*}
+
+\begin{definition}[]
+Let \(R(A_1,\dots,A_n,u_r(t))\) be a fuzzy relational schema. An \(n\)-ary
+fuzzy relation \(r\) over \(R\) is a set of
+\(\dom(A_1)\times\dots\times\dom(A_n)\), \(t[A_i]\) refers to the value in
+\(t\) for attribute \(A_i\), and each tuple
+\(t\in\dom(A_1)\times\dots\times\dom(A_n)\). That is
+\begin{align*}
+r=&\{(t,u_r(t))\mid
+t=((t[A_1],u_1(t[A_1])),\dots,(t[A_n],u_n(t[A_n]))),\\
+&\text{and for }i=1,\dots,n\\
+&t[A_i]\in\dom(A_i),u_i(t[A_i])\in[0,1],\\
+&u_r(t)=\min(u_1(t[A_1]),\dots,u_n(t[A_n]))
+\}
+\end{align*}
+\end{definition}
+
+In this paper, we use a fuzzy relation \(\EQUAL(\EQ)\) to compute the
+membership degree of an object w.r.t. a given criteria, \(\varphi(A)\)
+
+\begin{definition}[]
+A fuzzy relation \(\EQUAL(\EQ)\) over \(\dom(A_j)\) is characterized by the
+membership function \(u_{\EQ}\), where \(u_{\EQ}\) satisfies the following
+conditions
+\begin{equation*}
+\text{For all }x,y\in\dom(A_j),u_{\EQ}(x,x)=1\text{ and }u_{\EQ}(x,y)=u_{\EQ}(y,x)
+\end{equation*}
+
+According to Zadeh's possibility theory, \(u_{\EQ}(x,y)\) can be interpreted
+as the possibility of treating the two values \((x,u(x))\) and \((u,u(y))\)
+equally under the same fuzzy term.
+
+Since an object may partially match a certain property in many situations, we
+define a prespecified threshold value, \(\alpha_j\), and let
+\(u_r(t_i)\ge\alpha_j\). When \(u_r(t_i)<\alpha_j\), we assume that the tuple
+\(t_i\) doesn't satisfy to the given property
+
+For example, let \(\varphi(A)=y\). Then a fuzzy relation \(\EQUAL(\EQ)\) over an
+attribute domain, \(\dom(A_j)\), w.r.t. \(y\) can be defined as
+\begin{align*}
+u_{\EQ}(x,y)&=\\
+\bigtimes
+&\begin{cases}
+0&\quad\text{for }1-\abs{u_j(x)-u_j(y)}<\alpha_j\\
+1-\abs{u_j(x)-u_j(y)}<\alpha_j&\quad\text{for }1-\abs{u_j(x)-u_j(y)}\ge\alpha_j
+\end{cases}
+\end{align*}
+\end{definition}
+
+\begin{definition}[]
+Let the criteria \(\varphi(A)=\varphi(A_i)\) and \(\varphi(A_i)=y_i\). Then, a fuzzy set
+\(X\) w.r.t. the criteria \(\varphi(A)\) in a fuzzy relation \(r\) can be defined
+as
+\begin{equation*}
+X=\{(t,u_r(t))\mid t\in r\text{ and }u_r(t)=u_{\EQ}(t[A_i],y_i)\}
+\end{equation*}
+\end{definition}
+
+Let \(X=\{x_1,\dots,x_n\}\) be a set of objects. Denote \(P(X)\) the set of
+all crisp subsets from \(X\) and by \(F(X)\) the set of all fuzzy subsets
+from \(X\). Any subset \(A\subset X\) will be called a \textbf{concept} in \(X\).
+\(u_A\) is the membership function of \(A\). Let \(C=\{C_1,\dots,C_n\}\),
+\(C_i\in P(X)\) be a family of concepts in \(X\) that forms a partition of
+\(X\) and let \(Y\) be a crisp subset of \(X\).Lower and upper approximation
+of \(Y\)
+\begin{equation*}
+\und{C}(Y)=\bigcup_{C_i\subset Y}C_i,\quad\ove{C}(Y)=\bigcup_{C_i\cap Y\neq\emptyset}C_i
+\end{equation*}
+
+The pair \((\und{C}(Y),\ove{C}(Y))\) is called a \textbf{rough set}.
+
+Consider a situation where concepts \(C_1,\dots,C_n\in F(X)\)  from a weak
+fuzzy partition and concept \(Y\) is a fuzzy set on \(X\).
+
+Then the lower and the upper approximation of \(Y\) by means of \(C\) are
+defined as fuzzy sets of \(X/C\) with membership functions
+\begin{align*}
+&u_{\und{C}(Y)}(C_i)=\inf_x\max\{1-u_{ci}(x),u_Y(X)\}\\
+&u_{\ove{C}(Y)}(C_i)=\sup_x\min\{u_{ci}(x),u_Y(x)\}
+\end{align*}
+where \(u_{\und{C}(Y)}(C_i)\) is the degree of certain membership of \(C_i\)
+in \(Y\) and \(u_{\ove{C}(Y)}(C_i)\) is the corresponding degree of possible
+membership. The pair \((u_{\und{C}(Y)}(C_i),u_{\ove{C}(Y)}(C_i))\) is called
+a \textbf{fuzzy rough set}
+
+The stock price at a specific time can be influenced by numerous factors. For
+example
+
+\begin{center}
+\begin{tabular}{rrrr}
+\hline
+Date & Time & Stock price & \(u_{price}(t[price])\)\\
+\hline
+20010205 & 09:00 & 35.81 & 1\\
+20010205 & 10:00 & 35.20 & 0.9662\\
+20010205 & 11:00 & 34.29 & 0.9169\\
+20010205 & 12:00 & 33.48 & 0.8741\\
+20010205 & 13:00 & 35.20 & 0.9662\\
+20010205 & 13:30 & 35.01 & 0.9777\\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{rrrr}
+\hline
+Date & Time & Stock price & \(u_{price}(t[price])\)\\
+\hline
+20000815 & 09:00 & 86.91 & 1\\
+20000815 & 10:00 & 85.23 & 0.9617\\
+20000815 & 11:00 & 83.02 & 0.9125\\
+20000815 & 12:00 & 80.92 & 0.8669\\
+20000815 & 13:00 & 82.47 & 0.9004\\
+20000815 & 13:30 & 82.15 & 0.9452\\
+\hline
+\end{tabular}
+\end{center}
+
+The value \(u_{price}(t[price])\) is the degree of the stock price at a
+specfic trading hour on that day, and the membership function of
+\(u_{price}\) is given as
+\begin{equation*}
+u_{price}(x)=(x/y)^2
+\end{equation*}
+where \(x\) is the stock price at a specific trading hour on one day, and
+\(y\) is the highest stock price during trading hours on the same day
+
+Particularly, the change rate at an hour interval of the stock price may vary
+little each day. Since different times present different specific behavior,
+we employ the roughness technique to pre-classify stock price data into
+different groups by time and consider only the behavior of stock price of
+trading hours on weekdays. Each group has the same values for the attribute
+time.
+
+\begin{center}
+\begin{tabular}{lrr}
+\hline
+ & Time & \(u_{price}(t[price])\)\\
+\hline
+Group 1 & 09:00 & 0.9864\\
+ & \(\vdots\) & \(\vdots\)\\
+ & 09:00 & 1\\
+Group 2 & 10:00 & 0.9327\\
+ & \(\vdots\) & \(\vdots\)\\
+ & 10:00 & 0.9665\\
+\(\vdots\) & \(\vdots\) & \(\vdots\)\\
+Group 3 & 14:00 & 0.9887\\
+ & 14:00 & 0.9678\\
+\hline
+\end{tabular}
+\end{center}
+
+For concentrating the change rate at hour intervals of the stock price, we
+also used roughness technique and assume the change rate of stock price is in
+following ranks
+
+\begin{center}
+\begin{tabular}{l}
+\hline
+Rank 0: 6\textasciitilde{}7\%\\
+Rank 1: 5\textasciitilde{}6\%\\
+Rank 2: 4\textasciitilde{}5\%\\
+Rank 3: 3\textasciitilde{}4\%\\
+Rank 4: 2\textasciitilde{}3\%\\
+Rank 5: 1\textasciitilde{}2\%\\
+Rank 6: 0\textasciitilde{}1\%\\
+Rank 7: -1\textasciitilde{}0\%\\
+Rank 8: -2\textasciitilde{}-1\%\\
+Rank 9: -3\textasciitilde{}-2\%\\
+Rank 10: -4\textasciitilde{}-3\%\\
+Rank 11: -5\textasciitilde{}-4\%\\
+Rank 12: -6\textasciitilde{}-5\%\\
+Rank 13: -7\textasciitilde{}-6\%\\
+\hline
+\end{tabular}
+\end{center}
+
+A \textbf{linguistic summary} is a linguistically quantified proposition containing
+metaknowledge about a set of particular objects.
+
+The general form of a linguistically quantified proposition is usually
+written as:
+\begin{equation*}
+\bQ\bX\text{ are }\bF
+\end{equation*}
+where \(\bQ\) is a (fuzzy) linguistic quantifier, \(\bX\) is a set of
+objects, and \(\bF\) is a property
+
+To a relational database, let '\(\bQ\{t_1,\dots,t_n\}\) are \(\bF\)' be a
+linguistically quantified proposition, \(t_1,\dots,t_n\) be a set of tuples
+in  a fuzzy relation \(r\). Then according to the semantics of the property,
+the truth value of '\(\bQ\{t_1,\dots,t_n\}\) are \(\bF\)' over the fuzzy
+relation \(r\) can be computed by the following definition
+
+\begin{definition}[]
+Let \(\{t_1,\dots,t_n\}\) be a set of tuples in a group over a relation
+\(r\). Then
+\begin{equation*}
+\Truth(\bQ\{t_1,\dots,t_n\}\text{ are }\bF)=
+u_Q\left(\frac{1}{n}\left(
+\sum_{i=1}^n u_r(t_i)
+\right)
+\right)
+\end{equation*}
+where \(u_t(t_i)\) is a degree membership value of \(t_i\) w.r.t. \(\bF\).
+When \(\bF=F_1\vee\dots\vee F_m\), \(u_r(t_i)=\max_{j=1}^m(u_{F_j}(t_i))\)
+and when \(\bF=F_1\wedge\dots\wedge F_m\),
+\(u_r(t_i)=\min_{j=1}^m(u_{F_j}(t_i))\). 
+\end{definition}
+
+\subsection{A fuzzy rough set system}
+\label{sec:org19b0288}
+
+\subsubsection{Mining agent using fuzzy rough set method}
+\label{sec:org6494ac5}
+In the system, the corresponding domain knowledge is represented as
+\begin{equation*}
+\{\Table.A_1,\dots,\Table.A_k\}\approx\bB
+\end{equation*}
+where \(\approx\) stands for 'relate to', and for \(i=1,\dots,k\) attribute
+\(\Table.A_i\) relates to knowledge \(\bB\). For example, when we want to
+predict the ranks of stock price at a specifc time, the corresponding domain
+knowledge w.r.t. the WSP relation in table can be represented as
+\begin{align*}
+&\{\text{WSP.Date,WSP.Time,WSP.Stock\_Price,}\\
+&\text{WSP.}(t[\text{price}])\}\approx\bB
+\end{align*}
+\end{document}
