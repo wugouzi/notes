@@ -1,0 +1,191 @@
+% Created 2021-03-20 六 13:08
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{grffile}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{textcomp}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{../preamble.tex}
+\author{Steve Awodey}
+\date{\today}
+\title{Category Theory}
+\hypersetup{
+ pdfauthor={Steve Awodey},
+ pdftitle={Category Theory},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 27.1 (Org mode 9.3)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{Categories}
+\label{sec:org2bda97a}
+\subsection{Examples of categories}
+\label{sec:org2f4964e}
+\begin{definition}[]
+A \textbf{functor}
+\begin{equation*}
+F:\bC\to\bC
+\end{equation*}
+between categories \(\bC\) and \(\bD\) is a mapping of objects to objects and
+arrows to arrows, in such a way that
+\begin{enumerate}
+\item \(F(f:A\to B)=F(f):F(A)\to F(B)\)
+\item \(F(1_A)=1_{F(A)}\)
+\item \(F(g\circ f)=F(g)\circ F(f)\)
+\end{enumerate}
+\end{definition}
+
+\section{Abstract structures}
+\label{sec:orgf7f8f71}
+
+\subsection{Products}
+\label{sec:org6545874}
+\begin{definition}[]
+In any category \(\bC\), a \textbf{product diagram} for the objects \(A\) and \(B\)
+consists of an object \(P\) and arrows
+\begin{center}\begin{tikzcd}
+A&P\arrow[l,"p_1"']\arrow[r,"p_2"]&B
+\end{tikzcd}\end{center}
+
+satisfying the following UMP:
+
+Given any diagram of the form
+\begin{center}\begin{tikzcd}
+A&X\arrow[l,"x_1"']\arrow[r,"x_2"]&B
+\end{tikzcd}\end{center}
+
+there exists a unique \(u:X\to P\) making the diagram
+\begin{center}\begin{tikzcd}
+&X\arrow[dl,"x_1"']\arrow[dr,"x_2"]\arrow[d,dashed,"u"]\\
+A&P\arrow[l,"p_1"]\arrow[r,"p_2"']&B
+\end{tikzcd}\end{center}
+\end{definition}
+
+\subsection{Categories with products}
+\label{sec:org093c9fe}
+Let \(\bC\) be a category that has a product diagram for every pair of
+objects. Suppose we have objects and arrows
+\begin{center}\begin{tikzcd}
+A\arrow[d,"f"']&A\times A'\arrow[l,"p_1"']\arrow[r,"p_2"]&A'\arrow[d,"f'"]\\
+B&B\times B'\arrow[l,"q_1"]\arrow[r,"q_2"']&B'
+\end{tikzcd}\end{center}
+with indicated products. Then we write
+\begin{equation*}
+f\times f':A\times A'\to B\times B
+\end{equation*}
+for \(f\times f'=\la f\circ p_1,f'\circ p_2\ra\)
+\begin{center}\begin{tikzcd}
+A\arrow[d,"f"']&A\times A'\arrow[l,"p_1"']\arrow[r,"p_2"]
+\arrow[d,dashed,"f\times f'"]
+&A'\arrow[d,"f'"]\\
+B&B\times B'\arrow[l,"q_1"]\arrow[r,"q_2"']&B'
+\end{tikzcd}\end{center}     In this way, if we choose a product for each
+pair of objects, we get a functor
+\begin{equation*}
+\times:\bC\times\bC\to\bC
+\end{equation*}
+To prove
+\begin{equation*}
+(A\times B)\times C\cong A\times (B\times C)
+\end{equation*}
+Consider
+\begin{center}\begin{tikzcd}
+&A\times (B\times C)\arrow[r]\arrow[ldd]&B\times C\arrow[ld]\arrow[rdd]\\
+&B&&\\
+A&A\times B\arrow[u]\arrow[l]\arrow[rd]
+&(A\times B)\times C\arrow[l]\arrow[r]\arrow[uu,dashed]\arrow[luu,dashed,"g"']
+&C\\
+&&B\\
+&A\times(B\times C)\arrow[r]\arrow[luu]\arrow[uu,dashed]\arrow[ruu,dashed,"f"]&
+B\times C\arrow[u]\arrow[ruu]
+\end{tikzcd}\end{center}
+
+
+Given no objects, there is an object 1 with no maps, and give nany other
+object \(X\) and no maps, there is a unique arrow
+\begin{equation*}
+!:X\to 1
+\end{equation*}
+
+\begin{definition}[]
+A category \(\bC\) is said to \textbf{have all finite products}, if it has a terminal
+object and all binary products (and therewith products of any finite
+cardinality). The category \(\bC\) \textbf{has all (small) products} if every set of
+objects in \(\bC\) has a product
+\end{definition}
+
+
+\subsection{Hom-sets}
+\label{sec:org81a143c}
+In this section, we assume that all categories are locally small
+
+Given any objects \(A\) and \(B\)  in category \(\bC\),we write
+\begin{equation*}
+\Hom(A,B)=\{f\in\bC\mid f:A\to B\}
+\end{equation*}
+and call such a set of arrows a \textbf{Hom-set}
+
+Note that any arrow \(g:B\to B'\) in \(\bC\) induces a function
+\begin{gather*}
+\Hom(A,g):\Hom(A,B)\to\Hom(A,B')\\
+(f:A\to B)\mapsto(g\circ f:A\to B\to B')
+\end{gather*}
+
+Let's show that this determines a functor
+\begin{equation*}
+\Hom(A,-):\bC\to\Sets
+\end{equation*}
+called the (covariant) \textbf{representable functor} of \(A\). We need to show that
+\begin{equation*}
+\Hom(A,1_X)=1_{\Hom(A,X)}
+\end{equation*}
+and that
+\begin{equation*}
+\Hom(A,g\circ f)=\Hom(A,g)\circ\Hom(A,f)
+\end{equation*}
+
+For any object \(P\), a pair of arrows \(p_1:P\to A\) and \(p_2:P\to B\)
+determine an element \((p_1,p_2)\) of the set
+\begin{equation*}
+\Hom(P,A)\times\Hom(P,B)
+\end{equation*}
+Now given any arrow
+\begin{equation*}
+x:X\to P
+\end{equation*}
+composing with \(p_1\) and \(p_2\) gives a pair of arrows
+\(x_1=p_1\circ x:X\to A\) and \(x_2=p_2\circ x:X\to B\)
+
+In this way, we have a function
+\begin{equation*}
+\theta_X=(\Hom(X,p_1),\Hom(X,p_2)):\Hom(X,P)\to\Hom(X,A)\times\Hom(X,B)
+\end{equation*}
+defined by
+\begin{equation*}
+\theta_X(x)=(x_1,x_2)
+\end{equation*}
+\begin{proposition}[]
+A diagram of the form
+\begin{center}\begin{tikzcd}
+A&P\arrow[l,"p_1"]\arrow[r,"p_2"']&B
+\end{tikzcd}\end{center}
+is a product for \(A\) and \(B\) iff for every object \(X\), the canonical
+function \(\theta_X\) is an isomorphism
+\begin{equation*}
+\theta_X:\Hom(X,P)\cong\Hom(X,A)\times\Hom(X,B)
+\end{equation*}
+\end{proposition}
+\end{document}

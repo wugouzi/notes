@@ -12,7 +12,10 @@
 #+LATEX_HEADER: \newcommand{\KB}{\textbf{KB}}
 #+LATEX_HEADER: \newcommand{\KD}{\textbf{KD}}
 #+LATEX_HEADER: \newcommand{\KF}{\textbf{K4}}
+#+LATEX_HEADER: \newcommand{\PDL}{\textbf{PDL}}
+#+LATEX_HEADER: \newcommand{\FL}{\text{FL}}
 #+LATEX_HEADER: \newcommand{\KtQ}{\textbf{K}_t\textbf{Q}}
+#+LATEX_HEADER: \newcommand{\PDL}{\textbf{PDL}}
 #+LATEX_HEADER: \newcommand{\KtTho}{\textbf{K}_t\textbf{Tho}}
 #+LATEX_HEADER: \newcommand{\KtThoM}{\textbf{K}_t\textbf{ThoM}}
 * Basic Concepts
@@ -3676,8 +3679,10 @@
 
 
    #+BEGIN_remark
+   label:remark4.44
    A normal logic \Lambda is said to be *compact* when any \(\Lambda\)-consistent set \Sigma
-   can be satisfied in a frame for \Lambda at a single point.
+   can be satisfied in a frame for \Lambda at a single point. A non-compact logic
+   cannot be canonical, sound and strongly compact
    #+END_remark
 
    #+ATTR_LATEX: :options []
@@ -4369,6 +4374,276 @@
    countable, dense, unbounded, strict total order and hence is isomorphic to
    the ordering of the rationals
    #+END_proof
+** Finitary Methods \rom{1}
+
+   A frame for this language is a transition system
+   \(\fF=(W,R_{\pi})_{\pi\in\Pi}\), but we only interested in *regular frames*, that
+   is, frames s.t. for all programs \pi, \(\pi_1\) and \(\pi_2\):
+   \begin{align*}
+   R_{\pi_1\cup\pi_2}&\quad=\quad R_{\pi_1}\cup R_{\pi_2}\\
+   R_{\pi_1;\pi_2}&\quad=\quad R_{\pi_1};R_{\pi_2}\\
+   R_{\pi^*}&\quad=\quad (R_{\pi})^*
+   \end{align*}
+
+   A formula \phi is a PDL-validity (written \(\Vdash\phi\)) if its valid on all
+   regular frame
+
+   The collection of PDL-validities is not compact; consider the set
+   \begin{equation*}
+   \Sigma=\{\la a^*\ra p,\neg p,\neg\la\ra p,\neg\la a\ra\la a\ra p,\dots\}
+   \end{equation*}
+   The compactness failure indicates that a *strong* completeness result will be
+   out of reach
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A logic \Lambda in the language of propositional dynamic logic is a
+   *normal propositional dynamic loigc* if it contains every instance of the
+   following axiom schemas
+   1. \([\pi](p\to q)\to([\pi]p\to[\pi]q)\)
+   2. \(\la\pi\ra p\leftrightarrow\neg\la\pi\ra\neg p\)
+   3. \(\la\pi_1;\pi_2\ra p\leftrightarrow\la\pi_1\ra\la\pi_2\ra p\)
+   4. \(\la\pi_1\cup\pi_2\ra p\leftrightarrow\la\pi_1\ra p\vee\la\pi_2\ra p\)
+   5. \(\la\pi^*\ra p\leftrightarrow(p\vee\la\pi\ra\la\pi^*\ra p)\)
+   6. \([\pi^*](p\to[\pi]p)\to(p\to[\pi^*]p)\)
+
+
+   and is closed under modus ponens, generalization and uniform substitution. We
+   call the smallest normal propositional dynamic logic \(\PDL\). In this secion
+   \(\vdash\phi\) means \phi is a theorem of \(\PDL\)
+   #+END_definition
+
+   axiom 6 is *induction* axiom.
+
+
+   #+BEGIN_exercise
+   Prove induction axiom is not canonical
+   #+END_exercise
+
+   #+BEGIN_proof
+   Let \(\psi=[\pi^*](p\to[\pi]p)\to(p\to[\pi^*]p)\).
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Fischer-Ladner Closure]
+   #+BEGIN_definition
+   Let \(X\) be a set of formulas. Then \(X\) is *Fischer-Ladner closed* if it is
+   closed under subformulas and satisfied the following additional constraints
+   1. If \(\la\pi_1;\pi_2\ra\phi\in X\) then \(\la\pi_1\ra\la\pi_2\ra\phi\in X\)
+   2. If \(\la\pi_1\cup\pi_2\ra\phi\in X\) then
+      \(\la\pi_1\ra\phi\vee\la\pi_2\ra\phi\in X\)
+   3. If \(\la\pi^*\ra\phi\in X\) then \(\la\pi\ra\la\pi^*\ra\phi\in X\)
+
+
+   If \Sigma is any set of formulas then \(\FL(\Sigma)\) is the smallest set of formulas
+   containing \Sigma that is Fischer-Ladner closed
+
+   Given a formula \phi, we define
+   \begin{equation*}
+   \~{}\phi=
+   \begin{cases}
+   \psi&\text{ if }\phi\text{ is of the form }\neg\psi\\
+   \neg\phi&\text{otherwise}
+   \end{cases}
+   \end{equation*}
+   A set of formulas \(X\) is *closed under single negations* if \(\~{}\phi\) belongs
+   to \(X\) whenever \(\phi\in X\)
+
+   We define \(\neg\FL(\Sigma)\) the *closure of* \Sigma, as the smallest set
+   containing \Sigma which is Fischer-Ladner closed and closed under single negations
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Atoms]
+   #+BEGIN_definition
+   Let \Sigma be a set of formulas. A set of formulas \(A\) is an *atom* over \Sigma if it
+   is maximal consistent subset of \(\neg\FL(\Sigma)\). \(At(\Sigma)\) is the set of all
+   atoms over \Sigma
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \(\calm\) be the set of all MCSs, and \Sigma any set of formulas. Then
+   \begin{equation*}
+   At(\Sigma)=\{\Gamma\cap\neg\FL(\Sigma)\mid\Gamma\in\calm\}
+   \end{equation*}
+   #+END_lemma
+
+   #+BEGIN_proof
+   For any atom \(A\in At(\Sigma)\), it can be extended be to MCS. 
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If \(\phi\in\neg\FL(\Sigma)\) and \phi is consistent, then there is an \(A\in At(\Sigma)\)
+   s.t. \(\phi\in A\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   If \Sigma is infinite, the result is exactly Lindenbaum's Lemma. Otherwise, let
+   \(\widehat{A}=\bigwedge_{\phi\in A}\phi\)
+
+   Enumerate the elements of \(\neg\FL(\Sigma)\) as \(\sigma_1,\dots,\sigma_m\). Let
+   \(A_0\) be \(\{\phi\}\). Suppose that \(A_n\) has been defined, where \(n<m\)
+   .We have that
+   \begin{equation*}
+   \vdash\widehat{A}_n\leftrightarrow
+   (\widehat{A}_n\wedge\sigma_{n+1})\vee(\widehat{A}_n\wedge\~{}\sigma_{n+1})
+   \end{equation*}
+   as this a propositional tautology, thus either \(A_n\cup\{\sigma_{n+1}\}\) or
+   \(A_n\cup\{\~{}\sigma_{n+1}\}\) is consistent. Let \(A_{n+1}\) be the consistent
+   extension, and let \(A\) be \(A_m\). Then \(A\) is an atom containing \phi
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Canonical Model over $\Sigma$]
+   #+BEGIN_definition
+   Let \Sigma be a finite set of formulas. The *canonical model over* \Sigma is the
+   triple \((At(\Sigma),\{S_\pi^\Sigma\}_{\pi\in\Pi},V^\Sigma)\) where for all
+   propositional variables \(p\), \(V^{\Sigma}(p)=\{A\in At(\Sigma)\mid p\in A\}\), and
+   for all atoms \(A,B\in At(\Sigma)\) and all programs \pi,
+   \begin{equation*}
+   AS_{\pi}^\Sigma B\text{ if }\widehat{A}\wedge\la\pi\ra\widehat{B}\text{ is consistent}
+   \end{equation*}
+   \(V^\Sigma\) is called the *canonical valuation*, and the \(S_\pi\) are called
+   the *canonical relations*.
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Regular PDL-model over $\Sigma$]
+   #+BEGIN_definition
+   Let \Sigma be a finite set of formulas. For all basic programs \(a\), define
+   \(R_a^\Sigma\) to be \(S_a^\Sigma\). For the complex programs, inductively
+   define the PDL-relations \(R_\pi^\Sigma\) in the usual way using unions,
+   compositions and reflexive transitive closures. Finally define \(\fR\) the
+   *regular* PDL-*model over* \Sigma, to be
+   \((At(\Sigma),\{R_\pi^\Sigma\}_{\pi\in\Pi},V^\Sigma)\) where \(V^\Sigma\) is the
+   canonical valuation.
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Existence Lemma for Basic Programs]
+   #+BEGIN_lemma
+   Let \(A\) be an atom, and let \(a\) be a basic program. Then for all formulas
+   \(\la a\ra\psi\) in \(\neg\FL(\Sigma)\), \(\la a\ra\psi\in A\) iff there is a
+   \(B\in At(\Sigma)\) s.t. \(AR_aB\) and \(\psi\in B\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Right to the left. Suppose there is a \(B\in At(\Sigma)\) s.t. \(AR_aB\) and
+   \(\psi\in B\). As \(R_a\) and \(S_a\) are identical for basic programs, we
+   have that \(AS_aB\), thus \(\widehat{A}\wedge\la a\ra\widehat{B}\) is
+   consistent. As \psi is one of the conjuncts in \(\widehat{B}\),
+   \(\widehat{A}\wedge\la a\ra\psi\) is consistent. As \(\la a\ra\psi\) is in
+   \(\neg\FL(\Sigma)\) it must also be in \(A\), for \(A\) is an atom and hence
+   maximal consistent in \(\neg\FL(\Sigma)\)
+
+   Left to right. Suppose \(\la a\ra\psi\in A\). Enumerate the formulas in
+   \(\neg\FL(\Sigma)\) as \(\sigma_1,\dots\sigma_2\). Define \(B_0\) to be
+   \(\{\psi\}\). Suppose as an inductive hypothesis that \(B_n\) is defined s.t.
+   \(\widehat{A}\cap\la a\ra\widehat{B}_n\) is consistent. We have
+   \begin{equation*}
+   \vdash\la a\ra\widehat{B}_n\leftrightarrow\la a\ra((\widehat{B}_n\wedge\sigma_{n+1})
+   \vee(\widehat{B}_n\wedge\~{}\sigma_{n+1}))
+   \end{equation*}
+   thus
+   \begin{equation*}
+   \vdash\la a\ra\widehat{B}_n\leftrightarrow(\la a\ra(\widehat{B}_n\wedge\sigma_{n+1})
+   \vee\la a\ra(\widehat{B}_n\wedge\~{}\sigma_{n+1}))
+   \end{equation*}
+   Therefore either for \(B'=B_n\cup\{\sigma_{n+1}\}\) or for
+   \(B'=B_n\cup\{\~{}\sigma_{n+1}\}\) we have that \(\widehat{A}\wedge\la a\ra\widehat{B'}\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For all programs \pi, \(S_{\pi^*}\subseteq(S_\pi)^*\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   We need to show that for all programs \pi, if \(AS_{\pi^*}B\)  then there is a
+   finite sequence of atoms \(C_0,\dots,C_n\) s.t. \(A=C_0S_\pi
+   C_1,\dots,C_{n-1}S_\pi C_n=B\). Let \(\cald\) be the set of all atoms
+   reachable from \(A\) by such a sequence. We will show that \(B\in\cald\)
+
+   Define \delta to be \(\bigvee_{D\in\cald}\widehat{D}\). Note that
+   \(\delta\wedge\la\pi\ra\neg\delta\) is *inconsistent*. Otherwise,
+   \(\delta\wedge\la\pi\ra\widehat{E}\) would be consistent for at least one atom \(E\)
+   *not* in \(\cald\), which would mean that
+   \(\widehat{D}\wedge\la\pi\ra\widehat{E}\) was consistent for at least one
+   \(D\in\cald\). But then by \(DS_\pi E\), \(E\) would be reached from \(A\) in
+   finitely many \(S_\pi\) steps
+
+   As \(\delta\wedge\la\pi\ra\neg\delta\) is inconsistent,
+   \(\vdash\delta\to[\pi]\delta\), hence by generalization
+   \(\vdash[\pi^*](\delta\to[\pi]\delta)\). Then \(\vdash\delta\to[\pi^*]\delta\). Now as
+   \(A(S_\pi)^*A\), \(\widehat{A}\) is one of the disjuncts in \delta, thus
+   \(\vdash\widehat{A}\to\delta\) and hence \(\vdash\widehat{A}\to[\pi^*]\delta\).
+   As our initial assumption was that
+   \(\widehat{A}\wedge\la\pi^*\ra\widehat{B}\) is consistent, it follows that
+   \(\widehat{A}\wedge\la\pi^*\ra(\widehat{B}\wedge\delta)\) is consistent too.
+   But this means that for one of the disjuncts \(\widehat{D}\) of \delta,
+   \(\widehat{B}\wedge\widehat{D}\) is consistent. As \(B\) and \(D\) are atoms, \(B=D\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For all programs \pi, \(S_\pi\subseteq R_\pi\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Induction on the structure of \pi. Suppose \(AS_{\pi_1;\pi_2}B\), then
+   \(\widehat{A}\wedge\la\pi_1\ra\la\pi_2\ra\widehat{B}\) is consistent. Then
+   we can construct an atom \(C\) s.t.
+   \(\widehat{A}\wedge\la\pi_1\ra\widehat{C}\) and
+   \(\widehat{C}\wedge\pi_2\ra\widehat{B}\)
+
+   Transitivity from previous lemma
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Existence Lemma]
+   #+BEGIN_lemma
+   Let \(A\) be an atom and let \(\la\pi\ra\psi\) be a formula in
+   \(\neg\FL(\Sigma)\). Then \(\la\pi\ra\psi\in A\) iff there is a \(B\) s.t.
+   \(AR_\pi B\) and \(\psi\in B\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Suppose \pi has the form \(\pi_1;\pi_2\) and further suppose that
+   \(AR_{\pi_1;\pi_2}B\) and \(\psi\in B\). Thus there is an atom \(C\) s.t.
+   \(AR_{\pi_1}C\) and \(CR_{\pi_2}B\) and \(\psi\in B\). By the fischer-Ladner
+   closure conditions, \(\la\pi_2\ra\psi\in\neg\FL(\Sigma)\), hence by the induction
+   hypothesis \(\la\pi_2\ra\psi\in C\). Similarly
+   \(\la\pi_1\ra\la\pi_2\ra\psi\in A.\)
+
+   Suppose \pi is of the form \(\rho^*\). Assume that \(AR_{\rho^*}B\) and
+   \(\pi\in B\). This means there is a finite sequence of atoms
+   \(C_0,\dots,C_n\) s.t. \(A=C_0R_\rho C_1,\dots,C_{n-1}R_\rho C_n=B\). By a
+   subinduction on \(n\) we prove that \(\la\rho^*\ra\psi\in C_i\) for all
+   \(i\); the required result for \(A=C_0\) is then immediate
+
+   /Base case/: \(n=0\). This means \(A=B\).
+   \(\vdash\la\rho^*\ra\psi\leftrightarrow\psi\vee\la\rho\ra\la\rho^*\ra\psi\)
+   and hence \(\vdash\psi\to\la\rho^*\ra\psi\)
+
+   /Inductive step/ Suppose the result holds for \(n\ge k\) and that
+   \begin{equation*}
+   A=C_0R_\rho C_1,\dots,C_kR_\rho C_{k+1}=B
+   \end{equation*}
+   By the inductive hypothesis, \(\la\rho^*\ra\psi\in C_1\). 
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Truth Lemma]
+   #+BEGIN_lemma
+   Let \(\fR\) be the regular \(\PDL\)-model over \Sigma. For all atoms \(A\) and all
+   \(\psi\in\neg\FL(\Sigma)\), \(\fR,A\Vdash\psi\) iff \(\psi\in A\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   \(\PDL\) is weakly complete w.r.t. the class of all regular frames
+   #+END_theorem
+
+   #+BEGIN_exercise
+   Show that the induction axiom is not canonical
+   #+END_exercise
+
 
 
 * COMMENT Completion
@@ -4422,3 +4697,4 @@
     #+END_proof
 * COMMENT Question
   Why isomorphic
+
