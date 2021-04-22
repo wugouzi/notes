@@ -12,7 +12,6 @@
 #+LATEX_HEADER: \newcommand{\KB}{\textbf{KB}}
 #+LATEX_HEADER: \newcommand{\KD}{\textbf{KD}}
 #+LATEX_HEADER: \newcommand{\KF}{\textbf{K4}}
-#+LATEX_HEADER: \newcommand{\PDL}{\textbf{PDL}}
 #+LATEX_HEADER: \newcommand{\FL}{\text{FL}}
 #+LATEX_HEADER: \newcommand{\KtQ}{\textbf{K}_t\textbf{Q}}
 #+LATEX_HEADER: \newcommand{\PDL}{\textbf{PDL}}
@@ -834,7 +833,7 @@
     is a \(v\) s.t. \(Rwv\) and \(\fM,v\Vdash\phi\). As \(\fM^f\) is a
     filtration, \(R^f\abs{w}\abs{v}\). As \Sigma is a subformula closed,
     \(\phi\in\Sigma\), thus by the inductive hypothesis
-    \(\fM^f,\abs{v}\Vdash\phi\). Hence \(\fM^f,\abs\Vdash\diamond\phi\)
+    \(\fM^f,\abs{v}\Vdash\phi\). Hence \(\fM^f,\abs{w}\Vdash\diamond\phi\)
 
     Suppose \(\diamond\phi\in\Sigma\) and \(\fM^f,\abs{w}\Vdash\diamond\phi\).
     Thus there is a state \(\abs{v}\) in \(\fM^f\) s.t. \(R^f\abs{w}\abs{v}\)
@@ -2958,7 +2957,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
-    label:lemma2.37
+    label:lemma2.27
     Let \(\fM=(\fF,V)\) be a a fintie distinguishing model. Then
     1. For every state \(w\) in \(\fM\) there is a formula \(\phi_w\) that is
        true at and only at \(w\)
@@ -2974,6 +2973,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:thm3.28
     A normal modal logic has the finite frame property iff it has the finite
     model property
     #+END_theorem
@@ -4120,7 +4120,7 @@
    #+BEGIN_center
    If a temporal formula \psi is satisfiable on an irreflexive frame, then for any
    proposition letter \(p\) not occurring in \psi, the conjunction \((\neg
-   Pp\wedgep\wedge\neg Fp)\wedge\psi\) is also satisfiable on that frame
+   Pp\wedge p\wedge\neg Fp)\wedge\psi\) is also satisfiable on that frame
    #+END_center
    For if \(\fF,V,s\Vdash\psi\), then
    \(\fF,V',s\Vdash(\neg Pp\wedge p\wedge\neg Fp)\wedge\psi\) where \(V'\) is
@@ -4276,7 +4276,7 @@
 
 
    A network \(\caln'\) *extends* a network \(\caln\) (\(\caln'\rhd\caln\)) if
-   \(N\subseeq N'\) while \(E=E'\cap N\times N,d=d'\vert_N\) and
+   \(N\subseteq N'\) while \(E=E'\cap N\times N,d=d'\vert_N\) and
    \(\Lambda(s)\subseteq\Lambda'(s)\) for each node \(\caln\)
    
    #+ATTR_LATEX: :options []
@@ -4351,13 +4351,13 @@
    \(name(\delta)\in\Delta\). It follows from \(\Gamma<\Delta\) that
    \(Fname(\delta)\in\Gamma\), so using the density axiom, we find that
    \(FFname(\delta)\in\Gamma\). From this we may infer the existence of an MCS
-   \(\Theta\in W\) with \(\Gamma<\Tehta\) and \(Fname(\delta)\in\Theta\).
+   \(\Theta\in W\) with \(\Gamma<\Theta\) and \(Fname(\delta)\in\Theta\).
 
    But is \(\Theta<\Delta\). Note that since < is non-branching to the right, we
    already know that \(\Theta<\Delta\) or \(\Theta=\Delta\) or \(\Delta<\Theta\). But its
    clear that \(F\delta\in\Theta\) and \(\neg F\delta\in\Delta\). Neither is it
    possible that \(\Delta<\Theta\)for suppose otherwise. It would follows that
-   \(F\delta\in\Tehta\) that \(FF\delta\in\Delta\), so by transitivity axiom, \(F\delta\in\Delta\)
+   \(F\delta\in\Theta\) that \(FF\delta\in\Delta\), so by transitivity axiom, \(F\delta\in\Delta\)
    #+END_proof
 
    #+ATTR_LATEX: :options []
@@ -4643,8 +4643,94 @@
    #+BEGIN_exercise
    Show that the induction axiom is not canonical
    #+END_exercise
+* Computability and Complexity
+** Computing Satisfiability
+   #+ATTR_LATEX: :options [Satisfiability and Validity Problems]
+   #+BEGIN_definition
+   Let \tau be a modal similarity type, \phi be a \(\tau\)-formula and \(\sfM\) a
+   class of \(\tau\)-models. The *\(\sfM\)-satisfiability problem* is to determine
+   whether or not \phi is satisfiable in some model in \(\sfM\). The
+   *\(\sfM\)-validity problem* is to determine whether or not \phi is true in all
+   models in \(\sfM\). The \(\sfM\)-validity and \(\sfM\)-satisfiability problem
+   are each other's *duals*
+   #+END_definition
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \tau be a modal similarity type, and suppose that \(\sfM\) is a class of
+   \(\tau\)-models. Then there is an algorithm for solving the
+   \(\sfM\)-satisfiability problem iff there is an algorithm for solving the
+   \(\sfM\)-validity problem.
+   #+END_lemma
 
+   #+BEGIN_proof
+   Given an algorithm for \(\sfM\)-satisfiability, we can test for the validity
+   of \phi by giving it the input \(\neg\phi\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \tau be a modal similarity type, \Lambda be a normal modal logic in a language for
+   \tau, and \phi a \(\tau\)-formula. The problem of determining whether or not \phi is
+   \(\Lambda\)-consistent is called the *\(\Lambda\)-consistency problem* and the
+   problem of determining whether or not \(\Lambda\vdash\phi\) is called the
+   *\(\Lambda\)-provability problem*
+   #+END_definition
+
+   If \Lambda is a normal modal logic, and \(\sfM\) is any class of models s.t.
+   \(\Lambda=\Lambda_{\sfM}\), then the \(\Lambda\)-consistency problem is the
+   \(\sfM\)-satisfiability problem, and the \(\Lambda\)-provability problem is
+   the \(\sfM\)-validity problem.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \tau be a modal similarity type. A frame of type \tau has *finite character* if
+   it contains finitely many states, and finitely many non-empty relations. If
+   \Lambda is a normal logic in a language for \tau, and \(\sfF\) is a class of
+   \(\tau\)-frames of finite character, and \(\Lambda=\Lambda_{\sfF}\), then
+   \Lambda is said to have the *finite frame property* (f.f.p.) w.r.t. \(\sfF\). If
+   \(\Lambda=\Lambda_{\sfF}\) for some class of \(\tau\)-frames \(\sfF\) of
+   finite character, then \Lambda has the finite frame property.
+
+   A class of \(\tau\)-models \(\sfM\) is *finitely based* if every model in
+   \(\sfM\) is based on a \(\tau\)-frame of finite character. If \Lambda is a normal
+   modal logic in a language for \tau, and \(\sfM\) is a class of finitely based
+   \(\tau\)-models, and \(\Lambda=\Lambda_{\sfM}\), then \Lambda has the *finite model
+   property* (f.m.p.) w.r.t. \(\sfM\). If \(\Lambda=\Lambda_{\sfM}\) for some
+   class of finitely based \(\tau\)-models \(\sfM\) then \Lambda has the finite model property
+   #+END_definition
+
+    Finally, a class of frames of finite character (or indeed, a class of finite
+    frames) may well be a proper class. Nonetheless, up to isomorphism, there
+    are only denumerably many frames in any such class; hence, if \Lambda has the
+    finite frame property, it has the finite frame property with respect to a
+    denumerably infinite set of frames
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\Lambda=\Lambda_{\sfF}\) is equivalent to \(\sfF\Vdash\Lambda\) and for
+    every formula \phi s.t. \(\phi\not\in\Lambda\) there is some \(\fF\in\sfF\)
+    s.t. \phi is falsifiable on \(\fF\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Completeness means if \(\sfF\vdash\phi\) then \(\vdash_\Lambda\phi\). Hence
+    \(\phi\in\Lambda\).
+
+    For all \(\phi\in\Lambda\), we have \(\vdash_\Lambda\phi\) hence \(\sfF\Vdash\phi\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \tau be a modal similarity type. Any normal modal logic in a language for
+    \tau has the finite model property iff it has the finite frame property
+    #+END_theorem
+
+    #+BEGIN_proof
+    Theorem ref:thm3.28
+    #+END_proof
+
+   
 
 * COMMENT Completion
   definition

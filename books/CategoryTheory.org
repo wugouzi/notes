@@ -2,6 +2,7 @@
 #+AUTHOR: Steve Awodey
 #+LATEX_HEADER: \input{../preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/CategoryTheory/categorytheory.tex
+#+LATEX_HEADER: \DeclareMathOperator{\Groups}{\textbf{Groups}}
 * Categories
 ** Examples of categories
    #+ATTR_LATEX: :options []
@@ -16,9 +17,80 @@
    2. \(F(1_A)=1_{F(A)}\)
    3. \(F(g\circ f)=F(g)\circ F(f)\)
    #+END_definition
+** Free categories
+   The "Kleene closure" of \(A\) is defined to be the set
+   \begin{equation*}
+   A^*=\{\text{words over $A$}\}
+   \end{equation*}
+   Also
+   \begin{equation*}
+   i:A\to A^*
+   \end{equation*}
+   defined by \(i(a)=a\) and called the "intersection of generators"
+   
+   A monoid \(M\) is *freely generated* by a subset \(A\) of \(M\) if the
+   following conditions hold:
+   1. Every element \(m\in M\) can be written as a product of elements of \(A\)
+   2. No "nontrivial" relations hold in \(M\), that is, if \(a_1\dots
+      a_j=a_1'\dots a_k'\) ,then this is required by the axioms for monoids
+
+
+   Every monoid \(N\) has an underlying set \(\abs{N}\), and every monoid
+   homomorphism \(f:N\to M\) has an underlying function
+   \(\abs{f}:\abs{N}\to\abs{M}\). The free monoid \(M(A)\) on a set \(A\) is by
+   definition "the" monoid with the following UMP
+
+   /Universal Mapping Property of \(M(A)\)/
+
+   There is a function \(i:A\to\abs{M(A)}\), and given any monoid \(N\) and any
+   function \(f:A\to\abs{N}\), there is a *unique* monoid homomorphism
+   \(\ove{f}:M(A)\to N\) s.t. \(\abs{\over{f}}\circ i=f\)
+
+   /in/ \(\Mon\)
+   \begin{center}\begin{tikzcd}
+   M(A)\arrow[r,"\ove{f}",dotted]&N
+   \end{tikzcd}\end{center}
+
+   /in/ \(\Sets\)
+   \begin{center}\begin{tikzcd}
+   \abs{M(A)}\arrow[r,"\abs{\ove{f}}"]&\abs{N}\\
+   A\arrow[u,"i"]\arrow[ur,"f"']&
+   \end{tikzcd}\end{center}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   \(A^*\) has the UMP of the free monoid on \(A\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   Given \(f:A\to\abs{N}\), define \(\ove{f}:A^*\to N\) by
+   \begin{gather*}
+   \ove{f}(-)=u_N,\quad\text{ the unit of } N\\
+   \ove{f}(a_1\dots a_i)=f(a_1)\cdot_N\dots\cdot_N f(a_i)
+   \end{gather*}
+   #+END_proof
+
 
 * Abstract structures
 
+** Initial and terminal objects
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   A *Boolean algebra* is a poset \(B\) equipped with distinguished elements 0,1,
+   binary operations \(a\vee b\) of join and \(a\wedge b\) of meet, and a unary
+   operation \(\neg b\) of complementation. These are required to satisfy the
+   conditions
+   \begin{align*}
+   0&\le a\\
+   a&\le 1\\
+   a\le c \quad\text{ and }\quad b\le c \quad&\text{ iff }\quad a\vee b\le c\\
+   c\le a \quad\text{ and }\quad c\le b \quad&\text{ iff }\quad c\le a\wedge b\\
+   a\le\neg b \quad&\text{ iff }\quad a\wedge b=0\\
+   \neg\neg a&=a
+   \end{align*}
+
+   \(\textbf{2}=\{0,1\}\) is an initial elements of \(\BA\). \(\BA\) has as
+   arrows the Boolean homomorphisms that \(h(0)=0,h(a\vee b)=h(a)\vee h(b)\), etc.
+   #+END_examplle
 ** Products
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -177,7 +249,7 @@
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
    Let \(\bC,\bD\) be categories with binary products. A functor
-   \(F:\bC\to\bCD\) is said to *preserve binary products* if it takes every
+   \(F:\bC\to\bD\) is said to *preserve binary products* if it takes every
    product diagram
    \begin{center}\begin{tikzcd}
    A&A\times B\arrow[l,"p_1"]\arrow[r,"p_2"']&B
@@ -200,3 +272,149 @@
    \end{equation*}
    preserves products
    #+END_corollary
+
+* Duality
+  
+** Coproducts
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A diagram
+   \begin{tikzcd}
+   A\arrow[r,"q_1"]&Q&B\arrow[l,"q_2"']
+   \end{tikzcd}
+   is a coproduct of \(A,B\) if for any \(Z\) and
+   \begin{tikzcd}
+   A\arrow[r,"z_1"]&Z&B\arrow[l,"z_2"']
+   \end{tikzcd}
+   there is a unique \(u:Q\to Z\) with \(u\circ q_i=z_i\)
+   \begin{center}\begin{tikzcd}
+   &Z\\
+   A\arrow[ur,"z_1"]\arrow[r,"q_1"]&Q\arrow[u,dotted,"u"]&B\arrow[l,"q_2"]\arrow[ul,"z_2"']
+   \end{tikzcd}\end{center}
+   written as \(A+B\)
+   #+END_definition
+
+   In \(\Sets\), every finite set \(A\) is a coproduct
+   \begin{equation*}
+   A\cong1+1+\dots+1\quad(n\text{-times})
+   \end{equation*}
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   If \(M(A)\) and \(M(B)\) are free monoids on sets \(A\) and \(B\), then in
+   \(\Mon\) we can construct their coproduct as
+   \begin{equation*}
+   M(A)+M(B)\cong M(A+B)
+   \end{equation*}
+
+   \begin{center}\begin{tikzcd}
+   &N\\
+   M(A)\arrow[r]\arrow[ur]&M(A+B)\arrow[u,dotted]&M(B)\arrow[l]\arrow[ul]\\
+   A\arrow[u,"\eta_A"]\arrow[r]&A+B\arrow[u,"\eta_{A+B}"]&B\arrow[l]\arrow[u,"\eta_B"']
+   \end{tikzcd}\end{center}
+   Here we are working in two different categories. Half below is in \(\Sets\),
+   the other is \(\Mon\)
+   #+END_examplle
+   
+   Product of two powerset Boolean algebras \(\calp(A)\) and \(\calp(B)\) is
+   also a powerset
+   \begin{equation*}
+   \calp(A)\times\calp(B)\cong\calp(A+B)
+   \end{equation*}  
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Two monoids \(M(\abs{A}+\abs{B})\) is strings over the disjoint union
+   \(\abs{A}+\abs{B}\) of the underlying sets. That is, the elements of \(A\)
+   and \(B\) and the equivalence relation \(v\sim w\) is the least one
+   containing all instances of the following equations
+   \begin{align*}
+   (\dots xu_Ay\dots)&=(\dots xy\dots)\\
+   (\dots xu_By\dots)&=(\dots xy\dots)\\
+   (\dots aa'\dots)&=(\dots a\cdot_A a'\dots)\\
+   (\dots bb'\dots)&=(\dots b\cdot_B b'\dots)
+   \end{align*}
+   The unit is the equivalence class \([-]\) of the empty word. Multiplication
+   is
+   \begin{equation*}
+   [x\dots y]\cdot[x'\dots y']=[x\dots yx'\dots y']
+   \end{equation*}
+   The coproduct injections \(i_A:A\to A+B\) and \(i_B:B\to A+B\) are
+   \begin{equation*}
+   i_A(a)=[a],\quad i_B(b)=[b]
+   \end{equation*}
+   Given any homomorphisms \(f:A\to M\) and \(g:B\to M\) into a monoid, the
+   unique homomorphism
+   \begin{equation*}
+   [f,g]:A+B\to M
+   \end{equation*}
+   is defined by first extending the function
+   \([\abs{f},\abs{g}]:\abs{A}+\abs{B}\to\abs{M}\) to one \([f,g]'\) on the free
+   monoid \(M(\abs{A}+\abs{B})\)
+   \begin{center}\begin{tikzcd}
+   \abs{A}+\abs{B}\arrow[r,"{[\abs{f}+\abs{g}]}"]&\abs{M}\\
+   M(\abs{A}+\abs{B})\arrow[r,"{[f,g]}'"]\arrow[d,twoheadrightarrow]&M\\
+   M(\abs{A}+\abs{B})/\sim\arrow[ur,dotted,"{[f,g]}"']
+   \end{tikzcd}\end{center}
+   If \(v\sim w\) in \(M(\abs{A}+\abs{B})/\sim\) then \([f,g]'(v)=[f,g]'(w)\).
+   Thus \([f,g]'\) extends to the quotient to yield the desired map
+   \([f,g]:M(\abs{A}+\abs{B})/\sim\to M\)
+
+   This construction also works to give coproducts in \(\Groups\), where it is
+   called the *free product* of \(A\) and \(B\) and written as \(A\oplus B\).
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   In the category \(\Ab\) of abelian groups, there is a canonical isomorphism
+   between the binary coproduct and product
+   \begin{equation*}
+   A+B\cong A\times B
+   \end{equation*}
+   #+END_proposition
+
+   #+BEGIN_proof
+   Take \(1_A:A\to A\) and \(O_B:A\to B\) . we get
+   \begin{equation*}
+   \theta=[\la 1_A,0_B\ra,\la 0_A,1_B\ra]:A+B\to A\times B
+   \end{equation*}
+   Then given any \((a,b)\in A+B\), we have
+   \begin{align*}
+   \theta(a,b)&=
+   [\la 1_A,0_B\ra,\la0_A,1_B\ra](a,b)\\
+   &=\la 1_A,0_B\ra(a)+\la0_A,1_B\ra(b)\\
+   &=(1_A(a),0_B(A))+(0_A(b),1_B(b))\\
+   &=(a,0_B)+(0_A,b)\\
+   &=(a+0_A,0_B+b)\\
+   &=(a,b)
+   \end{align*}
+  #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Coproducts are unique up to isomorphism
+   #+END_proposition
+
+   
+** Equalizers
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   In 
+   #+END_definition
+
+
+
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
