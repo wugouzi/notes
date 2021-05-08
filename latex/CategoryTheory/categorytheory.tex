@@ -1,4 +1,4 @@
-% Created 2021-04-09 五 11:01
+% Created 2021-04-22 四 16:36
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -15,6 +15,7 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \input{../preamble.tex}
+\DeclareMathOperator{\Groups}{\textbf{Groups}}
 \author{Steve Awodey}
 \date{\today}
 \title{Category Theory}
@@ -31,9 +32,9 @@
 \tableofcontents
 
 \section{Categories}
-\label{sec:orgbd94cd0}
+\label{sec:org0821802}
 \subsection{Examples of categories}
-\label{sec:orgefc2503}
+\label{sec:org1c07c55}
 \begin{definition}[]
 A \textbf{functor}
 \begin{equation*}
@@ -48,7 +49,7 @@ arrows to arrows, in such a way that
 \end{enumerate}
 \end{definition}
 \subsection{Free categories}
-\label{sec:org1dd03ec}
+\label{sec:orgfbc560b}
 The "Kleene closure" of \(A\) is defined to be the set
 \begin{equation*}
 A^*=\{\text{words over $A$}\}
@@ -103,10 +104,10 @@ Given \(f:A\to\abs{N}\), define \(\ove{f}:A^*\to N\) by
 
 
 \section{Abstract structures}
-\label{sec:orgbdcaf14}
+\label{sec:orgefd690f}
 
 \subsection{Initial and terminal objects}
-\label{sec:orga9a9617}
+\label{sec:org73d809c}
 \begin{examplle}[]
 A \textbf{Boolean algebra} is a poset \(B\) equipped with distinguished elements 0,1,
 binary operations \(a\vee b\) of join and \(a\wedge b\) of meet, and a unary
@@ -125,7 +126,7 @@ a\le\neg b \quad&\text{ iff }\quad a\wedge b=0\\
 arrows the Boolean homomorphisms that \(h(0)=0,h(a\vee b)=h(a)\vee h(b)\), etc.
 \end{examplle}
 \subsection{Products}
-\label{sec:org3628568}
+\label{sec:org4a583bb}
 \begin{definition}[]
 In any category \(\bC\), a \textbf{product diagram} for the objects \(A\) and \(B\)
 consists of an object \(P\) and arrows
@@ -148,7 +149,7 @@ A&P\arrow[l,"p_1"]\arrow[r,"p_2"']&B
 \end{definition}
 
 \subsection{Categories with products}
-\label{sec:org92bc992}
+\label{sec:org3d51972}
 Let \(\bC\) be a category that has a product diagram for every pair of
 objects. Suppose we have objects and arrows
 \begin{center}\begin{tikzcd}
@@ -214,7 +215,7 @@ objects in \(\bC\) has a product
 
 
 \subsection{Hom-sets}
-\label{sec:org1ada9a0}
+\label{sec:org3ea047a}
 In this section, we assume that all categories are locally small
 
 Given any objects \(A\) and \(B\)  in category \(\bC\),we write
@@ -304,10 +305,10 @@ preserves products
 \end{corollary}
 
 \section{Duality}
-\label{sec:org2143621}
+\label{sec:org7b36338}
 
 \subsection{Coproducts}
-\label{sec:orgc35d225}
+\label{sec:orgedb378e}
 \begin{definition}[]
 A diagram
 \begin{tikzcd}
@@ -375,11 +376,297 @@ unique homomorphism
 \begin{equation*}
 [f,g]:A+B\to M
 \end{equation*}
-is defined by
+is defined by first extending the function
+\([\abs{f},\abs{g}]:\abs{A}+\abs{B}\to\abs{M}\) to one \([f,g]'\) on the free
+monoid \(M(\abs{A}+\abs{B})\)
 \begin{center}\begin{tikzcd}
 \abs{A}+\abs{B}\arrow[r,"{[\abs{f}+\abs{g}]}"]&\abs{M}\\
 M(\abs{A}+\abs{B})\arrow[r,"{[f,g]}'"]\arrow[d,twoheadrightarrow]&M\\
 M(\abs{A}+\abs{B})/\sim\arrow[ur,dotted,"{[f,g]}"']
 \end{tikzcd}\end{center}
+If \(v\sim w\) in \(M(\abs{A}+\abs{B})/\sim\) then \([f,g]'(v)=[f,g]'(w)\).
+Thus \([f,g]'\) extends to the quotient to yield the desired map
+\([f,g]:M(\abs{A}+\abs{B})/\sim\to M\)
+
+This construction also works to give coproducts in \(\Groups\), where it is
+called the \textbf{free product} of \(A\) and \(B\) and written as \(A\oplus B\).
+\end{examplle}
+
+\begin{proposition}[]
+In the category \(\Ab\) of abelian groups, there is a canonical isomorphism
+between the binary coproduct and product
+\begin{equation*}
+A+B\cong A\times B
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+Take \(1_A:A\to A\) and \(O_B:A\to B\) . we get
+\begin{equation*}
+\theta=[\la 1_A,0_B\ra,\la 0_A,1_B\ra]:A+B\to A\times B
+\end{equation*}
+Then given any \((a,b)\in A+B\), we have
+\begin{align*}
+\theta(a,b)&=
+[\la 1_A,0_B\ra,\la0_A,1_B\ra](a,b)\\
+&=\la 1_A,0_B\ra(a)+\la0_A,1_B\ra(b)\\
+&=(1_A(a),0_B(A))+(0_A(b),1_B(b))\\
+&=(a,0_B)+(0_A,b)\\
+&=(a+0_A,0_B+b)\\
+&=(a,b)
+\end{align*}
+\end{proof}
+
+\begin{proposition}[]
+Coproducts are unique up to isomorphism
+\end{proposition}
+
+\subsection{Equalizers}
+\label{sec:org0391206}
+\begin{definition}[]
+In any category \(\bC\), given parallel arrows
+\begin{center}\begin{tikzcd}
+A\arrow[r,yshift=0.7ex,"f"]\arrow[r,yshift=-0.7ex,"g"']&B
+\end{tikzcd}\end{center}
+an \textbf{equalizer} of \(f\) and \(g\) consists of an object \(E\) and an arrow
+\(e:E\to A\), universal s.t.
+\begin{equation*}
+f\circ e=g\circ e
+\end{equation*}
+That is, given any \(z:Z\to A\) with \(f\circ z=g\circ z\), there is a \textbf{unique}
+\(u:Z\to E\) with \(e\circ u=z\), all as in the diagram
+\begin{center}\begin{tikzcd}
+E\arrow[r,"e"]&A\arrow[r,yshift=0.7ex,"f"]\arrow[r,yshift=-0.7ex,"g"']&B\\
+Z\arrow[u,dotted,"u"]\arrow[ur,"z"']
+\end{tikzcd}\end{center}
+\end{definition}
+
+\begin{examplle}[]
+Suppose we have the functions \(f,g:\R^2\rightrightarrows\R\), where
+\begin{align*}
+&f(x,y)=x^2+y^2\\
+&g(x,y)=1
+\end{align*}
+and we take the equalizer, say in \(\Top\). This is the subspace
+\begin{equation*}
+S=\{(x,y)\in\R^2\mid x^2+y^2=1\}\hookrightarrow\R^2
+\end{equation*}
+For, given any "generalized element" \(z:Z\to\R^2\) we get a pair of such
+"elements" \(z_1,z_2:Z\to\R\) just by composing with the two projections,
+\(z=\la z_1,z_2\ra\) and for these we then have
+\begin{align*}
+f(z)=g(z) &\quad\text{ iff }\quad z_1^2+z_2^2=1\\
+&\quad\text{ iff }\quad \la z_1,z_2\ra=z\in S
+\end{align*}
+where the last line really means that there is a factorization
+\(z=\ove{z}\circ i\) of \(z\) through the inclusion
+\(i:S\hookrightarrow\R^2\), as indicated in the following diagram
+\begin{center}\begin{tikzcd}
+S\arrow[r,hook,"i"]&\R^2\arrow[r,yshift=0.7ex,"x^2+y^2"]\arrow[r,yshift=-0.7ex,"1"']&\R\\
+Z\arrow[u,dotted,"\ove{z}"]\arrow[ur,"z"']
+\end{tikzcd}\end{center}
+Since the inclusion \(i\) is monic, such a factorization, if it exists, is
+necessarily unique, and thus \(S\hookrightarrow\R^2\) is indeed the equalizer
+of \(f\) and \(g\)
+\end{examplle}
+
+\begin{examplle}[]
+In \(\Sets\), given any functions \(f,g:A\rightrightarrows B\), their
+equalizer is the inclusion into \(A\) of the equationally defined subset
+\begin{equation*}
+\{x\in A\mid f(x)=g(x)\}\hookrightarrow A
+\end{equation*}
+
+Let
+\begin{equation*}
+2=\{\top,\bot\}
+\end{equation*}
+Then consider the \textbf{characteristic function}
+\begin{equation*}
+\chi_U:A\to 2
+\end{equation*}
+defined for \(x\in A\) by
+\begin{equation*}
+\chi_U(x)=
+\begin{cases}
+\top&x\in U\\
+\bot&x\not\in U
+\end{cases}
+\end{equation*}
+So the following is an equalizer
+\begin{center}\begin{tikzcd}
+   U\arrow[r]&A\arrow[r,yshift=0.7ex,"\top!"]\arrow[r,\yshift=-.7ex,"\chi_U"']&2
+\end{tikzcd}\end{center}
+
+where \(\top!=\top\circ!:U\xrightarrow{!}1\xrightarrow{\top}2\)
+
+Moreover, for every function,
+\begin{equation*}
+\varphi:A\to 2
+\end{equation*}
+we can form the variety
+\begin{equation*}
+V_{\varphi}=\{x\in A\mid \varphi(x)=\top\}
+\end{equation*}
+as an equalizer.
+
+It is easy to see that these operations \(\chi_U\) and \(V_\varphi\) are
+mutually inverse
+\begin{align*}
+ V_{\chi_U}&=\{x\in A\mid \chi_U(x)=\top\}\\
+ &=\{x\in A\mid x\in U\}\\
+ &=U
+\end{align*}
+for any \(U\subseteq A\), and given any \(\varphi:A\to2\)
+\begin{align*}
+\chi_{V_\varphi}(x)&=
+\begin{cases}
+\top&x\in V_\varphi\\
+\bot&x\not\in V_\varphi\\
+\end{cases}\\
+&=
+\begin{cases}
+\top&\varphi(x)=\top\\
+\bot&\varphi(x)=\bot
+\end{cases}\\
+&=\varphi(x)
+\end{align*}
+Thus we have the familiar isomorphism
+\begin{equation*}
+\Hom(A,2)\cong P(A)
+\end{equation*}
+mediated by taking equalizers
+\end{examplle}
+
+\begin{proposition}[]
+In any category, if \(e:E\to A\) is an equalizer of some pair of arrows, then
+\(e\) is monic
+\end{proposition}
+
+\begin{proof}
+Consider
+\begin{center}\begin{tikzcd}
+E\arrow[r,"e"]&A\arrow[r,yshift=.7ex,"f"]\arrow[r,yshift=-.7ex,"g"']&B\\
+Z\arrow[u,shift right=-.7ex,"x"]\arrow[u,shift right=.7ex,"y"']\arrow[ur,"z"']
+\end{tikzcd}\end{center}
+Suppose \(ex=ey\), we want to show \(x=y\). Put \(z=ex=ey\). Then
+\(fz=fex=gex=gz\), so there is a unique \(u:Z\to E\) s.t. \(eu=z\). So \(x=u=y\)
+\end{proof}
+
+\begin{examplle}[]
+In abelian groups, one has an alternate description of the equalizer, using
+the fact that
+\begin{equation*}
+f(x)=g(x) \quad\text{ iff }\quad (f-g)(x)=0
+\end{equation*}
+\end{examplle}
+
+
+\subsection{Coequalizers}
+\label{sec:org951afc2}
+\begin{definition}[]
+For any parallel arrows \(f,g:A\to B\) in a category \(\bC\), a \textbf{coequalizer}
+consists of \(Q\) and \(q:B\to Q\), universal with the property \(qf=qg\) as
+in
+\begin{center}\begin{tikzcd}
+A\arrow[r,yshift=.7ex,"f"]\arrow[r,-.7ex,"g"']&B\arrow[r,"q"]\arrow[rd,"z"]&Q
+\arrow[d,dotted,"u"]\\
+&&Z
+\end{tikzcd}\end{center}
+That is, given any \(Z\) and \(z:B\to Z\) if \(zf=zg\), then there exists a
+unique \(u:Q\to Z\) s.t. \(uq=z\)
+\end{definition}
+
+\begin{proposition}[]
+If \(q:B\to Q\) is a coequalizer of some pair of arrows, then \(q\) is epic
+\end{proposition}
+
+We can therefore think of a coequalizer \(q:B\twoheadrightarrow Q\) as a
+"collapse" of \(B\) by "identifying" all pairs \(f(a)=g(a)\)
+
+\begin{examplle}[]
+Let \(R\subseteq X\times X\) be an equivalence relation on a set \(X\), and
+consider the diagram
+\begin{center}\begin{tikzcd}
+R\arrow[r,yshift=.7ex,"r_1"]\arrow[r,yshift=-.7ex,"f_2"']&X
+\end{tikzcd}\end{center}
+where the \(r\)'s are the two projections of the inclusion
+\(R\subseteq X\times X\)
+\begin{center}\begin{tikzcd}
+&R\arrow[ld,"r_1"']\arrow[rd,"r_2"]\arrow[d,hook]\\
+X&X\times X\arrow[l,"p_1"]\arrow[r,"p_2"']&X
+\end{tikzcd}\end{center}
+The quotient projection
+\begin{equation*}
+\pi:X\to X/R
+\end{equation*}
+defined by \(x\mapsto[x]\) is then a coequalizer of \(r_1\) and \(r_2\). For
+given an \(f:X\to Y\) as in
+\begin{center}\begin{tikzcd}
+R\arrow[r,yshift=.7ex,"r_1"]\arrow[r,yshift=-.7ex,"r_2"']&X\arrow[r,"\pi"]\arrow[rd,"f"']
+&X/R\arrow[d,dotted,"\ove{f}"]\\
+&&Y
+\end{tikzcd}\end{center}
+there exists a function \(\ove{f}\) s.t.
+\begin{equation*}
+\ove{f}\pi (x)=f(x)
+\end{equation*}
+whenever \(f\) respects \(R\) in the sense that \((x,x')\in R\) implies
+\(f(x)=f(x')\). But this condition just says that \(f\circ r_1=f\circ
+   r_2\) since \(f\circ r_1(x,x')=f(x')\) and \(f\circ r_2(x,x')=f(x')\) for all
+\((x,x')\in R\). Moreover, if it exists, such a function \(\ove{f}\) is then
+necessarily unique, since \(\pi\) is an epimorphism
+
+The coequalizer in \(\Sets\) of an arbitrary parallel pair of function
+\(f,g:A\twoheadrightarrow B\) can be constructed by quotienting \(B\) by the
+equivalence relation generated by the equations \(f(x)=g(x)\)for all \(x\in
+   A\)
+
+Consider
+\begin{center}\begin{tikzcd}
+A\arrow[r,yshift=0.7ex,"f"]\arrow[r,yshift=-.7ex,"g"']&B\arrow[r]&Q=B/(f=g)
+\end{tikzcd}\end{center}
+where the equivalence relation \(R\) on \(b\) is generated by the pairs
+\((f(x),g(x))\) for all \(x\in A\). That is, \(R\) is the intersection of all
+equivalence relations on \(B\) containing all such pairs
+\end{examplle}
+
+\begin{examplle}[]
+Taken in posets
+\begin{center}\begin{tikzcd}
+1\arrow[r,yshift=.7ex,"0_P"]\arrow[r,yshift=-.7ex,"0_Q"']&P+Q\arrow[r]
+&P+Q/(0_P=0_Q)
+\end{tikzcd}\end{center}
+\((0_P=0_Q)\) is the equivalent closure of \((0_P(1),0_Q(1))\).
+\end{examplle}
+
+\begin{examplle}[Presentations of algebras]
+Suppose we are given
+\begin{align*}
+&\text{Generators: }\quad x,y,z\\
+&\text{Relations: }\quad xy=z,y^2=1
+\end{align*}
+To build an algebra on these generators and satisfying these relations, start
+with the free algebra
+\begin{equation*}
+F(3)=F(x,y,z)
+\end{equation*}
+and then "force" the relation \(xy=z\) to hold by taking a coequalizer of the
+maps
+\begin{center}\begin{tikzcd}
+F(1)\arrow[r,yshift=.7ex,"xy"]\arrow[r,yshift=-.7ex,"z"']&F(3)\arrow[r,"q"]&Q
+\end{tikzcd}\end{center}
+We use the fact that maps \(F(1)\to A\) correspond to elements \(a\in A\) by
+\(v\mapsto a\), where \(v\) is the single generator of \(F(1)\). Now
+similarly for the equation \(y^2=1\), taking the coequalizer
+\begin{center}\begin{tikzcd}
+F(1)\arrow[r,yshift=.7ex,"q(y^2)"]\arrow[r,yshift=-.7ex,"q(1)"']&Q\arrow[r]&Q'
+\end{tikzcd}\end{center}
+These two steps can actually be done simultaneously. Let
+\begin{gather*}
+ F(2)=F(1)+F(1)\\
+ F(2)\doublerightarrow{f}{g}F(3)
+\end{gather*}
+where \(f=[xy,y^2]\) and \(g=[z,1]\)
 \end{examplle}
 \end{document}
