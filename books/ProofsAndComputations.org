@@ -1,0 +1,512 @@
+#+TITLE: Proofs and Computations
+#+AUTHOR: Helmut Schwichtenberg & Stanley S. Wainer
+
+#+EXPORT_FILE_NAME: ../latex/ProofsAndComputations/ProofsAndComputations.tex
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \usepackage{ebproof}
+#+LATEX_HEADER: \DeclareMathOperator{\Efq}{Efq}
+#+LATEX_HEADER: \def \texists {\tilde{\exists}}
+#+LATEX_HEADER: \def \tvee {\tilde{\vee}}
+#+LATEX_HEADER: \DeclareMathOperator{\Stab}{Stab}
+* Logic
+  
+** Natural Deduction
+   Negation is defined by
+   \begin{equation*}
+   \neg A:=(A\to\bot)
+   \end{equation*}
+   
+   #+ATTR_LATEX: :options [Gentzen]
+   #+BEGIN_definition
+   *Subformulas* of \(A\) are defined by
+   1. \(A\) is a subformula of \(A\)
+   2. if \(B\circ C\) is a subformula of \(A\) then so are \(B,C\) for \(\circ=\to,\wedge,\vee\)
+   3. if \(\forall_xB(x)\) or \(\exists_xB(x)\) is a subformula of \(A\), then
+      so is \(B(r)\)
+
+   #+END_definition
+
+
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The notions of *positive*, *negative*, *strictly positive* subformula are defined
+   in a similar style
+   1. \(A\) is a positive and a strictly positive subformula of itself
+   2. if \(B\wedge C\) or \(B\vee C\) is a positive (negative, strictly
+      positive) subformula of \(A\), then so are \(B, C\)
+   3. if \(\forall_xB(x)\) or \(\exists_xB(x)\) is a positive (negative,
+      strictly positive) subformula of \(A\), then so is \(B(r)\)
+   4. if \(B\to C\) is a positive (negative) subformula of
+      \(A\), then \(B\) is a negative (positive)subformula of \(A\), and \(C\)
+      is a positive (negative)subformula of \(A\)
+   5. if \(B\to C\) is a strictly subformula of \(A\), then so is \(C\)
+
+
+   A strictly positive subformula of \(A\) is also called a *strictly positive
+   part* (*s.p.p.*) of \(A\)
+   #+END_definition
+
+
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{[u:A]}
+   \ellipsis{D}{B}
+   \infer1[\(\to^+u\)]{A\to B}
+   \end{prooftree}
+   \hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A\to B}
+   \hypo{}
+   \ellipsis{N}{A}
+   \infer2[\(\to^-\)]{B}
+   \end{prooftree}
+   \end{equation*}
+
+
+   The rule \(\forall^+x\) with conclusion \(\forall_xA\) is subject to the
+   following *(eigen-)variable condition*: the derivation \(M\) of the premise
+   \(A\) should not contain any open assumption having \(x\) as a free variable
+
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A}
+   \infer1[\(\forall^+x\)]{\forall_xA}
+   \end{prooftree}
+   \hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{\forall_xA(x)}
+   \hypo{r}
+   \infer2[\(\forall^-\)]{A(r)}
+   \end{prooftree}
+   \end{equation*}
+
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A}
+   \infer1[\(\vee_0^+\)]{A\vee B}
+   \end{prooftree}\hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{B}
+   \infer1[\(\vee_1^+\)]{A\vee B}
+   \end{prooftree}\hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A\vee B}
+   \hypo{[u:A]}
+   \ellipsis{N}{C}
+   \hypo{[v:B]}
+   \ellipsis{K}{C}
+   \infer3[\(\vee^-u,v\)]{C}
+   \end{prooftree}
+   \end{equation*}
+
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A}
+   \hypo{}
+   \ellipsis{N}{B}
+   \infer2[\(\wedge^+\)]{A\wedge B}
+   \end{prooftree}\hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{A\wedge B}
+   \hypo{[u:A]\quad [v:B]}
+   \ellipsis{N}{C}
+   \infer2[\(\wedge^-u,v\)]{C}
+   \end{prooftree}
+   \end{equation*}
+
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{r}
+   \hypo{}
+   \ellipsis{M}{A(r)}
+   \infer2[\(\exists^+\)]{\exists_xA(x)}
+   \end{prooftree}\hspace{1cm}
+   \begin{prooftree}[center=false]
+   \hypo{}
+   \ellipsis{M}{\exists_xA}
+   \hypo{[u:A]}
+   \ellipsis{N}{B}
+   \infer2[\(\exists^- x,u(\text{var.cond.})\)]{B}
+   \end{prooftree}
+   \end{equation*}
+
+   Rule \(\exists^-x,u\) is subject to an *(eigen-)variable condition*: in the
+   derivation \(N\) the variable \(x\)
+   1. should not occur free in the formula of any open assumption other than \(u:A\)
+   2. should not occur free in \(B\)
+
+
+   For each of the connectives \(\wedge, \vee, \exists\) the rules and the
+   following axioms are equivalent over minimal logic
+   \begin{equation*}
+   \exists^+:A\to\exists_xA,\quad \exists^-:\exists_xA\to\forall_x(A\to B)\to B(x\not\in FV(B))
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   The following are derivable
+   \begin{align*}
+   &(A\wedge B\to C)\leftrightarrow(A\to B\to C)\\
+   &(A\to B\wedge C)\leftrightarrow(A\to B)\wedge(A\to C)\\
+   &(A\vee B\to C)\leftrightarrow(A\to C)\wedge(B\to C)\\
+   &(A\to B)\vee(A\to C)\to (A\to B\vee C)\\
+   &\exists_x(A\to B)\to(\forall_xA\to B)\quad\text{if }x\not\in FV(B)\\
+   &\forall_x(A\to B)\leftrightarrow(A\to\forall_xB)\quad\text{if }x\not\in FV(A)\\
+   &\forall_x(A\to B)\leftrightarrow(\exists_xA\to B)\quad\text{if }x\not\in FV(B)\\
+   &\exists_x(A\to B)\to(A\to\exists_xB)\quad\text{if }x\not\in FV(A)
+   \end{align*}
+   #+END_lemma
+
+   #+BEGIN_proof
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{u:\exists_x(A\to B)}
+   \hypo{x}
+   \hypo{w:A\to B}\hypo{v:A}
+   \infer2{B}
+   \infer2{\exists_xB}
+   \infer2[\(\exists^-x,w\)]{\exists_xB}
+   \infer1[\(\to^+v\)]{A\to\exists_xB}
+   \infer1[\(\to^+u\)]{\exists_x(A\to B)to A\to\exists_xB}
+   \end{prooftree}
+   \end{equation*}
+   #+END_proof
+
+   *weak disjuction* and *weak existence*
+   \begin{equation*}
+   A\tilde{\vee}B:=\neg A\to\neg B\to\bot,\quad
+   \tilde{\exists}_xA:=\neg\forall_x\neg A
+   \end{equation*}
+   These weak variants are no stronger than the proper ones
+   \begin{equation*}
+   A\vee B\to A\tilde{\vee}B,\quad\exists_xA\to\tilde{\exists}_xA
+   \end{equation*}
+   by putting \(C:=\bot\) in \(\vee^-\) and \(B:=\bot\) in \(\exists^-\)
+
+   Moreover
+   \begin{align*}
+   \tilde{\exists}_{x_1,\dots,x_n}A&:=\forall_{x_1,\dots,x_n}(A\to\bot)\to\bot\\
+   \tilde{\exists}_{x_1,\dots,x_n}(A_1\tilde{\wedge}\cdots\tilde{\wedge}A_m)&:=
+   \forall_{x_1,\dots,x_n}(A_1\to\cdots\to A_m\to\bot)\to\bot
+   \end{align*}
+
+   In the previous contexts falsity \(\bot\) plays no role. We may change this
+   and require *ex-falso-quodlibet* axioms of the form
+   \begin{equation*}
+   \forall_{\vec{x}}(\bot\to R\vec{x})
+   \end{equation*}
+   with \(R\) a relation symbol distinct from \(\bot\). Let Efq denote the set
+   of all such axioms. A formula \(A\) is called *intuitionistically derivable*,
+   written \(\vdash_iA\) if \(\Efq\vdash A\). We write \(\Gamma\vdash_i B\) for
+   \(\Gamma\cup\Efq\vdash B\)
+
+   We may even go further and require *stability* axioms, of the form
+   \begin{equation*}
+   \forall_{\vec{x}}(\neg\neg R\vec{x}\to R\vec{x})
+   \end{equation*}
+   with \(R\) again a relation distinct from \(\bot\). Let Stab denote the set
+   of all these axioms. A formula \(A\) is called *classically derivable*, written
+   \(\vdash_c A\), if \(\Stab\vdash A\). We write \(\Gamma\vdash_cB\) for
+   \(\Gamma\cup\Stab\vdash B\)
+
+   #+ATTR_LATEX: :options [Stability, or principle of indirect proof]
+   #+BEGIN_theorem
+   1. \(\vdash(\neg\neg A\to A)\to(\neg\neg B\to B)\to\neg\neg(A\wedge B)\to
+      A\wedge B\)
+   2. \(\vdash(\neg\neg B\to B)\to\neg\neg(A\to B)\to A\to B\)
+   3. \(\vdash(\neg\neg A\to A)\to\neg\neg\forall_xA\to A\)
+   4. \(\vdash_c\neg\neg A\to A\) for every formula \(A\) without \(\vee,\exists\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   1. \((\neg\neg A\to A)\to\neg\neg A\to A\)
+   2. [@2]
+       \begin{equation*}
+       \begin{prooftree}[center=false]
+       \hypo{u:\neg\neg B\to B}
+       \hypo{v:\neg\neg(A\to B)}
+       \hypo{u_1:\neg B}
+       \hypo{u_2:A\to B}
+       \hypo{w:A}
+       \infer2{B}
+       \infer2{\bot}
+       \infer1[\(\to^+u_2\)]{\neg(A\to B)}
+       \infer2{
+       \begin{prooftree}[center=false]
+       \hypo{\bot}\infer1[\(\to^+u_1\)]{\neg\neg B}
+       \end{prooftree}
+       }
+       \infer2{B}
+       \end{prooftree}
+       \end{equation*}
+   3. 
+       \begin{equation*}
+       \begin{prooftree}[center=false]
+       \hypo{u:\neg\neg A\to A}
+       \hypo{v:\neg\neg\forall_xA}
+       \hypo{u_1:\neg A}
+       \hypo{u_2:\forall_xA}
+       \hypo{x}
+       \infer2{A}
+       \infer2{
+       \begin{prooftree}[center=false]
+       \hypo{\bot}\infer1[\(\to^+u_2\)]{\neg\forall_xA}
+       \end{prooftree}
+       }
+       \infer2{\begin{prooftree}[center=false]
+       \hypo{\bot}\infer1[\(\to^+u_1\)]{\neg\neg A}
+       \end{prooftree}}
+       \infer2{A}
+       \end{prooftree}
+       \end{equation*}
+   4. Induction on \(A\). The case \(R\vec{t}\) with \(R\) distinct from
+      \(\bot\) is given by Stab. In the case \(\bot\) the desired derivation is
+      \begin{equation*}
+      \begin{prooftree}[center=false]
+      \hypo{v:(\bot\to\bot)\to\bot}
+      \hypo{u:\bot}
+      \infer1[\(\to^+u\)]{\bot\to\bot}
+      \infer2{\bot}
+      \end{prooftree}
+      \end{equation*}
+      In the case \(A\wedge B,A\to B\) and \(\forall_xA\) use 1,2,3 respectively
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   The following are derivable
+   \begin{align*}
+   (\tilde{\exists}_xA\to B)\to\forall_x(A\to B)&\quad\text{ if }x\not\in FV(B)\\
+   (\neg\neg B\to B)\to\forall_x(A\to B)\to\tilde{\exists}_xA\to B&\quad\text{ if }x\not\in FV(B)\\
+   (\bot\to B[x:=c])\to(A\to\tilde{\exists}_xB)\to\texists_x(A\to B)&\quad\text{ if }x\not\in FV(A)\\
+   \texists_x(A\to B)\to A\to\texists_xB&\quad\text{ if }x\not \in FV(A)
+   \end{align*}
+   The last two items can also be seen as simplifying a weakly existentially
+   quantified implication whose premise doesn't contain the quantified variable.
+   In case the conclusion does not contain the quantified variable we have
+   align
+   \begin{align*}
+   (\neg\neg B\to B)\to\texists_x(A\to B)\to\forall_xA\to B&\quad\text{ if }x\not \in FV(A)\\
+   \forall_x(\neg\neg A\to A)\to(\forall_xA\to B)\to\texists_x(A\to B)&\quad\text{ if }x\not \in FV(A)
+   \end{align*}
+   #+END_lemma
+
+   #+BEGIN_proof
+   3. [@3] Writing \(B_0\) for \(B[x:=c]\) we have
+      \begin{equation*}
+      \resizebox{0.9\textwidth}{!}{
+      \begin{prooftree}[center=false]
+      \hypo{\forall_x\neg(A\to B)}
+      \hypo{c}
+      \infer2{\neg(A\to B_0)}
+      \hypo{\bot\to B_0}
+      \hypo{A\to\texists_xB}
+      \hypo{u_2:A}
+      \infer2{\texists_xB}
+      \hypo{\forall_x\neg(A\to B)}
+      \hypo{x}
+      \infer2{\neg(A\to B)}
+      \hypo{u_1:B}
+      \infer1{A\to B}
+      \infer2{
+      \begin{prooftree}
+      \hypo{\bot}
+      \infer1[\(\to^+u\)]{\neg B}
+      \infer1{\forall_x\neg B}
+      \end{prooftree}
+      }
+      \infer2{\bot}
+      \infer2{B_0}
+      \infer1[\(\to^+u_2\)]{A\to B_0}
+      \infer2{\bot}
+      \end{prooftree}}
+      \end{equation*}
+   4.
+      \begin{equation*}
+      \begin{prooftree}[center=false]
+      \hypo{\texists_x(A\to B)}
+      \hypo{\forall_x\neg B}
+      \hypo{x}
+      \infer2{\neg B}
+      \hypo{u_1:A\to B}
+      \hypo{A}
+      \infer2{B}
+      \infer2{\bot}
+      \infer1[\(\to^+u_1\)]{\neg(A\to B)}
+      \infer1{\forall_x\neg(A\to B)}
+      \infer2{\bot}
+      \end{prooftree}
+      \end{equation*}
+   #+END_proof
+
+   An immediate consequence of 6 is the classical derivability of the "drinker
+   formula" \(\texists_x(Px\to\forall_xPx)\) to be read "in every non-empty bar
+   there is a person s.t. if this person drinks, then everybody drinks"
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   \begin{alignat*}{2}
+   &\vdash_c(\texists_xA\to B)\leftrightarrow\forall_x(A\to B)\quad
+   &&\text{ if }x\not\in FV(B)\text{ and }B\text{ without }\forall,\exists\\
+   &\vdash_i(A\to\texists_xB)\leftrightarrow\texists_x(A\to B)
+   &&\text{ if }x\not\in FV(A)\\
+   &\vdash_c\texists_x(A\to B)\leftrightarrow(\forall_xA\to B)\quad
+   &&\text{ if }x\not\in FV(B)\text{ and }A,B\text{ without }\forall,\exists
+   \end{alignat*}
+   #+END_corollary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   The following are derivable
+   \begin{align*}
+   &(A\tvee B\to C)\to (A\to C)\wedge(B\to C)\\
+   &(\neg\neg C\to C)\to(A\to C)\to(B\to C)\to A\tvee B\to C\\
+   &(\bot\to B)\to(A\to B \tvee C)\to(A\to B)\tvee(A\to C)\\
+   &(A\to B)\tvee(A\to C)\to A\to B\tvee C\\
+   &(\neg\neg C\to C)\to(A\to C)\tvee(B\to C)\to A\to B\to C\\
+   &(\bot\to C)\to(A\to B\to C)\to(A\to C)\tvee(B\to C)
+   \end{align*}
+   #+END_lemma
+
+   #+BEGIN_proof
+   6. [@6]
+      \begin{equation*}
+      \begin{prooftree}[center=false]
+      \hypo{\neg(B\to C)}
+      \hypo{\bot\to C}
+      \hypo{\neg(A\to C)}
+      \hypo{A\to B\to C}
+      \hypo{u_1:A}
+      \infer2{B\to C}
+      \hypo{u_2:B}
+      \infer2{C}
+      \infer1[\(\to^+u_1\)]{A\to C}
+      \infer2{\bot}
+      \infer2{C}
+      \infer1[\(\to^+u_2\)]{B\to C}
+      \infer2{\bot}
+      \end{prooftree}
+      \end{equation*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   \begin{alignat*}{2}
+   &\vdash_c(A\tvee B\to C)\leftrightarrow(A\to C)\wedge(B\to C)\quad&&\text{ for }C
+   \text{ without }\forall,\exists\\
+   &\vdash_i(A\to B\tvee C)\leftrightarrow(A\to B)\tvee(A\to C)\\
+   &\vdash_c(A\to C)\tvee(B\to C)\leftrightarrow(A\to B\to C)
+   &&\text{for }C\text{ without }\forall,\exists
+   \end{alignat*}
+   #+END_corollary
+
+   #+BEGIN_remark
+   It is easy to see that weak disjuction and the weak existential quantifier
+   satisfy the same axioms as the strong variants, if one restricts the
+   conclusion of the elimination axioms to formulas without \(\forall,
+   \exists\). In fact we have
+   \begin{align*}
+   & \vdash A\to A\tvee B,\quad\vdash B\to A\tvee B\\
+   &\vdash_c A\tvee B\to(A\to C)\to(B\to C)\to C\quad(C\text{ without }\forall,\exists)\\
+   &\vdash A\to\tvee_xA\\
+   &\vdash_c \texists_xA\to\forall_x(A\to B)\to B\quad(x\not\in FV(B),B\text{ without }\forall,\exists)
+   \end{align*}
+   #+END_remark
+
+   #+BEGIN_proof
+   2. [@2]
+      \begin{equation*}
+      \resizebox{0.9\textwidth}{!}{
+      \begin{prooftree}[center=false]
+      \hypo{\neg\neg C\to C}
+      \hypo{\neg A\to\neg B\to\bot}
+      \hypo{u_1:\neg C}
+      \hypo{A\to C}
+      \hypo{u_2:A}
+      \infer2{C}
+      \infer2{\bot}
+      \infer1[\(\to^+u_2\)]{\neg A}
+      \infer2{\neg B\to\bot}
+      \hypo{u_1:\neg C}
+      \hypo{B\to C}
+      \hypo{u_3:B}
+      \infer2{C}
+      \infer2{\bot}
+      \infer1[\(\to^+u_3\)]{\neg B}
+      \infer2{\bot}
+      \infer1[\(\to^+u_1\)]{\neg\neg C}
+      \infer2{C}
+      \end{prooftree}}
+      \end{equation*}
+   #+END_proof
+
+   \(A\) is derivable in classical logic iff its translation \(A^g\) is
+   derivable in minimal logic
+
+   #+ATTR_LATEX: :options [Gödel-Gentzen translation $A^g$]
+   #+BEGIN_definition
+   \begin{align*}
+   (R\vec{t})^g&:=\neg\neg R\vec{t}\quad\text{ for }R\text{ distinct from }\bot\\
+   \bot^g&:=\bot\\
+   (A\vee B)^g&:=A^g\tvee B^g\\
+   (\exists_xA)^g&:=\texists_xA^g\\
+   (A\circ B)^g&:=A^g\circ B^g\quad\text{ for }\circ=\to,\wedge\\
+   (\forall_xA)^g&:=\forall_xA^g
+   \end{align*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   \(\vdash\neg\neg A^g\to A^g\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Induction on \(A\)
+
+   /Case/ \(R\vec{t}\) with \(R\) distinct from \(\bot\). We must show
+   \(\neg\neg\neg\neg R\vec{t}\to\neg\neg R\vec{t}\), which is a special case of
+   \(\vdash\neg\neg\neg B\to\neg B\)
+
+   /Case/ \(\bot\). Use \(\vdash\neg\neg\bot\to\bot\)
+
+   /Case/ \(A\vee B\). \(\vdash\neg\neg(A^g\tvee B^g)\to A^g\tvee B^g\) is a special
+   case of \(\vdash\neg\neg(\neg C\to \neg D\to\bot)\to\neg C\to\neg D\to\bot\)
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{\neg\neg(\neg C\to\neg D\to\bot)}
+   \hypo{u_1:\neg C\to\neg D\to\bot}
+   \hypo{\neg C}
+   \infer2{\neg D\to\bot}
+   \hypo{\neg D}
+   \infer2{\bot}
+   \infer1[\(\to^+u_1\)]{\neg(\neg C\to\neg D\to\bot)}
+   \infer2{\bot}
+   \end{prooftree}
+   \end{equation*}
+
+   /Case/ \(\exists_xA\). We need to show
+   \(\vdash\neg\neg\texists_xA^g\to\texists_xA^g\), and this is a special case
+   of \(\vdash\neg\neg\neg B\to\neg B\)
+
+   The cases \(A\to B\) and \(\forall_xA\) uses 2 and 3 of the stability theorem
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   1. \(\Gamma\vdash_c A\) implies \(\Gamma^g\vdash A^g\)
+   2. \(\Gamma^g\vdash A^g\) implies \(\Gamma\vdash_c A\) for \(\Gamma,A\) without \(\vee,\exists\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   
+   #+END_proof
+

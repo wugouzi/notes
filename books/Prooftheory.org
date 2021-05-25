@@ -1,0 +1,910 @@
+#+TITLE: Proof Theory
+#+AUTHOR: Gaisi Takeuti
+
+#+EXPORT_FILE_NAME: ../latex/ProofTheory/ProofTheory.tex
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \usepackage{ebproof}
+#+LATEX_HEADER: \def \LJ {\textbf{LJ}}
+#+LATEX_HEADER: \def \LK {\textbf{LK}}
+#+LATEX_HEADER: \def \LKs {\textbf{LK}^*}
+* First Order Predicate Calculus
+  In this chapter we shall present Gentzen's formulation of the first order
+  predicate calculus \(\LK\) (logistischer klassischer Kalkül). Intuitionisitic
+  logic is known as \(\LJ\) (logistischer intuitionistischer Kalkül)
+** Formalization of statements
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   *Formulas* are defined inductively as:
+   3. [@3] If \(A\) is a formula, \(a\) is a free variable and \(x\) is a bound
+      variable not occurring in \(A\), then \(\forall xA'\) and \(\exists xA'\) are
+      formulas, where \(A'\) is the expression obtained from \(A\) by writing
+      \(x\) in place of \(a\) at each occurrence of \(a\) in \(A\)
+   #+END_definition
+
+   
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(A\) be an expression, let \(\tau_1,\dots,\tau_n\) be distinct primitive
+   symbols, and let \(\sigma_1,\dots,\sigma_n\) be any symbols. By
+   \begin{equation*}
+   \left(
+   A\frac{\tau_1,\dots,\tau_n}{\sigma_1,\dots,\sigma_n}
+   \right)
+   \end{equation*}
+   we mean the expression obtained from \(A\) by writing
+   \(\sigma_1,\dots,\sigma_n\) in place of \(\tau_1,\dots,\tau_n\) respectively
+   at each occurrence of \(\tau_1,\dots,\tau_n\). Such an operation is called
+   the *(simultaneous) replacement of* \((\tau_1,\dots,\tau_n)\) *by*
+   \((\sigma_1,\dots,\sigma_n)\) *in* \(A\).
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   1. If \(A\) contains none of \(\tau_1,\dots,\tau_n\), then
+      \begin{equation*}
+      \left(
+      A\frac{\tau_1,\dots,\tau_n}{\sigma_1,\dots,\sigma_n}
+      \right)
+      \end{equation*}
+      is \(A\) itself
+   2. If \(\sigma_1,\dots,\sigma_n\) are distinct primitive symbols, then
+      \begin{equation*}
+      \left(\left(
+      A\frac{\tau_1,\dots,\tau_n}{\sigma_1,\dots,\sigma_n}
+      \right)\frac{\sigma_1,\dots,\sigma_n}{\theta_1,\dots,\theta_n}\right)
+      \end{equation*}
+      is identical with
+      \begin{equation*}
+      \left(
+      A\frac{\tau_1,\dots,\tau_n}{\theta_1,\dots,\theta_n}
+      \right)
+      \end{equation*}
+   #+END_proposition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. Let \(A\) be a formula and \(t_1,\dots,t_n\) be terms. If there is a
+      formula \(B\) and \(n\) distinct free variables \(b_1,\dots,b_n\) s.t.
+      \(A\) is
+      \begin{equation*}
+      \left(
+      B\frac{b_1,\dots,b_n}{t_1,\dots,t_n}
+      \right)
+      \end{equation*}
+      then for each \(i(1\le i\le n)\) the occurrences of \(t_1\) resulting from
+      the above replacement are said to be *indicated* in \(A\), and this fact is
+      also expressed by writing \(B\) as \(B(b_1,\dots,b_n)\) and \(A\) as \(B(t_1,\dots,t_n)\)
+   2. A term \(t\) is *fully indicated* in \(A\), or every occurrence of \(t\) in
+      \(A\) is indicated, if every occurrence of \(t\) is obtained by such a replacement
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   If \(A\) is a formula (where \(a\) is not necessarily fully indicated) and
+   \(x\) is a bound variable not occurring in \(A(a)\), then \(\forall xA(x)\) and
+   \(\exists xA(x)\) are formulas
+   #+END_proposition
+
+   
+** Formal proofs and related concepts
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   An *inference* is an expression of the form
+   
+   \begin{equation*}
+   \begin{prooftree}[center=false]
+   \hypo{S_1}
+   \infer1{S}
+   \end{prooftree}\text{ or }
+   \begin{prooftree}[center=false]
+   \hypo{S_1}
+   \hypo{S_2}
+   \infer2{S}
+   \end{prooftree}
+   \end{equation*}
+   where \(S_1,S_2\) and \(S\) are sequents. \(S_1\) and \(S_2\) are called the
+   *upper sequents* and \(S\) is called the *lower sequent* of the inference
+   #+END_definition
+
+#+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For arbitrary \Gamma and \Delta in the above notation, \(\Gamma\to\Delta\) is called a
+   *sequent*. \Gamma and \Delta are called the *antecedent* and *succedent*,
+   respectively, of the sequent and each formula in \Gamma and \Delta is called a
+   *sequent-formula* 
+   #+END_definition
+
+   Structural rules
+      1. *Weakening*:
+         \begin{equation*}
+         \text{left: }
+         \begin{prooftree}
+         \hypo{\Gamma\to\Delta}
+         \infer1{D,\Gamma\to\Delta}
+         \end{prooftree};\quad\text{right: }
+         \begin{prooftree}
+         \hypo{\Gamma\to\Delta}
+         \infer1{\Gamma\to\Delta,D}
+         \end{prooftree}
+         \end{equation*}
+         \(D\) is called the *weakening formula*
+      2. *Contraction*:
+         \begin{equation*}
+         \text{left: }
+         \begin{prooftree}
+         \hypo{D,D,\Gamma\to\Delta}
+         \infer1{D,\Gamma\to\Delta}
+         \end{prooftree}\quad\text{ right: }
+         \begin{prooftree}
+         \hypo{\Gamma\to\Delta,D,D}
+         \infer1{\Gamma\to\Delta,D}
+         \end{prooftree}
+         \end{equation*}
+      3. *Exchange*
+         \begin{equation*}
+         \text{left: }
+         \begin{prooftree}
+         \hypo{\Gamma,C,D,\Pi\to\Delta}
+         \infer1{\Gamma,D,C,\Pi\to\Delta}
+         \end{prooftree}\quad\text{ right: }
+         \begin{prooftree}
+         \hypo{\Gamma\to\Delta,C,D,\Lambda}
+         \infer1{\Gamma\to\Delta,D,C,\Lambda}
+         \end{prooftree}
+         \end{equation*}
+
+
+   We will refer to these three kinds of inferences as "weak inferences",
+   while all others will be called "strong inferences"
+   4. [@4] *Cut*
+      \begin{equation*}
+      \begin{prooftree}[center=false]
+      \hypo{\Gamma\to\Delta,D}
+      \hypo{D,\Pi \to\Lambda}
+      \infer2{\Gamma,\Pi\to\Delta,\Lambda}
+      \end{prooftree}
+      \end{equation*}
+      \(D\) is called the *cut formula* of this instance
+
+
+   Logical rules
+   1. 
+       \begin{equation*}
+       \neg:\text{left: }
+       \begin{prooftree}
+       \hypo{\Gamma\to\Delta,D}
+       \infer1{\neg D,\Gamma\to\Delta}
+       \end{prooftree};\quad
+       \neg:\text{right: }
+       \begin{prooftree} 
+       \hypo{D,\Gamma\to\Delta}
+       \infer1{\Gamma\to\Delta,\neg D}
+       \end{prooftree}
+       \end{equation*}
+       \(D\) and \(\neg D\) are called the *auxiliary formula* and the *principal
+       formula* respectively, of this inference
+   2. 
+       \begin{align*}
+       &
+       \begin{prooftree}
+       \hypo{C,\Gamma\to\Delta}
+       \infer1[\(\wedge\)left]{C\wedge D,\Gamma\to\Delta}
+       \end{prooftree}\quad\text{ and }\quad
+       \begin{prooftree}
+       \hypo{D,\Gamma\to\Delta}
+       \infer1[\(\wedge\)left]{C\wedge D,\Gamma\to\Delta}
+       \end{prooftree}\\
+       &
+       \begin{prooftree}[center=false]
+       \hypo{\Gamma\to\Delta,C}
+       \hypo{\Gamma\to\Delta,D}
+       \infer2[\(\wedge\)right]{\Gamma\to\Delta,C\wedge D}
+       \end{prooftree}
+       \end{align*}
+       \(C\) and \(D\) are called the auxiliary formulas and \(C\wedge D\) is
+       called the principal formula of this inference
+
+   3. 
+       \begin{align*}
+       &
+       \begin{prooftree}[center=false]
+       \hypo{C,\Gamma\to\Delta}
+       \hypo{D,\Gamma\to\Delta}
+       \infer2[\(\vee\)left]{C\vee D,\Gamma\to\Delta}
+       \end{prooftree}\\&
+       \begin{prooftree}%[center=false]
+       \hypo{\Gamma\to\Delta,C}
+       \infer1[\(\vee\)right]{\Gamma\to\Delta,C\vee D}
+       \end{prooftree}\quad\text{ and }\quad
+       \begin{prooftree}%[center=false]
+       \hypo{\Gamma\to\Delta,D}
+       \infer1[\(\vee\)right]{\Gamma\to\Delta,C\vee D}
+       \end{prooftree}
+       \end{align*}
+       \(C\) and \(D\) are called the auxiliary formulas and \(C\vee D\) the
+       principal formula of this inference
+   4.
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\Gamma\to\Delta,C}
+      \hypo{D,\Pi\to \Lambda}
+      \infer2[\(\supset\)left]{C\supset D,\Gamma,\Pi\to\Delta,\Lambda}
+      \end{prooftree}\hspace{1cm}
+      \begin{prooftree}%[center=false]
+      \hypo{C,\Gamma\to\Delta,D}
+      \infer1[\(\supset\)right]{\Gamma\to\Delta,C\supset D}
+      \end{prooftree}
+      \end{equation*}
+      \(C\) and \(D\) are called the auxiliary formulas and \(C\supset D\) the
+      principal formula
+
+
+   1-4 are called *propositional inferences*
+   5. [@5]
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{F(t),\Gamma\to\Delta}
+      \infer1[\(\forall\)left]{\forall xF(x),\Gamma\to\Delta}
+      \end{prooftree}\hspace{1cm}
+      \begin{prooftree}%[center=false]
+      \hypo{\Gamma\to\Delta,F(a)}
+      \infer1[\(\forall\)right]{\Gamma\to\Delta,\forall xF(x)}
+      \end{prooftree}
+      \end{equation*}
+      where \(t\) is an arbitrary term, and \(a\) does not occur in the lower
+      sequent. \(F(t)\) and \(F(a)\) are called the auxiliary formulas and
+      \(\forall xF(x)\) the principal formula. The \(a\) in \(\forall\)right is called
+      the *eigenvariable* of this inference
+
+
+   In \(\forall\)right all occurrences of \(a\) in \(F(a)\) are indicated. In
+   \(\forall\)left, \(F(t)\) and \(F(x)\) are
+   \begin{equation*}
+   \left(F(a)\frac{a}{t}
+   \right)\quad\text{ and }\quad
+   \left(F(a)\frac{a}{t}
+   \right)
+   \end{equation*}
+   respectively, so not every \(t\) in \(F(t)\) is necessarily indicated
+
+   6. [@6]
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{F(a),\Gamma\to\Delta}
+      \infer1[\(\exists\)left]{\exists xF(x),\Gamma\to\Delta}
+      \end{prooftree}\hspace{1cm}
+      \begin{prooftree}%[center=false]
+      \hypo{\Gamma\to\Delta,F(t)}
+      \infer1[\(\exists\)right]{\Gamma\to\Delta,\exists xF(x)}
+      \end{prooftree}
+      \end{equation*}
+      where \(a\) does not occur in the lower sequent, and \(t\) is an arbitrary
+      term
+
+      \(F(a)\) and \(Ft\) are called the auxiliary formulas and \(\exists xF(x)\) the
+      principal formula. The \(a\) in \(\exists\)left is called the
+      eigenvariable of this inference
+
+
+   In \(\exists\)left \(a\) is fully indicated
+
+   5 and 6 are called the *quantifier inferences*. The condition, that the
+   eigenvariable must not occur in the lower sequent in \(\forall\)right and
+   \(\exists\)left is called the *eigenvariable condition*
+
+   A sequent of the form \(A\to A\) is called an *initial sequent* or axiom
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A *proof* \(P\) (in \(\LK\)), or *\(\LK\)-proof*, is a tree of sequents
+   satisfying the following conditions
+   1. The topmost sequents of \(P\) are initial sequents
+   2. Every sequent in \(P\) except the lowest one is an upper sequent of an
+      inference whose lower sequent is also in \(P\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A sequence of sequents in a proof \(P\) is called a *thread* (of \(P\)) if
+      the following conditions are satisfied
+      1. The sequence begins with an initial sequent and ends with the end-sequent
+      2. Every sequent in the sequence except the last is an upper sequent of an
+         inference, and is immediately followed by the lower sequent of this inference
+   2. Let \(S_1,S_2\)and \(S_3\) be sequents in a proof \(P\). We say \(S_1\)
+         is *above* \(S_2\)or \(S_2\) is *below* \(S_1\) if there is a thread
+         containing both \(S_1\)and \(S_2\) where \(S_1\) appears before
+         \(S_2\). If \(S_1\)is above \(S_2\)and \(S_2\) is above \(S_3\), we say
+         \(S_2\) is *between* \(S_1\) and \(S_3\)
+   3. An inference in \(P\) is said to be *below a sequent* \(S\) if its lower
+      sequent is below \(S\)
+   4. Let \(P\) be a proof. A part of \(P\) which itself is a proof is called a
+      *subproof* of \(P\). For any sequent \(S\) in \(P\), that part of \(P\)
+      which consists of all sequents which are either \(S\)itself or which occur
+      above \(S\)is called a subproof of \(P\) (with end-sequent \(S\))
+   5. Let \(P_0\) be a proof of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{}{\Gamma\to\Theta}
+      \ellipsis{(*)}{}
+      \end{prooftree}
+      \end{equation*}
+      where (*) denotes the part of \(P_0\) under \(\Gamma\to\Theta\), and let
+      \(Q\) be a proof ending with \(\Gamma,D\to\Theta\). By a copy of \(P_0\) from
+      \(Q\) we mean a proof \(P\) of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{Q}{\Gamma,D\to\Theta}
+      \ellipsis{(**)}{}
+      \end{prooftree}
+      \end{equation*}
+      where \((**)\) differs from \((*)\) only in that for each sequent in \((*)\),
+      say \(\Gamma\to\Lambda\), the corresponding sequent in \((**)\) has the
+      form \(\Pi,D\to\Lambda\).
+   6. Let \(S(a)\) or \(\Gamma(a)\to\Delta(a)\), denote a sequent of the form
+      \(A_1(a),\dots,A_m(a)\to B_1(a),\dots,B_n(a)\). Then \(S(t)\), or
+      \(\Gamma(t)\to\Delta(t)\), denotes the sequent
+   \(A_1(t),\dots,A_m(t)\to B_1(t),\dots,B_n(t)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A proof in \(\LK\) is called *regular* if it satisfies the condition that all
+   eigenvariables are distinct from one another and if a free variable \(a\)
+   occurs as an eigenvariable in a sequent \(S\) of the proof, then \(a\) occurs
+   only in sequents above \(S\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. Let \(\Gamma(a)\to\Delta(a)\) be an (\(\LK\)-)provable sequent in which \(a\)
+      is fully indicated, and let \(P(a)\) be a proof of \(\Gamma(a)\to\Delta(a)\).
+      Let \(b\) be a free variable not occurring in \(P(a)\). Then the tree
+      \(P(b)\), obtained from \(P(a)\) by replacing \(a\) by \(b\) at each
+      occurrence of \(a\) in \(P(a)\), is also a proof and its end-sequent is \(\Gamma(b)\to\Delta(b)\)
+   2. For an arbitrary \(\LK\)-proof there exists a regular proof of the same
+      end-sequent. Moreover, the required proof is obtained from the original
+      proof simply by replacing free variables
+   #+END_lemma
+
+   #+BEGIN_proof
+   1. By induction on the number of inference in \(P(a)\). If \(P(a)\) consists
+      of simply an initial sequent \(A(a)\to A(a)\), then \(P(b)\) consists of the
+      sequent \(A(b)\to A(b)\).
+
+      Suppose that our proposition holds for proofs containing at most \(n\)
+      inferences and suppose that \(P(a)\) contains \(n+1\) inferences. We treat
+      the possible cases according to the last inferences in \(P(a)\). Since
+      other cases can be treated similarly, we consider only the case where the
+      last inference, say \(J\), is a \(\forall\)right. Suppose the
+      eigenvariable of \(J\) is \(a\), and \(P(a)\) is of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{\(Q(a)\)}{\Gamma\to\Lambda,A(a)}
+      \infer1[\(J\)]{\Gamma\to\Lambda,\forall xA(x)}
+      \end{prooftree}
+      \end{equation*}
+      where \(Q(a)\) is the subproof of \(P(a)\) ending with
+      \(\Gamma\to\Lambda,A(a)\). \(a\) doesnt occur in \Gamma, \Lambda or \(A(x)\). By the
+      induction hypotheses the result of replacing all \(a\)'s  in \(Q(a)\) by
+      \(b\) is a proof whose end-sequent is \(\Gamma\to\Lambda,A(b)\). \Gamma and \Lambda
+      contain no \(b\)'s. Thus we can apply a \(\forall\)right to this sequent
+      using \(b\) as its eigenvariable
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{\(Q(b)\)}{\Gamma\to\Lambda,A(b)}
+      \infer1[]{\Gamma\to\Lambda,\forall xA(x)}
+      \end{prooftree}
+      \end{equation*}
+      and so \(P(b)\) is a proof ending with \(\Gamma\to\Lambda,\forall xA(x)\). If
+      \(a\) is not the eigenvariable of \(J\), \(P(a)\) is of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{\(Q(a)\)}{\Gamma(a)\to\Lambda(a),A(a,c)}
+      \infer1{\Gamma(a)\to\Lambda(a),\forall xA(a,x)}
+      \end{prooftree}
+      \end{equation*}
+      By the induction hypothesis the result of replacing all \(a\)'s in
+      \(Q(a)\) by \(b\)is a proof and its end-sequent is
+      \(\Gamma(b)\to\Lambda(b),A(b,c)\)
+
+      Since by assumption \(b\) doesn't occur in \(P(a)\), \(b\) is not \(c\)
+      and so we can apply a \(\forall\)right to this sequent, with \(c\) as its eigenvariable
+
+   2. By mathematical induction on the number \(l\) of applications of
+      \(\forall\)right and \(\exists\)left in a given proof \(P\). If \(l=0\)
+      then take \(P\) itself. Otherwise, \(P\) can be represented in the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{P_1\quad P_2\dots P_k}
+      \ellipsis{(*)}{S}
+      \end{prooftree}
+      \end{equation*}
+      where \(P_i\) is a subproof of \(P\) of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{}{\Gamma_i\to\Delta_i,F_i(b_i)}
+      \infer1[\(I_i\)]{\Gamma_i\to\Delta_i,\forall y_iF_i(y_i)}
+      \end{prooftree}
+      \quad\text{ or }\quad
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \ellipsis{}{F_i(b_i),\Gamma_i\to\Delta_i}
+      \infer1[\(I_i\)]{\exists y_iF_i(y_i),\Gamma_i\to\Delta_i}
+      \end{prooftree}      
+      \end{equation*}
+      and \(I_i\) is a lowermost \(\forall\)right or \(\exists\)left in \(P\)
+
+      Let us deal with the case where \(I_i\) is \(\forall\)right. \(P_i\) has
+      fewer applications of \(\forall\)right or \(\exists\)left than \(P\), so
+      by the induction hypothesis there is a regular proof \(P_i'\) of
+      \(\Gamma_i\to\Delta_i,F_i(b_i)\). Note that no free variable in
+      \(\Gamma_i\to\Delta_i,F_i(b_i)\) (including \(b_i\)) is used as an
+      eigenvariable in \(P_i'\). Suppose \(c_1,\dots,c_m\) are all the
+      eigenvariables in all the \(P_i\)'s which occur in \(P\) above
+      \(\Gamma_i\to\Delta_i,\forall y_iF_i(y_i), i=1,\dots,k\). Then change
+      \(c_1,\dots,c_m\) to \(d_1,\dots,d_m\) respectively, where
+      \(d_1,\dots,d_m\) are the first \(m\) variables which occur neither in
+      \(P\) nor in \(P_i\)'. If \(b_i\) occurs in \(P\) below
+      \(\Gamma_i\to\Delta_i,\forall y_iF_i(y_i)\) then change it to \(d_{m+i}\)
+
+      Let \(P_i''\) be the proof which is obtained from \(P_i'\) by the above
+      replacement of varaibles. Then \(P_1'',\dots,P_k''\) are each regular
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{P_1''\dots
+      \begin{prooftree}%[center=false]
+      \hypo{P_i''}
+      \infer1{\Gamma_i\to\Delta_i,\forall y_iF_i(y_i)}
+      \end{prooftree}\dots P_n''}
+      \ellipsis{(*)}{S}
+      \end{prooftree}
+      \end{equation*}
+   #+END_proof
+
+   From now on we will assume that we are dealing with regular proofs whenever
+   convenient
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \(t\) be an arbitrary term. Let \(\Gamma(a)\to \Delta(a)\) be a provable (in \(\LK\))
+   sequent in which \(a\) is fully indicated, and let \(P(a)\) be a proof ending
+   with \(\Gamma(a)\to \Delta(a)\) in which *every eigenvariable is different from \(a\) and
+   not contained in \(t\)*. Then \(P(t)\) is a proof whose end-sequent is
+   \(\Gamma(t)\to \Delta(t)\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \(t\) be an arbitrary term. Let \(\Gamma(a)\to \Delta(a)\) be a provable (in \(\LK\))
+   sequent in which \(a\) is fully indicated, and let \(P(a)\) be a proof of
+   \(\Gamma(a)\to \Delta(a)\). Let \(P'(a)\) be a proof obtained from \(P(a)\) by changing
+   eigenvariables in such a way that in \(P'(a)\) every eigenvariable is
+   different from \(a\) and not contained in \(t\). Then \(P'(t)\) is a proof of
+   \(\Gamma(t)\to \Delta(t)\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Let \(t\) be an arbitrary term and \(S(a)\) a provable sequent in which \(a\)
+   is fully indicated. Then \(S(t)\) is also provable
+   #+END_proposition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   label:prop2.14
+   If a sequent is provable, then it is provable with a proof in which all the
+   initial sequents consist of atmoic formulas. Furthermore, if a sequent is
+   provable without cut, then it is provable without cut with a proof of the
+   above sort
+   #+END_proposition
+
+   #+BEGIN_proof
+   It suffices to show that for an arbitrary formula \(A\), \(A\to A\) is
+   provable without cut, starting with initial sequents consisting of atomic formulas.
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Two formulas \(A\) and \(B\) are *alphabetical variants* if for some
+   \(x_1,\dots,x_n,y_1,\dots,y_n\)
+   \begin{equation*}
+   \left(A\frac{x_1,\dots,x_n}{z_1,\dots,z_n}
+   \right)
+   \end{equation*}
+   is
+   \begin{equation*}
+   \left(
+   B\frac{y_1,\dots,y_n}{z_1,\dots,z_n}
+   \right)
+   \end{equation*}
+   where \(z_1,\dots,z_n\) are bound variables occurring neither in \(A\) nor in
+   \(B\). The fact that \(A\) and \(B\) are alphabetical variants will be
+   expressed by \(A\sim B\)
+   #+END_definition
+
+** A formulation of intuitionistic predicate calculus
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   We can formalize the intuitionistic predicate calculus as a subsystem of
+   \(\LK\) which we call \(\LJ\) following Gentzen (\(\bJ\) stands for
+   "intuitionistic"). \(\LJ\)is obtained from \(\LK\) by modifying it as follows
+   1. A sequent in \(\LJ\) is of the form \(\Gamma \to \Delta \) where \Delta consists of at most
+      one formula
+   2. Inferences in \(\LJ\) are those obtained from those in \(\LK\) by imposing
+      the restriction that the succedent of each upper and lower sequent
+      consists of at most one formula; thus there are no inferences in
+      \(\LJ\)corresponding to contraction right or exchange right
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   If a sequent \(S\) of \(\LJ\) is provable in \(\LJ\), then it is also
+   provable in \(\LK\)
+   #+END_proposition
+
+** Axiom systems
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The basic system is \(\LK\)
+   1. A finite or infinite set \(\cala\) of sentences is called an *axiom system*,
+      and each of these sentences is called an *axiom* of \(\cala\). Sometimes an
+      axiom system is called a *theory*
+   2. A finite (possibly empty) sequence of formulas consisting only of axioms
+      of \(\cala\) is called an *axiom sequence* of \(\cala\)
+   3. If there exists an axiom sequence \(\Gamma_0\) of \(\cala\) s.t.
+      \(\Gamma_0,\Gamma\to\Delta\) is \(\LK\)-provable, then \(\Gamma \to \Delta\) is
+      said to be *provable from* \(\cala\) (in \(\LK\)). We express this by \(\cala,\Gamma\to\Delta\)
+   4. \(\cala\) is *inconsistent* (with \(\LK\)) if the empty sequent \(\to\) is
+      provable from \(\cala\) (in \(\LK\))
+   5. If all function constants and predicate constants in a formula \(A\) occur
+      in \(\cala\), then \(A\) is said to be *dependent on* \(\cala\)
+   6. A sentence \(A\) is *consistent* if the axiom system \(\{A\}\) is consistent
+   7. \(\LK_{\cala}\) is the system obtained from \(\LK\) by adding \(\to A\) as
+      initial sequents for all \(A\) in \(\cala\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Let \(\cala\) be an axiom system. Then the following are equivalent
+   1. \(\cala\) is inconsistent (with \(\LK\))
+   2. for every formula \(A\), \(A\) is provable from \(\cala\)
+   3. for some formula \(A\), \(A\)and \(\neg A\) are both provable from \(\cala\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   \(1\leftrightarrow 2\), \(2\leftrightarrow3\). \(\to A\vee B\) and
+   \(\to \neg A\vee B\) implies \(\to B\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Let \(\cala\) be an axiom system. Then a sequent \(\Gamma\to \Delta\) is
+   \(\LK_{\cala}\)-provable iff \(\Gamma\to\Delta\) is provable from \(\cala\)
+   (in \(\LK\))
+   #+END_proposition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   An axiom system \(\cala\) is consistent (with \(\LK\)) iff \(\LK_{\cala}\) is consistent
+   #+END_corollary
+
+   These definitions and the propositions hold also for \(\LJ\)
+
+** The cut-elimination theroem
+   #+ATTR_LATEX: :options [the cut-elimination theroem: Gentzen]
+   #+BEGIN_theorem
+   If a sequent is \((\LK)\)-provable, then it is \((\LK)\)-provable without a cut
+   #+END_theorem
+
+   Let \(A\)be a formula. An inference of the following form is called a *mix*
+   (w.r.t. \(A\)):
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{\Gamma\to\Delta}
+   \hypo{\Pi\to\Lambda}
+   \infer2[\(A\)]{\Gamma,\Pi^* \to \Delta^*, \Lambda}
+   \end{prooftree}
+   \end{equation*}
+   where both \Delta and \Pi contain the formula \(A\), and \(\Delta^*\) and \(\Pi^*\) are
+   obtained from \Delta and \Pi respectively by deleting all the occurrences of \(A\)
+   in them. We call \(A\) the mix formula of this inference.
+
+   Let's call the system which is obtained from \(\LK\) by replacing the cut
+   rule by the mix rule, \(\LKs\).
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   \(\LK\) and \(\LKs\) are equivalent, that is, a sequent \(S\) is
+   \(\LK\)-provable iff \(S\) is \(\LKs\)-provable
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   If a sequent is provable in \(\LKs\), then it's provable in \(\LKs\) without
+   a mix
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If \(P\) is a proof of \(S\) (in \(\LKs\)) which contains (only) one mix,
+   occurring as the last inference, then \(S\) is provable without a mix
+   #+END_lemma
+
+   The *grade* of a formula \(A\) (denoted by \(g(A)\)) is the number of logical
+   symbols contained in \(A\). The grade of a mix is the grade of the mix
+   formula. When a proof \(P\) has a mix as the last inference, we define the
+   grade of \(P\) (denoted by \(g(P)\)) to be the grade of this mix.
+
+   Let \(P\) be a proof which contains  a mix only as the last inference
+   \begin{equation*}
+   J\;\begin{prooftree}%[center=false]
+   \hypo{\Gamma\to\Delta}
+   \hypo{\Pi \to \Lambda}
+   \infer2[\((A)\)]{\Gamma,\Pi^* \to \Delta^*,\Lambda}
+   \end{prooftree}
+   \end{equation*}
+   We refer to the left and right upper sequents as \(S_1\) and \(S_2\) and to
+   the lower sequent as \(S\). We call a thread in \(P\) a *left (right) thread*
+   if it contains the left (right) upper sequent of the mix \(J\). The *rank* of a
+   thread \(\calf\) in \(P\) is defined as follows: if \(\calf\) is a left
+   (right) thread, then the rank of \(\calf\) is the number consecutive
+   sequents, counting upward from the left (right) upper sequent of \(J\), that
+   contains the mix formula in its succedent (antecedent). The rank of a thread
+   \(\calf\) in \(P\) is denoted by \(\rank(\calf;P)\). We define
+   \begin{equation*}
+   \rank_l(P)=\max_{\calf}(\rank(\calf;P))
+   \end{equation*}
+   where \(\calf\) ranges over all the left threads in \(P\), and
+   \begin{equation*}
+   \rank_r(P)=\max_{\calf}(\rank(\calf;P))
+   \end{equation*}
+   where \(\calf\) ranges over all the right threads in \(P\). The rank of
+   \(P\), \(\rank(P)\), is defined as
+   \begin{equation*}
+   \rank(P)=\rank_l(P)+\rank_r(P)
+   \end{equation*}
+   Note that \(\rank(P)\ge 2\)
+   
+   #+BEGIN_proof
+   We prove the Lemma by double induction on the grade \(g\) and rank \(r\) of
+   the proof \(P\) (i.e. transfinite induction on \(\omega\cdot g+r\)). We
+   divide the proof into two main cases, namely \(r=2\) and \(r>2\)
+
+   1. \(r=2\), \(\rank_l(P)=\rank_r(P)=1\)
+      1. The left upper sequent \(S_1\) is an initial sequent. In this case we
+         may assume \(P\) is of the form
+         \begin{equation*}
+         J\;\begin{prooftree}%[center=false]
+         \hypo{A\to A}
+         \hypo{\Pi\to \Lambda}
+         \infer2{A,\Pi^*\to\Lambda}
+         \end{prooftree}
+         \end{equation*}
+         We can obtain the lower sequent without a mix
+         \begin{equation*}
+         \begin{prooftree}%[center=false]
+         \hypo{\Pi\to\Lambda}
+         \infer1{\text{some exchanges}}
+         \infer1{A,\dots,A,\Pi^*\to\Lambda}
+         \infer1{\text{some contractions}}
+         \infer1{A,\Pi^*\to\Lambda}
+         \end{prooftree}
+         \end{equation*}
+      2. The right upper sequent \(S_2\) is an initial sequent.
+      3. Neither \(S_1\) nor \(S_2\) is an initial sequent, and \(S_1\) is the
+         lower sequent of a structural inference \(J_1\). Since
+         \(\rank_l(P)=1\), the formula \(A\) cannot appear in the succedent of
+         the upper sequent of \(J_1\). Hence
+         \begin{equation*}
+         \begin{prooftree}%[center=false]
+         \hypo{\Gamma\to\Delta_1}
+         \infer1[\(J_1\)]{\Gamma\to\Delta_1,A}
+         \hypo{\Pi\to\Lambda}
+         \infer2[\(J\)]{\Gamma,\Pi^*\to\Delta_1,\Lambda}
+         \end{prooftree}
+         \end{equation*}
+         where \(\Delta_1\) doesn't contain \(A\). We can eliminate the mix as
+         follows
+         \begin{equation*}
+         \begin{prooftree}%[center=false]
+         \hypo{\Gamma\to\Delta_1}
+         \infer1{\text{some weakenings}}
+         \infer1{\Pi^*,\Gamma\to\Delta_1,\Lambda}
+         \infer1{\text{some exchanges}}
+         \infer1{\Gamma,\Pi^*\to\Delta_1,\Lambda}
+         \end{prooftree}
+         \end{equation*}
+      4. None of 1.1-1.3 holds but \(S_2\) is the lower sequent of a structural
+         inference. Similarly
+      5. Both \(S_1\)and \(S_2\)are the lower sequents of logical inferences. In
+         this case, since \(\rank_l(P)=\rank_r(P)=1\), the mix formula on each
+         side must be the principal formula of the logical inference. We use
+         induction on the grade, distinguishing several cases according to the
+         outermost logical symbol of \(A\)
+         1. The outermost logical symbol of \(A\) is \(\wedge\)
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta_1,B}
+            \hypo{\Gamma\to\Delta_1,C}
+            \infer2{\Gamma\to\Delta_1,B\wedge C}
+            \hypo{B,\Pi_1\to\Lambda}
+            \infer1{B\wedge C,\Pi_1\to \Lambda}
+            \infer2[(\(B\wedge C\))]{\Gamma,\Pi_1\to\Delta_1,\Lambda}
+            \end{prooftree}
+            \end{equation*}
+            where by assumption none of the proofs ending with
+            \(\Gamma\to\Delta_1,B\);\(\Gamma\to\Delta_1,C\) or
+            \(B,\Pi_1\to\Lambda\) contain a mix. Consider the following
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta_1,B}
+            \hypo{B,\Pi_1\to\Lambda}
+            \infer2[\((B)\)]{\Gamma,\Pi_1''\to\Delta_1'',\Lambda}
+            \end{prooftree}
+            \end{equation*}
+            This proof contains only one mix, a mix that occurs as its last
+            inference. Furthermore the grade of the mix formula \(B\) is less
+            than \(g(A)\). So by induction hypothesis we can obtain a proof
+            which contains no mixes and whose end-sequent is
+            \(\Gamma,\Pi_1''\to\Delta_1'',\Lambda\). From this we can obtain a proof
+            without a mix with end-sequent \(\Gamma,\Pi_1\to\Delta_1,\Lambda\)
+         2. The outermost logical symbol of \(A\) is \(\forall\)
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta_1,F(a)}
+            \infer1{\Gamma\to\Delta_1,\forall xF(x)}
+            \hypo{F(t),\Pi_1\to\Lambda}
+            \infer1{\forall xF(x),\Pi_1\to\Lambda}
+            \infer2{\Gamma,\Pi_1\to\Delta_1,\Lambda}
+            \end{prooftree}
+            \end{equation*}
+            (\(a\) being fully indicated in \(F(a)\)). By the eigenvariable
+            condition, \(a\) does not occur in \(\Gamma,\Delta_1\) or \(F(x)\). Since
+            by assumption the proof ending with \(\Gamma\to\Delta_1, F(a)\)
+            contains no mix, we can obtain a proof without a mix, ending with
+            \(\Gamma\to\Delta_1,F(t)\). Consider now
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta_1,F(t)}
+            \hypo{F(t),\Pi_1\to\Lambda}
+            \infer2[\((F(t))\)]{\Gamma,\Pi_1'''\to\Delta_1''',\Lambda}
+            \end{prooftree}
+            \end{equation*}
+   2. \(r>2\), i.e., \(\rank_l(P)>1\) and/or \(\rank_r(P)>1\)
+
+      The induction hypothesis is that every proof \(Q\) which contains a mix
+      only as the last inference, and which satisfies either \(g(Q)<g(P)\), or
+      \(g(Q)=g(P)\) and \(\rank(Q)<\rank(P)\), we can eliminate the mix
+      1. \(\rank_r(P)>1\)
+         1. \Gamma or \Delta (in \(S_1\)) contains \(A\). Construct a proof as follows
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{}
+            \ellipsis{}{\Pi\to\Lambda}
+            \infer1{\text{exchanges/contractions}}
+            \infer1{A,\Pi^*\to\Lambda}
+            \infer1{\text{weakenings/exchanges}}
+            \infer1{\Gamma,\Pi^*\to\Delta^*,\Lambda}
+            \end{prooftree}\quad
+            \begin{prooftree}%[center=false]
+            \hypo{}
+            \ellipsis{}{\Gamma\to\Delta}
+            \infer1{\text{exchanges/contractions}}
+            \infer1{\Gamma\to\Delta^*,A}
+            \infer1{\text{weakenings/exchanges}}
+            \infer1{\Gamma,\Pi^*\to\Delta^*,\Lambda}
+            \end{prooftree}
+            \end{equation*}
+
+         2. \(S_2\) is the lower sequent of an inference \(J_2\), where \(J_2\)
+            is not a logical inference whose principal formula is \(A\). The
+            last part of \(P\) looks like this
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta}
+            \hypo{\Phi\to\Psi}
+            \infer1[\(J_2\)]{\Pi\to\Lambda}
+            \infer2{\Gamma,\Pi^*\to\Delta^*,\Lambda}
+            \end{prooftree}
+            \end{equation*}
+            where the proofs \(\Gamma\to\Delta\) and \(\Phi\to\Psi\) contain no
+            mixes and \Phi contains at least one \(A\). Consider the following
+            proof \(P'\):
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma\to\Delta}
+            \hypo{\Phi\to\Psi}
+            \infer2[(\(A\))]{\Gamma,\Phi^*\to\Delta^*,\Psi}
+            \end{prooftree}
+            \end{equation*}
+            In \(P'\), the grade of the mix is equal to \(g(P)\),
+            \(\rank_l(P')=\rank_l(P)\) and \(\rank_r(P')=\rank_r(P)-1\). Thus by
+            induction hypothesis, \(\Gamma,\Phi^*\to\Delta^*,\Psi\) is provable without
+            a mix. Then we construct the proof
+            \begin{equation*}
+            \begin{prooftree}%[center=false]
+            \hypo{\Gamma,\Phi^*\to\Delta^*,\Psi}
+            \infer1{\text{some exchanges}}
+            \infer1{\Phi^*,\Gamma\to\Delta^*,\Psi}
+            \infer1[\(J_2\)]{\Pi^*,\Gamma\to\Delta^*,\Lambda}
+            \end{prooftree}
+            \end{equation*}
+
+         3. \Gamma contains no \(A\)'s and \(S_2\) is the lower sequent of a logical
+            inference whose principal formula is \(A\).
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   The cut-elimination theorem holds for \(\LJ\)
+   #+END_theorem
+
+** Some consequences of the cut-elimination theorem
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   By a *subformula* of a formula \(A\) we mean a formula used in building up
+   \(A\).
+
+   Two formulas \(A\) and \(B\) are said to be *equivalent*
+   in \(\LK\)if \(A\equiv B\) is provable in \(\LK\)
+
+   In a formula \(A\) an occurrence of a logical symbol, say \(\sharp\) is *in the
+   scope* of an occurrences of a logical symbol, say \(\natural\), if in the
+   construction of \(A\) (from atomic formulas) the stage where \(\sharp\) is
+   the outermost logical symbol precedes the stage where \(\natural\) is the
+   outermost logical symbol. Further, a symbol \(\sharp\) is said to be in the
+   left scope of a \(\supset\) if \(\supset\) occurs in the form \(B\supset C\)
+   and \(\sharp\) occurs in \(B\)
+
+   A formula is called *prenex* (in prenex form) if no quantifier in it is in the
+   scope of a propositional connective.
+   #+END_definition
+
+   A proof without a cut contains only subformulas of the formulas occurring in
+   the end-sequent. A formula is provable iff it is provable by use of its
+   subformulas only
+
+   #+ATTR_LATEX: :options [consistency]
+   #+BEGIN_theorem
+   \(\LK\) and \(\LJ\) are consistent
+   #+END_theorem
+
+   #+BEGIN_proof
+   Suppose \(\to\) were provable in \(\LK\). Then by the cut-elimination
+   theorem, it would be provable in \(\LK\) without a cut. But this is
+   impossible, by the subformula property of cut-free proofs
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   In a cut-free proof in \(\LK\) (or \(\LJ\)) all the formulas which occur in
+   it are subformulas of the formulas in the end-sequent
+   #+END_theorem
+
+   #+ATTR_LATEX: :options [Gentzen's midsequent theorem for $\LK$]
+   #+BEGIN_theorem
+   Let \(S\) be a sequent which consists of prenex formulas only and is provable
+   in \(LK\). Then there is a cut-free proof of \(S\) which contains a sequent
+   (called a *midsequent*), say \(S'\), which satisfies the following
+   1. \(S'\) is quantifier-free
+   2. Every inference above \(S'\) is either structural or propositional
+   3. Every inference below \(S'\) is either structural or a quantifier
+      inference
+
+
+   Thus a midsequent splits the proof into an upper part, which contains the
+   propositional inferences, and a lower part, which contains the quantifier
+   inferences.
+
+   The above holds reading "\(\LJ\) without \(\vee\)left" in place of \(\LK\)
+   #+END_theorem
+
+
+
+
