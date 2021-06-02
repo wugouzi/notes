@@ -6,11 +6,12 @@
 #+LATEX_HEADER: \usepackage{ebproof}
 #+LATEX_HEADER: \def \LJ {\textbf{LJ}}
 #+LATEX_HEADER: \def \LK {\textbf{LK}}
+#+LATEX_HEADER: \def \LKsh {\textbf{LK\#}}
 #+LATEX_HEADER: \def \LKs {\textbf{LK}^*}
 * First Order Predicate Calculus
-  In this chapter we shall present Gentzen's formulation of the first order
-  predicate calculus \(\LK\) (logistischer klassischer Kalkül). Intuitionisitic
-  logic is known as \(\LJ\) (logistischer intuitionistischer Kalkül)
+  In this chapter we shall present Gentzen's formulation of the first order predicate
+  calculus \(\LK\) (logistischer klassischer Kalkül). Intuitionisitic logic is known as \(\LJ\)
+  (logistischer intuitionistischer Kalkül) 
 ** Formalization of statements
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -890,7 +891,7 @@
    #+ATTR_LATEX: :options [Gentzen's midsequent theorem for $\LK$]
    #+BEGIN_theorem
    Let \(S\) be a sequent which consists of prenex formulas only and is provable
-   in \(LK\). Then there is a cut-free proof of \(S\) which contains a sequent
+   in \(\LK\). Then there is a cut-free proof of \(S\) which contains a sequent
    (called a *midsequent*), say \(S'\), which satisfies the following
    1. \(S'\) is quantifier-free
    2. Every inference above \(S'\) is either structural or propositional
@@ -904,7 +905,203 @@
 
    The above holds reading "\(\LJ\) without \(\vee\)left" in place of \(\LK\)
    #+END_theorem
+   #+ATTR_LATEX: :options [outline]
+   #+BEGIN_proof
+   Combining Proposition ref:prop2.14 and the cut-elimination theorem we may assume that there is a
+   cut-free proof of \(S\), say \(P\), in which all the initial sequents consist of atmoic formulas
+   only (_why do we need atomic formula_). Let \(I\) be a quantifier inference in \(P\). The number of propositional inference
+   under \(I\) is called the order of \(I\). The sum of orders for all the quantifier inferences
+   in \(P\)is called the order of \(P\). The proof is carried out by induction on the order
+   of \(P\).
 
+   Case 1: The order of a proof \(P\) is 0. If there is a propositional inference, take the
+   lowermost such, and call its lower sequent \(S_0\). Above this sequent there is no quantifier
+   inference. Therefore if there is a quantifier in or above \(S_0\), then it is introduced by
+   weakening. Since the proof is cut-free, the weakening formula is a subformula of one of the
+   formulas in the end-sequent. Hence no propositional inferences apply to it. <<Problem1>> (_don't understand_)
+   We can thus eliminate
+   these weakenings and obtain a sequent \(S_0'\) corresponding to \(S_0\). By adding some
+   weakenings under \(S_0'\) we derive \(S\) and \(S_0'\) serves as the mid-sequent
 
+   If there is no propositional inference in \(P\), then take the uppermost quantifier inferences.
+   Its upper sequent serves as a midsequent
 
+   Case 2: The order of \(P\) is not 0. Then there is at least one propositional inference which is
+   below a quantifier property. Moreover, there is a quantifier inference \(I\) with the following
+   property: the uppermost logical inference under \(I\) is a propositional inference. Call
+   it \(I'\). We can lower the order by interchanging the positions of \(I\) and \(I'\). Say \(I\)
+   is \(\forall\)right, then proof \(P\) is 
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{}
+   \ellipsis{}{\Gamma\to\Theta,F(a)}
+   \infer1[\(I\)]{\Gamma\to\Theta,\forall xF(x)}
+   \ellipsis{(*)}{}
+   \infer1[\(I'\)]{\Delta\to\Lambda}
+   \end{prooftree}
+   \end{equation*}
+   where the (*)-part of \(P\) contains only structural inferences and \Lambda contains \(\forall xF(x)\) as a
+   sequent-formula. Transform \(P\) into the following proof \(P'\):
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{\Gamma\to\Theta,F(a)}
+   \ellipsis{structural inferences}{\Gamma\to F(a),\Theta,\forall xF(x)}
+   \ellipsis{}{}
+   \infer1[\(I'\)]{\Delta\to F(a),\Lambda}
+   \infer[double]1[\(I\)]{\Delta,\Lambda,\forall xF(x)}
+   \infer[double]1{\Delta\to\Lambda}
+   \ellipsis{}{}
+   \end{prooftree}
+   \end{equation*}
+   It is obvious that the order of \(P'\) is less than that of \(P\)
+   #+END_proof
 
+   For technical reasons we introduce the predicate symbol \(\top\) with 0 argument places, and
+   admit \(\to\top\) as an additional initial sequent. The system which is obtained from \(\LK\)
+   thus extended is denoted by \(\LKsh\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma6.5
+   Let \(\Gamma\to\Delta\) be \(\LK\)-provable, and let \((\Gamma_1,\Gamma_2)\)
+   and \(\Delta_1,\Delta_2\) be arbitrary partitions of \Gamma and \Delta, respectively (including the cases
+   that one or more of \(\Gamma_1,\Gamma_2,\Delta_1,\Delta_2\) are empty). We denote such a
+   partition by \([\{\Gamma_1;\Delta_1\},\{\Gamma_2;\Delta_2\}]\) and call it a partition of the
+   sequent \(\Gamma\to\Delta\). Then there exists a formula \(C\) of \(\LKsh\) (called an
+   *interpolant* of \([\{\Gamma_1;\Delta_1\},\{\Gamma_2;\Delta_2\}]\)) s.t.
+   1. \(\Gamma_1\to\Delta_1,C\) and \(C,\Gamma_2\to\Delta_2\) are both \(\LKsh\)-provable
+   2. All free variables and individual and predicate constants in \(C\) (apart from \(\top\)) occur
+      both in \(\Gamma_1\cup\Delta_1\) and \(\Gamma_2\cup\Delta_2\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [Craig's interpolation theorem for \(\LK\)]
+   #+BEGIN_theorem
+   1. Let \(A\) and \(B\) be two formulas s.t. \(A\supset B\) is \(\LK\)-provable. If \(A\)
+      and \(B\) have at least one predicate constant in common, then there exists a formula \(C\),
+      called an interpolant of \(A\supset B\) s.t. \(C\) contains only those individual constants,
+      predicate constants and free variables that occur in both \(A\) and \(B\) and s.t.
+      \(A\supset C\) and \(C\supset B\) are \(\LK\)-provable. If \(A\) and \(B\) contain no
+      predicate constant in common, then either \(A\to\) or \(\to B\) is \(\LK\)-provable
+   2. As above, with \(\LJ\) inplace of \(\LK\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Assume that \(A\supset B\), and hence \(A\to B\) is provable, and \(A\) and \(B\) have at least
+   one predicate constant in common. Then by Lemma ref:lemma6.5, taking \(A\) as \(\Gamma_1\)
+   and \(B\) as \(\Delta_2\) (with \(\Gamma_2\) and \(\Delta_1\) empty), there exists a
+   formula \(C\)satisfying 1 and 2. So \(A\to C\) and \(C\to B\) are \(\LKsh\)-provable. Let \(R\)
+   be predicate constant which is common to \(A\) and \(B\) and has \(k\) argument places.
+   Let \(R'\) be \(\forall y_1\dots\forall y_kR(y_1,\dots,y_k)\), where \(y_1,\dots,y_k\) are new bound
+   variables.  By replacing \(\top\) by \(R'\supset R'\) we can transform \(C\) into a
+   formula \(C'\) of the original language, s.t. \(A\to C'\) and \(C'\to B\)
+   are \(\LK\)-provable. \(C'\) is then the desired interpolant.
+
+   If there is no predicate common to \(\Gamma_1\cup\Delta_1\) and \(\Gamma_2\cup\Delta_2\) in the
+   partition, then by Lemma ref:lemma6.5 there is a \(C\) s.t. \(\Gamma_1\to\Delta_1,C\)
+   and \(C,\Gamma_2\to\Delta_2\) are provable, and \(C\) consists of \(\top\) and logical symbols
+   only. Then it can easily be shown, by induction on the complexity of \(C\), that either \(\to C\)
+   or \(C\to\) is provable. Hence either \(\Gamma_1\to\Delta_1\) or \(\Gamma_2\to\Delta_2\) is provable.
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Lemma \cite{Lemma6.5}]
+   #+BEGIN_proof
+   The lemma is proved by induction on the number of inferences \(k\), in a cut-free proof
+   of \(\Gamma\to\Delta\). At each stage there are several cases to consider; we deal with some
+   examples only.
+   1. \(k=0,\Gamma\to\Delta\)  has the form \(D\to D\). There are four
+      cases: 1.
+      \([\{D;D\},\{;\}]\), 2. \([\{;\},\{D;D\}]\), 3. \([\{D;\},\{;D\}]\), 4. \(\{;D\},\{D;\}\).
+      Take for \(C:\neg\top\) in 1, \(\top\) in 2, \(D\) in 3 and \(\neg D\) in 4
+   2. \(k>0\) and the last inference is \(\wedge\)right:
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\Gamma\to\Delta,A}
+      \hypo{\Gamma\to\Delta,B}
+      \infer2{\Gamma\to\Delta,A\wedge B}
+      \end{prooftree}
+      \end{equation*}
+      Suppose the partition is \([\{\Gamma_1;\Delta_1,A\wedge B\},\{\Gamma_2;\Delta_2\}]\). Consider
+      the induced partition of the upper sequents,
+      viz \([\{\Gamma_1;\Delta_1,A\},\{\Gamma_2;\Delta_2\}]\)
+      and \([\{\Gamma_1;\Delta_1,B\},\{\Gamma_2;\Delta_2\}]\) respectively. By the induction
+      hypothesis applied to the subproofs of the upper sequents, there exists interpolants \(C_1\)
+      and \(C_2\) so that
+      \(\Gamma_1\to\Delta_1,A,C_1\);\(C_1,\Gamma_2\to\Delta_2\);\(\Gamma_1\to\Delta_1,B,C_2\)
+      and \(C_2,\Gamma_2\to\Delta_2\) are all \(\LKsh\)-provable. From these
+      sequents, \(\Gamma_1\to\Delta_1,A\wedge B,C_1\vee C_2\) and \(C_1\vee C_2,\Gamma_2\to\Delta_2\)
+   3. \(k>0\) and the last inference is \(\forall\)left
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{F(s),\Gamma\to\Delta}
+      \infer1{\forall xF(x),\Gamma\to\Delta}
+      \end{prooftree}
+      \end{equation*}
+      Suppose \(b_1,\dots,b_n\) are all the free variables and constants which occur in \(s\).
+      Suppose the partition is \([\{\forall xF(x),\Gamma_1;\Delta_1\},\{\Gamma_2;\Delta_2\}]\). Consider
+      the induced partition of the upper sequent and apply the induction hypothesis. So there exists
+      and interpolant \(C(b_1,\dots,b_n)\) so that
+      \begin{align*}
+      &F(s),\Gamma_1\to\Delta_1,C(b_1,\dots,b_n)\\
+      &C(b_1,\dots,b_n),\Gamma_2\to\Delta_2
+      \end{align*}
+      are \(\LKsh\)-provable. Let \(b_{i_1},\dots,b_{i_m}\) be all the variables and constants
+      among \(b_1,\dots,b_n\) which do not occur in \(\{F(x),\Gamma_1;\Delta_1\}\) . Then
+      \begin{equation*}
+      \forall y_1\dots\forall y_mC(b_1,\dots,y_1,\dots,y_m,\dots,b_n)
+      \end{equation*}
+      where \(b_{i_1},\dots,b_{i_m}\) are replaced by the bound variables, serve as the required
+      interpolant.
+      
+   4. \(k>0\) and the last inference is \(\forall\)right
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\Gamma\to\Delta,F(a)}
+      \infer1{\Gamma\to\Delta,\forall xF(x)}
+      \end{prooftree}
+      \end{equation*}
+      where \(a\) doesn't occur in the lower sequent.
+
+      Suppose the partition is \([\{\Gamma_1;\Delta_1,\forall xF(x)\},\{\Gamma_2;\Delta_2\}]\). By the
+      induction hypothesis there exists an interpolant \(C\) so that \(\Gamma_1\to\Delta_1,F(a),C\)
+      and \(C,\Gamma_2\to\Delta_2\) are provable. Since \(C\) doesn't contain \(a\), we can derive
+      \begin{equation*}
+      \Gamma_1\to\Delta_1,\forall xF(x),C
+      \end{equation*}
+      and hence \(C\) serves as the interpolant
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex6.7
+   Let \(A\) and  \(B\) be prenex formulas which have only \(\forall\) and \(\wedge\) as logical
+   symbols. Assume futhermore that there is at least one predicate constant common to \(A\)
+   and \(B\). Suppose \(A\supset B\) is provable.
+
+   Show that there exists a formula \(C\) s.t.
+   1. \(A\supset C\) and \(C\supset B\) are provable
+   2. \(C\) is a prenex formula
+   3. the only logical symbols in \(C\) are \(\forall \) and \(\wedge\)
+   4. the predicate constants in \(C\) are common to \(A\) and \(B\)
+   #+END_exercise
+   
+** TODO ALL the problems
+   [[Problem1]]
+   
+   A example of preview
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{hypo1}
+   \hypo{hypo2}
+   \infer2[\(wef\)]{meow}
+   \end{prooftree}
+   \end{equation*}
+
+   then for the same latex code
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{hypo1}
+   \hypo{hypo2}
+   \infer2[\(wef\)]{meow}
+   \end{prooftree}
+   \end{equation*}
+
+   we have immediate preiview:)
