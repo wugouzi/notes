@@ -3,17 +3,17 @@
 
 #+LATEX_HEADER: \input{preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/FiniteModelTheory/FiniteModelTheory.tex
-
+#+LATEX_HEADER: \def \Part {\text{Part}}
 
 * Preliminaries
 
 ** Structures
    *Vocabularies* are finite sets that consist of *relation symbols* and
    *constant symbols*. We denote vocabularies by \tau, \sigma,\(\dots\). A
-   *vocabulary is *relational if it does not contain constants.
+   *vocabulary* is relational if it does not contain constants.
 
 
-** Graph
+*** Graph
    Let \(\tau=\{E\}\) with a binary relation symbol \(E\). A *graph* (or
    *undirected graph*) is a \tau-structure \(\calg=(G,E^G)\) satisfying
    1. for all \(a\in G\): not \(E^Gaa\)
@@ -65,9 +65,54 @@
    *tree* is a forest with connected underlying graph. Let TREE be the class of
    finite trees.
 
+*** Operations on Structures
+    Two \(\tau\)-structures \(\cala\) and \(\calb\) are *isomorphic*, written \(\calc\cong\calb\), if
+    there is an isomorphism from \(\cala\) to \(\calb\), i.e., a bijection \(\pi:A\to B\) preserving
+    relations and constants, that is
+    - for \(n\)-ary \(R\in \tau\) and \(a_1,\dots,a_n\in A\)
+      \begin{equation*}
+      R^Aa_1\dots a_n \quad\text{ iff }\quad
+      R^B\pi(a_i)\dots\pi(a_n)
+      \end{equation*}
+    - for \(c\in\tau\), \(\pi(c^A)=\pi(c^B)\)
+
+
+    For relational \tau we introduce the *union* (or, *disjoint union*) of structures. Assume
+    that \(\cala\) and \(\calb\) are \(\tau\)-structures with \(A\cap B=\emptyset\).
+    Then \(\cala\dot{\cup}\calb\), the *union* of \(\cala\) and \(\calb\), is the \(\tau\)-structure
+    with domain \(A\cup B\) and
+    \begin{equation*}
+    R^{\cala\dot\cup\calb}:=R^{\cala}\cup R^{\cala}
+    \end{equation*}
+    for any \(R\) in \tau
+
+    Note that the union of ordered structures is not an ordered structure. The situation is
+    different for the so-called *ordered sum*: let \(\tau\) with \(<\in\tau\) be relational and
+    let \(\cala\) and \(\calb\) be ordered \(\tau\)-structures. Assume that \(A\cap B=\emptyset\).
+    Define \(\cala\lhd\calb\), the *ordered sum* of \(\cala\) and \(\calb\) as \(\cala\dot\cup\calb\)
+    but setting
+    \begin{equation*}
+    <^{\cala\dot\cup\calb}:=<^{\cala}\cup <^{\calb}\cup
+    \{(a,b)\mid a\in A,b\in B\}
+    \end{equation*}
 ** Syntax and Semantics of First-Order Logic
+   Fix a vocabulary \tau. Each formula of first-order logic will be a string of symbols taken from the
+   alphabet consisting of
+   - variables
+   - connectives
+   - existential quantifier
+   - equality symbol
+   - )(
+   - the symbols in \tau
+   
     Denote \(\FO[\tau]\) the set of formulas of first-order logic of vocabulary
     \tau.
+
+    The axioms for graphs stated above have the following formalizations in \(\FO[\{E\}]\)
+    \begin{align*}
+    &\forall x\neg Exx\\
+    &\forall x\forall y(Exy\to Eyx)
+    \end{align*}
 
     When only taking into consideration finite structures, we use the notation
     \(\Phi\models_{\fin}\psi\)
@@ -133,6 +178,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:lemma1.0.6
     Let \(\varphi\in\FO[\tau]\) and for \(i\in I\), let
     \(\Phi^i\subseteq\FO[\tau]\). Assume that
     \begin{equation*}
@@ -151,10 +197,11 @@
     have \(\Phi^i\models\varphi\); hence, by the Compactness Theorem,
     \(\Phi^i_0\models\varphi\) for some finite \(\Phi^i_0\subseteq\Phi^i\).
 
-    If there is not such \(I_0\) with \(\models\varphi\to\bigvee_{i\in
-    I_0}\bigwedge\Phi_0^i\), then each finite subset of
+    If there is not such \(I_0\) with
+    \(\models\varphi\to\bigvee_{i\in I_0}\bigwedge\Phi_0^i\), then each finite subset of
     \(\{\varphi\}\cup\{\neg\bigwedge\Phi^i_0\mid i\in I\}\) has a model. Hence by
     the Compactness Theorem, there is a contradiction
+    
     #+END_proof
 
     #+ATTR_LATEX: :options []
@@ -194,11 +241,31 @@
     \begin{equation*}
     \varphi^{\cala}(-):=\{(a_1,\dots,a_n)\mid\cala\models\varphi[a_1,\dots,a_n]\}
     \end{equation*}
-    be the set of \(n\)-tuples *defined by \varphi in \(\cala\)*
+    be the set of \(n\)-tuples *defined by \varphi in \(\cala\)*. For \(n=0\) this be read as
+    \begin{equation*}
+    \varphi^{\cala}:=
+    \begin{cases}
+    \text{TRUE}&\text{if }\cala\vDash\varphi\\
+    \text{FALSE}&\text{if }\calb\not\vDash\varphi
+    \end{cases}
+    \end{equation*}
+
+    Use this notation we have
+    \begin{equation*}
+    \text{if }\pi:\cala\cong\calb\text{ then }\pi(\varphi^{\cala}(-)=\varphi^{\calb}(-))
+    \end{equation*}
+    where for \(X\subseteq A^n\) we set \(\pi(X):=\{\pi(a_1),\dots,\pi(a_n)\mid (a_1,\dots,a_n)\in X\}\)
+
+    *Throughout the book all classes \(K\) of structures considered will tacitly be assumed to be*
+    *closed under isomorphisms*, i.e.
+    \begin{equation*}
+    \cala\in K \text{ and }\cala\cong\calb
+    \text{ implies }\calb\in K
+    \end{equation*}
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
-    Let \(K\) be a class of \tau-structures. An \(n\)-ary
+    Let \(K\) be a class of \(\tau\)-structures. An \(n\)-ary
     *global relation
     \Gamma on \(K\)* is a mapping assigning to each \(A\in K\) an \(n\)-ary
     relation \(\Gamma(\cala)\) on \(\cala\) satisfying
@@ -206,7 +273,7 @@
     \Gamma(\cala)a_1\dots a_n\quad\text{ iff }\quad\Gamma(\calb)\pi(a_1)\dots\pi(a_n)
     \end{equation*}
     for every isomorphism \(\pi:\cala\cong\calb\) and every
-    \(a_1,\dots,a_n\in A\). If \(K\) is the class of all finite \tau-structures,
+    \(a_1,\dots,a_n\in A\). If \(K\) is the class of all finite \(\tau\)-structures,
     then we just speak of an \(n\)-ary *global relation*
     #+END_definition
 
@@ -220,10 +287,18 @@
        \begin{equation*}
        \TC(\calg):=\{(a,b)\mid a,b\in G,\text{ there is a path from $a$ to $b$}\}
        \end{equation*}
+    3. For \(m\ge0\), \(\Gamma_m\) is a unary global relation on GRAPH, where
+       \begin{equation*}
+       \Gamma_m(\calg):=\{a\mid\norm{\{b\in G\mid E^Gab\}}=m\}
+       \end{equation*}
+       is the set of elements of \(\calg\) of degree \(m\)
     #+END_examplle
 
-** Relational Databases and Query Languages
+    An important issue in model theory is the study of properties of classes of structures that are
+    axiomatizable in a given logic \(\call\) and in particular to determine what classes of
+    structures are axiomatizable are what global relations are definable in \(\call\).
 
+** Relational Databases and Query Languages
 * Ehrenfeucht–Fraïssé Method
 
 ** Elementary Classes
@@ -231,7 +306,7 @@
    #+BEGIN_proposition
    Every finite structure can be characterized in first-order logic up to
    isomorphism, i.e., for every finite structure \(\cala\) there is a sentence
-   \(\varphi_\cala\) of first-order logic s.t. for all structures \(\calb\) we
+   \(\varphi_{\cala}\) of first-order logic s.t. for all structures \(\calb\) we
    have
    \begin{equation*}
    \calb\models\varphi_{\cala}\quad\text{ iff }\quad\cala\cong\calb
@@ -297,29 +372,73 @@
    #+END_theorem
 
    #+BEGIN_proof
-   Let \(\varphi\) be any first-order sentence. Set \(m:=\qr(\varphi)\) and \(\cala\equiv_m\calb\)
+   Let \(\varphi\) be any first-order sentence. Set \(m:=\qr(\varphi)\). By out assumption there
+   are \(\cala\) and \(\calb\) s.t. \(\cala\in K, \calb\not\in K\), and \(\cala\equiv_m\calb\).
+   Hence \(K\neq\Mod(\varphi)\)
    #+END_proof
-
+   
 ** Ehrenfeucht's Theorem
+
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
    Assume \(\cala\) and \(\calb\) are structures. Let \(p\) be a map with
-   \(\dom(p)\subseteq A\) and \(\im(p)\subseteq B\). Then \(p\) is said to be a
-   *partial isomorphism* from \(\cala\) to \(\calb\) if
-   * \(p\) is injective
-   * for every \(c\in\tau\): \(c^A\in\dom(p)\) and \(p(c^A)=c^B\)
-   * for every \(n\)-ary \(R\in\tau\) and all \(a_1,\dots,a_n\in\dom(p)\)
-     \begin{equation*}
-     R^Aa_1\dots a_n \quad\text{ iff }\quad R^Bp(a_1)\dots p(a_n)
-     \end{equation*}
+   \(\dom(p)\subseteq B\). Then \(p\) is said to be a *partial isomorphism* from \(\cala\)
+   to \(\calb\) if
+   1. \(p\) is injective
+   2. for every \(c\in\tau\):\(c^{\cala}\in\dom(p)\) and \(p(c^{\cala})=c^{\calb}\)
+   3. for every \(n\)-ary \(R\in\tau\) and all \(a_1,\dots,a_n\in\dom(p)\)
+      \begin{equation*}
+      R^{\cala}a_1\dots a_n \quad\text{ iff }\quad
+      R^{\calb}p(a_1)\dots p(a_n)
+      \end{equation*}
 
-
-   We write \(\Part(\cala,\calb)\) for the set of partial isomorphisms from
-   \(\cala\) to \(\calb\)
+   We write \(\Part(\cala,\calb)\) for the set of partial isomorphisms from \(\cala\) to \(\calb\)
    #+END_definition
 
+   In the following we identify a map \(p\) with its graph \(\{(a,p(a))|a\in\dom(p)\}\).
+   Then \(p\subseteq q\) means that \(q\) is an extension of \(p\)
 
-   Let \(\cala\) and \(\calb\) be \tau-structures, \(\bar{a}\in A^s\),
+   #+BEGIN_remark
+   1. The empty map, \(p=\emptyset\), is a partial isomorphism from \(\cala\) to \(\calb\) just in
+      case the vocabulary contains no constants
+   2. If \(p\neq\emptyset\) is a map with \(\dom(p)\subseteq A\) and \(\ran(p)\subseteq B\),
+      then \(p\) is a partial isomorphism from \(\cala\) to \(\calb\) iff \(\dom(p)\)
+      contains \(c^{\cala}\) for all constants \(c\in\tau\) and \(p:\dom(p)^{\cala}\cong\ran(p)^{\calb}\)
+   3. For \(\bar{a}=a_1\dots a_s\in A\) and \(\bar{b}=b_1\dots b_s\in B\) the following statements
+      are equivalent
+      1. the clauses
+         \begin{equation*}
+         p(a_i)=b_i\text{ for }i=1,\dots,s
+         \end{equation*}
+         and
+         \begin{equation*}
+         p(c^{\cala})=c^{\calb}\text{ for }c\text{ in }\tau
+         \end{equation*}
+         define a map, which is a partial isomorphism from \(\cala\) to \(\calb\) (henceforth
+         denoted by \(\bar{a}\mapsto\bar{b}\))
+      2. for all quantifier-free \(\varphi(v_1,\dots,v_s)\):
+         \(\cala\vDash\varphi[\bar{a}]\) iff
+         \(\calb\vDash\varphi[\bar{b}]\)
+      3. for all atomic \(\varphi(v_1,\dots,v_s)\):
+         \(\cala\vDash\varphi[\bar{a}]\) iff
+         \(\calb\vDash\varphi[\bar{b}]\)         
+   #+END_remark
+
+   In general, a *partial isomorphism does not preserve the validity of formulas with quantifiers*:
+   Let \(\tau=\{<\}\), \(\cala=(\{0,1,2\},<)\), \(\calb=(\{0,1,2,3\},<)\) whre in both cases <
+   denotes the natural ordering. Then \(p_0:=02\mapsto 01\) is a partial isomorphism from \(\cala\)
+   to \(\calb\) s.t.
+   \begin{equation*}
+   \cala\vDash\exists v_3(v_1<v_3\wedge v_3<v_2)[0,2]
+   \end{equation*}
+   but
+   \begin{equation*}
+   \calb\not\vDash\exists v_3(v_1<v_3\wedge v_3<v_2)[p_0(0),p_0(2)]
+   \end{equation*}
+   
+   
+
+   Let \(\cala\) and \(\calb\) be \(\tau\)-structures, \(\bar{a}\in A^s\),
    \(\overbar{b}\in B^s\), and \(m\in\N\). The *Ehrenfeucht game*
    \(G_m(\cala,\overbar{a},\calb,\overbar{b})\) is played by two players called
    the *spoiler* and the *duplicator*. Each player has to make \(m\) moves in
@@ -340,4 +459,119 @@
    The duplicator *wins* iff
    \(\overbar{a}\overbar{e}\mapsto\overbar{b}\overbar{f}\in\Part(\cala,\calb)\).
 
+   Equivalently, the spoiler wins if after
+   some \(i\le m\), \(\bar{a}e_1\dots e_i\mapsto\bar{b}f_1\dots f_i\) is not a partial isomorphism.
+   We say that a player, the spoiler or the duplicator, has a *winning strategy*
+   in \(G_m(\cala,\bar{a},\calb,\bar{b})\), or shortly, that he
+   *wins* \(G_m(\cala,\bar{a},\calb,\bar{b})\), if it is possible for him to win each play whatever
+   choices are made by the opponent.
+
    If \(s=0\), we denote the game by \(G_m(\cala,\calb)\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. If \(A\cong B\) then the duplicator wins \(G_m(\cala,\calb)\)
+   2. If the duplicator wins \(G_{m+1}(\cala,\calb)\) and \(\norm{A}\le m\) then \(\cala\cong\calb\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \(\cala\) and \(\calb\) be structures, \(\bar{a}\in A^s\), \(\bar{b}\in B^s\), and \(m\ge0\)
+   1. The duplicator wins \(G_0(\cala,\bar{a},\calb,\bar{b})\) iff \(\bar{a}\mapsto\bar{b}\) is a
+      partial isomorphism
+   2. For \(m>0\) the following are equivalent
+      1. The duplicator wins \(G_m(\cala,\bar{a},\calb,\bar{b})\)
+      2. For all \(a\in A\) there is \(b\in B\) s.t. the duplicator wins the
+         game \(G_{m-1}(\cala,\bar{a}a,\calb,\bar{b}b)\) and for all \(b\in B\) there is
+         a \(a\in A\) s.t. the duplicator wins \(G_{m-1}(\cala,\bar{a}a,\calb,\bar{b}b)\)
+      3. If the duplicator wins \(G_m(\cala,\bar{a},\calb,\bar{B})\) and if \(m'<m\) the duplicator
+         wins \(G_{m'}(\cala,\bar{a},\calb,\bar{b})\)
+   #+END_lemma
+
+   Let \(\cala\) be given. For \(\bar{a}=a_1\dots a_s\in A\) and \(m\ge0\) we introduce a formula
+   \(\varphi^m_{\bar{a}}(v_1,\dots,v_s)\) that describes the game-theoretic properties
+   of \(\bar{a}\) in any game \(G_m(\cala,\bar{a},\dots)\) s.t. for any \(\calb\)
+   and \(\bar{b}=b_1\dots b_s\in B\)
+   \begin{equation*}
+   \calb\vDash\varphi^m_{\bar{a}}[\bar{b}]
+   \quad\text{ iff }\quad
+   \text{the duplicator wins }G_m(\cala,\bar{a},\calb,\bar{b})
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\bar{v}\) be \(v_1,\dots,v_s\)
+   \begin{equation*}
+   \varphi^0_{\bar{a}}:=\bigwedge
+   \{\varphi(\bar{v})\mid\varphi\text{ atomic or negated atmoic}, \cala\vDash\varphi[\bar{a}]\}
+   \end{equation*}
+   (atomic diagram of \(\cala\)) and for \(m>0\)
+   \begin{equation*}
+   \varphi_{\bar{a}}^m(\bar{v}):=
+   \bigwedge_{a\in A}\exists v_{s+1}\varphi_{\bar{a}a}^{m-1}(\bar{v},v_{s+1})\wedge
+   \forall v_{s+1}\bigvee_{a\in A}\varphi_{\bar{a}a}^{m-1}(\bar{v},v_{s+1})
+   \end{equation*}
+   \(\varphi_{\bar{a}^0}\) describes the isomorphism type of the substructure generated
+   by \(\bar{a}\) in \(\cala\); and for \(m>0\) the formula \(\varphi_{\bar{a}}^m\) tells us to
+   which isomorphism types the tuple \(\bar{a}\) can be extended in \(m\) steps adding one element
+   in each step. \(\varphi_{\bar{a}}^m\) is called the *\(m\)-isomorphism type* (or *\(m\)-Hintikka
+   formula*) of \(\bar{a}\) in \(\cala\)
+   #+END_definition
+
+   Since \(\varphi(v_1,\dots,v_s)\mid \varphi\text{ atomic or negated atmoic}\) is finite, a simple
+   induction on \(m\) shows
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   For \(s,m\ge0\), the
+   set \(\{\varphi_{\cala,\bar{a}}^m\mid \cala\text{ a structure and }\bar{a}\in A^s\}\) is finite
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. \(\qr(\varphi_{\bar{a}}^m)=m\)
+   2. \(\cala\vDash\varphi_{\bar{a}}^m[\bar{a}]\)
+   3. For any \(\calb\) and \(\bar{b}\) in \(B\)
+      \begin{equation*}
+      \calb\vDash\varphi_{\bar{a}}^0[\bar{b}] \quad\text{ iff }\quad
+      \bar{a}\mapsto\bar{b}\in\Part(\cala,\calb)
+      \end{equation*}
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [Ehrenfeucht's Theorem]
+   #+BEGIN_theorem
+   Given \(\cala\) and \(\calb\), \(\bar{a}\in A^s\) and \(\bar{b}\in B^s\), and \(m\ge0\), the
+   following are equivalent
+   1. The duplicator wins \(G_m(\cala,\bar{a},\calb,\bar{b})\)
+   2. \(\calb\vDash\varphi_{\bar{a}}^m[\bar{b}]\)
+   3. \(\bar{a}\) and \(\bar{b}\) satisfy the same formulas of quantifier rank \(\le m\), that is,
+      if \(\varphi(x_1,\dots,x_s)\) is of quantifier rank \(\le m\), then
+      \begin{equation*}
+      \cala\vDash\varphi[\bar{a}] \quad\text{ iff }\quad
+      \calb\vDash\varphi[\bar{b}]
+      \end{equation*}
+   #+END_theorem
+
+   #+BEGIN_proof
+   \(1\leftrightarrow 2\). Induction on \(m\). For \(m=0\)
+   \begin{align*}
+   \text{the duplicator wins }G_0(\cala,\bara,\calb,\barb)
+   &\quad\text{ iff }\quad
+   \bara\mapsto\barb\in\Part(\cala,\calb)\\
+   &\quad\text{ iff }\quad
+   \calb\vDash\varphi_{\bara}^0[\barb]
+   \end{align*}
+   For \(m>0\)
+   |     | the duplicator wins \(G_m(\cala,\bara,\calb,\barb)\)                                                                                                               |
+   | iff | for all \(a\in A\),there is \(b\in B\) s.t. the duplicator wins                                                                                                    |
+   |     | \(G_{m-1}(\cala,\bara a,\calb,\barb b)\), and for all \(b\in B\) there is \(a\in A\) s.t.                                                                          |
+   |     | the duplicator wins \(G_{m-1}(\cala,\bara a,\calb,\barb b)\)                                                                                                       |
+   | iff | for all \(a\in A\), there is \(b\in B\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\) , and                                                                 |
+   |     | for all \(b\in B\), there is \(a\in A\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\)                                                                       |
+   | iff | \(\calb\vDash\bigwedge_{a\in A}\exists v_{s+1}\varphi_{\bara a}^{m-1}(\barv,v_{s+1})\wedge\forall v_{s+1}\bigvee_{a\in A}\varphi_{\bara a}^{m-1}(\barv,v_{s+1})[\barb]\) |
+   | iff | \(\calb\vDash\varphi_{\bara}^m[\barb]\)                                                                                                                            |
+   
+   \(3\to1\). \(\qr(\varphi^m_{\bar{a}})=m\) and \(\cala\vDash\varphi_{\bar{a}}^m[\bar{a}]\)
+
+   \(1\to 3\).
+   #+END_proof

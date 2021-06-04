@@ -6,6 +6,9 @@
 #+LATEX_HEADER: \usepackage{ebproof}
 #+LATEX_HEADER: \def \LJ {\textbf{LJ}}
 #+LATEX_HEADER: \def \LK {\textbf{LK}}
+#+LATEX_HEADER: \def \LKp {\textbf{LK'}}
+#+LATEX_HEADER: \def \LKe {\textbf{LK}_\textbf{e}}
+#+LATEX_HEADER: \def \LJp {\textbf{LJ'}}
 #+LATEX_HEADER: \def \LKsh {\textbf{LK\#}}
 #+LATEX_HEADER: \def \LKs {\textbf{LK}^*}
 * First Order Predicate Calculus
@@ -13,6 +16,18 @@
   calculus \(\LK\) (logistischer klassischer Kalkül). Intuitionisitic logic is known as \(\LJ\)
   (logistischer intuitionistischer Kalkül) 
 ** Formalization of statements
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   *Terms* are defined inductively as follows:
+   1. Every individual constant is a term
+   2. Every free variable is a term
+   3. If \(f^i\) is a function constant with \(i\) argument-places and \(t_1,\dots,t_i\) are terms,
+      then \(f^i(t_1,\dots,t_i)\) is a term
+   4. Terms are only those expressions obtained by 1-3.
+   #+END_definition
+
+   
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
    *Formulas* are defined inductively as:
@@ -600,6 +615,7 @@
 ** The cut-elimination theroem
    #+ATTR_LATEX: :options [the cut-elimination theroem: Gentzen]
    #+BEGIN_theorem
+   label:thm5.1
    If a sequent is \((\LK)\)-provable, then it is \((\LK)\)-provable without a cut
    #+END_theorem
 
@@ -976,6 +992,7 @@
 
    #+ATTR_LATEX: :options [Craig's interpolation theorem for \(\LK\)]
    #+BEGIN_theorem
+   label:thm6.6
    1. Let \(A\) and \(B\) be two formulas s.t. \(A\supset B\) is \(\LK\)-provable. If \(A\)
       and \(B\) have at least one predicate constant in common, then there exists a formula \(C\),
       called an interpolant of \(A\supset B\) s.t. \(C\) contains only those individual constants,
@@ -1003,7 +1020,7 @@
    or \(C\to\) is provable. Hence either \(\Gamma_1\to\Delta_1\) or \(\Gamma_2\to\Delta_2\) is provable.
    #+END_proof
 
-   #+ATTR_LATEX: :options [Lemma \cite{Lemma6.5}]
+   #+ATTR_LATEX: :options [Lemma \cite{lemma6.5}]
    #+BEGIN_proof
    The lemma is proved by induction on the number of inferences \(k\), in a cut-free proof
    of \(\Gamma\to\Delta\). At each stage there are several cases to consider; we deal with some
@@ -1082,26 +1099,334 @@
    3. the only logical symbols in \(C\) are \(\forall \) and \(\wedge\)
    4. the predicate constants in \(C\) are common to \(A\) and \(B\)
    #+END_exercise
-   
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. A *semi-term* is an expression like a term, except that bound variables are allowed in its
+      construction. Let \(t\) be a term and \(s\) a semi-term. We call \(s\) a *sub-semi-term*
+      of \(t\) if
+      1. \(s\) contain a bound variable (\(s\) is not a term)
+      2. \(s\) is not a bound variable itself
+      3. some subterm of \(t\) is obtained from \(s\) by replacing all the bound variables in \(s\)
+         by appropriate terms
+   2. A *semi-formula* is an expression like a formula, except that bound variables are (also) allowed
+      to occur free in it
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \(t\) be a term and \(S\) a provable sequent satisfying
+   \begin{equation}
+   \label{eq:1}
+   \text{There is no sub-semi-term of }t\text{ in }S
+   \end{equation}
+   Then the sequent which is obtained from \(S\) by replacing all the occurrences of \(t\) in \(S\)
+   by a free variable is also provable
+   #+END_theorem
+
+   #+BEGIN_proof
+   Consider a cut-free regular proof of \(S\), say \(P\).  If ref:eq:1 holds for the lower sequent
+   of an inference in \(P\) then it holds for the upper sequents. The theorem follows by
+   mathematical induction on the number of inferences in \(P\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(R_1,\dots,R_m,R\) be predicate constants. Let \(A(R,R_1,\dots,R_m)\) be a sentence in which
+   all occurrences of \(R,R_1,\dots,R_m\) are indicated. Let \(R'\) be a predicate constant with the
+   same number of argument-places as \(R\). Let \(B\)
+   be \(\forall x_1\dots\forall x_k(R(x_1,\dots,x_k)\equiv R'(x_1,\dots,x_k))\), where the string of
+   quantifiers is empty if \(k=0\). Let \(C\) be \(A(R,R_1,\dots,R_m)\wedge A(R',R_1,\dots,R_m)\). We say
+   that \(A(R,R_1,\dots,R_m)\) *defines (in \(\LK\)) \(R\) implicitly* in terms of \(R_1,\dots,R_m\)
+   if \(C\supset B\) is (\(\LK\)-)provable and we say that \(A(R,R_1,\dots,R_m)\) *defines
+   (in \(\LK\)) \(R\) explicitly* in terms of \(R_1,\dots,R_m\) and the individual constants
+   in \(A(R,R_1,\dots,R_m)\) if there exists a formula \(F(a_1,\dots,a_k)\) containing only the
+   predicate constants \(R_1,\dots,R_m\) and the individual constants in \(A(R,R_1,\dots,R_m)\) s.t.
+   \begin{equation*}
+   A(R,R_1,\dots,R_m)\to\forall x_1\dots\forall x_k
+   (R(x_1,\dots,x_k)\equiv F(x_1,\dots,x_k))
+   \end{equation*}
+   is \(\LK\)-provable
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Beth's definability theorem for $\LK$]
+   #+BEGIN_proposition
+   If a predicate constant \(R\) is defined implicitly in terms of \(R_1,\dots,R_m\)
+   by \(A(R,R_1,\dots,R_m)\), then \(R\) can be defined explicitly in terms of \(R_1,\dots,R_m\) and
+   the individual constants in \(A(R,R_1,\dots,R_m)\)
+   #+END_proposition
+
+   #+ATTR_LATEX: :options [outline]
+   #+BEGIN_proof
+   Let \(c_1,\dots,c_n\) be free variables not occurring in \(A\). Then
+   \begin{equation*}
+   A(R,R_1,\dots,R_m),A(R',R_1,\dots,R_m)\to
+   R(c_1,\dots,c_n)\equiv R'(c_1,\dots,c_n)
+   \end{equation*}
+   and hence also
+   \begin{equation*}
+   A(R,R_1,\dots,R_m)\wedge R(c_1,\dots,c_k)\to A(R',R_1,\dots,R_m)\supset R'(c_1,\dots,c_n)
+   \end{equation*}
+   are provable. Now apply Craig's theorem to the latter sequent. We get
+   \begin{align*}
+   &A(R,R_1,\dots,R_m)\wedge R(c_1,\dots,c_k)\supset F(c_1,\dots,c_k)\\
+   &F(c_1,\dots,sc_k)\supset A(R',R_1,\dots,R_m)\supset R'(c_1,\dots)
+   \end{align*}
+   First line implies \(A(R,R_1,\dots,R_m)\to R(c_1,\dots,c_k)\supset F(c_1,\dots,c_k)\). The second line
+   with the assumption \(A(R,R_1,\dots,R_m)\) shows that
+   \(A(R,R_1,\dots,R_m)\to F(c_1,\dots,c_k)\supset R(c_1,\dots,c_k)\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Robinson]
+   #+BEGIN_proposition
+   Assume that the language contains no function constants. Let \(\cala_1\) and \(\cala_2\) be two
+   consistent axiom systems. Suppose furthermore that, for any sentence \(A\) which is dependent
+   on \(\cala_1\) and \(\cala_2\), it is not the case that \(\cala_1\to A\) and \(\cala_2\to\neg A\)
+   are provable. Then \(\cala_1\cup\cala_2\) is consistent
+   #+END_proposition
+
+   #+BEGIN_proof
+   Suppose \(\cala_1\cup\cala_2\) is not consistent. Then there are axiom sentences \(\Gamma_1\)
+   and \(\Gamma_2\) from \(\cala_1\) and \(\cala_2\) respectively s.t. \(\Gamma_1,\Gamma_2\to\) is
+   provable. Since \(\cala_1\) and \(\cala_2\) are each consistent, neither \(\Gamma_1\)
+   nor \(\Gamma_2\) is empty. Apply Lemma ref:lemma6.5 to the partition \([\{\Gamma_1;\},\{\Gamma_2;\}]\)
+   #+END_proof
+
+   Let \(\LKp\) and \(\LJp\) denote the quantifier-free parts of \(\LK\) and \(\LJ\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   There exist decision procedures for \(\LKp\) and \(\LJp\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   The following decision procedure was given by gentzen. A sequent of \(\LKp\)  (or \(\LJp\)) is
+   said to be *reduced* if in the antecedent the same formula does not occur at more than three places
+   as sequent formulas, and likewise in the succedent. A sequent \(S'\) is called a *reduct* of a
+   sequent \(S\) is \(S'\) is reduced and is obtained from \(S\) by deleting some occurrences of
+   formulas. Now given a sequent \(S\) of \(\LKp\) (or \(\LJp\)), let \(S'\) be any reduct of \(S\).
+   We note the following
+   1. \(S\) is provable or unprovable according as \(S'\) is provable or unprovable
+   2. The number of all reduced sequents which contain only subformulas of the formula in \(S\) is
+      finite
+
+
+   Consider the finite system of sequents as in 2, say \(\cali\).  Collect all initial sequents in
+   the systems. Call this set \(\cali_0\). Then examine \(\cali-\cali_0\) to see if there is a
+   sequent which can be the lower sequent of an inference whose upper sequent(s) is (are) one (two)
+   sequent(s) from \(\cali_0\). Call the set of all sequents which satisfy this
+   condition \(\cali_1\). Now see if there is a sequent in \((\cali-\cali_0)-\cali_1\) which be the
+   lower sequent of an inference whose upper sequent(s) is (are) one (two) of the sequent(s)
+   in \(\cali_0\cup\cali_1\). Continue this process until either the sequent \(S'\) itself is
+   determined as provable, or the process does not give any new sequent as provable. One of the two
+   must happen. (Note that the whole argument is finitary)
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Harrop]
+   #+BEGIN_theorem
+   <<Problem2>>
+   1. Let \Gamma be a finite sequence of formulas s.t. in each formula of \Gamma every occurrence
+   of \(\vee\) and \(\exists\) is either in the scope of a \(\neg\) or in the left scope of
+   a \(\sup\). This condition will be referred to as (*) in this theorem.
+      1. Then \(\Gamma\to A\vee B\) is \(\LJ\)-provable iff  \(\Gamma\to A\) and \(\Gamma\to B\) is \(\LJ\)-provable
+      2. \(\Gamma\to\exists xF(x)\) is \(\LJ\)-provable iff for some term \(s\), \(\Gamma\to F(s)\) is \(\LJ\)-provable
+   3. The following sequents (which are \(\LK\)-provable) are not \(\LJ\)-provable
+      \begin{gather*}
+      \neg(\neg A\wedge\neg B)\to A\vee B;\hspace{1cm}
+      \neg\forall x\neg F(x)\to\exists xF(x)\\
+      A\supset B\to A\vee B;\hspace{1cm}
+      \neg\forall xF(x)\to\exists x\neg F(x);\\
+      \neg A(\wedge B)\to A\vee \neg B
+      \end{gather*}
+   #+END_theorem
+
+   #+BEGIN_proof
+   1. 
+      1. \(\Rightarrow\). Consider a cut-free proof of \(\Gamma\to A\vee B\). The proof is carried
+         out by induction on the number of inferences below all the inferences for \(\vee\)
+         and \(\exists\) in the given proof. If the last inference is \(\vee\)right, there is
+         nothing to prove. Notice that the last inference cannot be \(\vee,\neg\) or \(\exists\)left
+
+         Case 1: The last inference is \(\wedge\)left
+         \begin{equation*}
+         \begin{prooftree}%[center=false]
+         \hypo{C,\Gamma\to A\vee B}
+         \infer1{C\wedge D,\Gamma\to A\vee B}
+         \end{prooftree}
+         \end{equation*}
+         Its obvious that \(C\) satisfies the condition (*). Thus the induction hypothesis applies
+         to the upper sequent; hence either \(C,\Gamma\to A\) or \(C,\Gamma\to B\) is provable. In
+         either case, the end-sequent can be derived in \(\LJ\)
+         Case 2: The last inference is \(\supset\)left
+         \begin{equation*}
+         \begin{prooftree}%[center=false]
+         \hypo{\Gamma\to C}
+         \hypo{D,\Gamma\to A\vee B}
+         \infer2{C\supset D,\Gamma\to A\vee B}
+         \end{prooftree}
+         \end{equation*}
+         \(D\) satisfies the condition; thus by the induction hypothesis applied to the right upper
+         sequent, \(D,\Gamma\to A\) or \(D,\Gamma\to B\) is provable.
+      2. If \(\Gamma\to F(s)\) is \(\LJ\)-provable for some term \(s\).
+   #+END_proof
+
+** The predicate calculus with equality
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The predicate calculus with equality (denoted \(\LKe\)) can be obtained from \(\LK\) by
+   specifying constant of two argument (=: read equals) and adding the following sequents as
+   additional initial sequents (\(a=b\) denoting \(=(a,b)\))
+   \begin{gather*}
+   \to s=s\\
+   s_1=t_1,\dots,s_n=t_n\to f(s_1,\dots,s_n)=f(t_1,\dots,t_n)
+   \end{gather*}
+   for every function constant \(f\) of \(n\) argument-places (\(n=1,2,\dots\)):
+   \begin{equation*}
+   s_1=t_1,\dots,s_n=t_n,R(s_1,\dots,s_n)\to R(t_1,\dots,t_n)
+   \end{equation*}
+   for every predicate constant \(R\) of \(n\) argument; where \(s,s_1,\dots,s_n,t_1,\dots,t_n\) are
+   arbitrary terms
+
+   Each such sequent may be called an equality axiom of \(\LKe\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   Let \(A(a_1,\dots,a_n)\) be an arbitrary formula. Then
+   \begin{equation*}
+   s_1=t_1,\dots,s_n=t_n,A(s_1,\dots,s_n)\to A(t_1,\dots,t_n)
+   \end{equation*}
+   is provable in \(\LKe\) for any terms \(s_i,t_i\). Furthermore, \(s=t\to t=s\)
+   and \(s_1=s_2,s_2=s_3\to s_1=s_3\) are also provable
+   #+END_proposition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\Gamma_e\) be the set (axiom system) consisting of the following sentences
+   \begin{gather*}
+   \forall x(x=x)\\ 
+   \forall x_1\dots\forall x_n\forall y_1\dots\forall y_n[x_1=y_1\wedge\dots\wedge
+   x_n=y_n\supset f(x_1,\dots,x_n=f(y_1,\dots,y_n))]
+   \end{gather*}
+   for every function constant \(f\) with \(n\) arguments,
+   \begin{equation*}
+   \forall x_1\dots\forall x_n\forall y_1\dots\forall y_n[x_1=y_1\wedge\dots\wedge
+   x_n=y_n\supset R(x_1,\dots,x_n=R(y_1,\dots,y_n))]
+   \end{equation*}
+   for every predicate constant \(R\) of \(n\) arguments. Each such sentence is called an *equality axiom*
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   A sequent \(\Gamma\to\Delta\) is provable in \(\LKe\) iff \(\Gamma,\Gamma_e\to\Delta\) is provable in \(\LK\)
+   #+END_proposition
+
+   #+BEGIN_proof
+   All the initial sequents of \(\LKe\) are provable from \(\Gamma_e\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   If the cut formula of a cut in \(\LKe\) is of the form \(s=t\), then the cut is called
+   *inessential*. It's called *essential* otherwise
+   #+END_definition
+
+   #+ATTR_LATEX: :options [the cut-elimination theorem for $\LKe$]
+   #+BEGIN_theorem
+   If a sequent of \(\LKe\) is \(\LKe\)-provable, then it is \(\LKe\)-provable without an essential cut
+   #+END_theorem
+
+   #+BEGIN_proof
+   The theorem is proved by removing essential cuts (mixes as a matter of a fact), following the
+   method used for Theorem ref:thm5.1
+
+   If the rank is 2, \(S_2\) is an equality axiom and the mix formula is not of the form \(s=t\),
+   then the mix formula is of the form \(P(t_1,\dots,t_n)\). If \(S_1\) is also an equality axiom,
+   then it has the form
+   \begin{equation*}
+   s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n)\to P(t_1,\dots,t_n)
+   \end{equation*}
+   From this and \(S_2\), i.e.,
+   \begin{equation*}
+   t_1=r_1,\dots,t_n=r_n,P(t_1,\dots,t_n)\to P(r_1,\dots,r_n)
+   \end{equation*}
+   we obtain by a mix
+   \begin{equation*}
+   s_1=t_1,\dots,s_n=t_n,t_1=r_1,\dots,t_n=r_n,P(s_1,\dots,s_n)\to P(r_1,\dots,r_n)
+   \end{equation*}
+   This may be replaced by
+   \begin{align*}
+   &s_i=t_i,t_i=r_i\to s_i=r_i\quad(i=1,2,\dots,n)\\
+   &s_1=r_1,\dots,s_n=r_n,P(s_1,\dots,s_n)\to P(r_1,\dots,r_n)
+   \end{align*}
+   and then repeated cuts of \(s_i=r_i\) to produce the same end-sequent. All cuts introduced here
+   are inessential
+
+   If \(P(t_1,\dots,t_n)\) in \(S_2\) is a weakening formula, then the mix inference is
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n)\to P(t_1,\dots,t_n)}
+   \hypo{P(t_1,\dots,t_n),\Pi\to\Lambda}
+   \infer2{s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n),\Pi\to\Lambda}
+   \end{prooftree}
+   \end{equation*}
+   Transform this into
+   \begin{equation*}
+   \begin{prooftree}%[center=false]
+   \hypo{\Pi\to\Lambda}
+   \infer[double]1{\text{end-sequent}}
+   \end{prooftree}
+   \end{equation*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex7.7
+   A sequent of the form
+   \begin{equation*}
+   s_1=t_1,\dots,s_n=t_n\to s=t
+   \end{equation*}
+   is said to be simple if it is obtained from sequents of the following four forms by applications
+   of exchanges, contractions, cuts, and weakening left.
+   1. \(\to s=s\)
+   2. \(s=t\to t=s\)
+   3. \(s_1=s_2,s_2=s_3\to s_1=s_3\)
+   4. \(s_1=t_1,\dots,s_m=t_m\to f(s_1,\dots,s_m)=f(t_1,\dots,t_m)\)
+
+
+   Prove that if \(s_1=s_1,\dots,s_m=s_m\to s=t\) is simple, then \(s=t\) is of the form \(s=s\). As
+   a special case, if \(\to s=t\) is simple, then \(s=t\) is of the form \(s=s\)
+
+   Let \(\LKe'\) be the system which is obtained from \(\LK\) adding the following sequents as
+   initial sequents
+   1. simple sequents
+   2. sequents of the form
+      \begin{equation*}
+      s_1=t_1,\dots,s_m=t_m,R(s_1',\dots,s_n')\to R(t_1',\dots,t_n')
+      \end{equation*}
+      where \(s_1=t_1,\dots,s_m=t_m\to s_i'=t_i'\) is simple for each \(i\)
+
+
+   First prove that the initial sequents of \(\LKe'\) are closed under cuts and that if
+   \begin{equation*}
+   R(s_1,\dots,s_n)\to R(t_1,\dots,t_n)
+   \end{equation*}
+   is an initial sequent of \(\LKe'\) (where \(R\) is not =), then it is of the form \(D\to D\).
+   Finally prove that the cut-elimination theorem (without the exception of inessential cuts)
+   holds for \(\LKe'\)
+   #+END_exercise
+
+   #+BEGIN_proof
+   1. Consider the complexity of \(s\)?
+
+      If \(s\) is a variable, we can only get this by \(v_i=v_i\)
+   #+END_proof
+
+** The completeness theorem
+
+
+
+
+
 ** TODO ALL the problems
    [[Problem1]]
-   
-   A example of preview
-   \begin{equation*}
-   \begin{prooftree}%[center=false]
-   \hypo{hypo1}
-   \hypo{hypo2}
-   \infer2[\(wef\)]{meow}
-   \end{prooftree}
-   \end{equation*}
-
-   then for the same latex code
-   \begin{equation*}
-   \begin{prooftree}%[center=false]
-   \hypo{hypo1}
-   \hypo{hypo2}
-   \infer2[\(wef\)]{meow}
-   \end{prooftree}
-   \end{equation*}
-
-   we have immediate preiview:)
+   [[Problem2]]
