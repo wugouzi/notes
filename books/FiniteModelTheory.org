@@ -4,7 +4,7 @@
 #+LATEX_HEADER: \input{preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/FiniteModelTheory/FiniteModelTheory.tex
 #+LATEX_HEADER: \def \Part {\text{Part}}
-
+#+LATEX_HEADER: \def \free {\text{free}}
 * Preliminaries
 
 ** Structures
@@ -363,6 +363,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_theorem
+   label:thm2.1.4
    Let \(K\) be a class of finite structures. Suppose that for every \(m\) there
    are fintie structures \(\cala\) and \(\calb\) s.t.
    \begin{equation*}
@@ -540,16 +541,18 @@
 
    #+ATTR_LATEX: :options [Ehrenfeucht's Theorem]
    #+BEGIN_theorem
+   label:thm2.2.8
    Given \(\cala\) and \(\calb\), \(\bar{a}\in A^s\) and \(\bar{b}\in B^s\), and \(m\ge0\), the
    following are equivalent
    1. The duplicator wins \(G_m(\cala,\bar{a},\calb,\bar{b})\)
    2. \(\calb\vDash\varphi_{\bar{a}}^m[\bar{b}]\)
    3. \(\bar{a}\) and \(\bar{b}\) satisfy the same formulas of quantifier rank \(\le m\), that is,
       if \(\varphi(x_1,\dots,x_s)\) is of quantifier rank \(\le m\), then
-      \begin{equation*}
+      \begin{equation}
+      \label{eq:2.2.8}
       \cala\vDash\varphi[\bar{a}] \quad\text{ iff }\quad
       \calb\vDash\varphi[\bar{b}]
-      \end{equation*}
+      \end{equation}
    #+END_theorem
 
    #+BEGIN_proof
@@ -573,5 +576,136 @@
    
    \(3\to1\). \(\qr(\varphi^m_{\bar{a}})=m\) and \(\cala\vDash\varphi_{\bar{a}}^m[\bar{a}]\)
 
-   \(1\to 3\).
+   \(1\to 3\). Induction on \(m\). The case \(m=0\) is handled as above. Let \(m>0\) and suppose
+   that the duplicator wins \(G_m(\cala,\bara,\calb,\barb)\).  Clearly the set of formulas
+   \(\varphi(x_1,\dots,x_s)\) satisfying 
+   ref:eq:2.2.8 contains the atomic formulas and is closed under \(\neg\) and \(\vee\) (Since
+   duplicator wins the game, there are partial isomorphisms). Suppose that
+   \(\varphi(\bara)=\exists y\psi\) and \(\qr(\varphi)\le m\). Since \(y\not\in\free(\varphi)\), we can assume
+   that \(y\) is distinct from the variables in \(\barx\). Hence \(\psi=\psi(\barx,y)\). Assume, for
+   instance, \(\cala\vDash\varphi(\bara)\). Then there is \(a\in A\) s.t.
+   \(\cala\vDash\psi[\bara,a]\). As by 1, the duplicator wins \(G_m(\cala,\bara,\calb,\barb)\),
+   there is \(b\in B\) s.t. the duplicator wins \(G_{m-1}(\cala,\bara a,\calb,\barb b)\).
+   Since \(\qr(\psi)\le m-1\), the induction hypothesis yields
+   \(\calb\vDash\psi[\barb,b]\), hence \(\calb\vDash\varphi[\barb]\)
    #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   For structures \(\cala,\calb\) and \(m\ge0\) the following are equivalent
+   1. The duplicator wins \(G_m(\cala,\calb)\)
+   2. \(\calb\vDash\varphi_{\cala}^m\)
+   3. \(\cala\equiv_m\calb\)
+   #+END_corollary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   Let \(\cala\) be a structure with \(\norm{A}\le m\). Then for all \(\calb\)
+   \begin{equation*}
+   \calb\vDash\varphi_{\cala}^{m+1}
+   \quad\text{ iff }\quad
+   \cala\cong\calb
+   \end{equation*}
+   #+END_corollary
+
+   The next result shows that the formulas \(\varphi_{\bara}^m\) give a clear picture of the
+   expressive power of first-order logic
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \(\varphi(v_1,\dots,v_s)\) be a formula of quantifier rank \(\le m\). Then
+   \begin{equation*}
+   \vDash\varphi\leftrightarrow
+   \bigvee
+   \{\varphi_{\cala,\bara}^m\mid\cala\text{ a structure },
+   \bara\in\cala,\text{ and }\cala\vDash\varphi[\bara]\}
+   \end{equation*}
+   #+END_theorem
+
+   #+BEGIN_proof
+   Suppose first that \(\calb\vDash\varphi[\barb]\). Then the formula \(\varphi_{\calb,\barb}^m\) is
+   a member of the disjunction on the right side of the equivalence, which therefore is satisfied
+   by \(\barb\).
+
+   Conversely, suppose \(\calb\vDash\bigvee\{\varphi_{\cala,\bara}^m[\bara]\}[\barb]\). Then for
+   some \(\cala\) and \(\bara\) s.t. \(\cala\vDash\varphi[\bara]\) we
+   have \(\calb\vDash\varphi_{\cala,\bara}^m[\barb]\). By Theorem ref:thm2.2.8 \(\bara\)
+   and \(\barb\) satisfy the same formulas of quantifier rank \(\le m\) and therefore \(\calb\vDash\varphi[\barb]\).
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For a class \(K\) of finite structures the following are equivalent
+   1. \(K\) is not axiomatizable in first-order logic
+   2. For each \(m\) there are finite structures \(\cala\) and \(\calb\) s.t.
+      \begin{equation*}
+      \cala\in K,\calb\not\in K\text{ and }\cala\equiv_m\calb
+      \end{equation*}
+   #+END_theorem
+
+   #+BEGIN_proof
+   \(2\to1\) is proved in theorem ref:thm2.1.4. For the converse, suppose that 2 doesn't hold, i.e.,
+   that for some \(m\) and all finite \(\cala\) and \(\calb\)
+   \begin{equation*}
+   \cala\in K\text{ and }\cala\equiv_m\calb\text{ imply }\calb\in K
+   \end{equation*}
+   Then \(K=\Mod(\bigvee\{\varphi_{\cala}^m\mid \cala\in K\})\), and thus \(K\) is axiomatizable
+   #+END_proof
+
+   
+** Examples and Fraïssé's Theorem
+   Given structures \(\cala,\calb\) and \(m\in\N\), let \(W_m(\cala,\calb):=\)
+   \begin{equation*}
+   \{\bara\mapsto\barb\mid s\ge0,\bara\in A^s,\barb\in B^s,\text{ the duplicator wins }
+   G_m(\cala,\bara,\calb,\barb)\}
+   \end{equation*}
+   be the set of winning positions for the duplicator. The sequence of the \(W_M(\cala,\calb)\) has
+   the back and forth properties as introduced in the following definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Structures \(\cala\) and \(\calb\) are said to be *\(m\)-isomorphic*,
+   written \(\cala\cong_m\calb\), if there is a sequence \((I_j)_{j\le m}\) with the following
+   properties
+   1. Every \(I_j\) is a nonempty set of partial isomorphisms from \(\cala\) to \(\calb\)
+   2. (*Forth property*) For every \(j<m\), \(p\in I_{j+1}\) and \(a\in A\) there is \(q\in I_j\)
+      s.t. \(q\supseteq p\) and \(a\in\dom(q)\)
+   3. (*Back property*) For every \(j<m\), \(p\in I_{j+1}\), and \(b\in B\) there is \(q\in I_j\)
+      s.t. \(q\supseteq p\) and \(b\in\ran(q)\)
+
+
+   If \((I_j)_{j\le m}\) has the properties 1,2 and 3, we write \((I_j)_{j\le m}:\cala\cong_m\calb\)
+   and say that \(\cala\) and \(\calb\) are *\(m\)-isomorphic via* \((I_j)_{j\le m}\)
+   #+END_definition
+
+   #+BEGIN_exercise
+   label:ex2.3.2
+   Supppose \((I_j)_{j\le m}:\cala\cong_m\calb\).
+   Then \((\tilde{I}_j)_{j\le m}:\cala\cong_m\calb\)
+   with \(\tilde{I}_j:=\{q\in\Part(\cala,\calb)\mid q\subseteq p\text{ for some }p\in I_j\}\).
+   In particular, \(\emptyset\mapsto\emptyset\in I_j\) for all \(j\le m\). Moreover
+
+   \(\widetilde{W_j(\cala,\calb)}=W_j(\cala,\calb)\)
+
+   #+END_exercise
+
+   #+BEGIN_proof
+   Forth property: Suppose \(j<m\), \(p\in \tilde{I}_{j+1}\) and \(a\in A\).
+   Then \(p\subseteq p'\in I_{j+1}\). Then we have \(q'\in I_{j}\) with \(a\in\dom(q')\)
+   and \(p'\subseteq q'\). We construct \(q=p\cup\{(a,q'(a))\}\). \(q\in\Part(\cala,\calb)\)
+   since \(q'\in\Part(\cala,\calb)\).
+
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For structures \(\cala\) and \(\calb\), \(\bara\in A^s\), \(\barb\in B^s\) and \(m\ge0\) the
+   following are equivalent
+   1. The duplicator wins \(G_m(\cala,\bara,\calb,\barb)\)
+   2. \(\bara\mapsto\barb\in W_m(\cala,\calb)\) and \((W_j(\cala,\calb))_{j\le m}:\cala\cong_m\calb\)
+   3. There is \((I_j)_{j\le m}\) with \(\bara\mapsto\barb\in I_m\) s.t. \((I_j)_{j\le m}:\cala\cong_m\calb\)
+   4. \(\calb\vDash\varphi_{\bara}^m[\barb]\)
+   5. \(\bara\) satisfies in \(\cala\) the same formulas of quantifier rank \(\le m\) as \(\barb\)
+      in \(\calb\)
+   #+END_theorem
+

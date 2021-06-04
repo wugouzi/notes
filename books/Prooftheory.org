@@ -1270,7 +1270,7 @@
       2. If \(\Gamma\to F(s)\) is \(\LJ\)-provable for some term \(s\).
    #+END_proof
 
-** The predicate calculus with equality
+** The predicate calculus with equality                               :problem:
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
    The predicate calculus with equality (denoted \(\LKe\)) can be obtained from \(\LK\) by
@@ -1422,8 +1422,94 @@
    #+END_proof
 
 ** The completeness theorem
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. Let \(L\) be a language. By a *structure* for \(L\) we mean a pair \(\la D,\phi\ra\), where \(D\)
+      is a non-empty set and \phi is a map from the constants of \(L\) s.t.
+      1. if \(k\) is an individual constant, then \(\phi k\) is an element of \(D\)
+      2. if \(f\) is a function constant of \(n\) arguments, then \(\phi f\) is a mapping from \(D^n\) to \(D\)
+      3. if \(R\) is a predicate constant of \(n\) arguments, then \(\phi R\) is a subset of \(D^n\)
+   2. An *interpretation* of \(L\) is a structure \(\la D,\phi\ra\) together with a mapping \(\phi_0\)
+      from variables into \(D\). We may denote an interpretation \((\la D,\phi\ra,\phi_0)\) simply
+      by \(\fF\). \(\phi_0\) is called an assignment from \(D\)
+   3. We say that an interpretation \(\fF=(\la C,\phi\ra,\phi_0)\) *satisfies* a formula \(A\) if this
+      follows from the following inductive definition
+      1. For every semi-term \(t\), \(\phi(a)=\phi_0(a)\) and  for a\(\phi(x)=\phi_0(x)\)ll free
+         variables \(a\) and bound variables \(x\). next if \(f\) is a function constant and \(t\)
+         is a semi-term for which \(\phi t\) is already defined, then \(\phi(f(t))\) is defined to
+         be \((\phi f)(\phi t)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Completeness and soundness]
+   #+BEGIN_theorem
+   A formula is provable in \(\LK\) iff it is valid
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Let \(S\) be a sequent. Then either there is a cut-free proof of \(S\), or there is an
+   interpretation which does not satisfy \(S\) (and hence \(S\) is not valid)
+   #+END_lemma
+
+   #+BEGIN_proof
+   We will define, for each sequent \(S\), a (possibly infinite) tree, called the reduction tree
+   for \(S\), from which we can obtain either a cut-free proof of \(S\) or an interpretation not
+   satisfying \(S\). This reduction tree for \(S\) contains a sequent at each node. It is
+   constructed in stages as follows
+
+   Stage 0: Write \(S\) at the bottom of the tree
+
+   Stage \(k\) (\(k>0\)): This is defined by cases
+   1. Every topmost sequent has a formula common to its antecedent and succedent. Then stop.
+   2. This stage is defined according as
+      \begin{equation*}
+      k\equiv 0,1,2,\dots,12\mod 13
+      \end{equation*}
+      \(k\equiv0\) and \(k\equiv1\) concern the symbol \(\neg\); \(k\equiv2\) and \(k\equiv3\)
+      concern \(\wedge\); \(k\equiv4\) and \(k\equiv5\) concern \(\vee\); \(k\equiv6\)
+      and \(k\equiv7\) concern \(\supset\); \(k\equiv8\) and \(k\equiv9\)
+      concern \(\forall\); \(k\equiv10\) and \(k\equiv11\) concern equiv \(\exists\)
 
 
+   Assume that there are no individual or function constants
+
+   All the free variables which occur in any sequent which has been obtained at or before
+   stage \(k\) are said to be "available at stage \(k\)". In case there is none, pick any free
+   variable and say that it is available
+   1. \(k\equiv 0\). Let \(\Pi\to\Lambda\) be any topmost sequent of the tree which has been defined
+      by stage \(k-1\). Let \(\neg A_1,\dots,\neg A_n\) be all the formulas in \Pi whose outermost logical
+      symbol is \(\neg\), and to which no reduction has been applied in previous stages. Then write
+      down
+      \begin{equation*}
+      \Pi\to\Lambda,A_1,\dots,A_n
+      \end{equation*}
+      above \(\Pi\to\Lambda\). We say that a \(\neg\)left reduction has been applied
+      to \(\neg A_1,\dots,\neg A_n\)
+   2. \(k\equiv1\). Let \(\neg A_1,\dots,\neg A_n\) be all the formulas in \Lambda whose outermost logical
+      symbol is \(\neg\) and to which no reduction has been applied so far. Then write down
+      \begin{equation*}
+      A_1,\dots,A_n,\Pi\to\Lambda
+      \end{equation*}
+      above \(\Pi\to\Lambda\). We say that a \(\neg\)right reduction has been applied
+      to \(\neg A_1,\dots,\neg A_n\).
+   3. \(k\equiv2\). Let \(A_1\wedge B_1,\dots,A_n\wedge B_n\) be all the formulas in \Pi whose
+      outermost logical symbols is \(\wedge\) and to which no reduction has been applied yet. Then
+      write down
+      \begin{equation*}
+      A_1,B_1,A_2,B_2,\dots,A_n,B_n,\Pi\to\Lambda
+      \end{equation*}
+      above \(\Pi\to\Lambda\). We say that an \(\wedge\)left reduction has been applied to
+      \begin{equation*}
+      A_1\wedge B_1,\dots,A_n\wedge B_n
+      \end{equation*}
+   4. \(k\equiv3\). Let \(A_1\wedge B_1,\dots,A_n\wedge B_n\) be all the formulas in \Pi whose
+      outermost logical symbols is \(\wedge\) and to which no reduction has been applied yet. Then
+      write down
+      \begin{equation*}
+      \Pi\to\Lambda, C_1,\dots,C_n
+      \end{equation*}
+      where \(C_i\) is either \(A_i\) or \(B_i\), above \(\Pi\to\Lambda\). Take all possible 
+   #+END_proof
 
 
 
