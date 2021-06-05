@@ -1,4 +1,4 @@
-% Created 2021-06-02 三 16:47
+% Created 2021-06-05 六 02:23
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -17,6 +17,9 @@
 \usepackage{ebproof}
 \def \LJ {\textbf{LJ}}
 \def \LK {\textbf{LK}}
+\def \LKp {\textbf{LK'}}
+\def \LKe {\textbf{LK}_\textbf{e}}
+\def \LJp {\textbf{LJ'}}
 \def \LKsh {\textbf{LK\#}}
 \def \LKs {\textbf{LK}^*}
 \author{Gaisi Takeuti}
@@ -35,12 +38,12 @@
 \tableofcontents
 
 \section{First Order Predicate Calculus}
-\label{sec:org18a2099}
+\label{sec:org80d4d63}
 In this chapter we shall present Gentzen's formulation of the first order predicate
 calculus \(\LK\) (logistischer klassischer Kalkül). Intuitionisitic logic is known as \(\LJ\)
 (logistischer intuitionistischer Kalkül) 
 \subsection{Formalization of statements}
-\label{sec:orgbe7a48e}
+\label{sec:org07ab912}
 
 \begin{definition}[]
 \textbf{Terms} are defined inductively as follows:
@@ -131,7 +134,7 @@ If \(A\) is a formula (where \(a\) is not necessarily fully indicated) and
 
 
 \subsection{Formal proofs and related concepts}
-\label{sec:org2483475}
+\label{sec:org5d24d4b}
 \begin{definition}[]
 An \textbf{inference} is an expression of the form
 
@@ -580,7 +583,7 @@ expressed by \(A\sim B\)
 \end{definition}
 
 \subsection{A formulation of intuitionistic predicate calculus}
-\label{sec:org7d82d04}
+\label{sec:org036dc2b}
 \begin{definition}[]
 We can formalize the intuitionistic predicate calculus as a subsystem of
 \(\LK\) which we call \(\LJ\) following Gentzen (\(\bJ\) stands for
@@ -601,7 +604,7 @@ provable in \(\LK\)
 \end{proposition}
 
 \subsection{Axiom systems}
-\label{sec:orge36fdec}
+\label{sec:org3ea3139}
 \begin{definition}[]
 The basic system is \(\LK\)
 \begin{enumerate}
@@ -650,8 +653,9 @@ An axiom system \(\cala\) is consistent (with \(\LK\)) iff \(\LK_{\cala}\) is co
 These definitions and the propositions hold also for \(\LJ\)
 
 \subsection{The cut-elimination theroem}
-\label{sec:org7dea71e}
+\label{sec:org85ca75a}
 \begin{theorem}[the cut-elimination theroem: Gentzen]
+\label{thm5.1}
 If a sequent is \((\LK)\)-provable, then it is \((\LK)\)-provable without a cut
 \end{theorem}
 
@@ -905,7 +909,7 @@ The cut-elimination theorem holds for \(\LJ\)
 \end{theorem}
 
 \subsection{Some consequences of the cut-elimination theorem}
-\label{sec:orgeeb5fc8}
+\label{sec:org056ccf9}
 \begin{definition}[]
 By a \textbf{subformula} of a formula \(A\) we mean a formula used in building up
 \(A\).
@@ -1211,12 +1215,373 @@ and hence also
 \begin{equation*}
 A(R,R_1,\dots,R_m)\wedge R(c_1,\dots,c_k)\to A(R',R_1,\dots,R_m)\supset R'(c_1,\dots,c_n)
 \end{equation*}
-are provable. Now apply Craig's theorem to the latter sequent.
+are provable. Now apply Craig's theorem to the latter sequent. We get
+\begin{align*}
+&A(R,R_1,\dots,R_m)\wedge R(c_1,\dots,c_k)\supset F(c_1,\dots,c_k)\\
+&F(c_1,\dots,sc_k)\supset A(R',R_1,\dots,R_m)\supset R'(c_1,\dots)
+\end{align*}
+First line implies \(A(R,R_1,\dots,R_m)\to R(c_1,\dots,c_k)\supset F(c_1,\dots,c_k)\). The second line
+with the assumption \(A(R,R_1,\dots,R_m)\) shows that
+\(A(R,R_1,\dots,R_m)\to F(c_1,\dots,c_k)\supset R(c_1,\dots,c_k)\)
+\end{proof}
+
+\begin{proposition}[Robinson]
+Assume that the language contains no function constants. Let \(\cala_1\) and \(\cala_2\) be two
+consistent axiom systems. Suppose furthermore that, for any sentence \(A\) which is dependent
+on \(\cala_1\) and \(\cala_2\), it is not the case that \(\cala_1\to A\) and \(\cala_2\to\neg A\)
+are provable. Then \(\cala_1\cup\cala_2\) is consistent
+\end{proposition}
+
+\begin{proof}
+Suppose \(\cala_1\cup\cala_2\) is not consistent. Then there are axiom sentences \(\Gamma_1\)
+and \(\Gamma_2\) from \(\cala_1\) and \(\cala_2\) respectively s.t. \(\Gamma_1,\Gamma_2\to\) is
+provable. Since \(\cala_1\) and \(\cala_2\) are each consistent, neither \(\Gamma_1\)
+nor \(\Gamma_2\) is empty. Apply Lemma \ref{lemma6.5} to the partition \([\{\Gamma_1;\},\{\Gamma_2;\}]\)
+\end{proof}
+
+Let \(\LKp\) and \(\LJp\) denote the quantifier-free parts of \(\LK\) and \(\LJ\)
+
+\begin{theorem}[]
+There exist decision procedures for \(\LKp\) and \(\LJp\)
+\end{theorem}
+
+\begin{proof}
+The following decision procedure was given by gentzen. A sequent of \(\LKp\)  (or \(\LJp\)) is
+said to be \textbf{reduced} if in the antecedent the same formula does not occur at more than three places
+as sequent formulas, and likewise in the succedent. A sequent \(S'\) is called a \textbf{reduct} of a
+sequent \(S\) is \(S'\) is reduced and is obtained from \(S\) by deleting some occurrences of
+formulas. Now given a sequent \(S\) of \(\LKp\) (or \(\LJp\)), let \(S'\) be any reduct of \(S\).
+We note the following
+\begin{enumerate}
+\item \(S\) is provable or unprovable according as \(S'\) is provable or unprovable
+\item The number of all reduced sequents which contain only subformulas of the formula in \(S\) is
+finite
+\end{enumerate}
+
+
+Consider the finite system of sequents as in 2, say \(\cali\).  Collect all initial sequents in
+the systems. Call this set \(\cali_0\). Then examine \(\cali-\cali_0\) to see if there is a
+sequent which can be the lower sequent of an inference whose upper sequent(s) is (are) one (two)
+sequent(s) from \(\cali_0\). Call the set of all sequents which satisfy this
+condition \(\cali_1\). Now see if there is a sequent in \((\cali-\cali_0)-\cali_1\) which be the
+lower sequent of an inference whose upper sequent(s) is (are) one (two) of the sequent(s)
+in \(\cali_0\cup\cali_1\). Continue this process until either the sequent \(S'\) itself is
+determined as provable, or the process does not give any new sequent as provable. One of the two
+must happen. (Note that the whole argument is finitary)
+\end{proof}
+
+\begin{theorem}[Harrop]
+\label{Problem2}
+\begin{enumerate}
+\item Let \(\Gamma\) be a finite sequence of formulas s.t. in each formula of \(\Gamma\) every occurrence
+\end{enumerate}
+of \(\vee\) and \(\exists\) is either in the scope of a \(\neg\) or in the left scope of
+a \(\sup\). This condition will be referred to as (*) in this theorem.
+\begin{enumerate}
+\item Then \(\Gamma\to A\vee B\) is \(\LJ\)-provable iff  \(\Gamma\to A\) and \(\Gamma\to B\) is \(\LJ\)-provable
+\item \(\Gamma\to\exists xF(x)\) is \(\LJ\)-provable iff for some term \(s\), \(\Gamma\to F(s)\) is \(\LJ\)-provable
+\end{enumerate}
+\begin{enumerate}
+\item The following sequents (which are \(\LK\)-provable) are not \(\LJ\)-provable
+\begin{gather*}
+\neg(\neg A\wedge\neg B)\to A\vee B;\hspace{1cm}
+\neg\forall x\neg F(x)\to\exists xF(x)\\
+A\supset B\to A\vee B;\hspace{1cm}
+\neg\forall xF(x)\to\exists x\neg F(x);\\
+\neg A(\wedge B)\to A\vee \neg B
+\end{gather*}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\begin{enumerate}
+\item \begin{enumerate}
+\item \(\Rightarrow\). Consider a cut-free proof of \(\Gamma\to A\vee B\). The proof is carried
+out by induction on the number of inferences below all the inferences for \(\vee\)
+and \(\exists\) in the given proof. If the last inference is \(\vee\)right, there is
+nothing to prove. Notice that the last inference cannot be \(\vee,\neg\) or \(\exists\)left
+
+Case 1: The last inference is \(\wedge\)left
+\begin{equation*}
+\begin{prooftree}%[center=false]
+\hypo{C,\Gamma\to A\vee B}
+\infer1{C\wedge D,\Gamma\to A\vee B}
+\end{prooftree}
+\end{equation*}
+Its obvious that \(C\) satisfies the condition (*). Thus the induction hypothesis applies
+to the upper sequent; hence either \(C,\Gamma\to A\) or \(C,\Gamma\to B\) is provable. In
+either case, the end-sequent can be derived in \(\LJ\)
+Case 2: The last inference is \(\supset\)left
+\begin{equation*}
+\begin{prooftree}%[center=false]
+\hypo{\Gamma\to C}
+\hypo{D,\Gamma\to A\vee B}
+\infer2{C\supset D,\Gamma\to A\vee B}
+\end{prooftree}
+\end{equation*}
+\(D\) satisfies the condition; thus by the induction hypothesis applied to the right upper
+sequent, \(D,\Gamma\to A\) or \(D,\Gamma\to B\) is provable.
+\item If \(\Gamma\to F(s)\) is \(\LJ\)-provable for some term \(s\).
+\end{enumerate}
+\end{enumerate}
+\end{proof}
+
+\subsection{The predicate calculus with equality\hfill{}\textsc{problem}}
+\label{sec:org5e00532}
+\begin{definition}[]
+The predicate calculus with equality (denoted \(\LKe\)) can be obtained from \(\LK\) by
+specifying constant of two argument (=: read equals) and adding the following sequents as
+additional initial sequents (\(a=b\) denoting \(=(a,b)\))
+\begin{gather*}
+\to s=s\\
+s_1=t_1,\dots,s_n=t_n\to f(s_1,\dots,s_n)=f(t_1,\dots,t_n)
+\end{gather*}
+for every function constant \(f\) of \(n\) argument-places (\(n=1,2,\dots\)):
+\begin{equation*}
+s_1=t_1,\dots,s_n=t_n,R(s_1,\dots,s_n)\to R(t_1,\dots,t_n)
+\end{equation*}
+for every predicate constant \(R\) of \(n\) argument; where \(s,s_1,\dots,s_n,t_1,\dots,t_n\) are
+arbitrary terms
+
+Each such sequent may be called an equality axiom of \(\LKe\)
+\end{definition}
+
+\begin{proposition}[]
+Let \(A(a_1,\dots,a_n)\) be an arbitrary formula. Then
+\begin{equation*}
+s_1=t_1,\dots,s_n=t_n,A(s_1,\dots,s_n)\to A(t_1,\dots,t_n)
+\end{equation*}
+is provable in \(\LKe\) for any terms \(s_i,t_i\). Furthermore, \(s=t\to t=s\)
+and \(s_1=s_2,s_2=s_3\to s_1=s_3\) are also provable
+\end{proposition}
+
+\begin{definition}[]
+Let \(\Gamma_e\) be the set (axiom system) consisting of the following sentences
+\begin{gather*}
+\forall x(x=x)\\ 
+\forall x_1\dots\forall x_n\forall y_1\dots\forall y_n[x_1=y_1\wedge\dots\wedge
+x_n=y_n\supset f(x_1,\dots,x_n=f(y_1,\dots,y_n))]
+\end{gather*}
+for every function constant \(f\) with \(n\) arguments,
+\begin{equation*}
+\forall x_1\dots\forall x_n\forall y_1\dots\forall y_n[x_1=y_1\wedge\dots\wedge
+x_n=y_n\supset R(x_1,\dots,x_n=R(y_1,\dots,y_n))]
+\end{equation*}
+for every predicate constant \(R\) of \(n\) arguments. Each such sentence is called an \textbf{equality axiom}
+\end{definition}
+
+\begin{proposition}[]
+A sequent \(\Gamma\to\Delta\) is provable in \(\LKe\) iff \(\Gamma,\Gamma_e\to\Delta\) is provable in \(\LK\)
+\end{proposition}
+
+\begin{proof}
+All the initial sequents of \(\LKe\) are provable from \(\Gamma_e\)
+\end{proof}
+
+\begin{definition}[]
+If the cut formula of a cut in \(\LKe\) is of the form \(s=t\), then the cut is called
+\textbf{inessential}. It's called \textbf{essential} otherwise
+\end{definition}
+
+\begin{theorem}[the cut-elimination theorem for $\LKe$]
+If a sequent of \(\LKe\) is \(\LKe\)-provable, then it is \(\LKe\)-provable without an essential cut
+\end{theorem}
+
+\begin{proof}
+The theorem is proved by removing essential cuts (mixes as a matter of a fact), following the
+method used for Theorem \ref{thm5.1}
+
+If the rank is 2, \(S_2\) is an equality axiom and the mix formula is not of the form \(s=t\),
+then the mix formula is of the form \(P(t_1,\dots,t_n)\). If \(S_1\) is also an equality axiom,
+then it has the form
+\begin{equation*}
+s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n)\to P(t_1,\dots,t_n)
+\end{equation*}
+From this and \(S_2\), i.e.,
+\begin{equation*}
+t_1=r_1,\dots,t_n=r_n,P(t_1,\dots,t_n)\to P(r_1,\dots,r_n)
+\end{equation*}
+we obtain by a mix
+\begin{equation*}
+s_1=t_1,\dots,s_n=t_n,t_1=r_1,\dots,t_n=r_n,P(s_1,\dots,s_n)\to P(r_1,\dots,r_n)
+\end{equation*}
+This may be replaced by
+\begin{align*}
+&s_i=t_i,t_i=r_i\to s_i=r_i\quad(i=1,2,\dots,n)\\
+&s_1=r_1,\dots,s_n=r_n,P(s_1,\dots,s_n)\to P(r_1,\dots,r_n)
+\end{align*}
+and then repeated cuts of \(s_i=r_i\) to produce the same end-sequent. All cuts introduced here
+are inessential
+
+If \(P(t_1,\dots,t_n)\) in \(S_2\) is a weakening formula, then the mix inference is
+\begin{equation*}
+\begin{prooftree}%[center=false]
+\hypo{s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n)\to P(t_1,\dots,t_n)}
+\hypo{P(t_1,\dots,t_n),\Pi\to\Lambda}
+\infer2{s_1=t_1,\dots,s_n=t_n,P(s_1,\dots,s_n),\Pi\to\Lambda}
+\end{prooftree}
+\end{equation*}
+Transform this into
+\begin{equation*}
+\begin{prooftree}%[center=false]
+\hypo{\Pi\to\Lambda}
+\infer[double]1{\text{end-sequent}}
+\end{prooftree}
+\end{equation*}
+\end{proof}
+
+\begin{exercise}
+\label{ex7.7}
+A sequent of the form
+\begin{equation*}
+s_1=t_1,\dots,s_n=t_n\to s=t
+\end{equation*}
+is said to be simple if it is obtained from sequents of the following four forms by applications
+of exchanges, contractions, cuts, and weakening left.
+\begin{enumerate}
+\item \(\to s=s\)
+\item \(s=t\to t=s\)
+\item \(s_1=s_2,s_2=s_3\to s_1=s_3\)
+\item \(s_1=t_1,\dots,s_m=t_m\to f(s_1,\dots,s_m)=f(t_1,\dots,t_m)\)
+\end{enumerate}
+
+
+Prove that if \(s_1=s_1,\dots,s_m=s_m\to s=t\) is simple, then \(s=t\) is of the form \(s=s\). As
+a special case, if \(\to s=t\) is simple, then \(s=t\) is of the form \(s=s\)
+
+Let \(\LKe'\) be the system which is obtained from \(\LK\) adding the following sequents as
+initial sequents
+\begin{enumerate}
+\item simple sequents
+\item sequents of the form
+\begin{equation*}
+s_1=t_1,\dots,s_m=t_m,R(s_1',\dots,s_n')\to R(t_1',\dots,t_n')
+\end{equation*}
+where \(s_1=t_1,\dots,s_m=t_m\to s_i'=t_i'\) is simple for each \(i\)
+\end{enumerate}
+
+
+First prove that the initial sequents of \(\LKe'\) are closed under cuts and that if
+\begin{equation*}
+R(s_1,\dots,s_n)\to R(t_1,\dots,t_n)
+\end{equation*}
+is an initial sequent of \(\LKe'\) (where \(R\) is not =), then it is of the form \(D\to D\).
+Finally prove that the cut-elimination theorem (without the exception of inessential cuts)
+holds for \(\LKe'\)
+\end{exercise}
+
+\begin{proof}
+\begin{enumerate}
+\item Consider the complexity of \(s\)?
+
+If \(s\) is a variable, we can only get this by \(v_i=v_i\)
+\end{enumerate}
+\end{proof}
+
+\subsection{The completeness theorem}
+\label{sec:org50c1fc2}
+\begin{definition}[]
+\begin{enumerate}
+\item Let \(L\) be a language. By a \textbf{structure} for \(L\) we mean a pair \(\la D,\phi\ra\), where \(D\)
+is a non-empty set and \(\phi\) is a map from the constants of \(L\) s.t.
+\begin{enumerate}
+\item if \(k\) is an individual constant, then \(\phi k\) is an element of \(D\)
+\item if \(f\) is a function constant of \(n\) arguments, then \(\phi f\) is a mapping from \(D^n\) to \(D\)
+\item if \(R\) is a predicate constant of \(n\) arguments, then \(\phi R\) is a subset of \(D^n\)
+\end{enumerate}
+\item An \textbf{interpretation} of \(L\) is a structure \(\la D,\phi\ra\) together with a mapping \(\phi_0\)
+from variables into \(D\). We may denote an interpretation \((\la D,\phi\ra,\phi_0)\) simply
+by \(\fF\). \(\phi_0\) is called an assignment from \(D\)
+\item We say that an interpretation \(\fF=(\la C,\phi\ra,\phi_0)\) \textbf{satisfies} a formula \(A\) if this
+follows from the following inductive definition
+\begin{enumerate}
+\item For every semi-term \(t\), \(\phi(a)=\phi_0(a)\) and  for a\(\phi(x)=\phi_0(x)\)ll free
+variables \(a\) and bound variables \(x\). next if \(f\) is a function constant and \(t\)
+is a semi-term for which \(\phi t\) is already defined, then \(\phi(f(t))\) is defined to
+be \((\phi f)(\phi t)\)
+\end{enumerate}
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[Completeness and soundness]
+A formula is provable in \(\LK\) iff it is valid
+\end{theorem}
+
+\begin{lemma}[]
+Let \(S\) be a sequent. Then either there is a cut-free proof of \(S\), or there is an
+interpretation which does not satisfy \(S\) (and hence \(S\) is not valid)
+\end{lemma}
+
+\begin{proof}
+We will define, for each sequent \(S\), a (possibly infinite) tree, called the reduction tree
+for \(S\), from which we can obtain either a cut-free proof of \(S\) or an interpretation not
+satisfying \(S\). This reduction tree for \(S\) contains a sequent at each node. It is
+constructed in stages as follows
+
+Stage 0: Write \(S\) at the bottom of the tree
+
+Stage \(k\) (\(k>0\)): This is defined by cases
+\begin{enumerate}
+\item Every topmost sequent has a formula common to its antecedent and succedent. Then stop.
+\item This stage is defined according as
+\begin{equation*}
+k\equiv 0,1,2,\dots,12\mod 13
+\end{equation*}
+\(k\equiv0\) and \(k\equiv1\) concern the symbol \(\neg\); \(k\equiv2\) and \(k\equiv3\)
+concern \(\wedge\); \(k\equiv4\) and \(k\equiv5\) concern \(\vee\); \(k\equiv6\)
+and \(k\equiv7\) concern \(\supset\); \(k\equiv8\) and \(k\equiv9\)
+concern \(\forall\); \(k\equiv10\) and \(k\equiv11\) concern equiv \(\exists\)
+\end{enumerate}
+
+
+Assume that there are no individual or function constants
+
+All the free variables which occur in any sequent which has been obtained at or before
+stage \(k\) are said to be "available at stage \(k\)". In case there is none, pick any free
+variable and say that it is available
+\begin{enumerate}
+\item \(k\equiv 0\). Let \(\Pi\to\Lambda\) be any topmost sequent of the tree which has been defined
+by stage \(k-1\). Let \(\neg A_1,\dots,\neg A_n\) be all the formulas in \(\Pi\) whose outermost logical
+symbol is \(\neg\), and to which no reduction has been applied in previous stages. Then write
+down
+\begin{equation*}
+\Pi\to\Lambda,A_1,\dots,A_n
+\end{equation*}
+above \(\Pi\to\Lambda\). We say that a \(\neg\)left reduction has been applied
+to \(\neg A_1,\dots,\neg A_n\)
+\item \(k\equiv1\). Let \(\neg A_1,\dots,\neg A_n\) be all the formulas in \(\Lambda\) whose outermost logical
+symbol is \(\neg\) and to which no reduction has been applied so far. Then write down
+\begin{equation*}
+A_1,\dots,A_n,\Pi\to\Lambda
+\end{equation*}
+above \(\Pi\to\Lambda\). We say that a \(\neg\)right reduction has been applied
+to \(\neg A_1,\dots,\neg A_n\).
+\item \(k\equiv2\). Let \(A_1\wedge B_1,\dots,A_n\wedge B_n\) be all the formulas in \(\Pi\) whose
+outermost logical symbols is \(\wedge\) and to which no reduction has been applied yet. Then
+write down
+\begin{equation*}
+A_1,B_1,A_2,B_2,\dots,A_n,B_n,\Pi\to\Lambda
+\end{equation*}
+above \(\Pi\to\Lambda\). We say that an \(\wedge\)left reduction has been applied to
+\begin{equation*}
+A_1\wedge B_1,\dots,A_n\wedge B_n
+\end{equation*}
+\item \(k\equiv3\). Let \(A_1\wedge B_1,\dots,A_n\wedge B_n\) be all the formulas in \(\Pi\) whose
+outermost logical symbols is \(\wedge\) and to which no reduction has been applied yet. Then
+write down
+\begin{equation*}
+\Pi\to\Lambda, C_1,\dots,C_n
+\end{equation*}
+where \(C_i\) is either \(A_i\) or \(B_i\), above \(\Pi\to\Lambda\). Take all possible
+combinations of such; so there are \(2^n\) such sequents above \(\Pi\to\Lambda\). We say that
+an \(\wedge\)right reduction has been applied to \(A_1\wedge B_1,\dots,A_n\wedge B_n\)
+\end{enumerate}
 \end{proof}
 
 
 
 \subsection{{\bfseries\sffamily TODO} ALL the problems}
-\label{sec:orge816996}
+\label{sec:org32ae5fe}
 \ref{Problem1}
+\ref{Problem2}
 \end{document}
