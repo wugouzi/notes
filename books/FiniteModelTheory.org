@@ -1,10 +1,11 @@
 #+TITLE: Finite Model Theory
 #+AUTHOR: Heinz-Dieter Ebbinghaus@@latex:\\@@Jörg Flum
 
-#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \input{../preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/FiniteModelTheory/FiniteModelTheory.tex
 #+LATEX_HEADER: \def \Part {\text{Part}}
 #+LATEX_HEADER: \def \free {\text{free}}
+#+LATEX_HEADER: \def \EVEN {\text{EVEN}}
 * Preliminaries
 
 ** Structures
@@ -65,6 +66,12 @@
    *tree* is a forest with connected underlying graph. Let TREE be the class of
    finite trees.
 
+*** Orderings
+    Let \(\tau=\{<\}\) with a binary relation symbol. A \(\tau\)-structure \(\cala=(A,<^A)\) is
+    called an *ordering* if for all \(a,b,c\in A\):
+    1. not \(a<^A a\)
+    2. \(a<^A b\) or \(b<^A a\) or \(a=b\)
+    3. if \(a<^Ab\) and \(b<^Ac\) then \(a<^Ac\)
 *** Operations on Structures
     Two \(\tau\)-structures \(\cala\) and \(\calb\) are *isomorphic*, written \(\calc\cong\calb\), if
     there is an isomorphism from \(\cala\) to \(\calb\), i.e., a bijection \(\pi:A\to B\) preserving
@@ -383,7 +390,7 @@
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
    Assume \(\cala\) and \(\calb\) are structures. Let \(p\) be a map with
-   \(\dom(p)\subseteq B\). Then \(p\) is said to be a *partial isomorphism* from \(\cala\)
+   \(\dom(p)\subseteq A\). Then \(p\) is said to be a *partial isomorphism* from \(\cala\)
    to \(\calb\) if
    1. \(p\) is injective
    2. for every \(c\in\tau\):\(c^{\cala}\in\dom(p)\) and \(p(c^{\cala})=c^{\calb}\)
@@ -477,6 +484,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
+   label:lemma2.2.4
    Let \(\cala\) and \(\calb\) be structures, \(\bar{a}\in A^s\), \(\bar{b}\in B^s\), and \(m\ge0\)
    1. The duplicator wins \(G_0(\cala,\bar{a},\calb,\bar{b})\) iff \(\bar{a}\mapsto\bar{b}\) is a
       partial isomorphism
@@ -565,14 +573,14 @@
    \calb\vDash\varphi_{\bara}^0[\barb]
    \end{align*}
    For \(m>0\)
-   |     | the duplicator wins \(G_m(\cala,\bara,\calb,\barb)\)                                                                                                               |
-   | iff | for all \(a\in A\),there is \(b\in B\) s.t. the duplicator wins                                                                                                    |
-   |     | \(G_{m-1}(\cala,\bara a,\calb,\barb b)\), and for all \(b\in B\) there is \(a\in A\) s.t.                                                                          |
-   |     | the duplicator wins \(G_{m-1}(\cala,\bara a,\calb,\barb b)\)                                                                                                       |
-   | iff | for all \(a\in A\), there is \(b\in B\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\) , and                                                                 |
-   |     | for all \(b\in B\), there is \(a\in A\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\)                                                                       |
+   |     | the duplicator wins \(G_m(\cala,\bara,\calb,\barb)\)                                                                                                                     |
+   | iff | for all \(a\in A\),there is \(b\in B\) s.t. the duplicator wins                                                                                                          |
+   |     | \(G_{m-1}(\cala,\bara a,\calb,\barb b)\), and for all \(b\in B\) there is \(a\in A\) s.t.                                                                                |
+   |     | the duplicator wins \(G_{m-1}(\cala,\bara a,\calb,\barb b)\)                                                                                                             |
+   | iff | for all \(a\in A\), there is \(b\in B\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\) , and                                                                       |
+   |     | for all \(b\in B\), there is \(a\in A\) with \(\calb\vDash\varphi_{\bara a}^{m-1}[\barb b]\)                                                                             |
    | iff | \(\calb\vDash\bigwedge_{a\in A}\exists v_{s+1}\varphi_{\bara a}^{m-1}(\barv,v_{s+1})\wedge\forall v_{s+1}\bigvee_{a\in A}\varphi_{\bara a}^{m-1}(\barv,v_{s+1})[\barb]\) |
-   | iff | \(\calb\vDash\varphi_{\bara}^m[\barb]\)                                                                                                                            |
+   | iff | \(\calb\vDash\varphi_{\bara}^m[\barb]\)                                                                                                                                  |
    
    \(3\to1\). \(\qr(\varphi^m_{\bar{a}})=m\) and \(\cala\vDash\varphi_{\bar{a}}^m[\bar{a}]\)
 
@@ -635,6 +643,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_theorem
+   label:thm2.2.12
    For a class \(K\) of finite structures the following are equivalent
    1. \(K\) is not axiomatizable in first-order logic
    2. For each \(m\) there are finite structures \(\cala\) and \(\calb\) s.t.
@@ -709,3 +718,155 @@
       in \(\calb\)
    #+END_theorem
 
+   #+BEGIN_proof
+   \(1\to2\). For each \(\bara\mapsto\barb\in W_m(\cala,\calb)\), by Lemma ref:lemma2.2.4 the
+   duplicator wins \(G_0(\cala,\bara,\calb,\barb)\) as the duplicator wins
+   \(G_m(\cala,\bara,\calb,\barb)\). For \(j<m\), \(\bara\mapsto\barb\in W_{j+1}(\cala,\calb)\)
+   and \(a\in A\). We have \(\bara a\mapsto\barb b\in W_j(\cala,\calb)\) for some \(b\in B\).
+
+   \(2\to 3\). Obvious
+
+   \(3\to1\). Suppose that \((I_j)_{j\le m}:\cala\cong_m\calb\) and \(\bara\mapsto\barb\in I_m\). We
+   describe a winning strategy in \(G_m(\cala,\bara,\calb,\barb)\) for the duplicator: in his
+   \(i\)-th move he should choose the element \(e_i\) s.t. for
+   \(p_i:\bara e_1\dots e_i\mapsto\barb f_1\dots f_i\) it is true that \(p_i\subseteq q\) for some
+   \(q\in I_{m-i}\); this is always possible because of the back and forth properties of
+   \((I_j)_{j\le m}\)
+   
+   
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_corollary
+   For structures \(\cala, \calb\) and \(m\ge0\) the following are equivalent
+   1. the duplicator wins \(G_m(\cala,\calb)\)
+   2. \((W_j(\cala,\calb))_{j\le m}:\cala\cong_m\calb\)
+   3. \(\cala\cong_m\calb\)
+   4. \(\calb\vDash\varphi_{\cala}^m\)
+   5. \(\cala\equiv_m\calb\)
+   #+END_corollary
+
+   the equivalence of 3 and 5 is known as Fraïssé's Theorem. 
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Let \tau be the empty vocabulary and \(\cala\) and \(\calb\) be \(\tau\)-structures. Suppose
+   \(\norm{A}\ge m\) and \(\norm{B}\ge m\). Then \(\cala\cong_m\calb\). In fact,
+   \((I_j)_{j\le m}:\cala\cong_m\calb\) with
+   \(I_j:=\{p\in\Part(\cala,\calb)\mid\norm{\dom(p)}\le m-j\}\)
+
+   As a consequence the class \(\EVEN[\tau]\) of finite \(\tau\)-structures of even cardinality is not
+   axiomatizable in first-order logic. In fact, for each \(m>0\), let \(\cala_m\) be a structure of
+   cardinality \(m\). Then \(\cala_m\in\EVEN[\tau]\) iff \(\cala_{m+1}\not\in\EVEN[\tau]\), but
+   \(\cala_m\cong_m\cala_{m+1}\). Now apply Theorem ref:thm2.2.12.
+
+   *Prove that for arbitrary \tau that \(\EVEN[\tau]\) is not axiomatizable.* <<Problem1>>
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Let \(\tau=\{<,\min,\max\}\) be a vocabulary for finite orderings. Suppose that \(\cala\) and
+   \(\calb\) are finite orderings, \(\norm{A}>2^m\) and \(\norm{B}>2^m\) and \(m\ge1\). Then
+   \(\cala\cong_m\calb\). Hence the class of finite orderings of even cardinality is not
+   axiomatizable in first-order logic. If we consider orderings as \(\{<,S,\min,\max\}\)-structures,
+   the last statements remains true
+
+   Given any ordering \(\calc\), we define its distance function \(d\) by
+   \begin{equation*}
+   d(a,a'):=\norm{\{b\in C\mid(a<b\le a')\text{ or }(a'<b\le a)\}}
+   \end{equation*}
+   And for \(j\ge0\), we introduce the "truncated" \(j\)-distance function \(d_j\) on \(C\times C\)
+   by
+   \begin{equation*}
+   d_j(a,a'):=
+   \begin{cases}
+   d(a,a')&\text{ if }d(a,a')<2^j\\
+   \infty
+   \end{cases}
+   \end{equation*}
+   Now suppose that \(\cala\) and \(\calb\) are finite orderings with \(\norm{A},\norm{B}>2^m\). For
+   \(j\le m\) set
+   \begin{equation*}
+   I_j:=\{p\in\Part(\cala,\calb)\mid d_j(a,a')=d_j(p(a),p(a'))\text{ for }a,a'\in\dom(p)\}
+   \end{equation*}
+   Then \((I_j)_{j\le m}:\cala\cong_m\calb\): by assumption on the cardinalities of \(\cala\) and
+   \(\calb\) we have \(\{(\min^A,\min^B),(\max^A,\max^B)\}\in I_j\) for every \(j\le m\).
+   (Ensure its nonempty and then we can continue by forth property?)
+   To give a
+   proof of the forth property of \((I_j)_{j\le m}\), suppose \(j<m,p\in I_{j+1}\) and \(a\in A\).
+   We distinguish two cases, depending on whether or the following condition
+   \begin{equation*}
+   \text{there is an }a'\in\dom(p)\text{ s.t. }d_j(a,a')<2^j
+   \end{equation*}
+   is satisfied. If the condition holds then there is *exactly* one \(b\in B\) for which
+   \(p\cup\{(a,b)\})\) is a partial isomorphism preserving \(d_j\)-distances. Now assume that the
+   condition doesn't hold. let \(\dom(p)=\{a_1,\dots,a_r\}\) with \(a_1<\dots<a_r\). We restrict
+   outselves to the case \(a_i<a<a_{i+1}\) for some \(i\). Then \(d_j(a_1,a)=\infty\) and
+   \(d_j(a,a_{i+1})=\infty\); hence \(d_{j+1}(a_i,a_{i+1})=\infty\) and therefore
+   \(d_{j+1}(p(a_i),p(a_{i+1}))=\infty\). Thus there is a \(b\) s.t. \(p(a_i)<b<p(a_{i+1})\),
+   \(d_j(p(a_i),b)=\infty\) and \(d_j(b,p(a_{i+1}))=\infty\). We can verify that
+   \(q:=p\cup\{(a,b)\}\) is a partial isomorphism
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Let \(\tau=\{<,\min,\max\}\) be as in the preceding example and \(\sigma=\tau\cup\{E\}\) with a
+   binary relation symbol \(E\). For \(n\ge3\) let \(\cala_n\) be the ordered \(\tau\)-structure
+   with \(A_n=\{0,\dots,n\}\), \(\min^{A_n}=0\), \(\max^{A_n}=n\), where \(<^{A_n}\) is the natural
+   ordering on \(A_n\) and
+   \begin{equation*}
+   E^{A_n}=\{(i,j)\mid\abs{i-j}=2\}\cup
+   \{(0,n),(n,0),(1,n-1),(n-1,1)\}
+   \end{equation*}
+   \((A_n,E^{A_n})\) is a graph that is connected iff \(n\) is odd. Now let \(m\ge2\) and
+   \(l,k\ge2^m\)
+   
+   #+ATTR_LATEX: :width 0.8\textwidth :float t
+   [[/media/wu/file/stuuudy/notes/images/FiniteModelTheory/1.png]]
+
+   Let \(I_j\) be the set of partial isomorphism from \(\cala_l|\tau\) to \(\cala_k|\tau\) as
+   introduced in the preceding example. For \(j\ge2\) any \(p\in I_j\) preserves \(E\) too, that is,
+   \(I_j\subseteq\Part(\cala_l,\cala_k)\). If \(E^{A_l}ab\) for some \(a,b\in A_l\). Then
+   \(d_j(a,b)=4\) or \(2l\) or \(2l-2\) <<Problem2>>
+
+
+   Hence \((I_{j+1})_{j\le m-2}:\cala_l\cong_{m-2}\cala_k\)
+   and we have
+
+   the class of finite connected ordered graphs is not first-order axiomatizable
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   For \(l\ge1\), let \(\calg_l\) be the graph given by a cycle of length \(l+1\). To be precise,
+   set
+   \begin{equation*}
+   G_l:=\{0,\dots,l\},\dots
+   E^{G_l}:=\{(i,i+1)|i<l\}\cup\{(i+1,i)|i<l\}\cup\{(0,l),(l,0)\}
+   \end{equation*}
+   Thus for \(l,k\in\N\), the disjoint union \(\calg_1\dot\cup\calg_k\) consists of a cyle of length
+   \(l+1\) and of a cycle of length \(k+1\). We show
+   \begin{equation*}
+   \text{if }l,k\ge2^m\text{ then }\calg_l\cong\calg_k\text{ and }\calg_l\cong_m
+   \calg_l\dot\cup\calg_l
+   \end{equation*}
+   In fact, for \(j\in\N\), define the distance \(d_j\) on a graph \(\calg\) by
+   \begin{equation*}
+   d_j(a,a')=
+   \begin{cases}
+   d(a,b)&\text{if }d(a,b)<2^{j+1}\\
+   \infty
+   \end{cases}
+   \end{equation*}
+   We verifies \((I_j)_{j\le m}:\calg_l\cong_m\calg_l\dot\cup\calg_l\) where
+   \(I_j\) is the set of \(p\in\Part(\calg_l,\calg\dot\cup\calg_l)\) with
+   \begin{equation*}
+   \norm{\dom(p)}\le m-j \quad\text{ and }\quad
+   d_j(a,b)=d_j(p(a),p(b))\text{ for }a,b\in\dom(p)
+   \end{equation*}
+   #+END_examplle
+   
+* Problem List
+  [[Problem1]]
+
+  [[Problem2]]
