@@ -1,0 +1,481 @@
+#+TITLE: Computational Complexity
+#+AUTHOR: Ryan O'Donnell
+
+#+EXPORT_FILE_NAME: ../latex/ComputationalComplexity/ComputationalComplexity.tex
+#+LATEX_HEADER: \input{preamble.tex}
+* Definition of macros                                               :ignore:
+#+LATEX_HEADER: \def \TIME {\text{TIME}}
+#+LATEX_HEADER: \def \EXP {\textbf{EXP}}
+#+LATEX_HEADER: \def \SPACE {\text{SPACE}}
+#+LATEX_HEADER: \def \PSPACE {\textbf{PSPACE}}
+#+LATEX_HEADER: \def \NTIME {\textbf{NTIME}}
+#+LATEX_HEADER: \def \NP {\textbf{NP}}
+#+LATEX_HEADER: \def \NEXP {\textbf{NEXP}}
+#+LATEX_HEADER: \def \NE {\textbf{NE}}
+#+LATEX_HEADER: \def \Pspoly {\textbf{P}/poly}
+#+LATEX_HEADER: \def \SAT {\text{SAT}}
+#+LATEX_HEADER: \def \AC {\text{AC}}
+#+LATEX_HEADER: \def \BPP {\textbf{BPP}}
+#+LATEX_HEADER: \def \start {\text{start}}
+#+LATEX_HEADER: \def \halt {\text{halt}}
+#+LATEX_HEADER: \def \HALT {\text{HALT}}
+#+LATEX_HEADER: \def \DTIME {\textbf{DTIME}}
+#+LATEX_HEADER: \def \NP {\textbf{NP}}
+#+LATEX_HEADER: \def \INDSET {\text{INDSET}}
+#+LATEX_HEADER: \def \accept {\text{accept}}
+#+LATEX_HEADER: \def \TMSAT {\text{TMSAT}}
+#+LATEX_HEADER: \def \SAT {\text{SAT}}
+* Notational conventions
+  Use \(\lcorner{x}\) to denote some canonical binary representation of the object \(x\).
+
+  The length of a string \(x\) is denoted by \(\abs{x}\)
+* Lecture 1
+  
+** Lecture notes
+  \(\TIME(t(n))=\)all languages \(L\) decidable in \(O(t(n))\) steps on input of length \(n\)
+
+  Language \(L\)(\(\Sigma^*\)) \(\equiv\) decision problem -> yes/no problem
+
+  | Language \(L\)                    | decision problem | \(f:\{0,1\}^*\to\{0,1\}\)        |
+  | \(\Sigma^*\)                           | yes/no problem   | \(x\in L\Leftrightarrow f(x)=1\) |
+  | decide if a string is in language |                  |                                  |
+
+  Model: multitape Turing machine (TM)
+
+  Time Hierarchy Theorem (More time = more power to decide a language)
+
+  \(\Rightarrow\) \(\TIME(n^2)\subsetneq\TIME(n^3)\)
+
+  \(\bP=\TIME(poly(n))\), \(\EXP=\TIME(2^{poly(n)})\),\(\bE=\TIME(2^{O(n)})\)
+
+  \(\Rightarrow\bP\subsetneq\bE\subsetneq\EXP\)
+
+  \(\SPACE(s(n))=\) langs decidable using tape cells \(\subseteq O(s(n))\)
+
+  \(\TIME(f(n))\subseteq\SPACE(f(n))\)
+
+  (each operation takes a cell)
+
+  \(\PSPACE=\SPACE(poly(n))\)
+  
+  \(\bP\subseteq\PSPACE\)
+
+  \(\SPACE(f(n))\subseteq\TIME(2^{O(f(n))})\) (since only \(O(f(n))\) possible states if each state
+  is different)
+
+    \(\bL=\SPACE(\log n)\)
+
+    \(\bL\subseteq\bP\subseteq\PSPACE\subseteq\EXP\)
+
+    #+ATTR_LATEX: :options [HPV77]
+    #+BEGIN_theorem
+    \(\TIME(t(n))\subseteq\SPACE(\frac{t(n)}{\log t(n)})\subsetneq\SPACE(t(n))\)
+    #+END_theorem
+
+    Space is more valuable than time.
+
+    \(\NP=\NTIME(poly(n))\) computed by nondeterministic multitape turing machine
+
+    \(\NE=\NTIME(2^{O(n)})\)
+
+    Circuits - "Non-uniform" model
+
+    "Non-uniform" different algorithms for different input length
+
+    \(\bP/poly\)=langs decidable by \(poly(n)\)-size circuit familys
+
+    \(\bP\subsetneq\bP/poly\)
+
+    if \(\NP\neq\bP\) then \(\NP\not\subseteq\Pspoly\)
+
+    which is equivalent to \(\SAT\) not decidable by \(poly(n)\)-size circuits
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    there exists language with no poly-size constant-depth circuits (actually in \(\bP\))
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    CLIQUE requires exponential size AND/OR circuits
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There exists a language \(L\in\bP\) requiring circuit families of size \(\ge3 n\)
+    #+END_theorem
+
+
+    #+ATTR_LATEX: :options [Santhanam theorem]
+    #+BEGIN_theorem
+    for all \(c\) there exists \(L\) s.t. \(L\) is not computable by \(O(n^c)\)-size circuit
+    #+END_theorem
+
+    #+ATTR_LATEX: :options [William's Theorem]
+    #+BEGIN_theorem
+    \(\exists L\in\NEXP\) is not computable by \(\AC^0[6]\) (constant depth, \(poly(n)\) size, also
+    get \(\mod6\) gates)
+    #+END_theorem
+
+    Randomness
+
+    \(\BPP=\) langs decidable in \(poly(n)\)-time using randomness
+
+    \(\bP\subseteq\BPP\subseteq\EXP\)
+
+    PIT = "polynomial identity testing" that are in \(\BPP\), but we don't know if they are in \(\bP\)
+
+    Hardness vs Randomness Paradigm
+    
+** Book
+
+*** Chapter 1: The computational model
+    
+**** Efficiency and Running Time
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A TM \(M\) is described by a tuple \((\Gamma,Q,\delta)\) containing
+    * A finite set \Gamma of the symbols that \(M\)'s tapes can contain. We assume that \Gamma contains a
+      designated "blank" symbol, denoted \(\Box\); a designated "start" symbol, denoted \(\rhd\);
+      and the numbers 0 and 1. We call \Gamma the *alphabet* of \(M\)
+    * A finite set \(Q\) of possible states \(M\)' register can be in. We assume that \(Q\) contains
+      a designated start state, denoted \(q_{\start}\), and a designated halting state, denoted \(q_{\halt}\)
+    * A function \(\delta:Q\times\Gamma^k\to Q\times\Gamma^{k-1}\times\{\text{L,S,R}\}^k\),
+      where \(k\ge2\), describing the rules \(M\) use in performing each step. This function is
+      called the *transition function* of \(M\)
+    #+END_definition
+
+    #+ATTR_LATEX: :width 0.8\textwidth
+    [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/1.png]]
+
+    
+    #+ATTR_LATEX: :options [Computing a function and running time]
+    #+BEGIN_definition
+    Let \(f:\{0,1\}^*\to\{0,1\}\) and let \(T:\N\to\N\) be some functions, and let \(M\) be a Turing
+    machine. We say that \(M\) *computes* \(f\) if for every \(x\in\{0,1\}^*\), whenever \(M\) is
+    initialized to the start configuration on input \(x\), then it halts with \(f(x)\) written on
+    its output tape. We say \(M\) *computes \(f\) in \(T(n)\)-time* if its computation on every
+    input \(x\) requires at most \(T(\abs{x})\) steps
+    #+END_definition
+
+    A function \(T:\N\to\N\) is *time constructible* if \(T(n)\ge n\) and there is a TM \(M\) that
+    computes the function \(x\mapsto\lcorner{T(\abs{x})}\) in time \(T(n)\). (\(\lcorner{T(\abs{x})}\)
+    denotes the binary representation of the number \(T(\abs{x})\)). The restriction \(T(n)\ge n\) is
+    to allow the algorithm time to read its input.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    For every \(f:\{0,1\}^*\to\{0,1\}\) and a time-constructible b\(T:\N\to\N\), if \(f\) is
+    computable in time \(T(n)\) by a TM \(M\) using alphabet \Gamma, then it's computable in time
+    \(4\log\abs{\Gamma}T(n)\) by a TM \(M\) using the alphabet \(\{0,1,\Box,\rhd\}\).
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(M\) be a TM with alphabet \Gamma, \(k\) tapes and state set \(Q\) that computes the
+    function \(f\) in \(T(n)\) times. We describe an equivalent TM \(\tilde{M}\) computing \(f\)
+    with alphabet \(\{0,1,\Box,\rhd\}\), \(k\) tapes and a set \(Q'\) of states.
+
+    One can encode any member of \Gamma using \(\log\abs{\Gamma}\) bits. Thus each of \(\tilde{M}\)'s work
+    tapes will simply encode one of \(M\)'s tapes: For every cell in \(M\)'s tape we will
+    have \(\log\abs{\Gamma}\) cells in the corresponding tape of \(\tilde{M}\)
+
+    To simulate one step of \(M\), the machine \(\tilde{M}\) will 1. use \(\log\abs{\Gamma}\) steps to
+    read from each tape the \(\log\abs{\Gamma}\) bits encoding of a symbol of \Gamma 2. use its state register
+    to store the symbols read 3. use \(M\)'s transition function to compute the symbols \(M\) writes
+    and \(M\)'s new state given this information 4. store this information in its state register 5.
+    use \(\log\abs{\Gamma}\) steps to write the encodings of these symbols on its tapes
+
+    
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:prop1.6
+    Define a single-tape Turing machine to be a TM that has only one read-write tape. For every
+    \(f:\{0,1\}^*\to\{0,1\}\) and time-constructible \(T:\N\to\N\) if \(f\) is computable in
+    time \(T(n)\) by a TM \(M\) using \(k\) tapes, then it is computable in time \(5kT(n)^2\) by a
+    single-tape TM \(M\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    The TM \(\tilde{M}\) encodes \(k\) tapes of \(M\) on a single tape by using
+    locations \(1,k+1,2k+1,\dots\) to encode the first tape, locations \(2,k+2,2k+2,\dots\) to
+    encode the second tape etc. For every symbol \(a\) in \(M\)'s alphabet, \(\tilde{M}\) will
+    contain both the symbol \(a\) and the symbol \(\hat{a}\). In the encoding of each tape, exactly
+    one symbol will be of the "^ type", indicating that the corresponding head of \(M\) is
+    positioned in that location. \(\tilde{M}\) will not touch the first \(n+1\) locations of its
+    tape (where the input is located) but rather start by taking \(O(n^2)\) steps to copy the input
+    bit by bit into the rest of the tape, while encoding it in the above way.
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Oblivious Turing machines]
+    #+BEGIN_remark
+    One can ensure that the proof of Proposition ref:prop1.6 yields a TM \(\tilde{M}\) with the
+    following property: its head movements do not depend on the input but only depend on the input
+    length. That is, every input \(x\in\{0,1\}^*\) and \(i\in\N\), the location of each of \(M\)'s
+    at the \(i\)th step of execution on input \(x\) is only a function of \(\abs{x}\) and \(i\). A
+    machine with this property is called *oblivious*.
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Define a bidirectional TM to be a TM whose tapes are infinite in both directions. For
+    every \(f:\{0,1\}^*\to\{0,1\}^*\) and time-constructible \(T:\N\to\N\) if \(f\) is computable in
+    time \(T(n)\) by a directional TM M, then it is computable in time \(4T(n)\) by a standard
+    (undirectional) TM \(\tilde{M}\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    #+ATTR_LATEX: :width .5\textwidth
+    [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/2.png]]
+
+    If \(M\) uses alphabet \Gamma, then \(\tilde{M}\) will use the alphabet \(\Gamma^2\) 
+    #+END_proof
+
+**** Machines as Strings and the Universal Turing Machine
+     We will also find it convenient to assume that our representation scheme satisfies the following
+     properties:
+     1. We will also findit convenient to assume that our representation scheme satisfies the
+        following properties:
+     2. Every TM is representedby infinitely many strings
+     
+     We denote by \(\lcorner{M}\) the TM \(M\)'s representation as a binary string. If \alpha is a string
+     then \(M_\alpha\) denotes the TM that \alpha represents.
+
+     #+ATTR_LATEX: :options [Efficient universal Turing machine]
+     #+BEGIN_theorem
+     label:thm1.9
+     There exists a TM \(\calu\) s.t. for
+     every \(x,\alpha\in\{0,1\}^*\), \(\calu(x,\alpha)=M_\alpha(x)\). Moreover, if \(M_{\alpha}\) halts on
+     input \(x\) within \(T\) steps then \(\calu(x,\alpha)\) falts within \(CT\log T\) steps, where \(C\)
+     is a number independent of \(\abs{x}\) and depending only on \(M_\alpha\)'s alphabet size,
+     number of tapes and number of states.
+     #+END_theorem
+
+     #+ATTR_LATEX: :options [Proof of relaxed version of theorem \cite{thm1.9}]
+     #+BEGIN_proof
+     We assume \(M\) has a single work tape (in addition to the input and output tape) and uses he
+     alphabet \(\{\rhd,\Box,0,1\}\). The reason is that \(\calu\) can transform a representation of
+     every TM \(M\) into a representation of an equivalent TM \(\tilde{M}\) that satisfies these
+     properties. (which my takes \(C'T^2\) time)
+
+     #+ATTR_LATEX: :float H :width .5\textwidth
+     [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/3.png]]
+     #+END_proof
+
+
+**** Uncomputablity: An Introduction
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     There exists a function \(\text{UC}:\{0,1\}^*\to\{0,1\}\) that is not computable by any TM
+     #+END_theorem
+
+     #+BEGIN_proof
+     For every \(\alpha\in\{0,1\}^*\), if \(M_{\alpha}(\alpha)=1\) then \(\text{UC}(\alpha)=0\);
+     otherwise \(\text{UC}(\alpha)=1\).
+
+     If its computable, then there exists a TM \(M\) s.t. \(M(\alpha)=\text{UC}(\alpha)\), then
+     \(M(\lcorner{M})=\text{UC}(\lcorner{M})\)
+     #+END_proof
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(\HALT\) is not computable by any TM
+     #+END_theorem
+
+**** The Class \(\bP\)
+     A *complexity class* is a set of function that can be computed within given resource bounds.
+
+     We say that a machine *decides* a language \(L\subseteq\{0,1\}^*\) if it computes the
+     function \(f_L:\{0,1\}^*\to\{0,1\}\) where \(f_L(x)=1\Leftrightarrow x\in L\)
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     Let \(T:\N\to\N\) be some function. A language \(L\) is in \(\DTIME(T(n))\) iff there is a
+     Turing machine that runs in \(c\dot T(n)\) for some constant \(c>0\) and decides \(L\).
+     #+END_definition
+
+     The D in \(\DTIME\) refers to "deterministic".
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     \(\bP=\bigcup_{c\ge1}\DTIME(n^c)\)
+     #+END_definition
+
+*** NP and NP completeness
+
+**** The Class \(\NP\)
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists  a polynomial \(p:\N\to\N\)
+     and a polynomial-time TM \(M\) (called the *verifier* for \(L\)) s.t. for
+     every \(x\in\{0,1\}^*\)
+     \begin{equation*}
+x\in L\Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
+     \end{equation*}
+     If \(x\in L\) and \(u\in\{0,1\}^{p(\abs{x})}\) satisfy \(M(x,u)=1\) then we call \(u\) a
+     *certificate* for \(x\)
+     #+END_definition
+
+     #+ATTR_LATEX: :options [\(\INDSET\in\NP\)]
+     #+BEGIN_examplle
+     By representing the possible invitees to a dinner party with the vertices of a graph having an
+     edge between any two people who don't get along. The dinner party computational problem becomes
+     the problem of finding a maximum sized *independent set* (set of vertices without any common
+     edges) in a given graph. The corresponding language is
+     \begin{equation*}
+\INDSET=\{\la G,k\ra:\exists S\subseteq V(G)\text{ s.t. }\abs{S}\ge k\text{ and }\forall u,v\in S, \ove{uv}\not\in E(G)\}
+     \end{equation*}
+
+     Consider the following polynomial-time algorithm \(M\): Given a pair \(\la G,k\ra\) and a
+     string \(u\in\{0,1\}^*\), output 1 iff \(u\) encodes a list of \(k\) vertices of \(G\) s.t.
+     there is no edge between any two members of the list. Note that if \(n\) is the number of
+     vertices in \(G\), then a list of \(k\) vertices can be encoded using \(O(k\log n)\) bits,
+     where \(n\) is the number of vertices in \(G\). Thus \(u\) is a string of at
+     most \(O(n\log n)\) bits, which is polynomial in the size of the representation of \(G\).
+     #+END_examplle
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_proposition
+     Let \(\EXP=\bigcup_{c>1}\DTIME(2^{n^c})\). Then \(\bP\subseteq\NP\subseteq\EXP\)
+     #+END_proposition
+
+     #+BEGIN_proof
+     \(\bP\subseteq\NP\). Suppose \(L\in\bP\) is decided in polynomial-time by a TM \(N\).
+     Then we take \(N\) as the machine \(M\) and make \(p(x)\) the zero polynomial
+
+     \(\NP\subseteq\EXP\). We can decide \(L\) in time \(2^{O(p(n))}\)  by enumerating all
+     possible \(n\) and using \(M\) to check whether \(u\) is a valid certificate for the
+     input \(x\). Note that \(p(n)=O(n^c)\) for some \(c>1\), the number of choices for \(u\) is \(2^{O(n^c)}\).
+     #+END_proof
+
+     \(\NP\) stands for *nondeterministic polynomial time*.
+
+     NDTM has *two* transition function \(\delta_0\) and \(\delta_1\), and a special state denoted
+     by \(q_{\accept}\). When an NDTM \(M\) computes a function, we envision that at each
+     computational step \(M\) makes an arbitrary choice at to which of its two transition functions
+     to apply. For every input \(x\), we say that \(M(x)=1\) if there *exists* some sequence of this
+     choices that would make \(M\) reach \(q_{\accept}\) on input \(x\). We say that \(M\) runs
+     in \(T(n)\) time if for every input \(x\in\{0,1\}^*\) and every sequence of nondeterministic
+     choices, \(M\) reaches the halting state or \(q_{\accept}\) within \(T(\abs{x})\) steps
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     For every function \(f:\N\to\N\) and \(L\subseteq\{0,1\}^*\) we say that \(L\in\NTIME(T(n))\)
+     if there is a constant \(c>0\) and a \(c\dot T(n)\)-time NDTM \(M\) s.t. for
+     every \(x\in\{0,1\}^*\), \(x\in L\Leftrightarrow M(x)=1\)
+     #+END_definition
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(\NP=\bigcup_{c\in\N}\NTIME(n^c)\)
+     #+END_theorem
+
+     #+BEGIN_proof
+     The main idea is that the sequence of nondeterministic choices made by an accepting computation
+     of an NDTM can be viewedas a certificate that the input is in the language, and vice versa
+
+     Suppose \(p:\N\to\N\) is a polynomial and \(L\) is decidable by a NDTM \(N\) that runs in
+     time \(p(n)\). For every \(x\in L\), there is a sequence of nondeterministic choices that
+     makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a certificate
+     for \(x\). This certificate has length \(p(\abs{x})\) and can be verified in polynomial time by
+     a deterministic machine.
+
+     Conversely, if \(L\in\NP\), then we describe a polynomial time NDTM \(N\) that decides \(L\).
+     On input \(x\), it uses the ability to make nondeterministic choices to write down a
+     string \(u\) of length \(p(\abs{x})\). (Having transition \(\delta_0\) correspond to writing a
+     0 and \(\delta_1\) ). Then it runs the deterministic verifier 
+     #+END_proof
+
+**** Reducibility and NP-Completeness
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     A language \(L\subseteq\{0,1\}^*\) is *polynomial-time Karp reducible to a
+     language* \(L'\subseteq\{0,1\}^*\), denoted by \(L\le_p L'\) if there is a polynomial-time
+     computable function \(f:\{0,1\}^*\to\{0,1\}^*\) s.t. for every \(x\in\{0,1\}^*\),
+     \(x\in L\) iff \(f(x)\in L'\)
+
+     We say that \(L'\) is *\(\NP\)-hard* if \(L\le_pL'\) for every \(L\in\NP\). We say that \(L'\)
+     is *\(\NP\)-complete* if \(L'\) is \(\NP\)-hard and \(L'\in\NP\)
+     #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    1. (Transitivity) If \(L\le_pL'\) and \(L'\le_pL''\) then \(L\le_pL''\)
+    2. If language \(L\) is \(\NP\)-hard and \(L\in\bP\) then \(\bP=\NP\)
+    3. If language \(L\) is \(\NP\)-complete, then \(L\in\bP\) iff \(\bP=\NP\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    The following language is \(\NP\)-complete
+    \begin{equation*}
+\TMSAT=\{\la\alpha,x,1^n,1^t\ra:\exists u\in\{0,1\}^n\text{ s.t. }M_\alpha\text{ outputs }1
+\text{ on input }\la x,u\ra\text{ within }t\text{ steps}\}
+    \end{equation*}
+    #+END_theorem
+
+    #+BEGIN_proof
+    There is a polynomial \(p\) and a verifier TM \(M\) s.t. \(x\in L\) iff there is a
+    string \(u\in\{0,1\}^{p(\abs{x})}\) satisfying \(M(x,u)=1\) and \(M\) runs in time \(q(n)\) for
+    some polynomial \(q\).
+
+    Map every string \(x\in\{0,1\}^*\) to the tuple \(\la\lcorner{M},x,1^{p(\abs{x})},1^{q(m)}\)
+    where \(m=\abs{x}+p(\abs{x})\) and \(\lcorner{M}\) denotes the representation of \(M\) as
+    string.
+    \begin{align*}
+&\la\lcorner{M},x,1^{p(\abs{x})},1^{q(m)}\ra\in\TMSAT\\
+&\Leftrightarrow\exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)\text{ outputs 1 within }q(m)\text{ steps}\\
+&\Leftrightarrow x\in L
+    \end{align*}
+    #+END_proof
+
+**** The Cook-Levin Theorem: Computation is Local
+     We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(3\SAT\) the
+     language of all satisfiable 3CNF formulae
+
+     #+ATTR_LATEX: :options [Cook-Levin Theorem]
+     #+BEGIN_theorem
+     1. \(\SAT\) is \(\NP\)-complete
+     2. \(3\SAT\) is \(\NP\)-complete
+     #+END_theorem
+
+     #+ATTR_LATEX: :options [Universality of AND, OR, NOT]
+     #+BEGIN_lemma
+     For every Boolean function \(f:\{0,1\}^l\to\{0,1\}\), there is an \(l\)-variable CNF formula \varphi
+     of size \(l2^l\) s.t. \(\varphi(u)=f(u)\) for every \(u\in\{0,1\}^l\), where the size of a CNF
+     formula is defined to be the number of \(\wedge/\vee\) symbols it contains
+     #+END_lemma
+
+     #+BEGIN_proof
+     For every \(v\in\{0,1\}^l\), there exists a clause \(C_v(z_1,\dots,z_l)\) s.t. \(C_v(v)=0\)
+     and \(C_v(u)=1\) for every \(u\neq v\).
+
+     We let \varphi be the AND of all the clauses \(C_v\) for \(v\) s.t. \(f(v)=0\)
+     \begin{equation*}
+\varphi=\bigwedge_{v:f(v)=0}C_v(z_1,\dots,z_l)
+     \end{equation*}
+     Note that \varphi has size at most \(l2^l\).
+     #+END_proof
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_lemma
+     \(\SAT\) is \(\NP\)-hard
+     #+END_lemma
+
+     #+BEGIN_proof
+     Let \(L\) be an \(\NP\) language. By definition, there is a polynomial time TM \(M\) s.t. for
+     every \(x\in\{0,1\}^*\), \(x\in L\Leftrightarrow M(x,u)=1\) for
+     some \(u\in\{0,1\}^{p(\abs{x})}\), where \(p:\N\to\N\) is some polynomial. We show \(L\) is
+     polynomial-time Karp reducible to \(\SAT\) by describing a polynomial-time
+     transformation \(x\to\varphi_x\) from strings to CNF formulae s.t. \(x\in L\) iff \(\varphi_x\)
+     is satisfiable. Equivalently
+     \begin{equation*}
+\varphi_x\in\SAT \quad\text{ iff }\quad\exists u\in\{0,1\}^{p(\abs{x})}
+\text{ s.t. }M(x\circ u)=1
+     \end{equation*}
+     where \(\circ\) denotes concatenation
+
+     Assume \(M\) 1. \(M\) only has two tapes - an input tape and a work/output tape 2. \(M\) is an
+     TM in the sense that its head movement does not depend on the contents of its tapes
+     #+END_proof
