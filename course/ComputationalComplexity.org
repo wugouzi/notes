@@ -6,10 +6,11 @@
 * Definition of macros                                               :ignore:
 #+LATEX_HEADER: \def \TIME {\text{TIME}}
 #+LATEX_HEADER: \def \EXP {\textbf{EXP}}
-#+LATEX_HEADER: \def \SPACE {\text{SPACE}}
+#+LATEX_HEADER: \def \SPACE {\textbf{SPACE}}
 #+LATEX_HEADER: \def \PSPACE {\textbf{PSPACE}}
 #+LATEX_HEADER: \def \NTIME {\textbf{NTIME}}
 #+LATEX_HEADER: \def \NP {\textbf{NP}}
+#+LATEX_HEADER: \def \coNP {\textbf{coNP}}
 #+LATEX_HEADER: \def \NEXP {\textbf{NEXP}}
 #+LATEX_HEADER: \def \NE {\textbf{NE}}
 #+LATEX_HEADER: \def \Pspoly {\textbf{P}/poly}
@@ -17,14 +18,19 @@
 #+LATEX_HEADER: \def \AC {\text{AC}}
 #+LATEX_HEADER: \def \BPP {\textbf{BPP}}
 #+LATEX_HEADER: \def \start {\text{start}}
+#+LATEX_HEADER: \def \tend {\text{end}}
 #+LATEX_HEADER: \def \halt {\text{halt}}
+#+LATEX_HEADER: \def \pad {\text{pad}}
 #+LATEX_HEADER: \def \HALT {\text{HALT}}
 #+LATEX_HEADER: \def \DTIME {\textbf{DTIME}}
 #+LATEX_HEADER: \def \NP {\textbf{NP}}
-#+LATEX_HEADER: \def \INDSET {\text{INDSET}}
+#+LATEX_HEADER: \def \INDSET {\texttt{INDSET}}
 #+LATEX_HEADER: \def \accept {\text{accept}}
-#+LATEX_HEADER: \def \TMSAT {\text{TMSAT}}
-#+LATEX_HEADER: \def \SAT {\text{SAT}}
+#+LATEX_HEADER: \def \TMSAT {\texttt{TMSAT}}
+#+LATEX_HEADER: \def \SAT {\texttt{SAT}}
+#+LATEX_HEADER: \def \ZOIPROG {\texttt{1/0 IPROG}}
+#+LATEX_HEADER: \def \dHAMPATH {\texttt{dHAMPATH}}
+#+LATEX_HEADER: \def \TAUTOLOGY {\texttt{TAUTOLOGY}}
 * Notational conventions
   Use \(\lcorner{x}\) to denote some canonical binary representation of the object \(x\).
 
@@ -285,6 +291,7 @@
 **** The Class \(\bP\)
      A *complexity class* is a set of function that can be computed within given resource bounds.
 
+     [[index:decide]]
      We say that a machine *decides* a language \(L\subseteq\{0,1\}^*\) if it computes the
      function \(f_L:\{0,1\}^*\to\{0,1\}\) where \(f_L(x)=1\Leftrightarrow x\in L\)
 
@@ -304,6 +311,7 @@
 *** NP and NP completeness
 
 **** The Class \(\NP\)
+     [[index:$\NP$]]
      #+ATTR_LATEX: :options []
      #+BEGIN_definition
      A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists  a polynomial \(p:\N\to\N\)
@@ -435,12 +443,14 @@ x\in L\Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
 
      #+ATTR_LATEX: :options [Cook-Levin Theorem]
      #+BEGIN_theorem
+     label:thm2.10
      1. \(\SAT\) is \(\NP\)-complete
      2. \(3\SAT\) is \(\NP\)-complete
      #+END_theorem
 
      #+ATTR_LATEX: :options [Universality of AND, OR, NOT]
      #+BEGIN_lemma
+     label:lemma2.13
      For every Boolean function \(f:\{0,1\}^l\to\{0,1\}\), there is an \(l\)-variable CNF formula \varphi
      of size \(l2^l\) s.t. \(\varphi(u)=f(u)\) for every \(u\in\{0,1\}^l\), where the size of a CNF
      formula is defined to be the number of \(\wedge/\vee\) symbols it contains
@@ -487,9 +497,10 @@ x\in L\Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
      there exists a two-tape oblivious TM \(\tilde{M}\) computing the same function
      in \(O(T(n)^2)\). Thus in particular, if \(L\in\NP\), then there exists a two-tape oblivious
      polynomial-time TM \(M\) and a polynomial \(p\) s.t.
-     \begin{equation*}
+     \begin{equation}
+     \label{eq:2.2}
 x\in L \Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x\circ u)=1
-     \end{equation*}
+     \end{equation}
 
      Note that because \(M\) is oblivious, we can run it on the trivial input \((x,0^{p(\abs{x})})\)
      to determine the precise head position of \(M\) during its computation on every other input of
@@ -509,5 +520,293 @@ x\in L \Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x\circ u)=
      step depends on its state in the \((i-1)\)st step and the contents of the current cells of its
      input and work tapes.
 
-     
+     Suppose somebody were to claim the existence of some \(u\) satisfying \(M(x\circ u)=1\) and as
+     evidence, present you with the sequence of snapshots that arise from \(M\)'s execution
+     on \(x\circ u\). How can you tell that the snapshots present a valid computation that was
+     actually performed by \(M\).
+
+     Clearly, it suffices to check that for each \(i\le T(n)\), the snapshot \(z_i\) is correct
+     given the snapshot for the previous \(i-1\) steps. However, since the TM can only read/modify
+     one bit at a time, to check the correctness of \(z_i\) it suffices to look at only /two/ of the
+     previous snapshots. Specifically, to check \(z_i\) we need to only look at the following:
+     \(z_{i-1}\), \(y_{\text{inputpos}(i)}\), \(z_{\text{prev}(i)}\). 
+
+     #+ATTR_LATEX: :width .8\textwidth :float H
+     [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/5.png]]
+
+     Here \(y\) is a shorthand
+     for \(x\circ u\). \(\text{inputpos}(i)\) denotes the location of \(M\)'s input tape head at
+     the \(i\)th step. \(\text{prev}(i)\) is the last step before \(i\) when \(M\)'s head was in the
+     same cell on its work tape that it is during step \(i\). The reason this small amount of
+     information suffices to check the correctness of \(z_i\) is that the contents of the current
+     cell have not been affected between step \(\text{prev}(i)\) and step \(i\).
+
+     Since \(M\) is a deterministic TM, for every triple of values
+     to \(z_{i-1},y_{\text{inputpos}(i)}\), \(z_{\text{prev}(i)}\), there is at most one value
+     of \(z_i\) that is correct. Thus there is some function \(F\) that maps \(\{0,1\}^{2c+1}\)
+     to \(\{0,1\}^c\) s.t. a correct \(z_i\) satisfies
+     \begin{equation*}
+z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})
+     \end{equation*}
+
+     Because \(M\) is oblivious, the values \(\text{inputpos}(i)\) and \(\text{prev}(i)\) do not
+     depend on the particular input \(i\). These indices can be computed in polynomial-time by
+     simulating \(M\) on a trivial input.
+
+     By eqref:eq:2.2 , \(x\in\{0,1\}^{n}\in L\) iff \(M(x\circ u)=1\) for
+     some \(u\in\{0,1\}^{p(n)}\). The previous discussion shows this latter condition occurs iff
+     there exists a string \(y\in\{0,1\}^{n+p(n)}\) and a sequence of strings
+     \(z_1,\dots,z_{T(n)}\in\{0,1\}^c\) (where \(T(n)\) is the number of steps \(M\) takes on inputs
+     of length \(n+p(n)\)) satisfying the following four conditions
+     1. The first \(n\) bits of \(y\) are equal to \(x\)
+     2. The string \(z_1\) encodes the initial snapshot of \(M\). That is, \(z_1\) encodes the
+        triple \(\la\rhd,\Box,q_{\start}\ra\).
+     3. For every \(i\in\{2,\dots,T(n)\}\), \(z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})\).
+     4. The last string \(z_{T(n)}\) encodes a snapshot where the machine halts and outputs 1
+
+
+     The formula \(\varphi_x\) will take variables \(y\in\{0,1\}^{n+p(n)}\)
+     and \(z\in\{0,1\}^{cT(n)}\) and will verify that \(y,z\) satisfy the AND of these four
+     conditions. Thus \(x\in L\Leftrightarrow\varphi_x\in\SAT\).
+
+     Condition 1 can be expressed as a CNF formula of size \(4n\) . Conditions 2 and 4 each depend
+     on \(c\) variables and hence by Proposition ref:lemma2.13 can be expressed by CNF formulae of
+     size \(c2^c\). Condition 3, which is an AND of \(T(n)\) conditions each  depending on at most \(3c+1\)
+     variables, can be expressedas a CNF formula of size at most \(T(n)(3c+1)2^{3c+1}\). Hence the AND of all
+     these conditions can be expressed as a CNF formula of size d(n + T(n)) where d is some constant
+     depending only on \(M\). Moreover, this CNF formula can be computedin time polynomial in the running
+     time of \(M\).
      #+END_proof
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_lemma
+     \(\SAT\le_p3\SAT\)
+     #+END_lemma
+
+     #+BEGIN_proof
+     Suppose \varphi is a 4CNF. Let \(C\) be a clause of \varphi, say \(C=u_1\vee\baru_2\vee\baru_3\vee u_4\).
+     We add a new variable \(z\) to the \varphi and replace \(C\) with the pair
+     \(C_1=u_1\vee\baru_2\vee z\) and \(C_2=\baru_3\vee u_4\vee\barz\). If \(C\) is true, then there
+     is an assignment to \(z\) that satisfies both \(C_1\) and \(C_2\). If \(C\) is false, then no
+     matter what value we assign to \(z\) either \(C_1\) or \(C_2\) will be false.
+
+     For every clause \(C\) of size \(k>3\), we change it into an equivalent pair of clauses \(C_1\)
+     of size \(k-1\) and \(C_2\) of size 3.
+     #+END_proof
+
+     
+**** The Web of Reductions
+     #+ATTR_LATEX: :float H
+     [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/6.png]]
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(\INDSET\) is \(\NP\)-complete
+     #+END_theorem
+
+     #+BEGIN_proof
+     Transform in polynomial time every \(m\)-clause 3CNF formula \varphi into a \(7m\)-vertex graph \(G\)
+
+     #+ATTR_LATEX: :float H
+     [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/7.png]]
+
+     We associate a cluster of 7 vertices in \(G\) with each clause of \varphi. The vertices in a cluster
+     associated with a clause \(C\) correspond to the seven possible satisfying partial assignments
+     to the three variables on which \(C\) depends. For example, if \(C\)
+     is \(\baru_2\vee\baru_5\vee u_7\), then the seven vertices in the cluster associated with \(C\)
+     correspond to all partial assignments of the form \(u_1=a,u_2=b,u_3=c\) for a binary
+     vector \(\la a,b,c\ra\neq\la1,1,0\ra\). We put an edge between two vertices of \(G\) if they
+     correspond to inconsistent partial assignments. In addition, we put edges between every two
+     vertices that are in the same cluster
+
+     \varphi is satisfiable iff \(G\) has an independent set of size \(m\)
+     #+END_proof
+
+     We let \(\ZOIPROG\) be the set of satisfiable 0/1 integer programs.
+     That is, a set of linear inequalities with rational coefficients over
+     variables \(u_1,\dots,u_n\) is in \(\ZOIPROG\) if there is an assignment of numbers in \(\{0,1\}\)
+     to \(u_1,\dots,u_n\) that satisfies it
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(\ZOIPROG\)is \(\NP\)-complete
+
+     Every CNF formula can be expressed as an integer program by expressing every clause as
+     inequality. For example, the clause \(u_1\vee\baru_2\vee\baru_3\) can be expressed by
+     \(u_1+(1-u_2)+(1-u_3)\ge1\).
+     #+END_theorem
+
+     A *Hamilton path* in a directed graph is a path that visits all vertices exactly once. Let
+     \(\dHAMPATH\) denote the set of all directed graphs that contain such a path
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(\dHAMPATH\) is \(\NP\)-complete
+     #+END_theorem
+
+     #+BEGIN_proof
+     #+ATTR_LATEX: :float H
+     [[/media/wu/file/stuuudy/notes/images/ComputationalComplexity/8.png]]
+
+     The graph \(G\) has
+     1. \(m\) vertices for each of \(\varphi\)'s clause \(c_1,\dots,c_m\)
+     2. a special starting vertex \(v_{\start}\) and ending vertex \(v_{\tend}\)
+     3. \(n\) "chains" of \(4m\) vertices corresponding to the \(n\) variables of \varphi . A chain is a
+        set of vertices \(v_1,\dots,v_{4m}\) s.t. for every \(i\in[1,4m-1]\), \(v_i\)
+        and \(v_{i+1}\) are connected by two edges in both directions
+
+
+     If \(C\) contains the literal \(u_j\), then we take two neighboring
+     vertices \(v_i\), \(v_{i+1}\) in the \(j\)th chain and put an edge from \(v_i\) to \(C\) and
+     from \(C\) to \(v_{i+1}\). If \(C\) contains the literal \(\baru_j\) then we construct these
+     edges in the opposite direction. When adding these edges, we never "reuse" a
+     link \(v_i, v_{i+1}\) in a particular chain and always keep an unused link between every two
+     used links.
+
+     
+     \(G\in\dHAMPATH\Rightarrow\varphi\in\SAT\). Suppose that \(G\) has an Hamiltonian path \(P\).
+     We first note that the path \(P\) must start in \(v_{\start}\) and end at \(v_{\tend}\).
+     Furthermore, we claim that \(P\) needs to traverse all the chains in order and, within each
+     each chain, traverse it either in left-to-right order or right-to-left order.
+     #+END_proof
+
+**** Decision versus Search
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     label:thm2.18
+     Suppose that \(\bP=\NP\). Then for every \(\NP\) language \(L\) and a verifier TM \(M\)
+     for \(L\), there is a polynomial-time TM \(B\) that on input \(x\in L\) outputs a certificate
+     for \(x\).
+     #+END_theorem
+
+     #+BEGIN_proof
+     We need to show that if \(\bP=\NP\) then for every polynomial-time TM \(M\) and
+     polynomial \(p(n)\), there is a polynomial-time TM \(B\) with the following property: for every
+     \(x\in\{0,1\}^n\) if there is \(u\in\{0,1\}^{p(n)}\) s.t. \(M(x,u)=1\) then \(\abs{B(x)}=p(n)\)
+     and \(M(x,B(x))=1\)
+
+     We start by showing the theorem for the case of \(\SAT\). In particular, we show that given an
+     algorithm \(A\) that decides \(\SAT\), we can come up an algorithm \(B\) that on input a
+     satisfiable CNF formula \varphi with \(n\) variables, finds a satisfying assignment for \varphi
+     using \(2n+1\) calls to \(A\) and some additional polynomial-time computation.
+
+     We first use \(A\) to check that the input formula is satisfiable. If so, we first
+     substitute \(x_1=0\) and then \(x_1=1\) in \varphi and then use \(A\) to decide which of the two is
+     satisfiable. Say the first is satisfiable. Then we fix \(x_1=0\). Continuing this way, we end
+     up with an assignment
+
+     To solve the search problem for an arbitrary \(\NP\)-language \(L\), we use the fact that the
+     reduction of Theorem ref:thm2.10 from \(L\) to \(\SAT\)is actually a Levin reduction. This
+     means that we have a polynomial-time computable function \(f\) s.t. we can map a satisfying
+     assignment of \(f(x)\) into a certificate for \(x\).
+     #+END_proof
+
+     The theorem ref:thm2.18 shows that \(\SAT\) is *downward self-reducible*, which means that
+     given an algorithm that solves \(\SAT\) on inputs of length smaller than \(n\) we can
+     solve \(\SAT\) on inputs of length \(n\).
+
+**** \textbf{CONP,EXP} and \textbf{NEXP}
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     label:def2.19
+     \(\coNP=\{L:\barL\in\NP\}\)
+     #+END_definition
+
+     #+ATTR_LATEX: :options [alternative definition]
+     #+BEGIN_definition
+     label:def2.20
+     For every \(L\subseteq\{0,1\}^*\), we say that \(L\in\coNP\) if there exists a
+     polynomial \(p:\N\to\N\) and a polynomial-time TM \(M\) s.t. for every \(x\in\{0,1\}^*\)
+     \begin{equation*}
+x\in L \Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})},\; M(x,u)=1
+     \end{equation*}
+     #+END_definition
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_examplle
+     The following language is \(\coNP\)-complete
+     \begin{align*}
+\TAUTOLOGY=\{\varphi:\varphi\text{ is a tautology}\}
+     \end{align*}
+     It's clearly in \(\coNP\) by Definition ref:def2.20 (Make \(u\) to be the all possible
+     assignments). Modify the Cook-Levin reduction 
+     from \(\barL\)(which is in \(\NP\)) to \(\SAT\). For every input \(x\in\{0,1\}^*\) that
+     reduction produces a formula \(\varphi_x\) that is satisfiable iff \(x\in\barL\). Now consider
+     the formula \(\neg\varphi_x\). It is in \(\TAUTOLOGY\) iff \(x\in L\)
+     #+END_examplle
+
+**** \(\EXP\) and \(\NEXP\)
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     If \(\EXP\neq\NEXP\) then \(\bP\neq\NP\)
+     #+END_theorem
+
+     #+BEGIN_proof
+     We prove the contrapositive: Assuming \(\bP=\NP\) we show \(\EXP=\NEXP\).
+     Suppose \(L\in\NTIME(2^{n^c})\) and NDTM \(M\) decides it. We claim that the language
+     \begin{equation*}
+L_{\pad}=\left\{\la x,1^{2^{\abs{x}^c}}\ra:x\in L
+\right\}
+     \end{equation*}
+     is in \(\NP\). Here is an NDTM for \(L_{\pad}\): Given \(y\), first check if there is a
+     string \(z\) s.t. \(y=\la z,1^{2^{\abs{z}^c}}\ra\). If not, output 0. If \(y\) is of this form,
+     then simulate \(M\) on \(z\) for \(2^{\abs{z}^c}\) steps and output its answer. The running
+     time is polynomial in \(\abs{y}\), and hence \(L_{\pad}\in\NP\). Hence if \(\bP=\NP\)
+     then \(L_{\pad}\in\bP\). But if \(L_{\pad}\) is in \(\bP\) then \(L\) is in \(\EXP\). To
+     determine whether an input \(x\) is in \(L\), we just pad the input and decide whether it is
+     in \(L_{\pad}\) using the polynomial-time machine for \(L_{\pad}\)
+     #+END_proof
+
+     
+**** Exercise
+     #+BEGIN_exercise
+     label:ex2.11
+     Argue at a high level that the following language is \(\NP\)-complete
+     \begin{equation*}
+\left\{\la\varphi,1^n\ra:\text{ math statement }\varphi
+\text{ has a proof of size at most $n$ in the ZF system}
+\right\}
+     \end{equation*}
+     #+END_exercise
+
+     #+BEGIN_proof
+     Essential part is to find a reduction.
+
+     Idea: if there are \(n\) derivation rules, then we consider \(n\SAT\)
+     #+END_proof
+     
+     #+BEGIN_exercise
+     label:ex2.23
+     Prove that \(\bP\subseteq\NP\cap\coNP\)
+     #+END_exercise
+
+     #+BEGIN_exercise
+     label:ex2.24
+     Prove that Definition ref:def2.19 and ref:def2.20 do indeed define the same class
+     #+END_exercise
+
+     #+BEGIN_proof
+     Suppose \(\coNP=\{L:\barL\in\NP\}\).
+     \begin{align*}
+x\in L\in\coNP& \Leftrightarrow x\not\in\barL\in\NP\\
+& \Leftrightarrow\neg\exists u\in\{0,1\}^{p(\abs{x})} M'(x,u)=1\\
+&\Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})}M'(x,u)\neq1\\
+&\Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})}M(x,u)=1\\
+     \end{align*}
+     where \(M'\) is a TM for \(\NP\) and \(M\) is a TM for \(\coNP\) by computing the value
+     from \(M'\).
+
+     Another direction is the same.
+     #+END_proof
+
+*** Space Complexity
+    #+ATTR_LATEX: :options [Space-bounded computation]
+    #+BEGIN_definition
+    Let \(S:\N\to\N\) and \(L\subseteq\{0,1\}^*\). We say that \(L\in\SPACE(s(n))\) if there is a
+    constant \(c\) and a TM \(M\) deciding \(L\) s.t. at most \(c\cdot s(n)\) locations on \(M\)'s
+    work tapes (excluding the input tape) are ever visited by \(M\)'s head during its computation on
+    every input of length \(n\)
+
+    Similarly for \(\NSPACE(s(n))\)
+    #+END_definition
+
