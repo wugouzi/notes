@@ -11,11 +11,12 @@
 #+LATEX_HEADER: \def \LJp {\textbf{LJ'}}
 #+LATEX_HEADER: \def \LKsh {\textbf{LK\#}}
 #+LATEX_HEADER: \def \LKs {\textbf{LK}^*}
-#+LATEX_HEADER: \def \Sort {\textbf{Sort}}
-#+LATEX_HEADER: \def \Ex {\textbf{Ex}}
-#+LATEX_HEADER: \def \Un {\textbf{Un}}
-#+LATEX_HEADER: \def \Fr {\textbf{Fr}}
-#+LATEX_HEADER: \def \Pr {\textbf{Pr}}
+#+LATEX_HEADER: \def \Sort {\text{Sort}}
+#+LATEX_HEADER: \def \Ex {\text{Ex}}
+#+LATEX_HEADER: \def \Un {\text{Un}}
+#+LATEX_HEADER: \def \Fr {\text{Fr}}
+#+LATEX_HEADER: \def \Pr {\text{Pr}}
+#+LATEX_HEADER: \def \Ext {\text{Ext}}
 
 * First Order Predicate Calculus
   In this chapter we shall present Gentzen's formulation of the first order predicate
@@ -1019,12 +1020,17 @@
                \infer2{\Gamma,\Gamma,\Pi_1^*\to\Delta^*,\Delta^*,\Lambda}
                \end{prooftree}
                \end{equation*}
+               This proof has less rank.
+
+      2. \(\rank_r(P)=1)\). 
+
    #+END_proof
 
    #+ATTR_LATEX: :options []
    #+BEGIN_theorem
    The cut-elimination theorem holds for \(\LJ\)
    #+END_theorem
+
 
 ** Some consequences of the cut-elimination theorem
    #+ATTR_LATEX: :options []
@@ -1064,6 +1070,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_theorem
+   label:thm6.3
    In a cut-free proof in \(\LK\) (or \(\LJ\)) all the formulas which occur in
    it are subformulas of the formulas in the end-sequent
    #+END_theorem
@@ -1086,7 +1093,8 @@
    The above holds reading "\(\LJ\) without \(\vee\)left" in place of \(\LK\)
    #+END_theorem
    #+ATTR_LATEX: :options [outline]
-   #+BEGIN_proof
+   #+BEGIN_proof 
+
    Combining Proposition ref:prop2.14 and the cut-elimination theorem we may assume that there is a
    cut-free proof of \(S\), say \(P\), in which all the initial sequents consist of atmoic formulas
    only (_why do we need atomic formula_). Let \(I\) be a quantifier inference in \(P\). The number of propositional inference
@@ -1098,7 +1106,7 @@
    lowermost such, and call its lower sequent \(S_0\). Above this sequent there is no quantifier
    inference. Therefore if there is a quantifier in or above \(S_0\), then it is introduced by
    weakening. Since the proof is cut-free, the weakening formula is a subformula of one of the
-   formulas in the end-sequent. Hence no propositional inferences apply to it. <<Problem1>> (_don't understand_)
+   formulas in the end-sequent. Hence no propositional inferences apply to it. (Since its in prenex form!)
    We can thus eliminate
    these weakenings and obtain a sequent \(S_0'\) corresponding to \(S_0\). By adding some
    weakenings under \(S_0'\) we derive \(S\) and \(S_0'\) serves as the mid-sequent
@@ -1777,8 +1785,8 @@
    #+END_proof
 
    #+ATTR_LATEX: :options {Feferman}
-   #+BEGIN_exercise
-   label:ex8.4
+   #+BEGIN_exercise 
+   label:ex8.4 
    Let \(J\) be a non-empty set. Each element of \(J\) is called a *sort*. A many-sorted language for
    the set of sorts \(J\), say \(L(J)\), consists of the following
    1. Individual constants: \(k_0,k_1,\dots,k_i,\dots\), where to each \(k_i\) is assigned one sort
@@ -1807,12 +1815,21 @@
    Prove the following
    1. The cut-elimination theorem holds for the system just defined 
 
-   \(\Sort(A)\) is the set  
-   #+END_exercise
+   \(\Sort(A)\) is the set  of \(j\) in \(J\) s.t. a symbol of sort \(j\) occurs
+   in \(A\); \(\Ex(A)\) and \(\Un(A)\) are the sets of sorts of bound variables which occur in some
+   essentially existential, respectively universal quantifier in \(A\). (An occurrence
+   of \(\exists\), say \(\sharp\), is said to be *essentially existential* or *universal* according to
+   the following definition. Count the number of \(\neg\) and \(\supset\) in \(A\) s.t. \(\sharp\)
+   is either in the scope of \(\neg\), or in the left scope of \(\supset\). If this number is even,
+   then \(\sharp\) is essentially existential in \(A\), while if it is odd then \(\sharp\) is
+   essentially universal. We define dually for \(\forall\)) . \(\Fr(A)\) is the set of free
+   variables in \(A\). \(\Pr(A)\) is the set of predicate constants in \(A\)
 
-   #+BEGIN_proof
-   1. Only concern with quantifier rules. 
-   #+END_proof
+   2. [@2] Suppose \(A\supset B\) is provable in the above system and at least one
+      of \(\Sort(A)\cap\Ex(B)\) and \(\Sort(B)\cap\Un(A)\) is not empty. Then there is a
+      formula \(C\) s.t. \(\sigma(C)\subseteq\sigma(A)\cap\sigma(B)\) where \sigma sands for \(\Fr,\Pr\)
+      or \(\Sort\), and s.t. \(\Un(C)\subseteq\Un(A)\) and \(\Ex(C)\subseteq\Ex(B)\)
+   #+END_exercise
 
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -1834,10 +1851,63 @@
       (\phi' f)(d_1,\dots,d_n)=(\phi f)(d_1,\dots,d_n)
       \end{equation*}
 
+
+   A formula is said to be *existential* if \(\Un(A)\) is empty
    #+END_definition
+
+   #+ATTR_LATEX: :options [Łoś-Tarski]
+   #+BEGIN_corollary
+   The following are equivalent: let \(A\) be a formula of an ordinary (i.e., single-sorted)
+   language \(L\)
+   1. For any structure \(\calm\) (for \(L\)) and extension \(\calm'\), and any
+      assignments \(\phi,\phi'\) from the domains of \(\calm,\calm'\), respectively, which agree on the
+      free variables of \(A\), if \((\calm,\phi)\) satisfies \(A\), then so does \((\calm',\phi')\)
+   2. There exists an (essentially) existential formula \(B\) s.t. \(A\equiv B\) is provable and the
+      free variable of \(B\) are among those of \(A\)
+   #+END_corollary
+
+   #+ATTR_LATEX: :options [Feferman]
+   #+BEGIN_proof
+   We assume (for simplicity) that the language has no individual and function constants.
+
+   Let \(\calm\) and \(\calm'\) be two structures of the form
+   \begin{equation*}
+   \calm=\la D_1,\{R_i\}_{i\in I}\ra,\quad
+   \calm'=\la D_2,\{R_i'\}_{i\in I}\ra
+   \end{equation*}
+   Let \(J\) be \(\{1,2\}\). \((J,I,\la k_i\ra_{i\in I})\) will determine a 'type' of structures.
+   Let \(L^+\) be a corresponding language. It contains the original language \(L\) as the
+   sublanguage of sort 1. For each bound variable \(u\), the \(n\)th bound variable of sort 1,
+   let \(u'\) be the \(n\)th bound variable of sort 2. If \(C\) is an \(L\)-formula, then \(C'\)
+   denotes the result of replacing each bound variable \(u\) in \(C\) by \(u'\);
+   hence \(\Fr(C)=\Fr(C')\). With this notation, define \(\Ext\) to be the form
+   \(\forall u'\exists u(u'=u)\). Then
+   \begin{equation*}
+   \Ext,\{\exists u_i'(u_i'=b_i)\}_{i=1}^n,A'\to A
+   \end{equation*}
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(R\) be a set and suppose a set \(W_p\) is assigned to every \(p\in R\).
+   If \(R_1\subseteq R\) and \(f\in\Pi_{p\in R_1}W_p\), then \(f\) is called a *partial function*
+   (over \(R\)) with domain \(\dom(f)=R_1\). If \(\dom(f)=R\) then \(f\) is called a *total function*
+   (over \(R\)). If \(f\) and \(g\) are partial functions and \(\dom(f)=D_0\subseteq\dom(g)\)
+   and \(f(x)=g(x)\) for every \(x\in D_0\), then we call \(g\) an *extension* of \(f\) and
+   write \(f\prec g\) and \(f=g\restriction D_0\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [a generalized Kőnig's lemma]
+   #+BEGIN_proposition
+   Let \(R\) be any set. Suppose a finite set \(W_p\) is assigned to every \(p\in R\). Let \(P\) be
+   a property of partial functions \(f\) over \(R\) satisfying the following conditions:
+   1. \(P(f)\) holds iff there exists a finite subset \(N\) of \(R\) satisfying \(P(f\restriction N)\)
+   2. \(P(f)\) holds for every total function \(f\)
+   #+END_proposition
+
 
 
 ** TODO ALL the problems
-   [[Problem1]]
+
    [[Problem2]]
  
