@@ -20,6 +20,9 @@
 #+LATEX_HEADER: \def \CA {\text{CA}}
 #+LATEX_HEADER: \def \VJ {\text{VJ}}
 #+LATEX_HEADER: \def \PA {\textbf{PA}}
+#+LATEX_HEADER: \def \sb {\text{sb}}
+#+LATEX_HEADER: \def \Prov {\text{Prov}}
+#+LATEX_HEADER: \newcommand{\ovecor}[1] {\ove{\ucorner{#1}}}
 * First Order Predicate Calculus
   <<sec:one>>
   In this chapter we shall present Gentzen's formulation of the first order predicate
@@ -602,6 +605,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_proposition
+   label:prop4.2
    Let \(\cala\) be an axiom system. Then the following are equivalent
    1. \(\cala\) is inconsistent (with \(\LK\))
    2. for every formula \(A\), \(A\) is provable from \(\cala\)
@@ -609,8 +613,8 @@
    #+END_proposition
 
    #+BEGIN_proof
-   \(1\leftrightarrow 2\), \(2\leftrightarrow3\). \(\to A\vee B\) and
-   \(\to \neg A\vee B\) implies \(\to B\)
+   \(3\to1\). we have \(\LK\vdash A\leftrightarrow\neg\neg A\). So from \(\to\neg A\) we
+   have \(A\to\). THen we apply cut.
    #+END_proof
 
    #+ATTR_LATEX: :options []
@@ -2105,12 +2109,247 @@
    3. A sequent of formulas in a proof with the following properties is called a *bundle*
       1. The sequence begins with an initial formula or a weakening formula
       2. The sequence ends with an end-formula or a cut-formula
+      3. Every formula in the sequence except the last is immediately followed by its successor
+   4. Let \(A\) and \(B\) be formulas. \(A\) is called an *ancestor* of \(B\) and \(B\) is called a
+      *descenent* of \(A\) if there is a bundle containing both \(A\) and \(B\) in which \(A\)
+      appears above \(B\)
+   5. Let \(A\) and \(B\)  be formulas. If \(A\) is the successor of \(B\), then \(B\) is called a
+      *predecessor* of \(A\)
+   6. A bundle is called *explicit* if it ends with an end formula
+
+      It is called *implicit* if it ends with a cut-formula
+
+      A formula in a proof is called explicit or implicit according as the bundles containing the
+      formula are explicit or implicit
+
+      A sequent in a proof is called explicit or implicit according as this sequent contains an
+      implicit formula or not
+
+      A logical inference in a proof is called explicit or implicit according as the principal
+      formula of this inference is explicit or implicit
+   7. The *end-piece* of a proof is defined as follows
+      1. The end-sequent of the proof is contained in the end-piece
+      2. The upper sequent of an inference other than an implicit logical inference is contained in
+         the end-piece iff the lower sequent is contained in it
+      3. The upper sequent of an implicit logical inference is not contained in it
+
+      We can rephrase this definition as follows: A sequent in a proof is in the end-piece of the
+      proof iff there is no implicit inference below this sequent
+   8. An inference of a proof is said to be *in the end-piece* of the proof if the lower sequent of
+      the inference is in the end-piece
+   9. Let \(J\) be an inference in a proof. We say \(J\) *belongs to the boundary* (or \(J\) is a
+      *boundary inference*) if the lower seuqent of \(J\) is in the end-piece and the upper sequent is
+      not. It should be noted that if \(J\) belongs to the boundary, then it is an implicit logical inference.
+   10. A cut in the end-piece is called *suitable* if each cut formula of this cut has an ancestor
+       which is the principal formula of a boundary inference
+   11. A cut is called *inessential* if the cut formula contains no logical symbol; otherwise it is
+       called *essential*
+
+       In \(\PA\), the cut formulas of inessential cuts are of the form \(s=t\)
+   12. A proof \(P\) is *regular* if: 1. the eigenvariables of any two distinct inferences
+       (\(\forall\)right, \(\exists\)left or induction) in \(P\) are disctinct from each other 2. if
+       a free variable \(a\) occurs as an eigenvariable of a sequent \(S\) of \(P\), then \(a\) only
+       occurs in sequents above \(S\)
    #+END_definition
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   For an arbitrary proof of \(\PA\), there exists a regular proof of the same end-sequent, which
+   can be obtained from the original proof by simply replacing free variables
+   #+END_proposition
+
+   #+BEGIN_proof
+   Lemma ref:lemma2.10
+   #+END_proof
+
+
 
 
    
-   
+
+** The Incompleteness Theorem
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   An axiom system \(\cala\) is said to be *axiomatizable* if there is a finite set of schemata
+   s.t. \(\cala\) consists of all the instances of these schemata. A formal system \(\bS\) is called
+   axiomatizable if there is an axiomatizable axiom system \(\cala\) s.t. \(\bS\) is equivalent
+   to \(\LK_{\cala}\)
+
+   A system \(\bS\) is called an extension of \(\PA\) if every theorem of \(\PA\) is provable in \(\bS\).
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The class of primitive recursive functions is the smallest class of functions generated by the
+   following schemata
+   1. \(f(x)=x'\) , where \('\) is the successor function
+   2. \(f(x_1,\dots,x_n)=k\), where \(n\ge1\) and \(k\) is a natural number
+   3. \(f(x_1,\dots,x_n)=x_i\), where \(1\le i\le n\)
+   4. \(f(x_1,\dots,x_n)=g(h_1(x_1,\dots,x_n),\dots,h_m(x_1,\dots,x_n))\), where \(g,h_1,\dots,h_m\)
+      are primitive recursive functions
+   5. \(f(0)=k,f(x')=g(x,f(x))\) where \(k\) is a natural number and \(g\) is a primitive recursive function
+   6. \(f(0,x_2,\dots,x_n)=g(x_2,\dots,x_n)\),
+      \(f(x',x_2,\dots,x_n)=h(x,f(x,x_2,\dots,x_n),x_2,\dots,x_n)\), where \(g\) and \(h\) are
+      primitive recursive functions
+
+      An \(n\)-ary relation \(R\) is said to be primitive recursive if there is a primitive
+      recursive function \(f\) which assumes values 0 and 1 only s.t. \(R(a_1,\dots,a_n)\) is true
+      iff
+      \(f(a_1,\dots,a_n)=0\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   The consistency of \(\bS\) (i.e., \(\bS\)-unprovability of \(\to\)) is equivalent to
+   the \(\bS\)-unprovability of \(0=1\) (cf. Proposition ref:prop4.2)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options [Gödel]
+   #+BEGIN_proposition
+   label:prop10.6
+   1. The graphs of all the primitive recursive functions can be expressed in Ln, so that their
+      defining equations are provable in \(\PA\)
+
+      Thus the theory of primitive recursive functions can be translated into our formal system of
+      arithmetic. We may therefore assume that \(\PA\) (or any of its extensions) actually contains
+      the function symbols for primitive recursive functions and their defining equations, as well
+      as predicate symbols for the primitive recursive relations
+   2. Let \(R\) be a primitive recursive relation of \(n\) arguments. It can be represented
+      in \(\PA\) by a formula \(\barR(a_1,\dots,a_n)\), namely \(\barf(a_1,\dots,a_n)=\bar{0}\),
+      where \(f\) is the characteristic function of \(R\). Then for any \(n\)-tuple of
+      numbers \((m_1,\dots,m_n)\), if \(R(m_1,\dots,m_n)\) is true,
+      then \(\barR(\barm_1,\dots,\barm_n)\) is \(\PA\)-provable
+   #+END_proposition
+
+   #+BEGIN_proof
+   Follow this [[http://www.cs.cornell.edu/courses/cs4860/2009sp/lec-22.pdf][note]].
+
+
+    2. [@2] We prove that for any primitive recursive function \(f\) (of \(n\) arguments) and any
+    numbers \(m_1,\dots,m_n\), \(p\), if \(f(n_1,\dots,m_n)=p\),
+    then \(\barf(\barm_1,\dots,\barm_n)=\barp\) is \(\PA\)-provable. The proof is by induction on
+    the construction of \(f\).
+   #+END_proof
+
+   The converse proposition (i.e. for primitive recursive \(R\), if \(\barR(\barm_1,\dots,\barm_n)\)
+   is \(\PA\)-provable, then \(R(m_1,\dots,m_n)\) is true) follows from the consistency of \(\PA\)
+
+   #+ATTR_LATEX: :options [Gödel numbering]
+   #+BEGIN_definition
+   For an expression \(X\), we use \(\ucorner{X}\) to denote the corresponding number, which we call
+   the Gödel number of \(X\)
+   1. First assign different odd numbers to the symbols of Ln (We include \(\to\) and \(-\) among
+      the symbols of the language here)
+   2. Let \(X\) be a formal expression \(X_0X_1\dots X_n\), where each \(X_i\), \(0\le i\le n\) is a
+      symbol of L. Then \(\ucorner{X}\) is defined to
+      be \(2^{\ucorner{X_1}}3^{\ucorner{X_1}}\dots p_n^{\ucorner{X_n}}\), where \(p_n\) is
+      the \(n\)th prime number
+   3. If \(P\) is a proof of the form
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{Q}
+      \infer1{S}
+      \end{prooftree} \quad\text{ or }\quad
+      \begin{prooftree}%[center=false]
+      \hypo{Q_1}
+      \hypo{Q_2}
+      \infer2{S}
+      \end{prooftree}
+      \end{equation*}
+      hen \(\ucorner{P}\) is \(2^{\ucorner{Q}}3^{\ucorner{-}}5^{\ucorner{S}}\) or
+      \(2^{\ucorner{Q_1}}3^{\ucorner{Q_2}}5^{\ucorner{-}}7^{\ucorner{S}}\) respectively
+
+
+   If an operation or relation defined on a class of formal objects is thought of in terms of the
+   corresponding number-theoretic operation or relation on their Gödel numbers, we say that the
+   operation or relation has been *arithmetized*. More precisely, suppose \psi is an operation defined
+   on \(n\)-tuples of formal objects of a certain class, and \(f\) is a number-theoretic function
+   s.t. for all formal objects \(X_1,\dots,X_n,X\) if \psi applied to \(X_1,\dots,X_n\) produces \(X\),
+   then \(f(\ucorner{X_1},\dots,\ucorner{X_n})=\ucorner{X}\). Then \(f\) is called the
+   *arithmetization* of \psi
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma10.8
+   1. The operation of substitution can be arithmetized primitive recursively, i.e., there is a
+      primitive recursive function \(\sb\) of two arguments s.t. if \(X(a_0)\) is an expression of L
+      (where all occurences of \(a_0\) in \(X\) are indicated), and \(Y\) is another expression,
+      then \(\sb(\ucorner{X(a_0)},\ucorner{Y})=\ucorner{X(Y)}\) where \(X(Y)\) is the result of
+      substituting \(Y\) for \(a_0\) and \(X\)
+   2. There is a primitive recursive function \(\nu\) s.t.
+      \(v(m)=\ucorner{\text{the $m$th numeral}}\). That is, \(\nu(m)=\ucorner{\barm}\).
+   3. The notion that \(P\) is a proof (of the system \(\bS\)) of a formula \(A\) (or a
+      sequent \(S\)) is arithmetized primitive recursively; i.e. there is a primitive recursive
+      relation \(\Prov(p,a)\) s.t. \(\Prov(p,a)\) is true iff there is a proof \(P\) and a
+      formula \(A\) (or a sequent \(S\)) s.t. \(p=\ucorner{P}\), \(a=\ucorner{A}\)
+      (or \(a=\ucorner{S}\)) and \(P\) is a proof of \(A\) (or \(S\))
+   4. \(\Prov\) may be written as \(\Prov_{\bS}\) to emphasize the system \(\bS\)
+   5. the formal expression for \(\Prov\) will be denoted by \(\ove{\Prov}\)
+   #+END_lemma
+
+   \(\exists x\ove{\Prov}(x,\ove{\ucorner{A}})\) is often abbreviated to \(\ove{\Pr}(\ove{\ucorner{A}})\)
+   or \(\vdash\ove{\ucorner{A}}\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_proposition
+   1. If \(A\) is \(\bS\)-provable, then \(\vdash\ove{\ucorner{A}}\) is \(\bS\)-provable
+   2. If \(A\leftrightarrow B\) is \(\bS\)-provable,
+      then \(\ove{\Pr}(\ove{\ucorner{A}})\leftrightarrow\ove{\Pr}(\ove{\ucorner{B}})\) is \(\bS\)-provable
+   3. \(\vdash\ove{\ucorner{A}}\to(\vdash\ove{\ucorner{\vdash\ove{\ucorner{A}}}})\) is \(\bS\)-provable
+   #+END_proposition
+
+   #+BEGIN_proof
+   1. Suppose \(A\) is provable with a proof \(P\). Then by 3 of Lemma ref:lemma10.9,
+      \(\Prov(\ucorner{P},\ucorner{A})\) is true, which by 2 of Proposition ref:prop10.6,
+      that \(\exists x\ove{\Prov}(x,\ove{\ucorner{A}})\), i.e., \(\vdash\ove{\ucorner{A}}\) is \(\bS\)-provable.
+   2. Suppose \(A\equiv B\) is provable with a proof \(P\) and \(A\) is provable with a proof \(Q\).
+      There is a prescription for constructing a proof of \(B\) from \(P\) and \(Q\), which can be
+      arithmetized by a primitive recursive fucntion \(f\).
+      Thus \(\Prov(q,\ucorner{A})\to\Prov(f(p,q),\ucorner{B})\) is true, from which it follows by
+      Proposition ref:prop10.6 that \(\vdash\ove{\ucorner{A}}\to\vdash\ove{\ucorner{B}}\) is
+      provable.
+   3. If \(P\) is a proof of \(A\), then we can construct a proof \(Q\) of \(\vdash\ovecor{A}\)
+      by 1. This process is uniform in \(P\); in other words, there is a uniform prescription for
+      obtaining \(Q\) from \(P\). Thus
+      \begin{equation*}
+      \Prov(p,\ucorner{A})\to\Prov(f(p),\ucorner{\ove{\Pr}(\ovecor{A})})
+      \end{equation*}
+      is true for some primitive recursive function \(f\), from which it follows that
+      \(\vdash\ovecor{A}\to\vdash\ovecor{\vdash \ovecor{A}}\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A formula of L (the language of \(\bS\)) with one free variable, say \(T(a_0)\), is called a
+   *truth definition* for \(\bS\) if for every sentence of \(A\) of L
+   \begin{equation*}
+   T(\ovecor{A})\equiv A
+   \end{equation*}
+   is \(\bS\)-provable
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Tarski]
+   #+BEGIN_theorem
+   If \(\bS\) is consistent, then it has no truth definition
+   #+END_theorem
+
+   #+BEGIN_proof
+        Suppose otherwise. Consider the formula \(F(a_0)\), with sole free variable \(a_0\), defined
+        as: \(\neg T(\ove{\sb}(a_0,\barnu(a_0)))\). Put \(p=\ucorner{F(a_0)}\), and let \(A_T\) be the
+        sentecne \(F(\barp)\). Then by definition
+        \begin{equation*}
+        A_T\equiv\neg T(\ove{\sb}(\barp,\barnu(\barp)))
+        \end{equation*}
+        Also since \(\ucorner{A_T}=\sb(p,\nu(p))\) we can prove in \(\bS\) the equivalences
+        \begin{align*}
+        A_T&\equiv T(\ovecor{A_T})\\
+        &\equiv T(\bar{\sb}(\barp,\barnu(\barp)))
+        \end{align*}
+   #+END_proof
+
+
+
 * TODO ALL the problems
 
    [[Problem2]]

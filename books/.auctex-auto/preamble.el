@@ -25,6 +25,7 @@
     "mathrsfs"
     "stmaryrd"
     "empheq"
+    "centernot"
     "scalerel"
     "stackengine"
     "stackrel"
@@ -34,6 +35,7 @@
     "siunitx"
     "esvect"
     "unicode-math"
+    "wasysym"
     "pgfplots"
     "tikz"
     "tikz-cd"
@@ -61,9 +63,16 @@
     '("yRightarrow" ["argument"] 1)
     '("yleftarrow" ["argument"] 1)
     '("yrightarrow" ["argument"] 1)
+    '("ucorner" 1)
+    '("lcorner" 1)
+    '("ceil" 1)
+    '("floor" 1)
+    '("triplerightarrow" 1)
+    '("doublerightarrow" 2)
     '("bbar" 1)
     '("stcomp" 1)
     '("interior" 1)
+    '("ove" 1)
     '("und" 1)
     '("rom" 1)
     '("trcl" 1)
@@ -82,6 +91,7 @@
     "lowerwidehatsym"
     "cupdot"
     "bigcupdot"
+    "rmodels"
     "bx"
     "bz"
     "bff"
@@ -112,6 +122,7 @@
     "bu"
     "bS"
     "bZ"
+    "bJ"
     "by"
     "bw"
     "bT"
@@ -140,7 +151,6 @@
     "zf"
     "im"
     "inn"
-    "AC"
     "cod"
     "dom"
     "ran"
@@ -156,7 +166,6 @@
     "lcm"
     "alg"
     "Th"
-    "DLO"
     "DAG"
     "ODAG"
     "varprod"
@@ -165,20 +174,29 @@
     "Rng"
     "Sets"
     "Met"
+    "BA"
+    "Mon"
+    "Top"
     "Aut"
     "RMod"
     "RAlg"
     "LF"
     "op"
+    "tp"
     "Diag"
     "el"
     "depth"
-    "FO"
     "fin"
     "qr"
     "Mod"
     "TC"
+    "KH"
     "Part"
+    "Infset"
+    "DLO"
+    "sfMod"
+    "AbG"
+    "sfACF"
     "Tot"
     "graph"
     "Fin"
@@ -196,8 +214,6 @@
     "coker"
     "Bil"
     "Tril"
-    "vect"
-    "vecbar"
     "bigtimes"
     "odiv"
     "subsetsim"
@@ -208,14 +224,14 @@
     "zallman"
     "elzevier"
     "isoto"
+    "embto"
     "oldabs")
    (LaTeX-add-environments
     '("claim" 1)
     "bsm"
     "psm")
    (LaTeX-add-xcolor-definecolors
-    "ccqqqq"
-    "qqwuqq")
+    "ccqqqq")
    (LaTeX-add-mathtools-DeclarePairedDelimiters
     '("abss" "")
     '("normm" ""))
