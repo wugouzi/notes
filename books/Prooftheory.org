@@ -2,7 +2,7 @@
 #+AUTHOR: Gaisi Takeuti
 
 #+EXPORT_FILE_NAME: ../latex/ProofTheory/ProofTheory.tex
-#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \usepackage{ebproof}
 #+LATEX_HEADER: \def \LJ {\textbf{LJ}}
 #+LATEX_HEADER: \def \LK {\textbf{LK}}
@@ -22,6 +22,10 @@
 #+LATEX_HEADER: \def \PA {\textbf{PA}}
 #+LATEX_HEADER: \def \sb {\text{sb}}
 #+LATEX_HEADER: \def \Prov {\text{Prov}}
+#+LATEX_HEADER: \def \ovesb {\ove{\sb}}
+#+LATEX_HEADER: \def \Consis {\text{Consis}}
+#+LATEX_HEADER: \def \oveConsis {\ove{\text{Consis}}}
+#+LATEX_HEADER: \def \oveConsisS {\ove{\text{Consis}}_{\bS}}
 #+LATEX_HEADER: \newcommand{\ovecor}[1] {\ove{\ucorner{#1}}}
 * First Order Predicate Calculus
   <<sec:one>>
@@ -997,7 +1001,7 @@
                \end{equation*}
                Then \(g(P')=g(P)\), \(\rank_l(P')=\rank_l(P)\), \(\rank_r(P')=1\). Thus the
                end-sequent of \(P'\) is provable without a mix by the induction hypothesis.
-               wefaew weafieo aweiofwajeofi ojoiwaejfowjaeoifj oiwjeo jawoiejfoiwej
+               wefwaefwefwefaweewojweoifaewjfoi
 
             2. \(A\) is \(\exists xF(x)\). The last part of \(P\) looks like this
                \begin{equation*}
@@ -2200,6 +2204,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_lemma
+   label:lemma10.5
    The consistency of \(\bS\) (i.e., \(\bS\)-unprovability of \(\to\)) is equivalent to
    the \(\bS\)-unprovability of \(0=1\) (cf. Proposition ref:prop4.2)
    #+END_lemma
@@ -2293,6 +2298,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_proposition
+   label:prop10.9
    1. If \(A\) is \(\bS\)-provable, then \(\vdash\ove{\ucorner{A}}\) is \(\bS\)-provable
    2. If \(A\leftrightarrow B\) is \(\bS\)-provable,
       then \(\ove{\Pr}(\ove{\ucorner{A}})\leftrightarrow\ove{\Pr}(\ove{\ucorner{B}})\) is \(\bS\)-provable
@@ -2337,15 +2343,15 @@
    #+END_theorem
 
    #+BEGIN_proof
-
-
    Suppose otherwise. Consider the formula \(F(a_0)\), with sole free variable \(a_0\), defined
    as: \(\neg T(\ove{\sb}(a_0,\barnu(a_0)))\). Put \(p=\ucorner{F(a_0)}\), and let \(A_T\) be the
-        sentecne \(F(\barp)\). Then by definition
+   sentecne \(F(\barp)\). Then by definition
         \begin{equation*}
         A_T\equiv\neg T(\ove{\sb}(\barp,\barnu(\barp)))
         \end{equation*}
-        Also since \(\ucorner{A_T}=\sb(p,\nu(p))\) we can prove in \(\bS\) the equivalences
+   Also since \(\ucorner{A_T}=\sb(p,\nu(p))\) by definition,
+   (note that \(\ucorner{F(\barp)}=\sb(p,\nu(p))\))
+   we can prove in \(\bS\) the equivalences
         \begin{align*}
         A_T&\equiv T(\ovecor{A_T})\quad(\text{by assumed property of $T$})\\
         &\equiv T(\ove{\sb}(\barp,\barnu(\barp)))
@@ -2368,9 +2374,199 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
-   Consider a formula \(F(\alpha)\) with a metavariable \alpha
+   Consider a formula \(F(\alpha)\) with a metavariable \alpha (i.e. a new predicate variable, not in L, which
+   we only use temporarily for notational convenience), where \alpha is regared as an atomic formula
+   in \(F(\alpha)\) and \(F(\alpha)\) is closed. \(F(\vdash \ove{\sb}(a_0,\barnu(a_0)))\) is a formula with \(a_0\)
+   as its sole free variable. Define \(p=\ucorner{F(\vdash \ove{\sb}(a_0,\barnu(a_0)))}\) and \(A_F\) as
+   \(F(\vdash \ove{\sb}(\barp,\barnu(\barp)))\). Note that \(A_F\) is a sentence of L
    #+END_definition
 
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma10.14
+   \(A_F\equiv F(\vdash \ovecor{A_F})\) is provable in \(\bS\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Since \(\ucorner{A_F}=\sb(p,\nu(p))\) by definition
+   \begin{equation*}
+   \ovecor{A_F}=\ovesb(\barp,\barnu(\barp))\text{ is provable in }\bS
+   \end{equation*}
+   Hence \(A_F\equiv F(\vdash \ovecor{A_F})\) is provable in \(\bS\)
+   #+END_proof
+
+   From now no we shall use the abbreviation \(\vdash A\) for \(\vdash\ovecor{A}\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(\bS\) is called *\(\omega\)-consistent* if the following condition is satisfied. For every
+   formula \(A(a_0)\), if \(\neg A(\barn)\) is provable in \(\bS\) for every \(n\in\N\),
+   then \(\exists xA(x)\) is not provable in \(\bS\). Note that \(\omega\)-consistency of \(\bS\) implies
+   consistency of \(\bS\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Gödel's first incompleteness theorem]
+   #+BEGIN_theorem
+   label:thm10.16
+   If \(\bS\) is \(\omega\)-consistent, then \(\bS\) is incomplete
+   #+END_theorem
+
+   #+BEGIN_proof
+   There exists a sentence \(A_G\) of L s.t. \(A_G\equiv\neg\vdash A_G\) is provable in \(\bS\).
+   (Any such sentence will be called a Gödel sentence for \(\bS\).) This follows from Lemma
+   ref:lemma10.14 by taking \(F(\alpha)\) to be \(\neg\alpha\).
+
+   First we shall show that \(A_G\) is not provable in \(\bS\), assuming only the consistency
+   of \(\bS\) (but without assuming the \(\omega\)-consistency of \(\bS\)). Suppose that \(A_G\)
+   where provable in \(\bS\). Then by 1 of Proposition ref:prop10.9, \(\vdash A_G\) is provable
+   in \(\bS\); thus by the definition of Gödel sentence, \(\neg A_G\) is provable in \(\bS\)
+
+   Next we shall show that \(\neg A_G\) is not provable in \(\bS\), assuming the \(\omega\)-consistency
+   of \(\bS\). Since we have proved that \(A_G\) is not provable in \(\bS\), for
+   each \(n=0,1,2,\dots\), \(\neg\ove{\Prov}(\barn,\ovecor{A_G})\) is provable in \(\bS\). By
+   the \(\omega\)-consistency of \(\bS\), \(\exists x\ove{\Prov}(x,\ovecor{A_G})\) is not provable
+   in \(\bS\). Since \(\neg A_G\equiv\vdash A_G\) is provable in \(\bS\), \(\neg A_G\) is not provable in \(\bS\)
+   #+END_proof
+
+   In fact ,\(A_G\), although unprovable, is (intuitively) true, since it asserts its own unprovability
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+    \(\oveConsis_{\bS}\) is the sentence \(\neg\vdash0=1\) (So \(\oveConsis_{\bS}\) asserts the
+    consistency of \(\bS\))
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Gödel's second incompleteness theorem]
+   #+BEGIN_theorem
+   If \(\bS\) is consistent, then \(\oveConsisS\) is not provable in \(\bS\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Let \(A_G\) be a Gödel sentence. In the proof of Theorem ref:thm10.16, we proved that \(A_G\) is
+   not provable, assuming only consistency of \(\bS\). Now we shall prove a stronger theorem: that
+   \(A_G\equiv\oveConsisS\) is provable in \(\bS\)
+   1. To show \(A_G\to\oveConsisS\) is provable in \(\bS\). By Lemma ref:lemma10.5,
+      \(\neg\oveConsisS\equiv\forall\ucorner{A}(\vdash A)\) is provable. Therefore
+      \begin{equation*}
+    A_G\to\neg\vdash A_G\to\neg\forall\ucorner{A}(\vdash A)\to\oveConsisS
+      \end{equation*}
+   2. To show \(\oveConsisS\to A_G\) is provable in \(\bS\). Again by Lemma ref:lemma10.5,
+      \(\oveConsisS,\vdash A_G\to\neg\vdash\neg A_G\to\neg\vdash\vdash A_G\)
+      since \(\neg A_G\equiv\vdash A_G\). But \(\vdash A_G\to\vdash\vdash A_G\), by Proposition
+      ref:prop10.9. So \(\oveConsisS,\vdash A_G\to\neg\vdash\vdash A_G\wedge\vdash\vdash A_G\) and so
+      \(\oveConsisS\to\neg\vdash A_G\to A_G\)
+   #+END_proof
+
+** A Discussion of Ordinals from a Finitist Standpoint
+   | O1 | 0 is an ordinal                                       |
+   | O2 | Let \mu and \(\mu_1,\dots,\mu_n\) be ordinals. Then     |
+   |    | \(\mu_1+\dots+\mu_n\) and \(\omega^{\mu}\) are ordinals      |
+   | O3 | Only those objects obtained by O1 and O2 are ordinals |
+
+   \(\omega^0\) will be dnoted by 1.
+   1. < is a linear ordering and 0 is its least element
+   2. \(\omega^{\mu}<\omega^{\nu}\) iff \(\mu<\nu\)
+   3. Let \mu be an ordinal containing an occurrence of the symbol 0 but not 0 itself, and
+      let \(\mu'\) be the ordinal obtained from \mu by eliminating this occurrence of 0 as  well as
+      excessive occurrence of +. Then \(\mu=\mu'\)
+
+
+    As a consequence of 3 it can be easily shown that
+   4. [@4] Every ordinal which is not 0 can be expressed in the form
+      \begin{equation*}
+    \omega^{\mu_1}+\omega^{\mu_2}+\dots+\omega^{\mu_n}
+      \end{equation*}
+      where each of \(\mu_1,\dots,\mu_n\) which is not 0 has the same property. (Each
+      term \(\omega^{\mu_i}\) is called a monomial of this ordinal)
+   5. Let \mu and \nu be of the forms
+      \begin{equation*}
+      \omega^{\mu_1}+\dots+\omega^{\mu_k}\quad\text{ and }\quad
+      \omega^{\nu_1}+\dots+\omega^{\nu_l}
+      \end{equation*}
+      respectively. Then \(\mu+\nu\) is defined as
+      \begin{equation*}
+      \omega^{\mu_1}+\dots+\omega^{\mu_k}+
+      \omega^{\nu_1}+\dots+\omega^{\nu_l}
+      \end{equation*}
+   6. Let \mu be an ordinal which is written in the form of 4 and contains two consecutive
+      terms \(\omega^{\mu_j}\) and \(\omega^{\mu_{j+1}}\) with \(\mu_j<\mu_{j+1}\), i.e., \mu is of the form
+      \begin{equation*}
+      \dots+\omega^{\mu_j}+\omega^{\mu_{j+1}}+\dots
+      \end{equation*}
+      and let \(\mu'\) be an ordinal obtained from \mu by deleting "\(\omega^{\mu_j}+\)", so
+      that \(\mu'\) is of the form
+      \begin{equation*}
+      \dots+\omega^{\mu_{j+1}}+\dots
+      \end{equation*}
+      Then \(\mu=\mu'\)
+
+
+   As a consequence of 6 we can show that
+   7. [@7] For every ordinal \mu  (which is not 0) there is an ordinal of the form
+      \begin{equation*}
+      \omega^{\mu_1}+\dots+\omega^{\mu_n}
+      \end{equation*}
+      where \(\mu_1\ge\dots\ge\mu_n\) s.t. \(\mu=\omega^{\mu_1}+\dots+\omega^{\mu_n}\). This is
+      called the normal form of \mu
+   8. Let \mu have the normal form
+      \begin{equation*}
+      \omega^{\mu_1}+\dots+\omega^{\mu_n}
+      \end{equation*}
+      and \nu be \(>0\). Then \(\mu\cdot\omega^{\nu}=\omega^{\mu_1+\nu}\)
+   9. Let \mu and \nu be as in 5. Then
+      \begin{equation*}
+      \mu\cdot\nu=\nu\cdot\omega^{\nu_1}+\dots+\mu\cdot\omega^{\nu_l}
+      \end{equation*}
+   10. \((\omega^\mu)^n\) is defiend as \(\omega^\mu\cdots\omega^\mu\) (\(n\) times) for any natural
+       number \(n\). Then \((\omega^\mu)^n=\omega^{\mu\cdot n}\)
+
+
+   #+BEGIN_center
+   (*) Whenever a concrete method of constructing decreasing sequences of ordinals is given, any
+   such decreasing sequence must be finite
+   #+END_center
+
+
+   Suppose \(a_0>a_1>\dots\) is a decreasing sequence concretely given
+   1. Assume \(a_0<\omega\), or \(a_0\) is a natural number
+   2. Suppose each \(a_i\) in \(a_0>a_1>\dots\) is written in the canonical form; \(a_i\) has the
+      form
+      \begin{equation*}
+      \omega^{\mu_1^i}+\omega^{\mu_2^i}+\dots\dots+\omega^{\mu_{n_i}^i}+k_i
+      \end{equation*}
+      where \(\mu_j^i>0\) and \(k_i\) is a natural number. A sequence in which \(k_i\) does not
+      appear for any \(a_i\) will be called 1-sequence. We call \(\omega^{\mu_1^i}+\dots+\omega^{\mu_{n_i}^i}\)
+      in \(a_i\) the 1-major part of \(a_i\). We shall give a concrete method \((M_1)\) which
+      enables us to do the following: given a decreasing sequence \(a_0>a_1>\dots\), where
+      each \(a_i\) is written in its canonical form, the method \(M_1\) concretely produces a
+      (decreasing) 1-sequence \(b_0>b_1>\dots\) so as to satisfy the condition
+
+      #+BEGIN_center
+      (\(\text{C}_1\)) \(b_0\) is the 1-major part of \(a_0\), and we can concretely show that
+      if \(b_0>b_1>\dots\) is a finite sequence, then so is \(a_0>a_1>\dots\)
+      #+END_center
+
+      This method \(M_1\) (a 1-eliminator) is defined as follows. Put \(a_i=a_i'+k_i\),
+      where \(a_i'\) is the 1-major part of \(a_i\). Then \(a_0>a_1>\dots\) can be expressed by
+      \(a_0'+k_0>a_1'+k_1>\dots\)
+
+      Put \(b_0=a_0'\). Suppose \(b_0>b_1>\dots>b_m\) has been constructed in such a manner
+      that \(b_m\) is \(a_j'\) for some \(j\). Then either \(a_j'=a_{j+1}' =\dots =a_{j+p}'\) for
+      some \(p\) and \(a_{j+p}\) is the last term in the sequence,
+      or \(a_j'=a_{j=1}' =\dots =a_{j+p}'>a_{j+p+1}'\). This is so,
+      since \(a_j' =a_{j+1}' =\dots =a_{j+p}' =\dots\) implies \(k_j>k_{j+1}>\dots>k_{j+p}>\dots\),
+      but since a sequence (of natural numbers) must stop. Therefore either the whole sequence stops
+      or \(a_{j+p}'>a_{j+p+1}'\) for some \(p\). If the former is the case, then stop. If the latter
+      holds then put \(b_{m+1}=a_{j+p+1}'\)
+
+      From the definition, it is obvious that \(b_0>b_1>\dots>b_m>\dots\). Suppose this sequence is
+      finite, say \(b_0>b_1>\dots>b_m\). Then according to the prescribed construction
+      of \(b_{m+1}\) the original sequence is finite. Then (\(\text{C}_1\)) is satisfied.
+   3. Suppose we are given a decreasing sequence \(a_0>a_1>\dots\) in which \(a_0<\omega^2\). Then by a
+      1-eliminator \(M_1\) applied to this sequence we can construct a 1-sequence \(b_0>b_1>\dots\)
+      where \(b_0\le a_0\). Then \(b_0>b_1>\dots\) can be written in the
+      form \(\omega\cdot k_0>\omega\cdot k_1>\dots\), which implies \(k_0>k_1>\dots\). Then by
+      1, \(k_0>k_1>\dots\) must be finite, which implies \(b_0>b_1>\dots\) and \(a_0>a_1>\dots\) are finite.
 * TODO ALL the problems
 
    [[Problem2]]
