@@ -57,3 +57,4 @@
 (package! org-sticky-header)
 (package! auctex)
 (package! org-superstar)
+(package! texfrag)

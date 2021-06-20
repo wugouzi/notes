@@ -19,8 +19,8 @@
 ;;
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
-(setq doom-font (font-spec :family "Source Code Pro" :size 14)
-      doom-variable-pitch-font (font-spec :family "Source Han Serif CN" :size 12))
+(setq doom-font (font-spec :family "Menlo" :size 12)
+      doom-variable-pitch-font (font-spec :family "Source Han Serif SC" :size 11))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -101,8 +101,9 @@
    ((t (:background "#fff7fb"))))
  '(org-block-end-line
    ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
- '(variable-pitch ((t (:family "Source Han Serif CN" :height 130))))
- '(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
+ '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
+ ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
+ '(fixed-pitch ((t ( :family "Menlo" :height 111))))
  )
 
 (use-package auctex
@@ -210,7 +211,6 @@ parent."
 (use-package org-ref
   :init
   (setq reftex-default-bibliography '("/media/wu/file/stuuudy/notes/references.bib"))
-
   (setq org-ref-bibliography-notes "/media/wu/file/stuuudy/notes/references.bib"
         org-ref-default-bibliography '("/media/wu/file/stuuudy/notes/references.bib")
         org-ref-pdf-directory "~/Dropbox/bibliography/bibtex-pdfs/")
@@ -240,13 +240,13 @@ parent."
 (add-hook 'org-mode-hook 'set-newline-and-indent)
 
 
-
+(setq mac-command-modifier 'meta)
 
 
 (use-package xenops
-  :init (load-file "/home/wu/.emacs.d.essential/xenops/xenops.el")
+  :init (load-file "~/.doom.d/xenops/xenops.el")
   :ensure nil
-  :load-path "/home/wu/.emacs.d.essential/xenops"
+  :load-path "~/.doom.d/xenops"
   :hook
   (org-mode . xenops-mode)
   :bind (:map org-mode-map
