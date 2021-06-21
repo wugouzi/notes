@@ -1,0 +1,329 @@
+#+TITLE: Continuous First Order Logic
+#+AUTHOR: Shichang Song
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \def \diam {\text{diam}}
+#+LATEX_HEADER: \def \Card {\text{Card}}
+* Day 1
+  Continuou first order logic a.k.a. continuous logic, continuous model theory, model theory for
+  metric structures
+
+  | Logic                                 | Mathematics                                   |
+  | 1930s: Compactness thm                | 1960s: diaphantine problems over local fields |
+  | ultraproducts, saturation             | nonstandard analysis                          |
+  | 1970s: shelah: classification theorem | 1996: mordell-lang conjecture                 |
+  | stability theory                      |                                               |
+  | 1980s: o-minimal theory               | 2011: pila André-oort conjecture              |
+
+  background:
+
+  1960s: Applications of ultraproducts to Banach spaces. Krivine
+
+  1976: Ward Henson nonstandard hulls of Banach spaces: "Henson's logic" positive bounded formulas
+  with an approximate semantics
+
+  Later, 2002 with Iovino. Ultraproducts in analysis
+
+  2003, Ben Yaacov, compact abstract theories, Positive model theory and compact abstract theories
+
+  2005 model theory for metric structures
+
+  many valued logic: Łukasiewicz, Chang-Keisler.
+
+  | Truth values | \([0,1]\)     |
+  | quantifiers  | \(\inf,\sup\) |
+  | equality     | metric \(d(\cdot,\cdot)\) |
+
+  Analogy betweeen CFO and FOL
+
+  Let \((M,d)\) be a complete, bounded metric space
+
+  \(d:M\times M\to\R^{\ge0}\) is a *metric* on \(M\)
+  1. \(d(x,y)\ge0\), \(d(x,y)=0\) iff \(x=y\)
+  2. \(d(x,y)=d(y,x)\)
+  3. \(d(x,y)\le d(x,z)+d(z,y)\)
+
+
+\((M,d)\) is *bounded* if \(\exists k>0,\forall x,y\in M\), \(d(x,y)<k\) or
+\(\diam(M,d):=\sup_{x,y\in M}d(x,y)<k\)
+
+\((M,d)\) is *complete* if every cauchy sequence convergencs
+
+
+
+
+  A *predicate* on \(M\) is a *uniformly continuous* function:
+  \(M^n\to[a,b]\subseteq\R\) for some \(n\ge1\)
+
+  \(P:M^n\to(0,1)\) is *uniformly continuous* if \(\forall \epsilon>0\exists\delta>0\forall x,y\in M^n\)
+  \(d(x,y)<\delta\to\abs{p(x)-p(y)}<\epsilon\)
+
+  A function on \(M\) is a uniformly continuous function: \(M^n\to M\) fro some \(n\ge1\).
+
+  For simplicity, \((M,d)\) is bounded by 1, predicates have values on \([0,1]\). 0 is true and 1 is
+  false.
+
+  #+BEGIN_remark
+  In FOL, predicates: \(M^n\to\{0,1\}\)
+
+  In CFO, predicates: \(M^n\to[0,1]\)
+  #+END_remark
+
+  A *metric structure* \(\calm\) based on \((M,d)\) consists of a family \((R_i\mid i\in I)\) of
+  predicates on \(M\), a family \((F_j\mid j\in J)\) of functions on \(M\) and a
+  family \((a_k\mid k\in K)\) of distinguished elements of \(M\)
+
+  We denote a metric structure as
+  \begin{equation*}
+    \calm=(M,R_i,F_j,a_k\mid i\in I,j\in J,k\in K)
+  \end{equation*}
+  _Key restrictions_:
+  1. complete bounded
+  2. bounded interval (\(R_i\))
+  3. uniformly continuous \((R_i,F_j)\)
+
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_examplle
+  1. A complete bounded metric space \((M,d)\) with no additional structure
+  2. Given a first-order structure \(\calm\), define a discrete metric on it.
+     \begin{equation*}
+     d(a,b)=
+     \begin{cases}
+     1&\text{if }a\neq b\\
+     0
+     \end{cases}
+     \end{equation*}
+     predicates taking values in \(\{0,1\}\). Then \((\calm,d)\)  is a metric structure. Thus CFO is
+     a generalization of FOL
+  3. Probability algebras are boolean algebras of events in probabilities space.
+  #+END_examplle
+
+  For each metric structure \(\calm=(M,R_i,F_j,a_k\mid i\in I,j\in J,k\in K)\), we
+  associate a *signature*
+   \begin{equation*}
+    L=\{p_i,f_i,c_k\mid i\in I,j\in J,k\in K\}
+   \end{equation*}
+   where each \(p_i\) is a *predicate symbol* corresponding to predicate \(R_i\) on \(\calm\),
+   each \(f_j\) is a *function symbol* corresponding to predicate \(F_j\) on \(\calm\) ,
+   and each \(c_k\) is a *constant symbol* corresponding to predicate \(a_k\) on \(\calm\).
+
+   We associate to each symbol its arity like in FOL.
+
+   Moreover, in CFO, we associate to each predicate symbol \(p\) a closed bounded interval \(I_p\)
+   (usually \(I_p=[0,1]\)) and a *modulus of uniform continuity* \(\Delta_p\), i.e., a
+   function \(\Delta_p:(0,1]\to(0,1])\) satisfify \(\forall \epsilon>0\forall x,y\in M^n\),
+   if \(d(x,y)<\Delta_p(\epsilon)\) (defines a \delta by \(\Delta_p\)) then
+   \begin{equation*}
+    \abs{p^{\calm}(x)-p^{\calm}(y)}<\epsilon
+   \end{equation*}
+   This \(\Delta_p\) does *not* depend on \(\calm\)
+
+   We associate to each function a modulus of uniformly continuity \(\Delta_f\), i.e. a
+   function \(\Delta_f:(0,1]\to(0,1]\) satisfying  \(\forall \epsilon>0\forall x,y\in M^n\),
+   if \(d(x,y)<\Delta_f(\epsilon)\) then
+   \begin{equation*}
+    d(f^{\calm}(x,f^{\calm}(y)))<\epsilon
+   \end{equation*}
+
+   Finally, \(L\) provides \(D_L\) which is a bound on the diameter of \((M,d)\). For
+   simplicity, \(D_L=1\) and \(I_p=[0,1]\).
+
+   We say \(\calm\) an \(L\)-structure
+
+   Suppose \(\calm\) and \(\caln\) are \(L\)-structures. An *embedding* from \(\calm\) to \(\caln\) is
+   a metric space *isometry* \(T:(\calm,d^{\calm})\to(N,d^{\caln})\) s.t.
+   1. \(\forall x,y\in M\), \(d^{\caln}(T(x),T(y))=d^{\calm}(x,y)\)
+   2. for each \(n\)-ary predicate symbol \(p\) of \(L\)
+      \begin{equation*}
+      \forall a_1,\dots,a_n\in M,p^{\caln}(T(a_1),\dots,T(a_n))=p^{\calm}(a_1,\dots,a_n)
+      \end{equation*}
+   3. for each \(n\)-ary function symbol \(f\) of  \(L\)
+      \begin{equation*}
+      \forall a_1,\dots,a_n\in M,f^{\caln}(T(a_1),\dots,T(a_n))=T(f^{\calm}(a_1,\dots,a_n))
+      \end{equation*}
+   4. for each constant symbol \(c\) of \(L\)
+      \begin{equation*}
+      c^{\caln}=T(c^{\calm})
+      \end{equation*}
+
+
+   An *isomorphism* is a surjective embedding. We say that \(\calm\) and \(\caln\) are isomorphic and
+   write \(\calm\cong\caln\) if there exists an isomorphism between \(\calm\) and \(\caln\)
+
+   If \(M\subseteq N\) and the inclusion map is an embedding of \(\calm\) into \(\caln\), then we
+   say \(\calm\) is a *substructure* of \(\caln\) and write \(\calm\subseteq\caln\)
+
+   More on modulus of uniform continuity. See [BBHU] appendix to section 2 on pages 322-327
+
+   Fix a signature \(L\) for metric structure
+
+   Symbols of \(L\)
+   * nonlogical symbols: predicates, functions, constants
+   * logical symbols: \(d\)-binary predicate (=), \(V_L\) - an infinite set of
+     variables, \(u:[0,1]^n\to[0,1]\) continuous connectives (since continus \(\Rightarrow\)
+     uniformly continuous), \(\sup,\inf\) (quantifiers)
+
+
+   The *cardinality* of \(L\), denoted by \(\Card(L)\) is the smallest infinite cardinal
+   \(\ge\#\{\text{nonlogical symbols}\}\)
+
+   *terms* of \(L\)
+   1. variables and constant symbols
+   2. \(f(t_1,\dots,t_n)\)
+
+
+   *Atomic formulas* of \(L\)
+   1. \(P(t_1,\dots,t_n)\) wher e\(P\) is an \(n\)-ary predicate symbol
+   2. \(d(t_1,t_2)\) like "=" in FOL
+
+
+   *Formulas* of \(L\)
+   1. atomic formulas
+   2. if \(u:[0,1]^n\to[0,1]\) is continuous and \(\varphi_1,\dots,\varphi_n\) are \(L\)-formulas,
+      then \(u(\varphi_1,\dots,\varphi_n)\) is an \(L\)-formula
+   3. if \varphi is an \(L\)-formula and \(x\) is a variable, then \(\sup_x\varphi\) and \(\inf_x\varphi\)
+      are \(L\)-formulas
+
+
+   This definition is not a  good one
+   1. too general, uncountably continuous functions. we only need to concern a dense subset of it
+   2. too restrict, in order to develop a good nition of "definability", need formulas closed under
+      certain kinds of limits
+
+
+   We write \(t(x_1,\dots,x_n)\) or \(\varphi(x_1,\dots,x_n)\) to indicate is free variables are
+   among \(x_1,\dots,x_n\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Let \(D_0\) denote the set of repeating decimals. Then \((D_0,d_0)\) (\(d_0\) is subtraction) is
+   a *pseudometric* space. Because \(d_0(0.\dot{9},1)=0\) but \(0.\dot{9}\neq1\). Consider its
+   quotient \((D,d)=(D_0,d_0)/\sim\) where \(x\sim y\) if \(d_0(x,y)=0\). Then \((D,d)\) is a metric
+   space, but it is not complete. Actually \((D,d)=(\Q,d)\). Take its completion, we
+   get \((\barD,\bard)=(\R,d)\).
+
+   pseudometric space -> metric space -> complete metric space
+   #+END_examplle
+
+   Fix a signature \(L\). Let \((M_0,d_0)\) be a pseudometric space
+   satisfying \(\diam(M_0,d_0)\le D_L\). An *\(L\)-prestructure* \(\calm_0\) based on \((M_0,d_0)\) is a
+   structure satisfying
+   1. for each predicate symbol \(p\) of \(L\) \(p^{\calm_0}:M_0^n\to I_p\) has \(\Delta_p\) as a
+      modulus of uniform continuity
+   2. for each function symbol \(f\) of \(L\), \(f^{\calm_0}:M_0^n\to M_0\) has \(\Delta_f\) as a modulus
+      of uniform continuity
+   3. for each constant symbol \(c\) of  \(L\), \(c^{\calm_0}\in M_0\)
+
+
+   Given \(L\)-prestructure \(\calm_0\), we define its *quotient* prestructure as follows:
+
+   Let \((M,d)=(M_0,d_0)/\sim\), where \(x\sim y\) iff \(d_0(x,y)=0\). Let \(\pi:M_0\to M\) be the
+   quotient map. Then
+   1. for each predicate symbol \(p\) of \(L\), define \(p^{\calm}:M^n\to I_p\) by
+      \begin{equation*}
+    p^{\calm}(\pi(x_1),\dots,\pi(x_n))=p^{\calm_0}(x_1,\dots,x_n)
+      \end{equation*}
+   2. for each function symbol \(f\) of \(L\), define \(f^{\calm}:M^n\to M\) by
+      \begin{equation*}
+    f^{\calm}(\pi(x_1),\dots,\pi(x_n))=\pi(f^{\calm_0}(x_1,\dots,x_n))
+      \end{equation*}
+   3. for each constant symbol \(c\) of \(L\), define \(c^{\calm}=\pi(c^{\calm_0})\)
+
+
+   Clearly,
+   1. \(\diam(M,d)=\diam(M_0,d)\)
+   2. \(p^{\calm}\) is well-defined and has \(\Delta_p\) as its modulus of uniform continuity
+   3. \(f^{\calm}\) is well-defined and has \(\Delta_f\) as its modulus of uniform continuity (these
+      2 proofs are in the appendix)
+
+
+   Thus \((M,d)\) is an \(L\)-prestructure based on a possibly incomplete metric space.
+
+   Finally we take a *completion* of \(\calm\), denoted by \(L\)-structure \(\caln\)
+   1. for each predicate symbol \(p\). define \(p^{\caln}:N^n\to I_p\) as the unique extension
+      of \(p^{\calm}\) with the same \(\Delta_p\) (Check!)
+   2. for each \(f\), \(f^{\caln}:N^n\to N\) is the unique extension of \(f^{\calm}\) with the same \(\Delta_f\)
+   3. for each constant \(c\), \(c^{\caln}=c^{\calm}\)
+
+
+   Let \(\calm\) be an \(L\)-prestructure and let \(A\subset M\). We extend \(L\) to a
+   signature \(L(A)\) by adding a new constant symbol \(c(a)\) to \(L\) for
+   each \(a\in A\). \((c(a))^{\calm=a}\). We call \(c(a)\) the *name* of \(a\) in \(L(A)\).
+   Consider \(L(M)\)-terms \(t(x_1,\dots,x_n)\), define exactly as in FOL
+   \begin{equation*}
+    t^{\calm}:M^n\to M
+   \end{equation*}
+   The interpretation of \(t\) in \(\calm\)
+
+   _Key definitions of semantics in CFO_
+   1. \((d(t_1,t_2))^{\calm}=d^{\calm}(t_1^{\calm},t_2^{\calm})\) for all \(t_1,t_2\)
+   2. \((p(t_1,\dots,t_n))^{\calm}=p^{\calm}(t_1^{\calm},\dots,t_n^{\calm})\) for all \(n\)-ary
+      predicate symbol \(p\) and all \(t_1,\dots,t_n\)
+   3. for all \(L(M)\)-sentences \(\sigma_1,\dots,\sigma_n\) and all continuous
+      function \(\mu:[0,1]^n\to[0,1]\)
+      \begin{equation*}
+    (\mu[\sigma_1,\dots,\sigma_n])^{\calm}=\mu(\sigma_1^{\calm},\dots,\sigma_n^{\calm})
+      \end{equation*}
+   4. for all \(L(M)\)-formulas \(\varphi(x)\)
+      \begin{align*}
+    (\sup_x(\varphi(x)))^{\calm}=\sup_{a\in M}(\varphi(a))^{\calm}\in[0,1]
+      \end{align*}
+
+
+   Given \(L(M)\)-formula \(\varphi(x_1,\dots,x_n)\), we let \(\varphi^{\calm}\) denote the function
+   \(M^n\to[0,1]\) defined by
+   \begin{equation*}
+    \varphi^{\calm}(a_1,\dots,a_n)=(\varphi(a_1,\dots,a_n))^{\calm}
+   \end{equation*}
+
+   Fact: \(\varphi^{\calm}\) is a uniformly continuous function
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thmA.1
+   Let \(t(x_1,\dots,x_m)\) be an \(L\)-term and \(\varphi(x_1,\dots,x_n)\) an \(L\)-formula. Then there
+   exists functions \(\Delta_t\) and \(\Delta_{\varphi}\)\(:(0,1]\to(0,1]\) s.t.
+   for every \(L\)-prestructure \(\calm\), \(\Delta_t\) is a modulus of uniform continuity for the
+   function \(t^{\calm}:M^n\to M\) and \(\Delta_\varphi\) is a modulus of uniform continuity for the
+   predicate \(\varphi^{\calm}:M^n\to[0,1]\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   Induction
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   label:thmA.2
+   pseudometric space \((M_0,d_0)\) \(\to\) quotient \((M,d)\) \(\to\) completion \((N,d)\)
+
+   Let \(t(x_1,\dots,x_n)\) be an \(L\)-term and \(\varphi(x_1,\dots,x_n)\) be an \(L\)-formula. Then
+   1. \(t^{\calm}(\pi(a_1),\dots,\pi(a_n))=t^{\calm_0}(a_1,\dots,a_n)\)
+   2. \(t^{\caln}(b_1,\dots,b_n)=t^{\calm}(b_1,\dots,b_n)\)
+   3. \(\varphi^{\calm}(\pi(a_1),\dots,\pi(a_n))=\varphi^{\calm_0}(a_1,\dots,a_n)\)
+   4. \(\varphi^{\caln}(b_1,\dots,b_n)=\varphi^{\calm}(b_1,\dots,b_n)\)
+   #+END_theorem
+
+   #+BEGIN_proof
+   in 3. key step is that \pi is surjective
+
+   in 4, key step is that \(\varphi^{\caln}\) is continuous and \(M\) is dense in \(N\)
+   #+END_proof
+
+
+   Two \(L\)-formulas \(\varphi(x_1,\dots,x_n)\) and \(\psi(x_1,\dots,x_n)\) are *logically equivalent* if
+   \begin{equation*}
+    \varphi^{\calm}(a_1,\dots,a_n)=\psi^{\calm}(a_1,\dots,a_n)
+   \end{equation*}
+   for every \(L\)-structure \(\calm\)
+
+   The *logical distance* \(d_L\) between \varphi and \psi is
+   \begin{equation*}
+    d_L(\varphi,\psi)=\sup_{a_1,\dots,a_n\in M}\abs{\varphi^{\calm}(a_1,\dots,a_n)-\varphi^{\calm(a_1,\dots,a_n)}}
+   \end{equation*}
+
+
+   #+BEGIN_remark
+   1. This defines a pseudometric
+   2. \(d_L(\varphi,\psi)=0\) iff \(\varphi\sim_L\psi\)
+   #+END_remark
