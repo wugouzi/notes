@@ -54,7 +54,6 @@
     "imakeidx"
     "hyperref"
     "soul"
-    "geometry"
     "graphicx"
     "appendix")
    (TeX-add-symbols

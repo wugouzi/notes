@@ -3,6 +3,7 @@
 #+LATEX_HEADER: \input{preamble.tex}
 #+LATEX_HEADER: \def \diam {\text{diam}}
 #+LATEX_HEADER: \def \Card {\text{Card}}
+#+EXPORT_FILE_NAME: ../latex/ContinuousFirstOrderLogic/ContinuousFirstOrderLogic.tex
 * Day 1
   Continuou first order logic a.k.a. continuous logic, continuous model theory, model theory for
   metric structures
@@ -319,7 +320,7 @@
 
    The *logical distance* \(d_L\) between \varphi and \psi is
    \begin{equation*}
-    d_L(\varphi,\psi)=\sup_{a_1,\dots,a_n\in M}\abs{\varphi^{\calm}(a_1,\dots,a_n)-\varphi^{\calm(a_1,\dots,a_n)}}
+    d_L(\varphi,\psi)=\sup_{\calm}\sup_{a_1,\dots,a_n\in M}\abs{\varphi^{\calm}(a_1,\dots,a_n)-\varphi^{\calm}(a_1,\dots,a_n)}
    \end{equation*}
 
 
@@ -327,3 +328,463 @@
    1. This defines a pseudometric
    2. \(d_L(\varphi,\psi)=0\) iff \(\varphi\sim_L\psi\)
    #+END_remark
+
+   The space of \(L\)-formulas is too big. *density character* is the smallest dense subset w.r.t.
+   logical distance.
+
+   By Weierstrass theorem, there is a countable set of functions that is dense in the set of all
+   continuous functions w.r.t \(\sup\)-distance. We may use this countable set of functions to build
+   connectives. Then
+   1. the total number of constructed formulas is \(\Card(L)\)
+   2. every \(L\)-formulas can be approximated arbitrarily closely in logical distance by a formula
+      constructed using restricted connectives
+* Day 2
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  An *\(L\)-condition* \(E\) is of the form \(\varphi=0\), where \varphi is an \(L\)-formula. We call \(E\)
+  *closed* if \varphi is closed, i.e., \varphi is an \(L\)-sentence
+
+  If \(E\) is the \(L(M)\)-condition \(\varphi(x_1,\dots,x_n)=0\) and \(a_1,\dots,a_n\in M\), we say \(E\)
+  is *true of \(a_1,\dots,a_n\)* in \(\calm\) and we write \(\calm\vDash E[a_1,\dots,a_n]\) if
+  \(\varphi^{\calm}(a_1,\dots,a_n)=0\)
+
+  Let \(E_i\) be the \(L\)-condition \(\varphi_i(x_1,\dots,x_n)=0\). We say \(E_1\) and \(E_2\) are
+  *logically equivalent* if for every \(L\)-structure \(\calm\) and every \(a_1,\dots,a_n\) we have
+  \begin{equation*}
+    \calm\vDash E_1[a_1,\dots,a_n] \quad\text{ iff }\quad
+    \calm\vDash E_2[a_1,\dots,a_n]
+  \end{equation*}
+
+  \(\varphi=\psi\) is an abbreviation for the condition \(\abs{\varphi-\psi}=0\), where
+  \(\abs{\cdot}:[0,1]^2\to[0,1]\), \((t_1,t_2)\mapsto\abs{t_1-t-2}\) is a connective.
+
+  \(\varphi\le\psi\) iff \(\varphi\dot-\psi=0\)
+  #+END_definition
+
+  In \([0,1]\)-valued logic, \(\varphi\le\psi\) is like \(\varphi\to\psi\) in FOL. Since
+  from \(\psi\le r\) we have \(\varphi\le r\) for all \(r\in[0,1]\)
+
+  Fix a signature \(L\) for metric structure.
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A *theory* \(T\) is a set of closed \(L\)-conditions. We say \(\calm\) is a model of \(T\) and
+  write \(\calm\vDash T\)  if \(\calm\vDash E\) for every condition \(E\in T\).
+
+  Let \(\Mod_L(T)\) be the collection of all models of \(T\)
+
+  The *theory of \(\calm\)*, denoted by \(\Th(\calm)\), is the set of closed \(L\)-conditions that are
+  true in \(\calm\).
+
+  If \(T\) is a theory of this form, then \(T\) is *complete*.
+
+  We say \(E\) is a *logical consequence* of \(T\) and write \(T\vDash E\) if \(\calm\vDash E\) holds
+  for every model \(\calm\) of \(T\).
+  #+END_definition
+
+  #+BEGIN_remark
+  1. models are complete metric spaces.
+  2. Let \(\calm_0\) be an \(L\)-prestructure s.t. \(\varphi^{\calm_0}=0\) for every
+     condition \(\varphi=0\) in \(T\). Then by Theorem ref:thmA.2, the completion of the canonical
+     quotient of \(\calm_0\) is a model of \(T\). (\(\calm_0\) is a *premodel*)
+  #+END_remark
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  1. We say \(\calm\) and \(\caln\) are *elementary equivalent* and write \(\calm\equiv\caln\)
+     if \(\sigma^{\calm}=\sigma^{\caln}\) for all \(L\)-sentences \sigma
+  2. If \(\calm\subseteq\caln\), we say that \(\calm\) is an *elementary substructure* of \(\caln\)
+     and write \(\calm\preceq\caln\)
+     if whenever \(\varphi(x_1,\dots,x_n)\) is an \(L\)-formula and \(a_1,\dots,a_n\in M\) we have
+     \begin{equation*}
+    \varphi^{\calm}(a_1,\dots,a_n)=\varphi^{\caln}(a_1,\dots,a_n)
+     \end{equation*}
+     We also say \(\caln\) is an *elementary extension* of \(\calm\)
+  3. \(F:A\subseteq M\to N\) is an *elementary map* if whenever \(\varphi(x_1,\dots,x_n)\) is
+     an \(L\)-formula and \(a_1,\dots,a_n\in\dom(F)\) we have
+     \begin{equation*}
+    \varphi^{\calm}(a_1,\dots,a_n)=\varphi^{\caln}(F(a_1),\dots,F(a_n))
+     \end{equation*}
+  4. An *elementary embedding* of \(\calm\) into \(\caln\) is a function \(M\to N\) that is an
+     elementary map from \(\calm\) into \(\caln\)
+  #+END_definition
+
+  #+BEGIN_remark
+  1. elementary map is distance preserving, and thus is an embedding
+  2. \(\calm\cong\caln\Rightarrow\calm\equiv\caln\)
+  #+END_remark
+
+  We say \(S\) of \(L\)-formulas is *dense w.r.t. logical distance* if for
+  every \(L\)-formula \(\varphi(x_1,\dots,x_n)\) and every \(\epsilon>0\) there is \(\psi(x_1,\dots,x_n)\) in \(S\)
+  s.t. for every \(L\)-structure \(\calm\) and all \(a_1,\dots,a_n\in M\) we have
+  \begin{equation*}
+    \abs{\varphi^{\calm}(a_1,\dots,a_n)-\psi^{\calm}(a_1,\dots,a_n)}\le\epsilon
+  \end{equation*}
+
+  #+ATTR_LATEX: :options [Tarski-Vaught Test for $\preceq$]
+  #+BEGIN_proposition
+  label:propB.1
+  Let \(S\) be dense w.r.t. logical distance. Suppose \(\calm\) and \(\caln\) are \(L\)-structures
+  with \(\calm\subseteq\caln\). Then the following are equivalent
+  1. \(\calm\preceq\caln\)
+  2. For every \(L\)-formula e\(\varphi(x_1,\dots,x_n,y)\) in \(S\) and all \(a\in M^n\)
+     \begin{equation}
+     \inf\{\varphi^{\caln}(a,b)\mid b\in N\}=\inf\{\varphi^{\caln}(a,c)\mid c\in M\}\tag{$\star$}
+     \end{equation}
+  #+END_proposition
+
+  #+BEGIN_proof
+  \(1\to 2\). By 1, we have
+  \begin{align*}
+    \inf\{\varphi^{\caln}(a_1,\dots,a_n,b)\mid b\in N\}&=
+    \left(\inf_y\varphi(a_1,\dots,a_n,y)\right)^{\caln}\\
+    &=\left((\inf_y\varphi(a_1,\dots,a_n,y))\right)^{\calm}\\
+    &=\inf\{\varphi^{\calm}(a_1,\dots,a_n,c)\mid c\in M\}\\
+    &=\inf\{\varphi^{\caln}(a_1,\dots,a_n,c)\mid c\in M\}
+  \end{align*}
+
+  \(2\to1\). First we show \(\star\) holds for all \(L\)-formulas \(\varphi(x_1,\dots,x_n,y)\).
+  \(\forall\epsilon>0\), take \(\varphi(x_1,\dots,x_n,y)\in S\) s.t.
+  \begin{equation*}
+    \sup_{\calm}\sup_{a_1,\dots,a_n\in M}
+    \abs{\varphi^{\calm}(a_1,\dots,a_n,b)-\psi^{\calm}(a_1,\dots,a_n,b)}\le\epsilon
+  \end{equation*}
+  Let \(a_1,\dots,a_n\in M\) then we have
+  \begin{align*}
+    \inf\{\varphi^{\caln}(a_1,\dots,a_n,b)\mid b\in M\}&\le
+    \inf\{\psi^{\caln}(a_1,\dots,a_n,b)\mid b\in M\}+\epsilon\\
+    &=\inf\{\psi^{\caln}(a_1,\dots,a_n,c)\mid c\in N\}+\epsilon\\
+    &\le\inf\{\varphi^{\caln}(a_1,\dots,a_n,c)\mid c\in N\}+2\epsilon
+  \end{align*}
+  Let \(\epsilon\to0\), then
+  \begin{equation*}
+    \inf\{\varphi^{\caln}(a_1,\dots,a_n,b)\mid b\in M\}\le
+    \inf\{\varphi^{\caln}(a_1,\dots,a_n,c)\mid c\in N\}
+  \end{equation*}
+  Hence \(\star\) holds for all \(L\)-formulas \varphi.
+
+  Then by incution on the complexities of \varphi and \(\star\) we have
+  \(\varphi^{\calm}(a_1,\dots,a_n)=\varphi^{\caln}(a_1,\dots,a_n)\) for all \(a_1,\dots,a_n\in M\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(I\) be a nonempty set. A *filter* on \(I\) is a collection \(F\) of subsets of \(I\) satisfies
+  1. \(\emptyset\not\in F\) and \(I\in F\)
+  2. for all \(A,B\in F\), \(A\cap B\in F\)
+  3. for all \(A\in F\), if \(A\subseteq B\subseteq I\) then \(B\in F\)
+
+
+  A filter \(F\) is an *ultrafilter* if it is maximal under \(\subseteq\) among filters on \(I\)
+
+  \(F\) is *principal* if there is a subset \(A\subseteq I\) s.t. \(F\) is exactly the collection of
+  all sets \(B\) that satisfy \(A\subseteq B\subseteq I\).
+
+  non-principal is also called as *free*
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  \(S\) is a collection of \(I\). We say that \(S\) has *finite intersection property* (FIP)
+  if \(\forall n\in\N\), \(\forall\) finite subset collection \(\{A_1,\dots,A_n\}\)
+  of \(S\), \(A_1\cap\dots\cap A_n\neq\emptyset\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaB.2
+  Let \(I\) be a nonempty set and let \(S\) be a collection of subsets of \(I\). There exists a
+  filter \(F\) on \(I\) which contains \(S\) iff \(S\) has the FIP
+  #+END_lemma
+
+  #+BEGIN_remark
+  The smallest filter on \(I\) containing \(S\) is called the *filter generated by \(S\)*
+  #+END_remark
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaB.3
+  Let \(F\) be a filter on a nonempty set \(I\). Then \(F\) is an ultrafilter iff \(\forall A\subset I\),
+  either \(A\in F\) or \(A^c\in F\).
+  #+END_lemma
+
+  #+BEGIN_remark
+    principal ultrafilters are trivial
+  #+END_remark
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thmB.4
+  Let \(I\) be a nonempty set. Then every filter on \(I\) is contained in an ultrafilter on \(I\).
+  #+END_theorem
+
+  #+BEGIN_proof
+  Zorn's lemma
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_corollary
+  label:corB.5
+  Let \(I\) be a nonempty set and let \(S\) be a collection of subset of \(I\). If \(S\) has the
+  FIP, then there is an ultrafilter on \(I\) that contains \(S\).
+  #+END_corollary
+
+  Fix a first order signature \(L\). Let \(I\) be a nonempty set and let \(U\) be a fixed
+  ultrafilter on \(I\). Consider an \(I\)-indexed family of \(L\)-structures \(\cala_i\).
+  Let \(A=\prod_{i\in I}A_i\) be the Cartesian product of the sets \(A_i\). Let \(f,g\in A\). We
+  define a relation on \(A\)
+  \begin{equation*}
+    f\sim g \quad\text{ iff }\quad
+    \{i\mid f(i)=g(i)\}\in U
+  \end{equation*}
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaB.6
+  The relation \(\sim\) is an equivalence relation on \(A\)
+  #+END_lemma
+
+  Then \(A/\sim\) is the ultraproduct of the set \(A_i\) w.r.t. the ultrafilter \(U\) on \(I\)
+
+  We let \(\prod_UA_i\) denote \(A/\sim\), the collection of all equivalence classes
+  \(\{[f]\mid f\in\prod_{i\in I}A_i\}\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  The *ultraproduct* \(\prod_{U}\cala_i\) is defined to be the \(L\)-structure
+  1. the universe of \(\prod_{U}\cala_i\) is \(\prod_UA_i\)
+  2. for each constant \(c\) in \(L\), define \(f\in A\) by \(f(i)=c^{\cala_i}\)
+     \begin{equation*}
+    c^{\prod_U\cala_i}=f/\sim
+     \end{equation*}
+  3. for each predicate \(P\) in \(L\)
+     \begin{equation*}
+    P^{\prod_U\cala_i}(f_1/\sim,\dots,f_n/\sim)\quad\text{ iff }\quad
+    \{i\in I\mid P^{\cala_i}(f_1(i),\dots,f_n(i))\}\in U
+     \end{equation*}
+  4. for each function \(F\) in \(L\)
+     \begin{equation*}
+    F^{\prod_U\cala_i}(f_1/\sim,\dots,f_n/\sim)=f/\sim
+     \end{equation*}
+     where \(f\in A\) is defined by \(f(i)=F^{\cala_i}(f_1(i),\dots,f_n(i))\)
+
+
+  Need to check they are well-defined
+
+  An *ultrapower* of \(\cala\) is an ultraproduct \(\prod_U\cala_i\) with \(\cala_i=\cala\) for
+  all \(i\in I\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options [Łoś's theorem (fundamental theorem for ultraproducts)]
+  #+BEGIN_theorem
+  label:thmB.7
+  For every \(L\)-formula \(\varphi(x_1,\dots,x_n)\) and every \(f/\sim=(f_1/\sim,\dots,f_n/\sim)\), we
+  have
+  \begin{equation*}
+    \prod_U\cala_i\vDash\varphi[f/\sim] \quad\text{ iff }\quad
+    \{i\in I\mid\cala_i\vDash\varphi[f_1(i),\dots,f_n(i)]\}\in U
+  \end{equation*}
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_corollary
+  label:corB.8
+  if \sigma is an \(L\)-sentence, then \(\prod_U\cala_i\vDash\sigma\) iff
+  \(\{i\in I\mid\cala_i\vDash\sigma\}\in U\)
+  #+END_corollary
+
+  Let \(X\) be a topological space and let \((x_i)_{i\in I}\) be a family of elements of \(X\).
+  If \(D\) is an ultrafilter on \(I\) and \(x\in X\), we write \(\lim_{i,D}x_i=x\) (ultra limit) and
+  say \(x\) is the *\(D\)-limit of \((x_i)_{i\in I}\)* if \(\forall \)
+  open \(U\ni x\), \(\{i\in I\mid x_i\in U\}\in D\)
+
+  *Fact*: \(X\) is a compact Hausdorff space (e.g. \(X=[0,1]\)) iff for every family \((x_i)_{i\in I}\) in \(X\) and
+   every ultrafilter \(D\) on \(I\) the \(D\)-limit of \((x_i)_{i\in I}\) exists and is unique.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemmaB.9
+   Suppose \(X,X'\) are topological spaces and \(F:X\to X'\) is continuous. For every
+   family \((x_i)_{i\in I}\) from \(X\) and every ultrafilter \(D\) on \(I\), we have
+   \begin{equation*}
+    \lim_{i, D}x_i=x\Rightarrow\lim_{i,D}F(x_i)=F(x)
+   \end{equation*}
+   where the ultralimits are taken in \(X\) and \(X'\) respectively
+   #+END_lemma
+
+   #+BEGIN_proof
+   Take open \(U\ni F(x)\) in \(X'\). Since \(F\) is continuous, \(F^{-1}(U)\) is open in \(X\).
+   And \(F^{-1}(U)\ni x\). If \(x\) is the \(D\)-limit of \((x_i)_{i\in I}\) there is \(A\in D\)
+   s.t. \(x_i\in F^{-1}(U)\) for all \(i\in A\) and thus \(F(x_i)\in U\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(((M_i,d_i)\mid i\in I)\) be a family of bounded metric spaces with diameter \(\le k\).
+   Let \(D\) be an ultrafilter on \(I\). Define \(d\) on \(\prod_{i\in I}M_i\)
+   by \(d(x,y)=\lim_{i,D}d_i(x_i,y_i)\), when \(x=(x_i)_{i\in I}\) and \(y=(y_i)_{i\in I}\).
+
+   Check: \(d\) is a pseudometric on \(\prod_{i\in I}M_i\)
+
+   For \(x,y\in\prod_{i\in I}M_i\), define \(x\sim_Dy\) iff \(d(x,y)=0\)
+
+   Then \(\sim_D\) is an equivalence relation, so we may define
+   \begin{equation*}
+    \left(\prod_{i\in I}M_i\right)_D=\left(\prod_{i\in I}M_i\right)/\sim_D
+   \end{equation*}
+   Later we will see its complete
+
+   The pseudometric \(d\) on \(\prod_{i\in I}M_i\) induces a metric \(d\)
+   on \((\prod_{i\in I}M_i)_D\)
+
+   The space \(((\prod_{i\in I}M_i)_D,d)\) is the *\(D\)-ultraproduct* of \(((M_i,d_i)\mid i\in I)\).
+
+   We denote \((x_i)_{i\in I}/\sim_D\) by \(((x_i)_{i\in I})_D\)
+
+   If \((M_i,d_i)=(M,d)\) \(\forall i\in I\). The space \((\prod_{i\in I}M_i)_D\) is called the
+   *\(D\)-ultrapower* of \(M\) and denoted by \((M)_D\)
+
+   \(T:M\to(M)_D\), \(x\mapsto((x_i)_{i\in I})_D\), where \(\forall i\in I\), \(x_i=x\) is a *diagonal
+   embedding*. its an isometric embedding
+   #+END_definition
+
+   If \((M,d)\) is compact, then it is easy to show \(((x_i)_{i\in I})_D=T(x)\), i.e., the diagonal
+   embedding is surjective.
+
+   *Fact*: every ultrapower of a closed bounded interval may be canonically identified wiht the
+    interval itself. e.g. \(([0,1])_D=[0,1]\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:propB.10
+    Let \(((M_i,d_i)\mid i\in I)\) be a family of complete, uniformly bounded metric space.
+    Let \(D\) be an ultrafilter on \(I\) and let \((M,d)\) be the \(D\)-ultraproduct
+    of \(((M_i,d_i)\mid i\in I)\). The metric space \((M,d)\) is complete
+    #+END_proposition
+
+    #+BEGIN_proof
+    let \((x^k)_{k\ge1}\)  be a Cauchy sequence in \((M,d)\). WLOG, we assume that
+    \(d(x^k,x^{k+1})<\frac{1}{2^k}\) holds for all \(k\ge1\). We want to show it has a limit.
+
+    For each \(k\ge1\) let \(x^k\) be represente by the family \((x_i^k)_{i\in I}\). For
+    each \(m\ge1\), let \(A_m=\{i\in I\mid d_i(x_i^k,x_i^{k+1})<\frac{1}{2k}\forall k\le m\}\).
+    Note \(A_1\supseteq A_2\supseteq\dots A_n\neq\emptyset\supseteq\dots\) and each \(A_i\in D\).
+
+    We define a family \((y_i)_{i\in I}\) as follows. If \(i\not\in A_1\) then we take \(y_i\)
+    arbitrarily. If \(i\in A_m\setminus A_{m+1}\) for some \(m\ge1\), then we set \(y_i=x_i^{m+1}\).
+    If \(\forall m\ge1\), \(i\in A_m\), then \((x_i^m)_{m\ge1}\) is a Cauchy sequence, we take \(y_i\) to
+    be its limit.
+
+    Then for each \(m\ge1\) each \(i\in A_m\) we have \(d_i(x_i^m,y_i)\le 2^{-m+1}\). It follows that
+    \(((y_i)_{i\in I})_{D}\) is the limit of \((x^k)_{k\ge1}\) in \((M,d)\)
+    #+END_proof
+
+    Suppose \(((M_i,d_i)\mid i\in I)\) and \(((M_i',d_i')\mid i\in I)\) are families of metric
+    spaces with diameter \(\le k\). Fix \(n\ge1\) and suppose \(f_i:M_i^n\to M_i'\) is uniformly
+    continuous for each \(i\). Moreover, there is a function \(\Delta:(0,1]\to(0,1]\) is a modulus of
+    uniform continuity for all \(f_i\).
+
+    Given an ultrafilter \(D\) on \(I\) we define
+    \begin{equation*}
+    \left(\prod_{i\in I}f_i\right)_D\cdot\left(\prod_{i\in I}M_i\right)_D\to
+    \left(\prod_{i\in I}M_i'\right)_D
+    \end{equation*}
+    as follows
+    \begin{equation*}
+    \left(\prod_{i\in I}f_i\right)_D\left(
+    ((x_i^1)_{i\in I})_D,\dots,((x_i^n)_{i\in I})_D
+    \right)=\left((f_i(x_i^1,\dots,x_i^n))_{i\in I}\right)_D
+    \end{equation*}
+    where \((x_i^k)_{i\in I\in\prod_{i\in I}M_i}\)
+
+    *Claim*. \((\prod_{i\in I}f_i)_D\) is a uniformly continuous function that also has \Delta as its
+    modulus of uniform continuity
+
+    Suppose \(n=1\), \(\forall \epsilon>0\), \(d(((x_i)_{i\in I})_D,((y_i)_{i\in I})_D)\le \Delta(\epsilon)\).
+    Then \(\exists A\in D\) s.t. \(\forall i\in A\), \(d_i(x_i,y_i)<\Delta(\epsilon)\). Since \Delta is a modulus of u.c. for
+    all \(f_i\). Then \(d_i'(f_i(x_i),f_i(y_i))\le\epsilon\) for all \(i\in A\).
+    Hence \(d'(((f(x_i)_{i\in I})_D,((f(y_i)_{i\in I})_D)\le\epsilon\). This shows that
+    \((\prod_{i\in I}f_i)_D\) is well-defined and has \Delta as a modulus of u.c.
+
+    Let \((\calm_i\mid i\in I)\) be a family of \(L\)-structures and \(D\) be an ultrafilter on \(I\).
+    We define the *\(D\)-ultraproduct of the family \((\calm_i\mid i\in I)\) of \(L\)-structures* to
+    be the \(L\)-structure \(\calm\) that is specified as follows
+    1. the universe of \(\calm\) is \(M=(\prod_{i\in I}M_i)_D\)
+    2. for each predicate \(P\) of \(L\)
+       \begin{equation*}
+       P^{\calm}=(\prod_{i\in I}P^{\calm_i})_D:M^n\to[0,1]
+       \end{equation*}
+       since \(([0,1])_D=[0,1]\)
+    3. for each function \(f\) of \(L\)
+       \begin{equation*}
+       f^{\calm}=(\prod_{i\in I}f^{\calm_i})_D:M^n\to M
+       \end{equation*}
+    4. for each constant \(c\) of \(L\)
+       \begin{equation*}
+       c^{\calm}=((c^{\calm_i})_{i\in I})_D
+       \end{equation*}
+
+
+    We call \(\calm\) the *\(D\)-ultraproduct of the family* \((\calm_i\mid i\in I)\) and denoted by
+    \begin{equation*}
+    \calm=(\prod_{i\in I}\calm_i)_D
+    \end{equation*}
+    \(D\)-ultrapower as \((\calm)_D\)
+
+    #+ATTR_LATEX: :options [Łoś theorem]
+    #+BEGIN_theorem
+    label:htmB.11
+    let \(\varphi(x_1,\dots,x_n)\) be an \(L\)-formula. If \(a_k=((a_i^k)_{i\in I})_D\) are elements
+    of \(\calm\) for \(k=1,\dots,n\), then
+    \begin{equation*}
+    \varphi^{\calm}(a_1,\dots,a_n)=\lim_{i,D}\varphi^{\calm_i}(a^1_i,\dots,a^n_i)
+    \end{equation*}
+    #+END_theorem
+
+    #+BEGIN_proof
+    Induction
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    label:corB.12
+    If \(\calm\) is an \(L\)-structure and \(T:M\to(M)_D\) is the diagonal embedding, then \(T\) is
+    an elementary embedding of \(\calm\) into \((\calm)_D\)
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    label:corB.13
+    If \(\calm\) and \(\caln\) are \(L\)-structures and they have isomorphic ultrapower then
+    \begin{equation*}
+    \calm\equiv\caln
+    \end{equation*}
+    #+END_corollary
+
+    #+ATTR_LATEX: :options [Keisler-Shelah]
+    #+BEGIN_theorem
+    label:thmB.14
+    If \(\calm\) and \(\caln\) are \(L\)-structures and \(\calm\equiv\caln\) then there is an
+    ultrafilter \(D\) s.t. \((\calm)_D\cong(\caln)_D\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options [Compactness Theorem]
+    #+BEGIN_theorem
+    label:thmB.15
+    Let \(T\) be an \(L\)-theory and \(\calc\) a class of \(L\)-structures. Assume that \(T\) is
+    finitely satisfiable in \(\calc\), then there is an ultraporduct of structure from \(\calc\)
+    that it is a model of \(T\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \Lambda be the set of finite subsets of \(T\). Let \(\lambda\in\Lambda\) and
+    write \(\lambda =\{E_1,\dots,E_n\}\). by assumption \(\exists M_\lambda\in\calc\)
+    s.t. \(\calm_\lambda\vDash\lambda\). For each \(E\in T\), let \(S(E)\) be the set of
+    all \(\lambda\in\Lambda\) s.t. \(E\in\lambda\). note that the collection of sets
+    \(\{S(E)\mid E\in T\}\) has the FIP (Check!).
+
+    Hence there is a ultrafilter \(D\) on \Lambda that contains \(S(E)\).
+
+    Let \(\calm=(\prod_{\lambda\in\Lambda}M_\lambda)_D\). Note that if \(\lambda\in S(E)\)
+    then \(\calm_\lambda\vDash E\). By Łoś theorem, \(\calm\vDash E\) for every \(E\in T\),
+    i.e. \(\calm\vDash T\).
+    #+END_proof
