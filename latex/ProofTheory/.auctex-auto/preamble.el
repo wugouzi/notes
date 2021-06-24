@@ -4,7 +4,7 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("appendix" "toc" "page")))
+                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("geometry" "margin=1.5in") ("appendix" "toc" "page")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
@@ -54,6 +54,7 @@
     "imakeidx"
     "hyperref"
     "soul"
+    "geometry"
     "graphicx"
     "appendix")
    (TeX-add-symbols
@@ -153,6 +154,7 @@
     "inn"
     "cod"
     "dom"
+    "card"
     "ran"
     "textd"
     "td"
