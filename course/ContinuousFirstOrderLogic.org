@@ -3,6 +3,8 @@
 #+LATEX_HEADER: \input{preamble.tex}
 #+LATEX_HEADER: \def \diam {\text{diam}}
 #+LATEX_HEADER: \def \Card {\text{Card}}
+#+LATEX_HEADER: \def \density {\text{density}}
+#+LATEX_HEADER: \def \dist {\text{dist}}
 #+EXPORT_FILE_NAME: ../latex/ContinuousFirstOrderLogic/ContinuousFirstOrderLogic.tex
 * Day 1
   Continuou first order logic a.k.a. continuous logic, continuous model theory, model theory for
@@ -788,3 +790,625 @@
     then \(\calm_\lambda\vDash E\). By Łoś theorem, \(\calm\vDash E\) for every \(E\in T\),
     i.e. \(\calm\vDash T\).
     #+END_proof
+* Day 3
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  \Sigma is a set of \(L\)-conditions. \(\Sigma^+=\{\varphi\le\frac{1}{n}\mid\varphi=0\in\Sigma,n\in\N\}\), \(\Sigma\neq\Sigma^+\)
+  #+END_definition
+
+  *Fact*: \(\Mod_L(\Sigma)=\Mod_L(\Sigma^+)\).
+
+  #+ATTR_LATEX: :options [Approximation version of compactness theorem]
+  #+BEGIN_corollary
+  Assume that \(T^+\) is finitely satisfiable in \(\calc\). Then there is an ultraproduct of structures
+  from \(\calc\) that is a model of \(T\)
+  #+END_corollary
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A class \(\calc\) of \(L\)-structures is *axiomatizable* if there is a set \(T\) of
+  closed \(L\)-conditions s.t. \(\calc=\Mod_L(T)\). We say that \(T\) a set of *axioms* of \(\calc\) in \(L\).
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.3
+  Suppose that \(\calc\) is class of \(L\)-structures. TFAE (the following are equivalent)
+  1. \(\calc\) is axiomatizable in \(L\)
+  2. \(\calc\) is closed under isomorphisms and ultraprodcuts, and its complement
+     \(\{\calm\mid\calm\text{ is not $L$-structure not in }\calc\}\) is closed under ultrapowers.
+  #+END_proposition
+
+  #+BEGIN_proof
+  \(1\to 2\). Łoś theorem
+  \(2\to 1\). Let \(T=\Th(\calc)\) . We will show that \(T\) axiomatizes \(\calc\). Let \(\calm\vDash T\). We will
+  show \(\calm\in\calc\).
+
+  _Claim_: \(\Th(\calm)^+\) is finitely satisfiable in \(\calc\).
+
+  Suppose not. There are \(L\)-sentences \(\sigma_1,\dots,\sigma_n\) and \(\epsilon>0\) s.t. \(\sigma_j^{\calm}=0\) for each \(j\).
+  But for every \(\caln\in\calc\), \(\sigma_j^{\caln}>\epsilon\) for some \(j\). Then \(\max\{\sigma_1,\dots,\sigma_n\}\ge\epsilon\in T\). But its not
+  satisfied in \(\calm\). Contradiction
+
+  Then by the compactness theorem, this yields an ultraproduct \(\calm'\) of structures from \(\calc\)
+  s.t. \(\calm'\vDash\Th(M)^+\). Then \(\calm'\equiv\calm\).
+
+  By Keisler-Shelah, \(\exists\) ultrafilter \(D\) s.t. \((\calm')_D\cong(M)_D\). Then by 2, \(\calm\in\calc\)
+  thus \(\Mod_L(T)=\calc\)
+  #+END_proof
+
+
+  Consider all continuous \(u:[0,1]^n\to[0,1]\) as connectives is too general. Actually every formula
+  can be "uniformly approximated" by a formula from a smaller set
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A system of connectives is a family \(\calf=(F_n\mid n\ge 1)\) where each \(F_n\) is a set of connectives:
+  \(f:[0,1]^n\to[0,1]\). We say that \(\calf\) is *closed* if
+  1. for each \(n\), \(F_n\) contains the projection \(\pi_j^n:[0,1]^n\to[0,1]\) onto the \(j\)-th
+     coordinate. for each \(j\)
+  2. for each \(n,m\), if \(u\in F_n\) and \(v_1,\dots,v_n\in F_m\) then \(w:[0,1]^m\to[0,1]\) defined by
+     \(w(t)=u(v_1(t),\dots,v_n(t))\) is in \(F_m\), where \(t\in[0,1]^m\)
+  #+END_definition
+
+  *Note*: every system \(\calf\) of connectives generates a smallest closed system of
+  connectives \(\ove{\calf}\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  We say that \(\calf\) is *full* if \(\ove{\calf}\) is uniformly dense in the system of all connectives,
+  i.e., \(\forall \epsilon>0\) and \(\forall\) connectives \(f(t_1,\dots,t_n)\), \(\exists g\in\ove{F}_n\) s.t.
+  \begin{equation*}
+    \abs{f(t_1,\dots,t_n)-g(t_1,\dots,t_n)}<\epsilon
+  \end{equation*}
+  for all \(t_1,\dots,t_n\in[0,1]\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Given a system \(\calf\) of connectives, we define the collection of *\(\calf\)-restricted formulas* by
+  induction
+  1. atomic formulas are \(\calf\)-restricted formulas
+  2. if \(u\in F_n\) and \(\varphi_1,\dots,\varphi_n\) are \(\calf\)-restricted formulas then
+     \(u(\varphi_1,\dots,\varphi_n)\) is an \(\calf\)-restricted formula
+  3. if \varphi is an \(\calf\)-restricted formula, so are \(\sup_x\varphi\) and \(\inf_x\varphi\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thmC.4
+  Assume. that \(\calf\) is a full system of connectives. Then for every \(\epsilon>0\) and
+  every \(L\)-formula \(\varphi(x_1,\dots,x_n)\) there is an \(\calf\)-restricted \(L\)-formula \(\psi(x_1,\dots,x_n)\)
+  s.t. for all \(L\)-structures \(\calm\) one has
+  \begin{equation*}
+    \abs{\varphi^{\calm}(a_1,\dots,a_n)-\psi^{\calm}(a_1,\dots,a_n)}\le\epsilon
+  \end{equation*}
+  for all \(a_1,\dots,a_n\in\calm\)
+  #+END_theorem
+
+  Now we look for a simple but full system of connectives.
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(\calf_0=(F_n\mid n\ge 1)\), where \(F_1=\{0,1,\frac{x}{2}\}\), \(F_2=\{\dot-\}\), others are \(\emptyset\).
+  #+END_definition
+
+  In \(\ove{F_0}\) we have
+  \begin{align*}
+    &\min(t_1,t_2)=t_1\dot-(t_1\dot-t_2)\\
+    &\max(t_1,t_2)=1\dot-(\min(1\dot-t_1,1\dot-t_2))\\
+    &\abs{t_1\dot-t_2}=\max(t_1\dot-t_2,t_2\dot-t_1)\\
+    &t_1\dot-(mt_2)=((\dots(t_1\dot-t_2)\dot-\dots)\dot-t_2)
+  \end{align*}
+  Every dyadic fraction \(\frac{m}{2^n}\in[0,1]\) is in \(\ove{F_1}\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.5
+  \(\calf_0\) is full
+  #+END_proposition
+
+  #+BEGIN_proof
+  lattice version of Stone-Weierstrass theorem on \([0,1]^n\).
+
+  Suppose \(X\) is a compact Hausdorff space with \(\ge 2\) points and \(L\) is a lattice
+  in \(C(X,\R)\) (all continuous function) with the separative property that
+  \(\forall x\neq y\in X\forall a,b\in \R\exists f\in L\) s.t. \(f(x)=a\) and \(f(y)=b\). Then \(L\) is dense in \(C(X,\R)\)
+  #+END_proof
+
+  When we say a *restricted formula* we mean an \(\calf_0\)-restricted formula.
+
+  A formula is in *prenex form* if it is of the form \(Q^1x_1Q^2x_2\dots Q^nx_n\psi\) where \psi is a quantifier free
+  formula and each \(Q^i\) is either \(\sup\) and \(\inf\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.6
+  Every restricted formula is equivalent to a restricted formula in prenex form
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \Lambda be a linearly ordered set. A *\(\Lambda\)-chain* of \(L\)-structures is a family
+  of \(L\)-structures \((\calm_\lambda\mid \lambda\in\Lambda)\) s.t. \(\calm_\lambda\subseteq \calm_\eta\) for \(\lambda<\eta\). The union
+  \(\bigcup_{\lambda\in\Lambda}\calm_\lambda\) is a metric space but not always complete. So we can only get
+  an \(L\)-prestructure.  After taking completion, we get an \(L\)-structure. We call it the *union*
+  of the chains, denoted by \(\bigcup_{\lambda\in\Lambda}\calm_\lambda\)
+
+  A chain of structures \((\calm_\lambda\mid\lambda\in\Lambda)\) is called an *elementary chain* if \(\calm_\lambda\preceq\calm_\eta\) for all \(\lambda<\eta\).
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.7
+  If \((\calm_\lambda\mid\lambda\in\Lambda)\) is an elementary chain and \(\lambda\in\Lambda\) then
+  \begin{equation*}
+    \calm_\lambda\preceq\bigcup_{\lambda\in\Lambda}\calm_\lambda
+  \end{equation*}
+  #+END_proposition
+
+  #+BEGIN_proof
+  Tarski-Vaught test
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  The *density character* of a topological space \(A\) is the smallest cardinality of a dense subset
+  of \(A\), denoted by \(\density(A)\) or \(\norm{A}\)
+  #+END_definition
+
+  e.g. a space is separable iff its density character is \(\le\aleph_0\)
+
+
+  #+ATTR_LATEX: :options [Upward Löwenheim-Skolem Theorem]
+  #+BEGIN_proposition
+  label:propC.9
+  Let \(\calm\) be a non-compact \(L\)-structure. Then for every cardinal \(\kappa\ge\card(L)\), there is an
+  elementary extension \(\caln\succeq\calm\) with \(\density(N)\ge\kappa\)
+  #+END_proposition
+
+  #+ATTR_LATEX: :options [Downward Löwenheim-Skolem Theorem]
+  #+BEGIN_proposition
+  Let \kappa be an infinite cardinal and assume \(\card(L)\le\kappa\). Let \(\calm\) be an \(L\)-structure and
+  suppose \(A\subseteq M\) has \(\density(A)\le\kappa\). Then there exists a substructure \(\caln\) of \(\calm\) s.t.
+  1. \(\caln\preceq\calm\)
+  2. \(A\subseteq N\subseteq M\)
+  3. \(\density(N)\le\kappa\)
+  #+END_proposition
+
+  #+BEGIN_proof
+  Let \(A_0\subseteq A\) dense with \(\card(A)\le\kappa\). Since \(\card(L)\le\kappa\), we may enlarge \(A_0\) to get a
+  prestructure \(\caln_0\) s.t. \(A_0\subseteq N_0\subseteq M\) and \(\card(N_0)\le\kappa\) and satisfies the following
+  property
+
+  (*)  for every restricted \(L\)-formula \(\varphi(x_1,\dots,x_n,x_{n+1})\) and every rational \(\epsilon>0\),
+  if \(\varphi^{\calm}(a_1,\dots,a_n,c)\le\epsilon\) with \(a_k\in N_0\) for each \(k\) and \(c\in M\) then \(\exists b\in N_0\) s.t.
+  \(\varphi^{\calm}(a_1,\dots,a_n,b)\le\epsilon\)
+
+  Since \(L\) has at most \kappa many restrict formulas, it's possible to get \(N_0\)
+  with \(\card(N_0)\le\kappa\). Let \(N=\ove{N_0}\subseteq M\). By considering atmoic formulas in (*) based
+  on \(N\), there is \(\caln\subseteq\calm\). Then using Tarski-Vaught test to show \(\caln\preceq\calm\)
+
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(\Gamma(x_1,\dots,x_n)\) be a set of \(L\)-conditions and let \(\calm\) be an \(L\)-structure. We say
+  that \(\Gamma(x_1,\dots,x_n)\) is *satisfiable* in \(\calm\) if there are \(a_1,\dots,a_n\in M\) s.t. \(\calm\vDash\Gamma(a_1,\dots,a_n)\).
+  We also write
+  \begin{equation*}
+    (a_1,\dots,a_n)\vDash\Gamma(x_1,\dots,x_n)
+  \end{equation*}
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+    We say that \(\calm\) is *\(\kappa\)-saturated* if whenever \(A\subseteq M\) has
+    cardinality \(\le\kappa\) and \(\Gamma(x_1,\dots,x_n)\) is a set of \(L(A)\)-conditions if every finite subset of
+    \Gamma is satisfiable, then \Gamma is satisfiable in \((\calm,a)_{a\in A}\)
+
+    An ultrafilter \(D\) is *countably incomplete* if \(D\) is not closed under countable intersection
+    \(\Leftrightarrow\) \(\exists\{J_n\}_{n\in\N}\subseteq D\) s.t. \(\bigcap_{n\in\N}J_n=\emptyset\)
+  #+END_definition
+
+  *Fact*: every non-principal ultrafilter on a countable set is countably incomplete
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.10
+  Let \(L\) be a countable signature and let \(D\) be a countably incomplete ultrafilter on a set \Lambda.
+  Then for every family \((\calm_\lambda\mid\lambda\in\Lambda)\) of \(L\)-structures, \((\prod_{\lambda\in\Lambda}\calm_\lambda)_D\) is \(\omega_1\)-saturated
+  #+END_proposition
+
+  In saturated structures, the meaning of \(L\)-conditions can be analyzed using the usual
+  quantifiers \(\forall\) and \(\exists\).
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.11
+  Suppose \(E(x_1,\dots,x_n)\) is the \(L\)-condition
+  \begin{equation*}
+    (Q_{y_1}^1\dots Q_{y_n}^n\varphi(x_1,\dots,x_m,y_1,\dots,y_n))=0
+  \end{equation*}
+  where each \(Q^i\) is either \(\inf\) or \(\sup\) and \varphi is quantifier free.
+
+  Let \(\Epsilon(x_1,\dots,x_n)\) be the mathematical statement
+  \begin{equation*}
+    \tilde{Q}^1_{y_1}\dots\tilde{Q}^n_{y_n}(\varphi(x_1,\dots,x_m,y_1,\dots,y_n)=0)
+  \end{equation*}
+  where each \(\tilde{Q}_{y_i}^i\) is \(\exists y_i\) if \(Q_{y_i}^i\) is \(\inf y_i\) and is \(\forall y_i\) otherwise
+
+  If \(\calm\) is \(\omega\)-saturated, then for all \(a_1,\dots,a_m\in M\),
+  \(\calm\vDash E[a_1,\dots,a_m]\)  iff \(\Epsilon(a_1,\dots,a_m)\) is true in \(\calm\)
+  #+END_proposition
+
+  #+BEGIN_proof
+  Induction on \(n\). For the induction step. Suppose \(E\) is
+  \((\inf_y\psi(x_1,\dots,x_m,y))=0\) and \(\calm\) is \(\omega\)-saturated. Then
+  \((\inf_y\psi(a_1,\dots,a_m,y))=0\) holds in \(\calm\) iff
+  \(\exists b\in M\) s.t. \(\psi(a_1,\dots,a_m,b)=0\) holds in \(\calm\)
+
+  \(\Rightarrow\). Consider \(L\)-condition \(\{\psi(a_1,\dots,a_n,y)\le\frac{1}{n}\}_{n\in\N}\). Take \(b\in M\) to satisfy
+  them since \(\calm\) is \(\omega\)-saturated.
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.12
+  Let \(\calm\) be an \(L\)-structure and let \kappa be an infinite cardinal. Then \(\calm\) has a \kappa-saturated
+  elementary extension
+  #+END_proposition
+
+  #+BEGIN_proof
+  Need enlargement and more
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  We say that \(\calm\) is *strongly \kappa-homogeneous* if whenever \(L(C)\) is an extension of \(L\) by
+  constants with \(\card(C)<\kappa\) and \(f,g\) are functions from \(C\) to \(M\)
+  s.t. \((\calm,f(c))_{c\in C}\equiv(\calm,g(c))_{c\in C}\) one has \((\calm,f(c))_{c\in C}\cong(\calm,g(c))_{c\in C}\).
+  #+END_definition
+
+  *Note*: an isomorphism from  \((\calm,f(c))_{c\in C}\) onto \((\calm,g(c))_{c\in C}\) is an automorphism
+  of \(\calm\) that takes \(f(c)\) to \(g(c)\) for each \(c\in C\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.12
+  \(\calm\) has a \kappa-saturated elementary extension \(\caln\) s.t. each reduct of \(\caln\) to a subsignature
+  of \(L\) is strongly \kappa-homogeneous
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(T\) be a complete theory and let \kappa be an infinite cardinal. A *\kappa-universal domain*
+  for \(T\) is \kappa-saturated, strongly \kappa-homogeneous model of \(T\).
+  #+END_definition
+
+  By Proposition ref:propC.12, every complete theory has a \kappa-universal domain for every infinite
+  cardinal \kappa.
+
+  Continuou logic is a "positive" logic
+  1. in a saturated model (its from compactness)
+  2. in all models of \(T\) (compactness)
+
+
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.13
+  Let \(\calm\) be an \(\omega\)-saturated model of \(T\). TFAE
+  1. For all \(a\in M^n\), if \(\varphi^{\calm}(a)=0\) then \(\psi^{\calm}(a)=0\)
+  2. \(\forall\epsilon>0\exists\delta>0\forall a\in M^n(\varphi^{\calm}(a)<\delta\Rightarrow\psi^{\calm}(a)\le\epsilon)\)
+  3. There is an increasing continuous function \(\alpha:[0,1]\to[0,1]\) with \(\alpha(0)=0\) s.t.
+     \(\psi^{\calm}(a)\le\alpha(\varphi^{\calm}(a))\) for all \(a\in M^n\), i.e.
+     \begin{equation*}
+     \sup_x(\psi(x)\dot-\alpha(\varphi(x)))=0
+     \end{equation*}
+  #+END_proposition
+
+  #+BEGIN_proof
+  \(1\to 2\). Suppose not. then \(\exists\epsilon>0\), \(\{\psi(s)\ge\epsilon,\varphi(x)\le\frac{1}{n}\mid n\ge 1\}\) is finitely satisfiable
+  in \(\calm\). Then there is \(a\in M^n\) s.t. \(\psi^{\calm}(a)\ge\epsilon\) while \(\varphi^{\calm}(a)\le\frac{1}{n}\) for
+  all \(n\ge 1\), contradicting 1
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.14
+  TFAE
+  1. For all \(\calm\vDash T\) and all \(a\in M^n\), if \(\varphi^{\calm}(a)=0\) then \(\psi^{\calm}(a)=0\)
+  2. For all \(\epsilon>0\) there exists \(\delta>0\) s.t.
+     \begin{equation*}
+     T\vDash\sup_x\min(\delta\dot-\varphi(x),\psi(x)\dot-\epsilon)=0
+     \end{equation*}
+  #+END_proposition
+
+  #+BEGIN_proof
+  \(2\to 1\) is obvious
+
+  \(1\to 2\). Suppose not \(\exists\epsilon>0\), \(\{\psi(x)\ge\epsilon,\varphi(x)\le\frac{1}{n}\mid n\ge1\}\) is finitely satisfiable. by
+  compactness, there is \(\calm\vDash T\) and \(a\in M^n\) s.t. \(\psi^{\calm}(a)\ge\epsilon\) while \(\varphi^{\calm}(a)\le\frac{1}{n}\)
+  for all \(n\ge 1\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Suppose \(\calm\vDash T\), \(A\subseteq M\). Denote \(L(A)\)-structure \((\calm,a)_{a\in A}\)
+  by \(\calm_A\). \(T_A=\Th_{L(A)}(\calm_A)\)
+
+  A set \(p\) of \(L(A)\)-conditions with \(n\) free variables \(x_1,\dots,x_n\) is called an *\(n\)-type
+  over \(A\)* if there exists a model \((\calm,a)_{a\in A}\) of \(T_A\) and \(e_1,\dots,e_n\in M\) s.t. \(p\) is
+  the set of all \(L(A)\)-conditions \(E(x_1,\dots,x_n)\) for which \(\calm_A\vDash E[e_1,\dots,e_n]\)
+
+  We denote \(p\) by \(\tp_{\calm}(e_1,\dots,e_n/A)\) and we say *\((e_1,\dots,e_n)\) realizes \(p\) in \(\calm\)*
+
+  The collection of all such \(n\)-types over \(A\) is denoted by \(S_n(T_A)\) or simply \(S_n(A)\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(\varphi(x_1,\dots,x_n)\) be an \(L(A)\)-formula, and \(\epsilon>0\).
+  \begin{equation*}
+    [\varphi<\epsilon]=\{q\in S_n(T_A)\mid\text{for some }0\le\delta<\epsilon\text{ the condition }(\varphi\le\delta)\in q\}
+  \end{equation*}
+
+  The *logic topology* on \(S_n(T_A)\) is defined as follows. If \(p\in S_n(T_A)\) then basic open
+  neighborhoods of \(p\) are the sets of the form \([\varphi<\epsilon]\) for which the condition \(\varphi=0\) is
+  in \(p\) and \(\epsilon>0\).
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  The logic topology is Hausdorff
+  #+END_proposition
+
+  #+BEGIN_proof
+  \(\forall p\neq q\in S_n(T_A)\). Then there exists an \(L(A)\)-formula \(\varphi(x_1,\dots,x_n)\) s.t. \(\varphi=0\) is in
+  exactly \(p\) or \(q\). Then there is \(r>0\) s.t. \(\varphi=r\) is in the another.
+  Take \(\epsilon=\frac{r}{2}>0\), then \([\varphi<\frac{r}{2}]\) and \([(r\dot-\varphi)<\epsilon]\) are disjoint for the
+  logic topology
+  #+END_proof
+
+  \([\varphi\le\epsilon]=\{q\in S_n(T_n)\mid (\varphi\le\epsilon)\in q\}\). Note that \([\varphi\le\epsilon]\) is closed in logic topology
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaC.15
+  The closed subset of \(S_n(T_A)\) for the logic topolgy are exactly the sets of the form
+  \(C_\Gamma=\{p\in S_n(T_A)\mid \Gamma(x_1,\dots,x_n)\subseteq p\}\) where \(\Gamma(x_1,\dots,x_n)\) is a set of \(L(A)\)-conditions
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.16
+  For each \(n\ge1\), \(S_n(T_A)\) is compact w.r.t. logic topology
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(\calm_A=(\calm,a)_{a\in A}\) be a model of \(T_A\) in which each type in \(S_n(T_A)\) is realized.
+  For \(p,q\in S_n(T_A)\) we define \(d(p,q)\) to be
+  \begin{equation*}
+    \inf\{\max_{1\le j\le n}d(b_j,c_j)\mid \calm_A\vDash p[b_1,\dots,b_n],\calm_A\vDash q[c_1,\dots,c_n]\}
+  \end{equation*}
+  Check: the definition \(d(p,q)\) doesn't depend on \(\calm_A\)
+
+  \((S_n(T_A),d)\) is a metric space. This is called the *\(d\)-metric topology*
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.17 the \(d\)-metric topolgy is finer than the logic topolgy
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propC.18
+  The metric space \((S_n(T_A),d)\) is complete
+  #+END_proposition
+
+  #+BEGIN_proof
+  Let \((p_k)_{k\ge1}\) be a Cauchy sequence in \((S_n(T_A),d)\). WLOG,
+  WMA, \(d(p_k,p_{k+1})\le 2^{-k}\) for all \(k\).
+
+  Let \(\caln\) be an \(\omega\)-saturated and strongly \omega-homogeneous model of \(T_A\). We assume \(\caln=\calm_A\)
+  for some \(\calm\vDash T\). By saturation and homogeneity, for every \(a\in M^n\) realizing \(p_k\), there
+  is \(b\in M^n\) realizing \(p_{k+1}\) s.t. \(d(a,b)=d(p_k,p_{k+1})\). Inductively, we can generate a
+  sequence \((b_k)_{k\ge1}\) s.t. \(b_k\vDash p_k\) and \(d(b_k,b_{k+1})=d(p_k,p_{k+1})\le 2^{-k}\) for all \(k\)
+  #+END_proof
+* Day 4
+  1. Why we consider uniform continuous functions with the same \(\Delta_f\)
+
+     \(\Delta_f\) is preserved under ultraproduct
+     1. What if \(\{f_n\}\) are not continuous
+
+        \(f_n:[0,1]\to[0,1]\), \(f_n(x)=0\) if \(0\le x<\frac{1}{n}\), \(f_n=1\)
+        if \(\frac{1}{n}\le x\le 1\). \(D\) is an ultrafilter on \(\N\).
+        \(\prod_Df_n:\prod_D[0,1]\to[0,1]\). Note that
+        \((0,\dots,0,\dots)\sim(0,1,\frac{1}{2},\dots,\frac{1}{n},\dots)\).
+        \(\prod_Df_n((0,\dots,0,\dots))=0\), \(\prod_Df_n((0,1,\frac{1}{2},\dots,\frac{1}{n},\dots))=1\). So
+        \(\prod_Df_n\) is not well-defined
+
+     2. Even \(f_n:[0,1]\to[0,1]\) are uniformly continuous but \(\Delta_{f_n}\) are different. Still
+        \(\prod_Df_n((0,\dots,0,\dots))=0\),\(\prod_Df_n((0,1,\dots,\frac{1}{n},\dots))=1\)
+
+  2. Consider the theory of \(L^p\) Banach lattices.
+
+  3. FOL \(\calm\) \(\to\) considered as a metric structure with discrete metric
+  , then \(\sup=\forall\),\(\inf=\exists\)
+
+
+  Let \(\calm_A=(\calm,a)_{a\in A}\) be a model of \(T_A\) in which each type in \(S_n(T_A)\) is realized for
+  each \(n\ge1\). Let \(\varphi(x_1,\dots,x_n)\) be an \(L(A)\)-formula
+
+  For each type \(p\in S_n(T_A)\), \(\tilde{\varphi}(p)=r\) where \(r\) is the unique real number
+  s.t. \(\varphi=r\in p\). Equivalently, \(\tilde{\varphi}(p)=\varphi^{\calm}(b)\) where \(b\vDash p\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaD.1
+  Let \(\varphi(x_1,\dots,x_n)\) be an \(L(A)\)-formula. Then \(\tilde{\varphi}:S_n(T_A)\to[0,1]\) is continuous for
+  the logic topology and uniformly continuous for the \(d\)-metric distance on \(S_n(T_A)\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  1. \(\tilde{\varphi}^{-1}(r-\epsilon,r+\epsilon)=\abs{\abs{\varphi\dot-r}<\epsilon}\)
+  2. \(\Delta_\varphi\) for \(\varphi^{\calm}\) is also a modulus of u.c. for \(\tilde{\varphi}\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propD.2
+  Let \(\Phi:S_n(T_A)\to[0,1]\). TFAE
+  1. \Phi is continuous for the logic topology on \(S_n(T_A)\)
+  2. There is a sequence \((\varphi_k(x_1,\dots,x_n)\mid k\ge 1)\) of \(L(A)\)-formulas s.t.
+     \((\tilde{\varphi}_k\mid k\ge 1)\) uniformly converges to \Phi on \(S_n(T_A)\)
+  3. \Phi is continuous for the logic topology and uniformly continuous for the \(d\)-metric on \(S_n(T_A)\)
+  #+END_proposition
+
+  definable predicates \(\leadsto\) definable sets \(\leadsto\) definable functions
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A predicate \(P:M^n\to[0,1]\) is *definable* in \(\calm\) over \(A\) if there is a sequence
+  \((\varphi_k(x)\mid k\ge1)\) of \(L(A)\)-formulas s.t. \(\varphi_k^{\calm}(x)\rightrightarrows p(x)\) on \(M^n\)
+  (uniformly converge),
+  i.e., \(\forall \epsilon>0\exists N\forall k\ge N\forall x\in M^n\), \(\abs{\varphi_k^{\calm}(x)-p(x)}\le\epsilon\)
+  #+END_definition
+
+  We enlarge our connectives to include all continuous \(u:[0,1]^{\N}\to[0,1]\)
+
+  Define \(\rho:[0,1]^{\N}\times[0,1]^{\N}\to[0,1]\), \((a_k),(b_k)\mapsto\sum_{k=0}^n2^{-k}\abs{a_k-b_k}\)
+
+  \(([0,1]^{\N},\rho)\) is a compact metric space
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propD.3
+  Let \(\calm\) be an \(L\)-structure with \(A\subseteq M\) and suppose \(P:M^n\to[0,1]\) is a predicate. Then
+  \(P\) is definable in \(\calm\) over \(A\) iff there is a continuous function \(u:[0,1]^{\N}\to[0,1]\)
+  and \(L(A)\)-formulas sequence \((\varphi_k\mid k\ge 1)\) s.t.
+  \(\forall x\in M^n\) \(P(x)=u(\varphi_k^{\calm}(x)\mid k\in\N)\)
+  #+END_proposition
+
+  #+BEGIN_remark
+  \(u\) is completely independent of \(P\)
+  #+END_remark
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemmaD.4
+  Suppose \(P:M^n\to[0,1]\) is definable in \(\calm\) over \(A\) and consider \(\caln\preceq\calm\) with \(A\subseteq N\).
+  Then \(\inf_xP(x)\) and \(\sup_xP(x)\) have the same value in \(\caln\) as in \(\calm\)
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propD.5
+  Let \(P_i:M^n\to[0,1]\) be definable in \(\calm\) over \(A\) for \(i=1,\dots,m\) and consider \(\caln\preceq\calm\).
+  Let \(Q_i\) be \(P_i\mid N^n\) for each \(i\). Then \((\caln,Q_1,\dots,Q_m)\preceq(\calm,P_1,\dots,P_m)\)
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propD.6
+  Let \(P:M^n\to[0,1]\) be definable in \(\calm\) over \(A\) and consider an elementary extension \(\caln\)
+  of \(\calm\). There is a unique predicate \(Q:N^n\to[0,1]\) s.t. \(Q\) is definable in \(\caln\) over \(A\)
+  and \(P\)  is the restriction of \(Q\) to \(M^n\). This predicate satisfies
+  \begin{equation*}
+    (\calm,P)\preceq(\caln,Q)
+  \end{equation*}
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thmD.7
+  Let \(P:M^n\to[0,1]\) be a function. Then \(P\) is a predicate definable in \(\calm\) over \(A\) iff
+  there is \(\Phi:S_n(T_A)\to[0,1]\) that is continuous w.r.t. the logic topology on \(S_n(T_A)\)
+  s.t. \(P(a)=\Phi(\tp_{\calm}(a/A))\) for all \(a\in M^n\)
+
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A subset \(S\subseteq M^n\) is *type-definable* in \(\calm\) over \(A\) if there is a set \(\Sigma(x_1,\dots,x_n)\)
+  of \(L(A)\)-formulas s.t. for every \(a\in M^n\) we have \(a\in S\) iff \(\varphi^{\calm}(a)=0\) for
+  every \(\varphi\in\Sigma\). We say that \(S\) is *type-defined by* \Sigma
+
+  #+END_definition
+
+  In saturated models, definable predicates have a new characterization
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_corollary
+  label:corD.8
+  Let \(\calm\) be a \kappa-saturated \(L\)-structure and \(A\subseteq M\) with \(\card(A)\le\kappa\); let \(P:M^n\to[0,1]\) be
+  a function. Then we have: \(P\) is a predicate definable in \(\calm\) over \(A\) iff the sets of
+  \(\{a\in M^n\}\mid P(a)\le r\) and \(\{a\in M^n\mid P(a)\ge r\}\) are type-definable in \(\calm\) over \(A\) for every \(r\in[0,1]\)
+  #+END_corollary
+
+  Let \(D\subseteq M^n\). Define \(\dist(x,D)=\inf\{d(x,y)\mid y\in D\}\). It's a map \(M^n\to[0,1]\).
+  \(\forall x=(x_1,\dots,x_n),y=(y_1,\dots,y_n)\in M^n\),
+  \begin{equation*}
+    d(x,y)=\max(d(x_1,y_1),\dots,d(x_n,y_n))
+  \end{equation*}
+  \(\dist(x,D)\) can be characterized by axioms in CFO
+
+  Consider a predicate \(P:M^n\to[0,1]\)
+
+  | E1 | \(\sup_x\inf_y\max(P(y),\abs{P(x)-d(x,y)})=0\) |
+  | E2 | \(\sup_x\abs{P(x)-\inf_y\min(P(y)+d(x,y),1))}=0\)     |
+
+  Observation: \(\forall \emptyset\neq D\subseteq M^n\), \(P(x)=\dist(x,D)\) satisfies E1 and E2
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thmD.9
+  let \((\calm,F)\) be a \(L\)-structure satisfy E1 and E2. Let \(D=\{x\in M^n\mid F(x)\}\) be the zero set
+  of \(F\). Then \(F(x)=\dist(x,D)\)  for all \(x\in M^n\)
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(D\subseteq M^n\). We say that \(D\) is a *zeroset* in \(\calm\) over \(A\) if there is a
+  predicate \(P:M^n\to[0,1]\) definable in \(\calm\) over \(A\) s.t. \(D=\{x\in M^n\mid P(x)=0\}\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  TFAE
+  1. \(D\) is a zeroset in \(\calm\)
+  2. there is a sequence \((\varphi_m\mid m\ge1)\) or \(L\)-formulas s.t.
+     \begin{align*}
+     D&=\{x\in M^n\mid\varphi_m^{\calm}=0\forall m\in\N\}\\
+     &=\bigcap_{m=1}^\infty\text{zeroset of }\varphi_m^{\calm}
+     \end{align*}
+  #+END_proposition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_corollary
+  The collection of zerosets in \(\calm\) over \(A\) is closed under countable intersection
+  #+END_corollary
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A closed set \(D\subset M^n\) is *definable* in \(\calm\) over \(A\) if the distance predicate \(\dist(X,D)\)
+  is definable in \(\calm\) over \(A\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thmD.12
+  Let \(D\subseteq M^n\) be a closed set. TFAE
+  1. \(D\) is definable in \(\calm\) over \(A\)
+  2. For every predicate \(P:M^m\times M^n\to[0,1]\) that is definable in \(\calm\) over \(A\), the predicate
+     \(Q:M^m\to[0,1]\) defined by \(Q(x)=\inf\{P(x,y)\mid y\in D\}\) is definable in \(\calm\) over \(A\)
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_proposition
+  label:propD.13
+  Let \(\caln\preceq\calm\) be a \(L\)-structure and let \(D\subseteq M^n\) be definable in \(\calm\) over \(A\)
+  where \(A\subseteq N\)
+  #+END_proposition
