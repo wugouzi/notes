@@ -19,8 +19,9 @@
 ;;
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
-(setq doom-font (font-spec :family "Menlo" :size 12)
+(setq doom-font (font-spec :family "DejaVu Sans Mono" :size 12)
       doom-variable-pitch-font (font-spec :family "Source Han Serif SC" :size 11))
+(setq doom-unicode-font (font-spec :family "DejaVu Sans Mono"))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
@@ -103,7 +104,7 @@
    ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
  '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
  ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
- '(fixed-pitch ((t ( :family "Menlo" :height 111))))
+ ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
 
 (use-package auctex
@@ -205,14 +206,42 @@ parent."
 (setq company-idle-delay 0)
 (set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
 
+;; (use-package company
+;;   :bind (("M-/" . company-complete)
+;;          ("C-M-i" . company-complete)
+;;          :map company-mode-map
+;;          ("<backtab>" . company-yasnippet)
+;;          :map company-active-map
+;;          ("C-p" . company-select-previous)
+;;          ("C-n" . company-select-next)
+;;          ("<tab>" . company-complete-common-or-cycle)
+;;          ("<backtab>" . my-company-yasnippet)
+;;          :map company-search-map
+;;          ("C-p" . company-select-previous)
+;;          ("C-n" . company-select-next))
+;;   :init
+;;   (setq company-tooltip-align-annotations t
+;;         company-tooltip-limit 12
+;;         company-idle-delay 0
+;;         company-echo-delay (if (display-graphic-p) nil 0)
+;;         company-minimum-prefix-length 1
+;;         company-require-match nil
+;;         company-dabbrev-ignore-case nil
+;;         company-dabbrev-downcase nil
+;;         company-dabbrev-minimum-length 5
+;;         company-dabbrev-char-regexp "[A-Za-z]+")
+;;   :config
+;;   (set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
+;;   )
+
 ;; ;;(setq company-dabbrev-ignore-case nil)
 ;; ;;(setq company-dabbrev-downcase nil)
 
 (use-package org-ref
   :init
-  (setq reftex-default-bibliography '("/media/wu/file/stuuudy/notes/references.bib"))
-  (setq org-ref-bibliography-notes "/media/wu/file/stuuudy/notes/references.bib"
-        org-ref-default-bibliography '("/media/wu/file/stuuudy/notes/references.bib")
+  (setq reftex-default-bibliography '("~/notes/references.bib"))
+  (setq org-ref-bibliography-notes "~/notes/references.bib"
+        org-ref-default-bibliography '("~/notes/references.bib")
         org-ref-pdf-directory "~/Dropbox/bibliography/bibtex-pdfs/")
   :config
   )
@@ -254,6 +283,16 @@ parent."
          (("C-c C-p C-i" . xenops-increase-size)))
   )
 
+(use-package latex-pretty-symbols
+  :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
+  ;;:load-path "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el"
+  :hook
+  (org-mode . latex-unicode-simplified)
+  )
+
+
+
+
 (use-package! org-superstar ; "prettier" bullets
   :hook (org-mode . org-superstar-mode)
   :config
@@ -266,6 +305,9 @@ parent."
           ("[ ]"  . 9744)
           ("DONE" . 9745)
           ("[X]"  . 9745))))
+
+(require 'unicode-fonts)
+(unicode-fonts-setup)
 
 (setq my-symbols-alist
       '(("[ ]" . ?☐)
@@ -289,56 +331,11 @@ parent."
         ("#+END_QUOTE" . ?«)
         ("#+HEADERS" . ?☰)
         ("#+RESULTS:" . ?💻)
-        ("\\alpha" . ?α) ("\\Alpha" . ?A)
-        ("\\beta" . ?β) ("\\Beta" . ?B)
-        ("\\gamma" . ?γ) ("\\Gamma" . ?Γ)
-        ("\\delta" . ?δ) ("\\Delta" . ?Δ)
-        ("\\epsilon" . ?ϵ) ("\\Epsilon" . ?E)
-        ("\\zeta" . ?ζ) ("\\Zeta" . ?Z)
-        ("\\eta" . ?η) ("\\Eta" . ?H)
-        ("\\theta" . ?θ) ("\\Theta" . ?Θ)
-        ("\\iota" . ?ι) ("\\Iota" . ?I)
-        ("\\kappa" . ?κ) ("\\Kappa" . ?K)
-        ("\\lambda" . ?λ) ("\\Lambda" . ?Λ)
-        ("\\mu" . ?μ) ("\\Mu" . ?M)
-        ("\\nu" . ?ν) ("\\Nu" . ?N)
-        ("\\xi" . ?ξ) ("\\Xi" . ?Ξ)
-        ("\\omicron" . ?o) ("\\Omicron" . ?O)
-        ("\\pi" . ?π) ("\\Pi" . ?Π)
-        ("\\rho" . ?ρ) ("\\Rho" . ?P)
-        ("\\sigma" . ?σ) ("\\Sigma" . ?Σ)
-        ("\\tau" . ?τ) ("\\Tau" . ?T)
-        ("\\upsilon" . ?υ) ("\\Upsilon" . ?ϒ)
-        ("\\phi" . ?ϕ) ("\\Phi" . ?Φ) ("\\varphi" . ?φ)
-        ("\\chi" . ?χ) ("\\Chi" . ?X)
-        ("\\psi" . ?ψ) ("\\Psi" . ?Ψ)
-        ("\\omega" . ?ω) ("\\Omega" . ?Ω)
-        ("\\partial" . ?∂) ("\\par" . ?⤵)
-        ("\\subset" . ?⊂) ("\\supset" . ?⊃)
-        ("\\le" . ?≤) ("\\ge" . ?≥)
-        ("\\neq" . ?≠)
-        ;; not implement ⊊ ⊋
-        ;; ⋂ ⋃ ⊌ ⊍ ⊎ ⨃ ⨄ ⨅ ⨆
-        ;;≤ ≥ ≠
-        ;;  ⊨ ⊭  ∁  ∄ ∴ ∵   ⊧ ⊩ ⊮ ⊫ ⊯ ⊪
-        ;;ℕ ℤ ℚ ℝ ℂ
-        ;;⊣ ⊢
-        ;;⇆ ⇄ ⇅ ⇵
-        ;;🡐  🡑 🡓
-        ("\\not\\subset" ? .⊄) ("\\not\\supset" . ?⊅)
-        ;;("\\subseteq" ? .⊆)
-        ("\\supseteq" ? .⊇)
-        ("\\not\\subseteq" ? .⊈) ("\\not\\supseteq" . ?⊉)
-        ("\\wedge" . ?∧) ("\\vee" . ?∨)
-        ("\\bigwedge" . ?⋀) ("\\bigvee" . ?⋁)
-        ("\\neg" . ?¬)
-        ("\\exists" . ?∃) ("\\forall" . ?∀)
-        ("\\vdash" . ?⊦) ("\\not\\vdash" . ?⊬)
-        ("\\to" . ?🡒)
-        ("\\bot" . ?⊥) ("\\top" . ?⊤)
         ))
 (add-hook 'org-mode-hook
           (lambda ()
             (setq-local prettify-symbols-alist my-symbols-alist)))
+
+
 
 (global-prettify-symbols-mode +1)

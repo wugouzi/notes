@@ -58,3 +58,5 @@
 (package! auctex)
 (package! org-superstar)
 (package! texfrag)
+(package! unicode-fonts
+  :recipe (:host github :repo "rolandwalker/unicode-fonts"))

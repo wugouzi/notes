@@ -18,7 +18,7 @@
  '(jdee-db-requested-breakpoint-face-colors (cons "#1B2229" "#98be65"))
  '(jdee-db-spec-breakpoint-face-colors (cons "#1B2229" "#3f444a"))
  '(objed-cursor-color "#ff6c6b")
- '(package-selected-packages '(org-ref))
+ '(package-selected-packages '(xah-math-input org-ref))
  '(pdf-view-midnight-colors (cons "#bbc2cf" "#282c34"))
  '(rustic-ansi-faces
    ["#282c34" "#ff6c6b" "#98be65" "#ECBE7B" "#51afef" "#c678dd" "#46D9FF" "#bbc2cf"])
@@ -49,7 +49,6 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(fixed-pitch ((t (:family "iA Writer Mono S" :height 111))))
  '(org-block ((t (:background "#fff7fb"))))
  '(org-block-begin-line ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
  '(org-block-end-line ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
@@ -61,6 +60,5 @@
  '(org-level-5 ((t (:bold t :weight bold :foreground "#bc5cba"))))
  '(org-level-6 ((t (:bold t :weight bold :foreground "#9fbbf8"))))
  '(org-level-7 ((t (:bold t :weight bold :foreground "#d292d1"))))
- '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
- '(variable-pitch ((t (:family "Source Han Serif CN" :height 130)))))
+ '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc")))))
 (put 'customize-group 'disabled nil)
