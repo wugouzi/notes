@@ -34,8 +34,26 @@
     "capt-of"
     "hyperref")
    (LaTeX-add-labels
-    "sec:org33f3cfd"
-    "sec:org0daf9dc"
-    "sec:orgc7bf3a7"))
+    "sec:orge008759"
+    "sec:org47e018b"
+    "sec:org57ae90a"
+    "lemma13.2"
+    "sec:org9948f0e"
+    "sec:org60ba387"
+    "sec:org310ea6d"
+    "15.1"
+    "ex15.7"
+    "sec:orga0fa47b"
+    "thm17.2"
+    "thm17.5"
+    "fig:17.3"
+    "ex17.5"
+    "ex17.6"
+    "ex17.8"
+    "ex17.13"
+    "sec:org5f0a2db"
+    "ex18.11"
+    "ex18.12"
+    "sec:org45174a2"))
  :latex)
 

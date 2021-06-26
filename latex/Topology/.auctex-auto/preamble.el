@@ -5,17 +5,18 @@
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("geometry" "margin=1.5in") ("appendix" "toc" "page")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "inputenc"
     "fontenc"
+    "fontspec"
     "xcolor"
     "amsmath"
     "mathtools"
@@ -64,6 +65,7 @@
     '("yRightarrow" ["argument"] 1)
     '("yleftarrow" ["argument"] 1)
     '("yrightarrow" ["argument"] 1)
+    '("emoji" 1)
     '("ucorner" 1)
     '("lcorner" 1)
     '("ceil" 1)
@@ -93,10 +95,129 @@
     "cupdot"
     "bigcupdot"
     "rmodels"
+    "bx"
+    "bz"
+    "bff"
+    "ba"
+    "bk"
+    "bs"
+    "bh"
+    "bc"
+    "br"
+    "bi"
+    "bj"
+    "bn"
+    "be"
+    "bo"
+    "bU"
+    "bL"
+    "bV"
+    "bv"
+    "bp"
+    "bI"
+    "bM"
+    "bN"
+    "bK"
+    "bt"
+    "bb"
+    "bA"
+    "bX"
+    "bu"
+    "bS"
+    "bZ"
+    "bJ"
+    "by"
+    "bw"
+    "bT"
+    "bF"
+    "bmm"
+    "bW"
+    "bR"
+    "bC"
+    "bD"
+    "bE"
+    "bQ"
+    "bP"
+    "bY"
+    "bH"
+    "bB"
+    "bG"
     "bto"
     "Ra"
     "zfm"
+    "cl"
+    "sg"
+    "trdeg"
+    "cf"
+    "zfc"
+    "type"
+    "zf"
+    "im"
+    "inn"
+    "cod"
+    "dom"
+    "card"
+    "ran"
+    "textd"
+    "td"
+    "id"
+    "LT"
+    "Mat"
+    "Eq"
+    "irr"
+    "Fr"
+    "Gal"
+    "lcm"
+    "alg"
+    "Th"
+    "DAG"
+    "ODAG"
     "varprod"
+    "Ab"
+    "Alg"
+    "Rng"
+    "Sets"
+    "Met"
+    "BA"
+    "Mon"
+    "Top"
+    "Aut"
+    "RMod"
+    "RAlg"
+    "LF"
+    "op"
+    "tp"
+    "Diag"
+    "el"
+    "depth"
+    "fin"
+    "qr"
+    "Mod"
+    "TC"
+    "KH"
+    "Part"
+    "Infset"
+    "DLO"
+    "sfMod"
+    "AbG"
+    "sfACF"
+    "Tot"
+    "graph"
+    "Fin"
+    "Cof"
+    "lh"
+    "ord"
+    "Idem"
+    "zdiv"
+    "Frac"
+    "rad"
+    "nil"
+    "Ann"
+    "End"
+    "coim"
+    "coker"
+    "Bil"
+    "Tril"
     "bigtimes"
     "odiv"
     "subsetsim"
@@ -128,6 +249,8 @@
     "examplle"
     "remark"
     "exercise"
-    "observation"))
+    "observation")
+   (LaTeX-add-fontspec-newfontcmds
+    "DejaSans"))
  :latex)
 
