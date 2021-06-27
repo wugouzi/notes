@@ -1,5 +1,5 @@
 (TeX-add-style-hook
- "Topology"
+ "ComputationalComplexity"
  (lambda ()
    (setq TeX-command-extra-options
          "-shell-escape")
@@ -34,36 +34,39 @@
     "capt-of"
     "hyperref")
    (LaTeX-add-labels
-    "sec:orgbe1fae9"
-    "sec:orga5827aa"
-    "sec:org447db0b"
-    "lemma13.2"
-    "sec:org135dfd1"
-    "sec:org41146b6"
-    "sec:org41d6913"
-    "15.1"
-    "ex15.7"
-    "sec:orgc43c492"
-    "thm17.2"
-    "thm17.5"
-    "fig:17.3"
-    "ex17.5"
-    "ex17.6"
-    "ex17.8"
-    "ex17.13"
-    "sec:org921dfb3"
-    "ex18.11"
-    "ex18.12"
-    "sec:org7d4323e"
-    "thm19.2"
-    "thm19.3"
-    "thm19.4"
-    "thm19.5"
-    "thm19.6"
-    "ex19.6"
-    "ex19.7"
-    "sec:org3959bd9")
+    "sec:org940b7f8"
+    "sec:org53595bb"
+    "sec:org9395688"
+    "sec:org1f46f93"
+    "sec:orga580d59"
+    "sec:org5ac82f1"
+    "prop1.6"
+    "sec:orgea18273"
+    "thm1.9"
+    "sec:orgfb3e143"
+    "sec:orgf8b9500"
+    "sec:org22cb458"
+    "sec:org1240c4f"
+    "sec:orge73508a"
+    "sec:org5d4099e"
+    "thm2.10"
+    "lemma2.13"
+    "eq:2.2"
+    "sec:org8cb936f"
+    "sec:org79a1d97"
+    "thm2.18"
+    "sec:org3dcb690"
+    "def2.19"
+    "def2.20p"
+    "sec:orgfed85c2"
+    "sec:org4dd950b"
+    "ex2.11"
+    "ex2.23"
+    "ex2.24"
+    "sec:orge4d1315"
+    "sec:org6e8504e")
    (LaTeX-add-index-entries
-    "converge"))
+    "decide"
+    "$\\NP$"))
  :latex)
 

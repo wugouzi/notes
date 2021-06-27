@@ -4,14 +4,14 @@
    (setq TeX-command-extra-options
          "-shell-escape")
    (TeX-add-to-alist 'LaTeX-provided-package-options
-                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("geometry" "margin=1.5in") ("appendix" "toc" "page")))
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+                     '(("inputenc" "utf8") ("fontenc" "B1" "T1") ("xcolor" "dvipsnames") ("esvect" "f") ("tcolorbox" "most") ("geometry" "margin=1.5in") ("quoting" "font=itshape") ("appendix" "toc" "page")))
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "inputenc"
@@ -56,6 +56,7 @@
     "hyperref"
     "soul"
     "geometry"
+    "quoting"
     "graphicx"
     "appendix")
    (TeX-add-symbols
@@ -218,6 +219,7 @@
     "coker"
     "Bil"
     "Tril"
+    "diam"
     "bigtimes"
     "odiv"
     "subsetsim"
@@ -234,6 +236,8 @@
     '("claim" 1)
     "bsm"
     "psm")
+   (LaTeX-add-fontspec-newfontcmds
+    "DejaSans")
    (LaTeX-add-xcolor-definecolors
     "ccqqqq")
    (LaTeX-add-mathtools-DeclarePairedDelimiters
@@ -249,8 +253,6 @@
     "examplle"
     "remark"
     "exercise"
-    "observation")
-   (LaTeX-add-fontspec-newfontcmds
-    "DejaSans"))
+    "observation"))
  :latex)
 

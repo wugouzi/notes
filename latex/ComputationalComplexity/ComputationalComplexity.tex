@@ -1,4 +1,4 @@
-% Created 2021-06-14 一 00:50
+% Created 2021-06-28 Mon 02:00
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -15,10 +15,12 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \input{preamble.tex}
+\graphicspath{{../../books/}}
 \def \TIME {\text{TIME}}
 \def \EXP {\textbf{EXP}}
-\def \SPACE {\text{SPACE}}
+\def \SPACE {\textbf{SPACE}}
 \def \PSPACE {\textbf{PSPACE}}
+\def \NSPACE {\textbf{NSPACE}}
 \def \NTIME {\textbf{NTIME}}
 \def \NP {\textbf{NP}}
 \def \coNP {\textbf{coNP}}
@@ -31,6 +33,7 @@
 \def \start {\text{start}}
 \def \tend {\text{end}}
 \def \halt {\text{halt}}
+\def \pad {\text{pad}}
 \def \HALT {\text{HALT}}
 \def \DTIME {\textbf{DTIME}}
 \def \NP {\textbf{NP}}
@@ -40,6 +43,7 @@
 \def \SAT {\texttt{SAT}}
 \def \ZOIPROG {\texttt{1/0 IPROG}}
 \def \dHAMPATH {\texttt{dHAMPATH}}
+\def \TAUTOLOGY {\texttt{TAUTOLOGY}}
 \author{Ryan O'Donnell}
 \date{\today}
 \title{Computational Complexity}
@@ -48,7 +52,7 @@
  pdftitle={Computational Complexity},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 27.1 (Org mode 9.4.6)}, 
+ pdfcreator={Emacs 27.2 (Org mode 9.5)}, 
  pdflang={English}}
 \begin{document}
 
@@ -56,14 +60,14 @@
 \tableofcontents
 
 \section{Notational conventions}
-\label{sec:org776b252}
+\label{sec:org940b7f8}
 Use \(\lcorner{x}\) to denote some canonical binary representation of the object \(x\).
 
 The length of a string \(x\) is denoted by \(\abs{x}\)
-\section{Lecture 1}
-\label{sec:org7b6faeb}
-\subsection{Lecture notes}
-\label{sec:orgefce18b}
+\section{Lecture}
+\label{sec:org53595bb}
+\subsection{Lecture 1}
+\label{sec:org9395688}
 \(\TIME(t(n))=\)all languages \(L\) decidable in \(O(t(n))\) steps on input of length \(n\)
 
 Language \(L\)(\(\Sigma^*\)) \(\equiv\) decision problem -> yes/no problem
@@ -113,9 +117,9 @@ Space is more valuable than time.
 
 \(\NE=\NTIME(2^{O(n)})\)
 
-Circuits - "Non-uniform" model
+Circuits - ``Non-uniform'' model
 
-"Non-uniform" different algorithms for different input length
+``Non-uniform'' different algorithms for different input length
 
 \(\bP/poly\)=langs decidable by \(poly(n)\)-size circuit familys
 
@@ -153,24 +157,23 @@ Randomness
 
 \(\bP\subseteq\BPP\subseteq\EXP\)
 
-PIT = "polynomial identity testing" that are in \(\BPP\), but we don't know if they are in \(\bP\)
+PIT = ``polynomial identity testing'' that are in \(\BPP\), but we don't know if they are in \(\bP\)
 
 Hardness vs Randomness Paradigm
 
-\subsection{Book}
-\label{sec:org873d32a}
 
-\subsubsection{Chapter 1: The computational model}
-\label{sec:orga69406b}
+\section{Book}
+\label{sec:org1f46f93}
+\subsection{Chapter 1: The computational model}
+\label{sec:orga580d59}
 
-\begin{enumerate}
-\item Efficiency and Running Time
-\label{sec:org2ae97ba}
+\subsubsection{Efficiency and Running Time}
+\label{sec:org5ac82f1}
 \begin{definition}[]
 A TM \(M\) is described by a tuple \((\Gamma,Q,\delta)\) containing
 \begin{itemize}
 \item A finite set \(\Gamma\) of the symbols that \(M\)'s tapes can contain. We assume that \(\Gamma\) contains a
-designated "blank" symbol, denoted \(\Box\); a designated "start" symbol, denoted \(\rhd\);
+designated ``blank'' symbol, denoted \(\Box\); a designated ``start'' symbol, denoted \(\rhd\);
 and the numbers 0 and 1. We call \(\Gamma\) the \textbf{alphabet} of \(M\)
 \item A finite set \(Q\) of possible states \(M\)' register can be in. We assume that \(Q\) contains
 a designated start state, denoted \(q_{\start}\), and a designated halting state, denoted \(q_{\halt}\)
@@ -181,7 +184,7 @@ called the \textbf{transition function} of \(M\)
 \end{definition}
 
 \begin{center}
-\includegraphics[width=0.8\textwidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/1.png}
+\includegraphics[width=0.8\textwidth]{../images/ComputationalComplexity/1.png}
 \end{center}
 
 
@@ -233,7 +236,7 @@ The TM \(\tilde{M}\) encodes \(k\) tapes of \(M\) on a single tape by using
 locations \(1,k+1,2k+1,\dots\) to encode the first tape, locations \(2,k+2,2k+2,\dots\) to
 encode the second tape etc. For every symbol \(a\) in \(M\)'s alphabet, \(\tilde{M}\) will
 contain both the symbol \(a\) and the symbol \(\hat{a}\). In the encoding of each tape, exactly
-one symbol will be of the "\^{} type", indicating that the corresponding head of \(M\) is
+one symbol will be of the ``\^{} type'', indicating that the corresponding head of \(M\) is
 positioned in that location. \(\tilde{M}\) will not touch the first \(n+1\) locations of its
 tape (where the input is located) but rather start by taking \(O(n^2)\) steps to copy the input
 bit by bit into the rest of the tape, while encoding it in the above way.
@@ -256,20 +259,20 @@ time \(T(n)\) by a directional TM M, then it is computable in time \(4T(n)\) by 
 
 \begin{proof}
 \begin{center}
-\includegraphics[width=.5\textwidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/2.png}
+\includegraphics[width=.5\textwidth]{../images/ComputationalComplexity/2.png}
 \end{center}
 
 If \(M\) uses alphabet \(\Gamma\), then \(\tilde{M}\) will use the alphabet \(\Gamma^2\) 
 \end{proof}
 
-\item Machines as Strings and the Universal Turing Machine
-\label{sec:orgd4d8f00}
+\subsubsection{Machines as Strings and the Universal Turing Machine}
+\label{sec:orgea18273}
 We will also find it convenient to assume that our representation scheme satisfies the following
 properties:
 \begin{enumerate}
-\item We will also findit convenient to assume that our representation scheme satisfies the
+\item We will also find it convenient to assume that our representation scheme satisfies the
 following properties:
-\item Every TM is representedby infinitely many strings
+\item Every TM is represented by infinitely many strings
 \end{enumerate}
 
 We denote by \(\lcorner{M}\) the TM \(M\)'s representation as a binary string. If \(\alpha\) is a string
@@ -292,13 +295,13 @@ properties. (which my takes \(C'T^2\) time)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.5\textwidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/3.png}
+\includegraphics[width=.5\textwidth]{../images/ComputationalComplexity/3.png}
 \end{figure}
 \end{proof}
 
 
-\item Uncomputablity: An Introduction
-\label{sec:org5c40b27}
+\subsubsection{Uncomputablity: An Introduction}
+\label{sec:orgfb3e143}
 \begin{theorem}[]
 There exists a function \(\text{UC}:\{0,1\}^*\to\{0,1\}\) that is not computable by any TM
 \end{theorem}
@@ -315,10 +318,11 @@ If its computable, then there exists a TM \(M\) s.t. \(M(\alpha)=\text{UC}(\alph
 \(\HALT\) is not computable by any TM
 \end{theorem}
 
-\item The Class \(\bP\)
-\label{sec:org34bd690}
+\subsubsection{The Class \texorpdfstring{\(P\)}{P}}
+\label{sec:orgf8b9500}
 A \textbf{complexity class} is a set of function that can be computed within given resource bounds.
 
+\index{decide}
 We say that a machine \textbf{decides} a language \(L\subseteq\{0,1\}^*\) if it computes the
 function \(f_L:\{0,1\}^*\to\{0,1\}\) where \(f_L(x)=1\Leftrightarrow x\in L\)
 
@@ -327,19 +331,17 @@ Let \(T:\N\to\N\) be some function. A language \(L\) is in \(\DTIME(T(n))\) iff 
 Turing machine that runs in \(c\dot T(n)\) for some constant \(c>0\) and decides \(L\).
 \end{definition}
 
-The D in \(\DTIME\) refers to "deterministic".
+The D in \(\DTIME\) refers to ``deterministic''.
 
 \begin{definition}[]
 \(\bP=\bigcup_{c\ge1}\DTIME(n^c)\)
 \end{definition}
-\end{enumerate}
 
-\subsubsection{NP and NP completeness}
-\label{sec:org434f3c9}
+\subsection{2: NP and NP completeness}
+\label{sec:org22cb458}
 
-\begin{enumerate}
-\item The Class \(\NP\)
-\label{sec:org62cb4f3}
+\subsubsection{The Class \(\NP\)}
+\label{sec:org1240c4f}
 \index{$\NP$}
 \begin{definition}[]
 A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists  a polynomial \(p:\N\to\N\)
@@ -418,8 +420,8 @@ string \(u\) of length \(p(\abs{x})\). (Having transition \(\delta_0\) correspon
 0 and \(\delta_1\) ). Then it runs the deterministic verifier 
 \end{proof}
 
-\item Reducibility and NP-Completeness
-\label{sec:org27f5266}
+\subsubsection{Reducibility and NP-Completeness}
+\label{sec:orge73508a}
 \begin{definition}[]
 A language \(L\subseteq\{0,1\}^*\) is \textbf{polynomial-time Karp reducible to a
 language} \(L'\subseteq\{0,1\}^*\), denoted by \(L\le_p L'\) if there is a polynomial-time
@@ -461,8 +463,8 @@ string.
     \end{align*}
 \end{proof}
 
-\item The Cook-Levin Theorem: Computation is Local
-\label{sec:orge2eb3b8}
+\subsubsection{The Cook-Levin Theorem: Computation is Local}
+\label{sec:org5d4099e}
 We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(3\SAT\) the
 language of all satisfiable 3CNF formulae
 
@@ -541,7 +543,7 @@ is some constant depending upon \(\abs{Q}\) and \(\abs{\Gamma}\)
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.5\textwidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/4.png}
+\includegraphics[width=.5\textwidth]{/Users/wu/notes/images/ComputationalComplexity/4.png}
 \end{figure}
 
 For every \(y\in\{0,1\}^*\), the snapshot of \(M\)'s execution on input \(y\) at the \(i\)th
@@ -561,7 +563,7 @@ previous snapshots. Specifically, to check \(z_i\) we need to only look at the f
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.8\textwidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/5.png}
+\includegraphics[width=.8\textwidth]{../images/ComputationalComplexity/5.png}
 \end{figure}
 
 Here \(y\) is a shorthand
@@ -626,11 +628,11 @@ of size \(k-1\) and \(C_2\) of size 3.
 \end{proof}
 
 
-\item The Web of Reductions
-\label{sec:orgde67f0f}
+\subsubsection{The Web of Reductions}
+\label{sec:org8cb936f}
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.9\linewidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/6.png}
+\includegraphics[width=.9\linewidth]{../images/ComputationalComplexity/6.png}
 \end{figure}
 
 \begin{theorem}[]
@@ -642,7 +644,7 @@ Transform in polynomial time every \(m\)-clause 3CNF formula \(\varphi\) into a 
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.9\linewidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/7.png}
+\includegraphics[width=.9\linewidth]{../images/ComputationalComplexity/7.png}
 \end{figure}
 
 We associate a cluster of 7 vertices in \(G\) with each clause of \(\varphi\). The vertices in a cluster
@@ -679,14 +681,14 @@ A \textbf{Hamilton path} in a directed graph is a path that visits all vertices 
 \begin{proof}
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=.9\linewidth]{/media/wu/file/stuuudy/notes/images/ComputationalComplexity/8.png}
+\includegraphics[width=.9\linewidth]{../images/ComputationalComplexity/8.png}
 \end{figure}
 
 The graph \(G\) has
 \begin{enumerate}
 \item \(m\) vertices for each of \(\varphi\)'s clause \(c_1,\dots,c_m\)
 \item a special starting vertex \(v_{\start}\) and ending vertex \(v_{\tend}\)
-\item \(n\) "chains" of \(4m\) vertices corresponding to the \(n\) variables of \(\varphi\) . A chain is a
+\item \(n\) ``chains'' of \(4m\) vertices corresponding to the \(n\) variables of \(\varphi\) . A chain is a
 set of vertices \(v_1,\dots,v_{4m}\) s.t. for every \(i\in[1,4m-1]\), \(v_i\)
 and \(v_{i+1}\) are connected by two edges in both directions
 \end{enumerate}
@@ -695,7 +697,7 @@ and \(v_{i+1}\) are connected by two edges in both directions
 If \(C\) contains the literal \(u_j\), then we take two neighboring
 vertices \(v_i\), \(v_{i+1}\) in the \(j\)th chain and put an edge from \(v_i\) to \(C\) and
 from \(C\) to \(v_{i+1}\). If \(C\) contains the literal \(\baru_j\) then we construct these
-edges in the opposite direction. When adding these edges, we never "reuse" a
+edges in the opposite direction. When adding these edges, we never ``reuse'' a
 link \(v_i, v_{i+1}\) in a particular chain and always keep an unused link between every two
 used links.
 
@@ -706,8 +708,8 @@ Furthermore, we claim that \(P\) needs to traverse all the chains in order and, 
 each chain, traverse it either in left-to-right order or right-to-left order.
 \end{proof}
 
-\item Decision versus Search
-\label{sec:org8edd037}
+\subsubsection{Decision versus Search}
+\label{sec:org79a1d97}
 \begin{theorem}[]
 \label{thm2.18}
 Suppose that \(\bP=\NP\). Then for every \(\NP\) language \(L\) and a verifier TM \(M\)
@@ -741,8 +743,8 @@ The theorem \ref{thm2.18} shows that \(\SAT\) is \textbf{downward self-reducible
 given an algorithm that solves \(\SAT\) on inputs of length smaller than \(n\) we can
 solve \(\SAT\) on inputs of length \(n\).
 
-\item \textbf{CONP,EXP} and \textbf{NEXP}
-\label{sec:org3ddb97b}
+\subsubsection{\textbf{CONP,EXP} and \textbf{NEXP}}
+\label{sec:org3dcb690}
 
 \begin{definition}[]
 \label{def2.19}
@@ -750,7 +752,7 @@ solve \(\SAT\) on inputs of length \(n\).
 \end{definition}
 
 \begin{definition}[alternative definition]
-\label{def2.20}
+\label{def2.20p}
 For every \(L\subseteq\{0,1\}^*\), we say that \(L\in\coNP\) if there exists a
 polynomial \(p:\N\to\N\) and a polynomial-time TM \(M\) s.t. for every \(x\in\{0,1\}^*\)
      \begin{equation*}
@@ -758,9 +760,59 @@ x\in L \Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})},\; M(x,u)=1
      \end{equation*}
 \end{definition}
 
+\begin{examplle}[]
+The following language is \(\coNP\)-complete
+     \begin{align*}
+\TAUTOLOGY=\{\varphi:\varphi\text{ is a tautology}\}
+     \end{align*}
+It's clearly in \(\coNP\) by Definition \ref{def2.20} (Make \(u\) to be the all possible
+assignments). Modify the Cook-Levin reduction 
+from \(\barL\)(which is in \(\NP\)) to \(\SAT\). For every input \(x\in\{0,1\}^*\) that
+reduction produces a formula \(\varphi_x\) that is satisfiable iff \(x\in\barL\). Now consider
+the formula \(\neg\varphi_x\). It is in \(\TAUTOLOGY\) iff \(x\in L\)
+\end{examplle}
 
-\item Exercise
-\label{sec:org1e37af4}
+\subsubsection{\(\EXP\) and \(\NEXP\)}
+\label{sec:orgfed85c2}
+\begin{theorem}[]
+If \(\EXP\neq\NEXP\) then \(\bP\neq\NP\)
+\end{theorem}
+
+\begin{proof}
+We prove the contrapositive: Assuming \(\bP=\NP\) we show \(\EXP=\NEXP\).
+Suppose \(L\in\NTIME(2^{n^c})\) and NDTM \(M\) decides it. We claim that the language
+     \begin{equation*}
+L_{\pad}=\left\{\la x,1^{2^{\abs{x}^c}}\ra:x\in L
+\right\}
+     \end{equation*}
+is in \(\NP\). Here is an NDTM for \(L_{\pad}\): Given \(y\), first check if there is a
+string \(z\) s.t. \(y=\la z,1^{2^{\abs{z}^c}}\ra\). If not, output 0. If \(y\) is of this form,
+then simulate \(M\) on \(z\) for \(2^{\abs{z}^c}\) steps and output its answer. The running
+time is polynomial in \(\abs{y}\), and hence \(L_{\pad}\in\NP\). Hence if \(\bP=\NP\)
+then \(L_{\pad}\in\bP\). But if \(L_{\pad}\) is in \(\bP\) then \(L\) is in \(\EXP\). To
+determine whether an input \(x\) is in \(L\), we just pad the input and decide whether it is
+in \(L_{\pad}\) using the polynomial-time machine for \(L_{\pad}\)
+\end{proof}
+
+
+\subsubsection{Exercise}
+\label{sec:org4dd950b}
+\begin{exercise}
+\label{ex2.11}
+Argue at a high level that the following language is \(\NP\)-complete
+     \begin{equation*}
+\left\{\la\varphi,1^n\ra:\text{ math statement }\varphi
+\text{ has a proof of size at most $n$ in the ZF system}
+\right\}
+     \end{equation*}
+\end{exercise}
+
+\begin{proof}
+Essential part is to find a reduction.
+
+Idea: if there are \(n\) derivation rules, then we consider \(n\SAT\)
+\end{proof}
+
 \begin{exercise}
 \label{ex2.23}
 Prove that \(\bP\subseteq\NP\cap\coNP\)
@@ -773,7 +825,87 @@ Prove that Definition \ref{def2.19} and \ref{def2.20} do indeed define the same 
 
 \begin{proof}
 Suppose \(\coNP=\{L:\barL\in\NP\}\).
-align
+     \begin{align*}
+x\in L\in\coNP& \Leftrightarrow x\not\in\barL\in\NP\\
+& \Leftrightarrow\neg\exists u\in\{0,1\}^{p(\abs{x})} M'(x,u)=1\\
+&\Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})}M'(x,u)\neq1\\
+&\Leftrightarrow\forall u\in\{0,1\}^{p(\abs{x})}M(x,u)=1\\
+     \end{align*}
+where \(M'\) is a TM for \(\NP\) and \(M\) is a TM for \(\coNP\) by computing the value
+from \(M'\).
+
+Another direction is the same.
 \end{proof}
+
+\subsection{4: Space Complexity}
+\label{sec:orge4d1315}
+\subsubsection{Definition of Space-Bounded Computation}
+\label{sec:org6e8504e}
+TM we use is
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.7\textwidth]{../images/ComputationalComplexity/9.png}
+\label{}
+\end{figure}
+
+\begin{definition}[Space-bounded computation]
+Let \(S:\N\to\N\) and \(L\subseteq\{0,1\}^*\). We say that \(L\in\SPACE(s(n))\) if there is a
+constant \(c\) and a TM \(M\) deciding \(L\) s.t. at most \(c\cdot s(n)\) locations on \(M\)'s
+work tapes (excluding the input tape) are ever visited by \(M\)'s head during its computation on
+every input of length \(n\)
+
+Similarly we say that \(L\in\NSPACE(s(n))\) if there is an NDTM \(M\) deciding \(L\) that never
+uses more than \(c\cdot s(n)\) nonblank tape locations on length \(n\) inputs
+\end{definition}
+
+
+
+\(S:\N\to\N\) is \textbf{space-constructible} if there is a TM that computes \(S(\abs{x})\)
+in \(O(S(\abs{x}))\) space given \(x\) as input
+
+Since the TM's work tapes are separated from its input tape, it makes sense to consider
+space-bounded machines that use space less than the input length, namely, \(S(n)<n\). We will
+require however that \(S(n)>\log n\).
+
+\(\DTIME(S(n))\subseteq\SPACE(S(n))\) since a TM can access only one tape cell per step. But
+a \(\SPACE(S(n))\) machine can run for much longer than \(S(n)\) steps
+
+\begin{theorem}[]
+For every space constructible \(S:\N\to\N\)
+\begin{equation*}
+\DTIME(S(n))\subseteq\SPACE(S(n))\subseteq\NSPACE(S(n))\subseteq\DTIME(2^{O(S(n))})
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+We use the notion of a \textbf{configuration graph} of a Turing machine. Let \(M\) be a (deterministic or
+nondeterministic) TM. A \textbf{configuration} of a TM \(M\) consists of the contents of all nonblank
+entries of \(M\)'s tapes, along with its state and head position, at a particular point in its
+execution. For every space \(S(n)\) TM \(M\) and input \(x\in\{0,1\}^*\), the
+\textbf{configuration graph of \(M\) on input \(x\)}, denoted \(G_{M,x}\), is a directed graph whose nods
+correspond to all possible configuration of \(M\) where the input contains the value \(x\) and
+the work tapes have at most \(S(\abs{x})\) nonblank cells. The graph has a directed edge from a
+configuration \(C\) to a configuration \(C'\) if \(C'\) can be reached from \(C\) in one step
+according to \(M\)'s transition function. By modifying \(M\) to erase all its work tapes before
+halting, we can assume that there is only a single configuration \(C_{\accept}\) on which \(M\)
+halts and outputs 1.
+
+\begin{claim}
+Let \(G_{M,x}\) be the configuration graph of a space-\(S(n)\) machine \(M\) on some
+ input \(x\) of length \(n\). Then
+\begin{enumerate}
+\item Every vertex in \(G_{M,x}\) can be described using \(cS(n)\) bits for some constant \(c\)
+(depending on \(M\)'s alphabet size and number of tapes') and in particular, \(G_{M,x}\) has
+at most \(2^{cS(n)}\) nodes
+\item There is an \(O(S(n))\)-size CNF formula \(\varphi_{M,x}\) s.t. for every two
+strings \(C,C'\) \(\varphi_{M,x}(C,C')=1\) iff \(C\) and \(C'\) encodes two neighboring
+configuration in \(G_{M,x}\)
 \end{enumerate}
+\end{claim}
+
+\#+BEGIN\textsubscript{proof}
+\begin{enumerate}
+\item 
+\end{enumerate}
+\end{proof}
 \end{document}
