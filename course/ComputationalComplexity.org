@@ -9,14 +9,17 @@
 #+LATEX_HEADER: \def \EXP {\textbf{EXP}}
 #+LATEX_HEADER: \def \SPACE {\textbf{SPACE}}
 #+LATEX_HEADER: \def \PSPACE {\textbf{PSPACE}}
+#+LATEX_HEADER: \def \NPSPACE {\textbf{NPSPACE}}
 #+LATEX_HEADER: \def \NSPACE {\textbf{NSPACE}}
+#+LATEX_HEADER: \def \coNSPACE {\textbf{coNSPACE}}
 #+LATEX_HEADER: \def \NTIME {\textbf{NTIME}}
 #+LATEX_HEADER: \def \NP {\textbf{NP}}
 #+LATEX_HEADER: \def \coNP {\textbf{coNP}}
 #+LATEX_HEADER: \def \NEXP {\textbf{NEXP}}
 #+LATEX_HEADER: \def \NE {\textbf{NE}}
+#+LATEX_HEADER: \def \NL {\textbf{NL}}
+#+LATEX_HEADER: \def \coNL {\textbf{coNL}}
 #+LATEX_HEADER: \def \Pspoly {\textbf{P}/poly}
-#+LATEX_HEADER: \def \SAT {\text{SAT}}
 #+LATEX_HEADER: \def \AC {\text{AC}}
 #+LATEX_HEADER: \def \BPP {\textbf{BPP}}
 #+LATEX_HEADER: \def \start {\text{start}}
@@ -30,9 +33,12 @@
 #+LATEX_HEADER: \def \accept {\text{accept}}
 #+LATEX_HEADER: \def \TMSAT {\texttt{TMSAT}}
 #+LATEX_HEADER: \def \SAT {\texttt{SAT}}
+#+LATEX_HEADER: \def \TSAT {\texttt{3SAT}}
 #+LATEX_HEADER: \def \ZOIPROG {\texttt{1/0 IPROG}}
 #+LATEX_HEADER: \def \dHAMPATH {\texttt{dHAMPATH}}
 #+LATEX_HEADER: \def \TAUTOLOGY {\texttt{TAUTOLOGY}}
+#+LATEX_HEADER: \def \PATH {\texttt{PATH}}
+#+LATEX_HEADER: \def \TQBF {\texttt{TQBF}}
 * Notational conventions
   Use \(\lcorner{x}\) to denote some canonical binary representation of the object \(x\).
 
@@ -254,12 +260,12 @@
      label:thm1.9
      There exists a TM \(\calu\) s.t. for
      every \(x,\alpha\in\{0,1\}^*\), \(\calu(x,\alpha)=M_\alpha(x)\). Moreover, if \(M_{\alpha}\) halts on
-     input \(x\) within \(T\) steps then \(\calu(x,\alpha)\) falts within \(CT\log T\) steps, where \(C\)
+     input \(x\) within \(T\) steps then \(\calu(x,\alpha)\) halts within \(CT\log T\) steps, where \(C\)
      is a number independent of \(\abs{x}\) and depending only on \(M_\alpha\)'s alphabet size,
      number of tapes and number of states.
      #+END_theorem
 
-     #+ATTR_LATEX: :options [Proof of relaxed version of theorem \cite{thm1.9}]
+     #+ATTR_LATEX: :options [Proof of relaxed version of theorem \ref{thm1.9}]
      #+BEGIN_proof
      We assume \(M\) has a single work tape (in addition to the input and output tape) and uses he
      alphabet \(\{\rhd,\Box,0,1\}\). The reason is that \(\calu\) can transform a representation of
@@ -400,7 +406,8 @@ x\in L\Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
      #+ATTR_LATEX: :options []
      #+BEGIN_definition
      A language \(L\subseteq\{0,1\}^*\) is *polynomial-time Karp reducible to a
-     language* \(L'\subseteq\{0,1\}^*\), denoted by \(L\le_p L'\) if there is a polynomial-time
+     language* \(L'\subseteq\{0,1\}^*\) (sometimes shortened to just "polynomial-time reducible"), denoted
+     by \(L\le_p L'\) if there is a polynomial-time
      computable function \(f:\{0,1\}^*\to\{0,1\}^*\) s.t. for every \(x\in\{0,1\}^*\),
      \(x\in L\) iff \(f(x)\in L'\)
 
@@ -440,14 +447,14 @@ x\in L\Leftrightarrow \exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
     #+END_proof
 
 *** The Cook-Levin Theorem: Computation is Local
-     We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(3\SAT\) the
+     We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(\TSAT\) the
      language of all satisfiable 3CNF formulae
 
      #+ATTR_LATEX: :options [Cook-Levin Theorem]
      #+BEGIN_theorem
      label:thm2.10
      1. \(\SAT\) is \(\NP\)-complete
-     2. \(3\SAT\) is \(\NP\)-complete
+     2. \(\TSAT\) is \(\NP\)-complete
      #+END_theorem
 
      #+ATTR_LATEX: :options [Universality of AND, OR, NOT]
@@ -582,7 +589,7 @@ z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})
 
      #+ATTR_LATEX: :options []
      #+BEGIN_lemma
-     \(\SAT\le_p3\SAT\)
+     \(\SAT\le_p\TSAT\)
      #+END_lemma
 
      #+BEGIN_proof
@@ -716,7 +723,7 @@ z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})
 
      #+ATTR_LATEX: :options [alternative definition]
      #+BEGIN_definition
-     label:def2.20p
+     label:def2.20
      For every \(L\subseteq\{0,1\}^*\), we say that \(L\in\coNP\) if there exists a
      polynomial \(p:\N\to\N\) and a polynomial-time TM \(M\) s.t. for every \(x\in\{0,1\}^*\)
      \begin{equation*}
@@ -841,7 +848,7 @@ x\in L\in\coNP& \Leftrightarrow x\not\in\barL\in\NP\\
     \end{equation*}
     #+END_theorem
 
-    #+BEGIN_proof
+
     We use the notion of a *configuration graph* of a Turing machine. Let \(M\) be a (deterministic or
     nondeterministic) TM. A *configuration* of a TM \(M\) consists of the contents of all nonblank
     entries of \(M\)'s tapes, along with its state and head position, at a particular point in its
@@ -855,6 +862,7 @@ x\in L\in\coNP& \Leftrightarrow x\not\in\barL\in\NP\\
     halts and outputs 1.
 
     #+BEGIN_claim
+    label:claim4.4
     Let \(G_{M,x}\) be the configuration graph of a space-\(S(n)\) machine \(M\) on some
      input \(x\) of length \(n\). Then
      1. Every vertex in \(G_{M,x}\) can be described using \(cS(n)\) bits for some constant \(c\)
@@ -865,9 +873,293 @@ x\in L\in\coNP& \Leftrightarrow x\not\in\barL\in\NP\\
         configuration in \(G_{M,x}\)
     #+END_claim
 
-    #+ATTR_LATEX: :options [\cite{thm4.2}]
+    #+ATTR_LATEX: :options [proof of theorem \ref{thm4.2}]
     #+BEGIN_proof
     By enumerating all possible configurations, we can construct the graph \(G_{M,x}\)
     in \(2^{O(S(n))}\)-times  and check whether \(C_{\start}\) is connected to \(C_{\accept}\)
     in \(G_{M,x}\) using the standard breadth-first search algorithm for connectivity
     #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \begin{align*}
+    \PSPACE&=\bigcup_{c>0}\SPACE(n^c)\\
+    \NPSPACE&=\bigcup_{c>0}\NSPACE{n^c}\\
+    \bL&=\SPACE(\log n)\\
+    \NL&=\NSPACE(\log n)
+    \end{align*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(\TSAT\in\PSPACE\). The machine just uses the linear space to cycle through all \(2^k\)
+    assignments to order. Once an assignment is checked, erase it on tape.
+
+    In fact, \(\NP\subseteq\PSPACE\).
+    #+END_examplle
+
+    Let
+    #+BEGIN_center
+    \(\PATH=\{\la G,s,t\ra:G\) is a directed graph in which there is a path from \(s\) to \(t\}\)
+    #+END_center
+    Note that  \(\PATH\in\NL\).
+
+    #+ATTR_LATEX: :options [Space Hierarchy Theorem]
+    #+BEGIN_theorem
+    If \(f,g\) are space-constructible functions satisfying \(f(n)=o(g(n))\), then
+    \begin{equation*}
+    \SPACE(f(n))\subsetneq\SPACE(g(n))
+    \end{equation*}
+    #+END_theorem
+*** \(\PSPACE\) Completeness
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A language \(L'\) is *\(\PSPACE\)-hard* if for every \(L\in\PSPACE\), \(L\le_p L'\). If in
+    addition \(L'\in\PSPACE\) then \(L'\) is *\(\PSPACE\)-complete*
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Quantified Boolean Formula]
+    #+BEGIN_definition
+    A *quantified Boolean formula* (QBF) is a formula of the form \(Q_1x_1\dots Q_nx_n\varphi(x_1,\dots,x_n)\) where
+    each \(Q_i\)is one of the two quantifiers \(\forall\) or \(\exists\), \(x_1,\dots,x_n\) ranges over \(\{0,1\}\) and
+    \varphi is a quantifier-free Boolean formula.
+    #+END_definition
+
+    Let \(\TQBF\) be the set of quantified Boolean formulae that are true
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:thm4.13
+    \(\TQBF\) is \(\PSPACE\)-complete
+    #+END_theorem
+
+    #+BEGIN_proof
+    First we show that \(\TQBF\in\PSPACE\). Let
+    \begin{equation*}
+    \psi=Q_1x_1\dots Q_nx_n\varphi(x_1,\dots,x_n)
+    \end{equation*}
+    be a quantified Boolean formula with \(n\) variables, where we denote the size of \varphi by \(m\). We
+    show a recursive algorithm \(A\) that can decide the truth of \psi in \(O(n+m)\) space.
+
+    If \(n=0\) then \varphi can be evaluated in \(O(m)\) time and space, and so we assume \(n>0\).
+    For \(b\in\{0,1\}\) denote by \(\psi\restriction_{x_1=b}\) the modification of \psi where the first
+    quantifier \(Q_1\) is dropped and all occurrences of \(x_1\) are replaces with the constant \(b\).
+    Algorithm \(A\) will works as follows: if \(Q_1=\exists\) then output 1 iff at least one
+    of \(A(\psi\restriction_{x_1=0})\)  and \(A(\psi\restriction_{x_1=1})\) outputs 1. If \(Q_1=\forall\), then
+    output 1 iff both  \(A(\psi\restriction_{x_1=0})\)  and \(A(\psi\restriction_{x_1=1})\) outputs 1.
+
+    Let \(s_{n,m}\) denote the space \(A\) uses on formula with \(n\) variables and description
+    size \(m\). The crucial point is - here we use the fact that space can be *reused* - that both
+    recursive computations  \(A(\psi\restriction_{x_1=0})\)  and \(A(\psi\restriction_{x_1=1})\) can run in
+    the same space. Thus assuming that \(A\) uses \(O(m)\) space to
+    write  \(A(\psi\restriction_{x_1=b})\) for its recursive calls, we'll get that
+    \(s_{n,m}=s_{n-1,m}+O(m)\) yielding \(s_{n,m}=O(n\cdot m)\)
+
+    We now show that \(L\le_p\TQBF\) for every \(L\in\PSPACE\). Let \(M\) be a machine that
+    decides \(L\) in \(S(n)\) space and let \(x\in\{0,1\}^n\). We show how to construct a quantified
+    Boolean formula of size \(O(S(n)^2)\) that is true iff \(M\) accepts \(x\). Let \(m=O(S(n))\)
+    denote the number of bits needed to encode a configuration of \(M\) on length \(n\). By Claim
+    ref:claim4.4 there is a Boolean formula \(\varphi_{M,x}\) s.t. for every two
+    strings \(C,C'\in\{0,1\}^m\) \(\varphi_{M,x}(C,C)=1\) iff \(C\) and \(C'\) encode two adjacent
+    configurations in the configuration graph \(G_{M,x}\).
+
+    let \(\psi_i(C,C')\) be true iff there is a path of length at most \(2^i\) from \(C\) to \(C'\)
+    in \(G_{M,x}\). Note that \(\psi=\psi_m\) and \(\psi_0=\varphi_{M,x}\). The crucial point is
+    \(\psi_i(C,C')=\exists C''\psi_{i-1}(C,C'')\wedge\psi_{i-1}(C'',C')\)
+
+    But \(\psi_m\) has size about \(2^m\), which is not good. Instead, we use additional quantified
+    variables to save on description size
+    \begin{equation*}
+    \exists C''\forall D_1\forall D_2((D_1=C\wedge D_2=C'')\vee(D_1=C''\wedge D_2=C'))\to \psi_{i-1}(D_1,D_2)
+    \end{equation*}
+    Note that \(size(\psi_i)\le size(\psi_{i-1})+O(m)\) and hence \(size(\psi_m)\le o(m^2)\)
+    #+END_proof
+
+    Since we don't require the graph in proof of Theorem ref:thm4.13 to have out-degree one, it
+    actually yields a stronger statement
+    \begin{equation*}
+    \TQBF\in\NPSPACE
+    \end{equation*}
+
+    #+ATTR_LATEX: :options [Savitch's Theorem]
+    #+BEGIN_theorem
+    For any space-constructible \(S:\N\to\N\) with \(S(n)\ge\log n\), \(\NSPACE(S(n))\subseteq\SPACE(S(n)^2)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(L\in\NSPACE(S(n))\) be a language decided by a TM \(M\) s.t. for every \(x\in\{0,1\}^n\), the
+    configuration graph \(G=G_{M,x}\) has at most \(M=2^{O(S(n))}\) vertices, and determining
+    whether \(x\in L\)is equivalent to determining whether \(C_{\accept}\) can be reached
+    from \(C_{\start}\) in this graph. We describe a recursive procedure \(\text{REACH?}(u,v,i)\)
+    that returns "YES" if there is a path from \(u\) to \(v\) of length at most \(2^i\) and "NO"
+    otherwise.
+    \begin{equation*}
+    \text{REACH?}(u,v,i)=\exists w(\text{REACH?}(u,w,i-1)\vee\text{REACH?}(w,v,i-1))
+    \end{equation*}
+    Let \(s_{M,i}\) be the space complexity of \(\text{REACH?}(u,v,i)\),
+    then \(s_{M,i}=s_{M,i-1}+O(\log M)\) (since we need to enumerate all \(w\) in TM, the space we
+    need is \(O(\log M)\)) and thus
+    \(s_{M,\log M}=O(\log^2 M)=O(S(n)^2)\)
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options [The QBF game]
+    #+BEGIN_examplle
+    The "board" for the QBF game is a Boolean formula \varphi whose free variables are \(x_1,\dots,x_{2n}\).
+    player 1 will pick values for the odd-numbered variables. We say player 1 wins iff at the end
+    \(\varphi(x_1,\dots,x_{2n})\) is true
+
+    In order for player 1 to have a *winning strategy* he must have a way to win for all possible
+    sequences of moves by player 2, namely, if
+    \begin{equation*}
+    \exists x_1\forall x_2 \exists x_3\forall x_4\dots\forall x_{2n}\varphi(x_1,\dots,x_{2n})
+    \end{equation*}
+    Thus deciding whether player 1 has a winning strategy for a given board in the QBF game is \(\PSPACE\)-complete.
+    #+END_examplle
+*** \(\NL\) Completeness
+
+    We cannot use the polynomial-time reduction since \(\bL\subseteq\NL\subseteq\bP\) (cf. Exercise ref:ex4.3)
+
+    #+ATTR_LATEX: :options [logspace reduction and \(\NL\)-completeness]
+    #+BEGIN_definition
+    A function \(f:\{0,1\}^*\to\{0,1\}^*\) is *implicitly logspace computable*, if \(f\) is polynomially
+    bounded (i.e., there is some \(c\) s.t. \(\abs{f(x)}\le\abs{x}^c\) for every \(x\in\{0,1\}^*\)) and the
+    language \(L_f=\{\la x,i\ra\mid f(x)_i=1\}\) and \(L_f'=\{\la x,i\ra\mid i\le\abs{f(x)}\}\) are in \(\bL\)
+
+    A language \(B\) is *logspace reducible* to language \(C\), denoted by \(B\le_lC\) if there is a
+    function \(f:\{0,1\}^*\to\{0,1\}^*\) that is implicitly logspace computable and \(x\in B\)
+    iff \(f(x)\in C\) for every \(x\in\{0,1\}^*\).
+
+    We say that \(C\) is *\(\NL\)-complete* if it is in \(\NL\) and for every \(B\in\NL\), \(B\le_lC\)
+    #+END_definition
+
+    Another way(used by several texts) to think of logspace reductions is to imagine that the
+    reduction is given
+    a separate "write-once" output tape, on which it can either
+    write a bit or move to the right but never move left or read the bits it wrote down
+    previously.The two notions are easily proved to be equivalent (seeExercise ref:ex4.8).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. If \(B\le_lC\) and \(C\le_lD\) then \(B\le_lD\)
+    2. if \(B\le_lC\) and \(C\in\bL\) then \(B\in\bL\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    We prove that if \(f,g\) are two implicitly logspace computable functions, then so
+    if \(h(x)=g(f(x))\). Part 2 follows by letting \(f\) be the reduction from \(B\) to \(C\)
+    and \(g\) be the characteristic function of \(C\) (i.e., \(g(y)=1\) iff \(y\in C\))
+
+    Let \(M_f,M_g\) be the logspace machines that compute the mappings \(x,i\mapsto f(x)_i\)
+    and \(y,j\mapsto g(y)_i\) respectively. We construct a machine \(M_h\) that given input \(x,j\)
+    with \(j\le\abs{g(f(x))}\) outputs \(g(f(x))_j\)
+
+    #+ATTR_LATEX: :width .9\textwidth :float H
+    #+NAME:
+    #+CAPTION:
+    [[../images/ComputationalComplexity/10.png]]
+
+    \(M_h\) always maintains on its work tape the index, say \(i\), of the cell on the fictitious
+    tape that \(M_g\) is currently reading, this requires only \(\log\abs{f(x)}\) space. To compute
+    for one step, \(M_g\) needs to know the contents of the cell, in other words, \(f(x)|_i\). At
+    this point \(M_h\) temporarily suspends its simulation of \(M_g\) (copying the contents
+    of \(M_g\)'s work tape to a safe place on its own work tape) and invokes \(M_f\) on
+    inputs \(x,i\) to get \(f(x)|_i\). Then it resumes its simulation of \(M_g\) using this bit. The
+    total space \(M_h\) uses is
+    \(O(\log\abs{g(f(x))}+s(\abs{x})+s'(\abs{f(x)}))\). Since \(\abs{f(x)}\le poly(x)\), this
+    expression is \(O(\log\abs{x})\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\PATH\) is \(\NL\)-complete
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(L\in\NL\) and \(M\) be a machine that decides it in space \(O(\log n)\). We describe a
+    logspace implicitly computable function \(f\) that reduces \(L\) to \(\PATH\)
+
+    For any input \(x\) of size \(n\), \(f(x)\) will be the configuration graph \(G_{M,x}\) whose
+    nodes are all possible \(2^{O(\log n)}\) (since \(L\in\NL\)) configurations of the machine on input \(x\), along
+    with the start configuration \(C_{\start}\)and \(C_{\accept}\). The graph is represented by an
+    adjacency matrix. To finish the proof, we need to show that this adjacency matrix can be
+    computed by a logspace reduction. Given \(\la C,C'\ra\) a deterministic machine can in space
+    \(O(\abs{C}+\abs{C'})=O(\log\abs{x})\) examine \(C,C'\) and check whether they are neighbor
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\(\NL\)-alternative definition]
+    #+BEGIN_definition
+    A language \(L\in \NL\) if there exists a deterministic TM \(M\) (called the *verifier*) with an
+    additional special read-once input tape, and a polynomial \(p:\N\to\N\) s.t. for every \(x\in\{0,1\}^*\)
+    \begin{equation*}
+    x\in L\Leftrightarrow\exists u\in\{0,1\}^{p(\abs{x})}\text{ s.t. }M(x,u)=1
+    \end{equation*}
+    where by \(M(x,u)\) we note the output of \(M\) where \(x\) is placed on its input tape
+    and \(u\) is placed on its special read-once tape, and \(M\) uses at most \(O(\log\abs{x})\)
+    space on its read-write tapes for every input \(x\)
+    #+END_definition
+
+    This definition is an alternative definition of \(\NL\) since read-once access to bits in a
+    certificate is just an alternative way to view _nondeterministic choices during a computation_
+
+    Note that we have \(\ove{\PATH}\in\coNL\)
+
+    #+ATTR_LATEX: :options [Immerman-Szelepcsényi Theorem]
+    #+BEGIN_theorem
+    \(\ove{\PATH}\in\NL\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    By the certificate-based definition of \(\NL\), it suffices to show an \(O(\log n)\)-space
+    verification algorithm \(A\) s.t. for every \(n\)-vertex graph \(G\) and vertices \(s\)
+    and \(t\), there exists a polynomial certificate \(u\) s.t. \(A(\la G,s,t\ra,u)=1\) iff \(t\) is
+    not reachable from \(s\) in \(G\). Here \(A\) has only read-once access to \(u\). For
+    simplicity, we identify \(G\)'s vertices with the numbers \(\{1,\dots,n\}\)
+
+    Let \(C_i\) be the set of vertices that are reachable from \(s\) in \(G\) within at most \(i\)
+    steps. For every \(i\in[n]\) and vertex \(v\), the following is a certificate that \(v\) is
+    in \(C_i\): the sequence of vertices \(v_1,\dots,v_k\) along the path from \(s\) to \(v\),
+    where \(k\le i\). Note that the certificate is indeed of size at most polynomial in \(n\). The
+    algorithm can check the certificate using read-once access by verifying
+    1. \(v_0=s\)
+    2. for \(j>0\) there is an edge from \(v_{j-1}\) to \(v_j\)
+    3. \(v_k=v\)
+    4. the path ends within at most \(i\) steps.
+
+
+    Now we use the fact that membership in \(C_i\) is certifiable to design two more types of
+    certificates
+    1. A certificate that a vertex \(v\) is not in \(C_i\), assuming the verifier has already been
+       told the size of \(C_i\)
+    2. A certificate that \(\abs{C_i}=c\) for some number \(c\), assuming the algorithm has already
+       been convinced about the size of \(C_{i-1}\)
+
+
+    Since \(C_0=\{s\}\), we can provide the second kind of certificate to the verifier iteratively to
+    convince it of the sizes of the sets \(C_1,\dots,C_n\). Finally since \(C_n\) is just the set of all
+    vertices reachable from \(s\), and the verifier has been convinced of \(\abs{C_n}\), we can use
+    the first kind of certificate to convince the verifier \(t\not\in C_n\).
+
+    Certifying that \(v\not\in C_i\) given \(\abs{C_i}\). The certificate is simply the list of
+    certificates to the effects that \(u\in C_i\) for every \(u\in C_i\).
+
+    Certifying that \(v\not\in C_i\), given \(\abs{C_{i-1}}\). like above.
+
+    Certifying that \(\abs{C_i}=c\) given \(\abs{C_{i-1}}\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    For every space constructible \(S(n)>\log n\), \(\NSPACE(S(n))=\coNSPACE(S(n))\)
+    #+END_corollary
+
+*** Exericse
+    #+BEGIN_exercise
+    label:ex4.3
+    Prove that every language \(L\) that is not the empty or \(\{0,1\}^*\) is complete for \(\NL\)
+    under polynomial-time Karp reductions
+    #+END_exercise
+
+    #+BEGIN_exercise
+    label:ex4.8
+    Define \(f:\{0,1\}^*\to\{0,1\}^*\) to be writ
+    #+END_exercise
