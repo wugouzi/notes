@@ -97,7 +97,7 @@
  `(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
  `(org-document-title ((t (:bold t :foreground "#a626a4" :weight bold :height 2.0))))
  '(org-block-begin-line
-   ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
+   ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5" ))))
  '(org-block
    ((t (:background "#fff7fb"))))
  '(org-block-end-line
@@ -124,7 +124,8 @@
         preview-dvipng-image-type (quote png)
         TeX-command-extra-options "-shell-escape"
         TeX-engine 'xetex
-        +latex-viewers '(Evince)
+        ;;'(Evince)
+        +latex-viewers '(skim)
         preview-transparent-color nil)
 
   :hook
@@ -336,6 +337,7 @@ parent."
           (lambda ()
             (setq-local prettify-symbols-alist my-symbols-alist)))
 
-
+(company-prescient-mode 1)
+(add-hook 'emacs-lisp-mode-hook 'rainbow-mode)
 
 (global-prettify-symbols-mode +1)

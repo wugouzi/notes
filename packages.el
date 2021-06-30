@@ -60,3 +60,4 @@
 (package! texfrag)
 (package! unicode-fonts
   :recipe (:host github :repo "rolandwalker/unicode-fonts"))
+(package! company-prescient)
