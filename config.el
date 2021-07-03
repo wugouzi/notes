@@ -272,6 +272,8 @@ parent."
 
 (setq mac-command-modifier 'meta)
 
+(setq org-image-actual-width nil)
+
 
 (use-package xenops
   :init (load-file "~/.doom.d/xenops/xenops.el")
@@ -280,8 +282,8 @@ parent."
   :hook
   (org-mode . xenops-mode)
   :bind (:map org-mode-map
-         (("C-c C-p C-c" . xenops-reveal-at-point))
-         (("C-c C-p C-i" . xenops-increase-size)))
+         (("C-c C-g C-c" . xenops-reveal-at-point))
+         (("C-c C-g C-i" . xenops-increase-size)))
   )
 
 (use-package latex-pretty-symbols
@@ -339,5 +341,19 @@ parent."
 
 (company-prescient-mode 1)
 (add-hook 'emacs-lisp-mode-hook 'rainbow-mode)
+
+(use-package texfrag
+  :init (load-file "~/.doom.d/texfrag/texfrag.el")
+  :hook
+  (org-mode . texfrag-mode)
+  (org-mode . texfrag-show-last-mode)
+  :load-path "~/.doom.d/texfrag"
+  :config
+  (setq texfrag-scale 1
+        texfrag-prefix (kbd "C-c C-g")
+        texfrag-LaTeX-frag-alist '(("\\\\begin{tikzcd}" "\\\\end{tikzcd}"  :display t))
+        ))
+
+
 
 (global-prettify-symbols-mode +1)

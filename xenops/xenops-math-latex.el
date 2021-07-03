@@ -21,6 +21,9 @@
 (declare-function xenops-math-set-marker-on-element "xenops-math")
 (declare-function xenops-png-set-phys-chunk "xenops-png")
 
+;;:latex-compiler ("xelatex -interaction nonstopmode -shell-escape -output-directory %o %f")
+     ;;:image-converter ("convert -density %D -trim -antialias %f -quality 100 %O")))
+
 (defvar xenops-math-latex-process 'dvisvgm
   "The process used for producing images from LaTeX fragments.
 
@@ -49,9 +52,10 @@ the commands used to run these processes.")
      :message "you need to install the programs: latex and dvisvgm."
      :image-input-type "xdv"
      :image-output-type "svg"
-     :image-size-adjust (1.0 . 1.0)
+     :image-size-adjust (1.7 . 1.7)
      :latex-compiler ("xelatex -interaction nonstopmode -shell-escape -no-pdf -output-directory %o %f")
      :image-converter ("dvisvgm %f -n -b %B -c %S -o %O"))
+     ;;:image-converter ("dvisvgm --pdf %f -o %O"))
     (imagemagick
      :programs ("latex" "convert")
      :description "pdf > png"
@@ -59,7 +63,7 @@ the commands used to run these processes.")
      :image-input-type "pdf"
      :image-output-type "png"
      :image-size-adjust (1.0 . 1.0)
-     :latex-compiler ("pdflatex -interaction nonstopmode -shell-escape -output-directory %o %f")
+     :latex-compiler ("xelatex -interaction nonstopmode -shell-escape -output-directory %o %f")
      :image-converter ("convert -density %D -trim -antialias %f -quality 100 %O")))
   "Definitions of external processes for LaTeX previewing.
 

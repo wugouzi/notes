@@ -52,7 +52,7 @@ This is the net scale factor resulting from multiple applications
 This determines the size of the image in the image file that is
   cached on disk.")
 
-(defvar xenops-math-image-margin 10
+(defvar xenops-math-image-margin 3
   "Number of pixels to be used as left margin for non-inline math images.")
 
 (defvar xenops-math-dollar-delimited-inline-math-delimiters
