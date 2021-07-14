@@ -1,0 +1,834 @@
+#+TITLE: Set Theory
+#+AUTHOR: Kenneth Kunen
+
+#+EXPORT_FILE_NAME: ../latex/SetTheoryKunen/SetTheoryKunen.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \def \SING {\text{SING}}
+#+LATEX_HEADER: \def \tint {\text{int}}
+#+LATEX_HEADER: \def \emp {\text{emp}}
+#+LATEX_HEADER: \def \onto {\text{onto}}
+
+* Background Material
+** The Axioms of Set Theory
+   We work in predicate logic with \(\call=\{\in\}\).
+
+   *Axiom 1. Extensionality.*
+   \begin{equation*}
+   \forall z(z\in x\leftrightarrow z\in y)\to x=y
+   \end{equation*}
+   *Axiom 2. Foundation.*
+   \begin{equation*}
+   \exists y(y\in x)\to\exists y(y\in x\wedge\neg\exists z(z\in x\wedge z\in y))
+   \end{equation*}
+   *Axiom 3. Comprehension Scheme*. For each formula, \varphi, without \(y\) free
+   \begin{equation*}
+   \exists y\forall x(x\in y\leftrightarrow x\in v\wedge \varphi(x))
+   \end{equation*}
+   *Axiom 4. Pairing.*
+   \begin{equation*}
+   \exists z(x\in z\wedge y\in z)
+   \end{equation*}
+   *Axiom 5. Union*
+   \begin{equation*}
+   \exists A\forall Y\forall x(x\in Y\wedge Y\in\calf\to x\in A)
+   \end{equation*}
+   *Axiom 6. Replacement Scheme.* For each formula \varphi, without \(B\) free,
+   \begin{equation*}
+   \forall x\in A\exists!y\varphi(x,y)\to\exists B\forall x\in A\exists y\in B\varphi(x,y)
+   \end{equation*}
+
+   On the basis of Axioms 1,3,4,5, define \(\subseteq,\emptyset,S,\cap\) and SING(\(x\)) (\(x\) is a singleton) by
+   \begin{align*}
+   x\subseteq y&\quad\Leftrightarrow\quad\forall z(z\in x\to z\in y)\\
+   x=\emptyset&\quad\Leftrightarrow\quad\forall z(z\not\in x)\\
+   y=S(x)&\quad\Leftrightarrow\quad\forall z(z\in y\Leftrightarrow z\in x\vee z=x)\\
+   y=v\cap w&\quad\Leftrightarrow\quad\forall x(x\in y\Leftrightarrow x\in v\wedge x\in w)\\
+   \SING(x)&\quad\Leftrightarrow\quad\exists y\in x\forall z\in x(z=y)
+   \end{align*}
+   *Axiom 7. Infinity.*
+   \begin{equation*}
+   \exists x(\emptyset\in x\wedge\forall y\in x(S(y)\in x))
+   \end{equation*}
+   *Axiom 8. Power Set.*
+   \begin{equation*}
+   \exists y\forall z(z\subseteq x\to z\in y)
+   \end{equation*}
+   *Axiom 9. Chioce, or AC.*
+   \begin{equation*}
+   \emptyset\not\in F\wedge\forall x\in F\forall y\in F(x\neq y\to x\cap y=\emptyset)\to\exists C\forall x\in F(\SING(C\cap x))
+   \end{equation*}
+
+   - \(ZFC\) = Axioms 1-9. \hspace{1cm} \(ZF\)=Axioms 1-8
+   - \(ZC\) and \(Z\) are \(ZFC\) and \(ZF\), respectively, with the Replacement Scheme deleted
+   - \(X^{-1}\) denotes \(X\) without Foundation Axiom
+   - \(X-P\) denote \(X\) without the Power Set Axiom
+   - \(X-inf\) denotes \(X\) without Axiom of Infinity
+
+     #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   BST ("Basic Set Theory") denotes the axioms of Extensionality, Foundation, Comprehension, Pairing
+   and Union, plus the disjunction: the Power Set Axiom holds or the Replacement Axioms holds.
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(AC^+\) is the statement that every set can be well-ordered
+   #+END_definition
+** Extensionality, Comprehension, Pairing, Union
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(\text{int}(v,w,y)\leftrightarrow\forall x(x\in y\leftrightarrow x\in v\wedge x\in w)\)
+   #+END_definition
+
+   Introducing a defined relation such as \(tint(v,w,y)\) requires no justification, although
+   defining \(v\cap w\) to be /the/ \(y\) such that \(\tint(v,w,y)\) /does/ require a justification, namely
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   \(\forall v,w\exists!y\tint(v,w,y)\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   To prove \(\exists y\tint(v,w,y)\), use Comprehension, with \varphi the formula \(x\in w\):
+   \begin{equation*}
+   \forall v,w[\exists y\forall x(x\in y\leftrightarrow x\in v\wedge x\in w)]
+   \end{equation*}
+   To prove that \(y\) is unique, observe, from the definition of \(\tint(v,w,y)\), that
+   \begin{equation*}
+   \tint(v,w,y_1)\wedge\tint(v,w,y_2)\to\forall x(x\in y_1\leftrightarrow x\in y_2)
+   \end{equation*}
+   so that \(y_1=y_2\) by Extensionality
+   #+END_proof
+
+   This justifies:
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(v\cap w\) is the unique \(y\) s.t. \(\tint(v,w,y)\)
+   #+END_definition
+
+   Before giving a name to an object satisfying some property, we must prove that property really is
+   held by a unique object
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any formula \(\varphi(x)\)
+   - \(\{x:\varphi(x)\}\) is, informally, called a *class*
+   - if there is a set \(A\) s.t. \(\forall x[x\in A\leftrightarrow\varphi(x)]\), then \(A\) is unique by Extensionality, and we
+     denote this set by \(\{x:\varphi(x)\}\), and we say that \(\{x:\varphi(x)\}\) exists
+   - if there is no such set, then we say that \(\{x:\varphi(x)\}\) doesn't exist, /or/ forms a proper class
+   - \(\{x\in v:\varphi(x)\}\) abbreviates \(\{x:x\in v\wedge\varphi(x)\}\)
+   #+END_definition
+
+   Comprehension asserts that sets of the form \(\{x:x\in v\wedge\varphi(x)\}\) always exists
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Given \(v,w\)
+   \begin{align*}
+   &v\cap w:=\{x\in v:x\in w\}\\
+   &v\setminus w:=\{x\in v:x\not\in w\}
+   \end{align*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(\emp(y)\) iff \(\forall x(x\not\in y)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(\emptyset\) denotes the (unique) \(y\) s.t. \(\emp(y)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Fix any \(v\) and form \(y=\{x\in v:x\neq x\}\), which is empty, so \(\exists y\emp(y)\). Then \(y\) is unique
+   by Extensionality.
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The *universe*, \(V:=\{x:x=x\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   \(V\) doesn't exists, and neither does \(R:=\{x:x\not\in x\}\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   For \(R\), we need no axioms at all; if we had an \(R\) s.t. \(\forall x[x\in R\leftrightarrow x\not\in x]\),
+   then \(R\in R\leftrightarrow R\not\in R\), a contradiction. For \(V\), we use Comprehension; if we had a \(V\)
+   with \(\forall x[x\in V]\), then we could form \(R\) as \(\{x\in V:x\not\in x\}\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \begin{align*}
+   &\{x,y\}=\{w:w=x\vee w=y\}\\
+   &\{x\}=\{x,x\}\\
+   &\la x,y\ra=(x,y)=\{\{x\},\{x,y\}\}
+   \end{align*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   \(\la x,y\ra=\la x',y'\ra\to x=x'\wedge y=y'\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(0=\emptyset\), \(1=\{0\}=\{\emptyset\}\), \(2=\{0,1\}=\{\emptyset,\{\emptyset\}\}\)
+   #+END_definition
+
+   The axioms so far don't let us construct any sets with more than two elements. To do that we use
+   the Union Axiom; then we can get \(3=2\cup\{2\}=\{0,1,2\}\). The Union Axiom can be used to justify
+   infinite unions as well.
+   \begin{equation*}
+   \forall\calf\exists A\forall Y\forall x[x\in Y\wedge Y\in\calf\to x\in A]
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(\displaystyle\bigcup\calf=\bigcup_{Y\in\calf}Y=\{x:\exists Y\in\calf(x\in Y)\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Let \(A\) be as in the Union Axiom, and apply Comprehension to form \(B=\{x\in A:\exists Y\in\calf(x\in Y)\}\).
+   Then \(x\in B\leftrightarrow\exists Y\in\calf(x\in Y)\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(u\cup v=\bigcup\{u,v\}\), \(\{x,y,z\}=\{x,y\}\cup\{z\}\) and \(\{x,y,z,t\}=\{x,y\}\cup\{z,t\}\)
+   #+END_definition
+
+   By Comprehension and Extensionality:
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   When \(\calf\neq\emptyset\)
+   \begin{equation*}
+   \bigcap\calf=\bigcap_{Y\in\calf}Y=\{x:\forall Y\in\calf(x\in Y)\}
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Fix \(E\in\calf\), and form \(\{x\in E:\forall Y\in\calf(x\in Y)\}\)
+   #+END_proof
+
+   Note that \(\bigcup\emptyset=\emptyset\) while \(\bigcap\emptyset\) would be the universal class \(V\), which doesn't exists
+
+   We can now get 3 and 4
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   The ordinal successor function, \(S(x)\), is \(x\cup\{x\}\). Then
+   \begin{alignat*}{2}
+   &3=S(2)=\{0,1,2\}&&6=S(5)=\{0,1,2,3,4,5\}\\
+   &4=S(3)=\{0,1,2,3\}&&7=S(6)=\{0,1,2,3,4,5,6\}\\
+   &5=S(4)=\{0,1,2,3,4\}\quad&&8=S(7)=\{0,1,2,3,4,5,6,7\}\\
+   \end{alignat*}
+   #+END_definition
+
+   The natural numbers are also called the *finite ordinals*
+
+   #+BEGIN_exercise
+   label:ex1.4.18
+   Derive \(\forall y[y\not\in y]\) from the Axioms of Comprehension and Foundation. Don't use the Pairing
+   or Extensionality Axioms. Then find a two element model for Foundation, Extensionality, Pairing
+   and Unions, plus \(\exists y\forall x[x\in y]\)
+   #+END_exercise
+
+   #+BEGIN_proof
+   If \(y\in y\), use Comprehension to form \(x:=\{y\}\). Then we have a contradiction in Foundation
+   #+END_proof
+** Infinity, Replacement, and Power Set
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A set \(I\) is *inductive* iff \(\emptyset\in I\) and \(\forall y\in I(S(y)\in I)\)
+   #+END_definition
+
+   The Axiom of Infinity says that there exists an inductive set.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Assuming the Axiom of Infinity
+   \begin{equation*}
+   \N=\{y:\forall I[I\text{ is inductive }\to y\in I]\}
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   We may form \(\N\) as \(\{y\in J:\forall I[I\text{ is inductive }\to y\in I]\}\), where \(J\) is any inductive
+   set; there is one by the Axiom of Infinity
+   #+END_proof
+
+   #+ATTR_LATEX: :options [Principle of Ordinary Induction]
+   #+BEGIN_theorem
+   label:thm1.5.3
+   Assuming the Axiom of Infinity: For any set \(X\subseteq\N\), if \(X\) is inductive then \(X=\N\)
+   #+END_theorem
+
+   Using Replacement plus Comprehension, we form \(C=\{y\in B:\exists x\in A\varphi(x,y)\}\)
+
+   Suppose we have a set. Let \(A^*=\{\{x\}:x\in A\}\); this notation is a shorthand
+   for \(\{y:\exists x[x\in A\wedge y={x}]\}\). Using Replacement, \(A^*\) does exists
+
+   The Power Set Axiom says that for all \(x\), there is a \(y\) s.t. \(\forall z(z\subseteq x\to z\in y)\). Thus,
+   applying Comprehension, \(\{z:z\subseteq x\}\) exists, justifying:
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Assuming the Power Set Axiom: The power set of \(x\) is \(\calp(x)=\{z:z\subseteq x\}\)
+   #+END_definition
+
+   The Power Set Axiom can be used instead of Replacement to prove that the above \(A^*\) exists,
+   since \(A^*=\{y\in\calp(A):\exists x[x\in A\wedge y=\{x\}]\}\)
+** Discrete Mathematics; Relations and Functions
+   In this section, we work in the theory \(BST^^-\).
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(R\) is a (binary) *relation* iff \(R\) is a set of ordered pairs
+   \begin{equation*}
+   \forall u\in R\exists x,y[u=\la x,y\ra]
+   \end{equation*}
+   \(xRy\) abbreviates \(\la x,y\ra\in R\) and \(x\slashed{R}y\) abbreviates \(\la x,y\ra\not\in R\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   - \(R\) is *transitive* on \(A\) iff \(\forall xyz\in A[xRy\wedge yRz\to xRz]\)
+   - \(R\) is *irreflexive* on \(A\) iff \(\forall x\in A[x\slashed{R}x]\)
+   - \(R\) is *reflexive* on \(A\) iff \(\forall x\in A[xRx]\)
+   - \(R\) satisfies *trichotomy* on \(A\) iff \(\forall xy\in A[xRy\vee yRx\vee x=y]\)
+   - \(R\) is *symmetric* on \(A\) iff \(\forall xy\in A[xRy\leftrightarrow yRx]\)
+   - \(R\) *partially orders* \(A\) *strictly* iff \(R\) is transitive and irreflexive on \(A\)
+   - \(R\) *totally orders* \(A\) *strictly* iff \(R\) is transitive and irreflexive on \(A\) and
+     satisfies trichotomy on \(A\)
+   - \(R\) is an *equivalence relation* on \(A\) iff \(R\) is reflexive, symmetric and transitive on \(A\)
+   - \(R\) is a *pre-order* on \(A\) iff \(R\) is reflexive and transitive on \(A\)
+   - \(R\) *partially orders \(A\) non-strictly* iff \(R\) is a pre-order on \(A\) and satisfies
+     \(\neg\exists xy\in A[xRy\wedge yRx\wedge x\neq y]\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(R\) is a function iff \(R\) is a relation and for every \(x\), there is at most one \(y\)
+   s.t. \((x,y)\in R\). If \(\exists y[xRy]\) then \(R(x)\) denotes that unique \(y\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any set \(A\), \(id_A=\{(x,x):x\in A\}\) is the *identity function* on \(A\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Assuming the Power Set Axiom: If \(x,y\in A\), then \(\{x\},\{x,y\}\in\calp(A)\), so that \((x,y)\in\calp(\calp(A))\).
+   Thus we can form \(id_A\) using Comprehension as \(z\in\calp(\calp(A)):\exists x[z=(x,x)]\)
+
+   Assuming the Replacement Axiom: Like the justification for \(A^*\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(A\times B=\{(x,y):x\in A\wedge y\in B\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Assuming the Power Set Axiom: \(A\times B=\{(x,y)\in\calp(\calp(A\cup B)):x\in A\wedge y\in B\}\)
+
+   Assuming the Replacement Axiom: using Replacement twice. For each \(y\), we may
+   form \(A\times\{y\}=\{(x,y):x\in A\}\). Then we form \(S:=\{A\times\{y\}:y\in B\}\). Then get \(A\times B=\bigcup S\) by the Union
+   Axiom
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For any set \(R\), define
+   \begin{equation*}
+   \dom(R)=\{x:\exists y[(x,y)\in R]\}\hspace{1cm}\ran(R)=\{y:\exists x[(x,y)\in R]\}
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Using the Kuratowski definition, \(\{\{x\},\{x,y\}\}\in R\) implies that \(\{x\},\{x,y\}\in\bigcup R\) and
+   hence \(x,y\in\bigcup \bigcup R\), so we get \(\dom(R)\) and \(\ran(R)\) using the Union Axiom plus
+   Comprehension
+
+   Using Replacement: Like \(A^*\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(R\restriction A=\{(x,y)\in R:x\in A\}\)
+   #+END_definition
+
+   \(R\restriction A\) is a defined subset of \(R\), so it exists by Comprehension
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   - \(F:A\to B\) means that \(F\) is a function, \(\dom(F)=A\), and \(\ran(F)\subseteq B\)
+   - \(F:A\xrightarrow{\text{onto}}B\) or \(F:A\twoheadrightarrow B\) means that \(F:A\to B\) and \(\ran(F)=B\)
+   - \(F:A\xrightarrow{1-1}B\) or \(F:A\hookrightarrow B\) means that \(F:A\to B\) and \(\forall x,x'\in A[F(x)=F(x')\to x=x']\)
+   - \(F:A\xrightarrow[\text{onto}]{1-1}B\) or \(F:A\rightleftarrows B\) means that \(F\) is an injection and surjection
+   #+END_definition
+
+   Replacement justifies these definitions.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma1.6.9
+   Assume that \(\forall x\in A\exists!y\varphi(x,y)\) and assume the Axiom of Replacement. Then there is a
+   function \(f\) with \(\dom(f)=A\) s.t. for each \(x\in A\), \(f(x)\) is the unique \(y\) s.t. \(\varphi(x,y)\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   Let \(\psi(x,z)=\exists y[\varphi(x,y)\wedge z=(x,y)]\), and use Replacement to form \(f\) as \(\{z:\exists x\in A\psi(x,z)\}\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Assuming the Power Set Axiom, define \(B^A=\tensor[^A]{B}{}\) to be the set of all \(F\) s.t. \(F:A\to B\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   If \(F:A\to B\) ,then \(F\subseteq A\times B\), so that \(B^A\) is a defined subset of \(\calp(A\times B)\)
+   #+END_proof
+
+   In the case that \(A\) is a natural number, we can avoid Power Set and induct on \(n\in\N\) to
+   construct \(\tensor[^n]{B}{}\) and \(\tensor[^{<\omega}]{B}{}\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Assume the Axiom of Infinity. For \(n\in\N\), define \(B^n=\tensor[^n]{B}{}\) to be the set of
+   all \(F\) s.t. \(F:n\to B\). Let \(B^{<\omega}=\tensor[^{<\omega}]{B}{}=\bigcup\{B^n:n\in\N\}\).
+   For \(F\in B^{<\omega}\), \(\lh(F)=\dom(F)\), the *length* of \(F\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Assuming the Replacement Axiom: Prove that \(B^n\) forms a set by ordinary induction (Theorem
+   ref:thm1.5.3) on \(n\). For the basis \(B^0=\{\emptyset\}\). For the induction step, assume that we have the
+   set \(B^n\). We then have the product \(B^n\times B\). Then by Lemma ref:lemma1.6.9 we have a
+   function \(f\) s.t. \(\dom(f)=B^n\times B\) and \(f(s,x)=s\cup\{\la n,x\ra\}\) for
+   each \(\la s,x\ra\in B^n\times B\). Then \(\ran(f)=B^{S(n)}\)
+
+   Now that we have \(B^n\) for each \(n\in\N\). We may use Replacement again to form \(\{B^n:n\in\N\}\), and
+   we then obtain \(B^{<\omega}\) by the Union Axiom
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(F(A)=F"A=\ran(F\restriction A)\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(R^{-1}=\{(y,x):(x,y)\in R\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Defined subset of \(\ran(R)\times\dom(R)\)
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(G\circ F=\{(x,z)\in\dom(F)\times\ran(G):\exists y[(x,y)\in F\wedge(y,z)\in G]\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   If < and \(\sqsubset\) are strict total orders of \(S,T\), respectively, then their lexicographic
+   product on \(S\times T\) is a is the relation \(\lhd\) on \(S\times T\) defined by
+   \begin{equation*}
+   \lhd=\{\left( (s,t),(s't') \right)\in(S\times T)\times(S\times T):s<s'\vee[s=s'\wedge t\sqsubset t']\}
+   \end{equation*}
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If < and \(sqsubset\) are strict total orders of \(S,T\), respectively, then their lexicographic
+   products on \(S\times T\) is a strict total order of \(S\times T\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(F\) is an *isomorphism from* \((A;<)\) *onto* \((B;\sqsubset)\) iff \(F\) is a bijection
+   (\(F:A\xrightarrow[\text{onto}]{1-1}B\)) and \(\forall x,y\in A[x<y\to F(x)\sqsubset F(y)]\). Then \((A;<)\)
+   and \((B;\sqsubset)\) are *isomorphic* (\((A;<)\cong(B;\sqsubset)\)) iff there exists an isomorphism
+   from \((A;<)\) onto \((B;\sqsubset)\)
+   #+END_definition
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   1. \(X\preceq Y\) iff there is a function \(f:X\xrightarrow{1-1}Y\)
+   2. \(X\approx Y\) iff there is a function \(f:X\xrightarrow[\onto]{1-1}Y\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   1. \(\preceq\) is transitive and reflexive
+   2. \(X\subseteq Y\to X\preceq Y\)
+   3. \(\approx\) is an equivalence relation
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(R\) be an equivalence relation on a set \(A\). For \(x\in A\),
+   let \([x]=\{y\in A:yRx\}\); \([x]\) is called the *equivalence class* of \(x\). Let \(A/R=\{[x]:x\in A\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options [Justification]
+   #+BEGIN_proof
+   Forming each equivalence class \([x]\) just requires the Comprehension Axiom
+
+   Assuming the Power Set Axiom: \(A/R\subseteq\calp(A)\)
+
+   Assuming the Replacement Axiom: Immediately
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(R\) be a relation. \(y\in X\) is *\(R\)-minimal* in \(X\) iff
+   \begin{equation*}
+   \neg\exists z(z\in X\wedge zRy)
+   \end{equation*}
+   and *\(R\)-maximal* in \(X\) iff
+   \begin{equation*}
+   \neg\exists z(z\in X\wedge yRz)
+   \end{equation*}
+
+   \(R\) is *well-founded* on \(A\) iff for all non-empty \(X\subseteq A\), there is a \(y\in X\) that
+   is \(R\)-minimal in \(X\). \(R\) *well-orders* \(A\) iff \(R\) totally orders \(A\) strictly
+   and \(R\) is well-founded on \(A\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Assume that the relation \(R\) is well-founded on \(A\). Then \(R\) is irreflexive on \(A\),
+   and \(\neg\exists x,y\in A[xRy\wedge yRx]\) and \(\neg\exists x,y,z\in A[xRy\wedge yRz\wedge zRx]\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   If \(xRy\wedge yRx\), then \(X:=\{x,y\}\) would have no \(R\)-minimal element
+   #+END_proof
+
+   A well-founded \(R\) is *acyclic* on \(A\), that is, one cannot have \(x_0Rx_1R\dots Rx_nRx_0\) for any \(n\in\N\).
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If < and \(\sqsubset\) are well-orders of \(S,T\), respectively, then their lexicographic product
+   on \(S\times T\) is a well-order of \(S\times T\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If \(R\) well-orders \(A\) and \(X\subseteq A\), then \(R\) well-orders \(X\)
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_notation
+   Let \(A\) be a defined class and \(R\) is a defined relation. To express the truth of a defined
+   first-order property (which talks only about *elements* of \(A\)), we write the definition formula
+   *relativized* to \(A\) - that is, interpreting the quantified variables to range over \(A\)
+
+   We say that \(R\) is *well-founded* on \(A\) iff every non-empty sub​*set* of \(A\) contains
+   an \(R\)-minimal element
+   #+END_notation
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   label:lemma1.6.28
+   The Axiom of Foundation is equivalent to the statement that the \(\in\) relation is well-founded on \(V\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   "\(\in\) is well-founded on \(V\)" means that for every non-empty subset \(x\subseteq V\), there is
+   a \(y\in x\) that is \(\in\)-minimal in \(x\). But \(x\subseteq V\) is trivially true and minimality of \(y\)
+   in \(x\) means \(\neg\exists z(z\in x\wedge z\in y)\), so we asserting
+   \begin{equation*}
+   \forall x[\exists y(y\in x)\to \exists y(y\in x\wedge \neg\exists z(z\in x\wedge z\in y))]
+   \end{equation*}
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex1.6.29
+   Show that the Axiom of Foundation implies that the successor function \(S\) is 1-1 on \(V\)
+   #+END_exercise
+
+   #+BEGIN_proof
+   Compare the minimal element and delete it
+   #+END_proof
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   If \(A,B,C\) are classes and \(A\approx B\) and \(B\approx C\), then \(A\approx C\)
+   #+END_lemma
+
+   #+BEGIN_proof
+   This lemma is shorthand for an assertion in the metatheory that given five formulas \alpha,\beta,\gamma,\varphi,\psi we
+   can write a sixth formula \chi and prove something about it
+
+   Say \(A=\{x:\alpha(x)\}\), \(B=\{y:\beta(y)\}\) and \(C=\{z:\gamma(z)\}\). Then we can write \(\chi(x,z)\) which
+   provides a bijection from \(A\) to \(C\), assuming that \(\varphi(x,y)\) provides a bijection
+   from \(A\) to \(B\) and \(\psi(y,z)\) provides a bijection from \(B\) to \(C\). So \(\chi(x,z)\)
+   is \(\exists y[\varphi(x,y)\wedge\psi(y,z)\wedge\beta(y)]\) and we can prove
+   \begin{align*}
+   [&\forall x\in A\exists!y\in B\varphi(x,y)\wedge\forall y\in B\exists!x\in A\varphi(x,y)\wedge\\
+   &\forall y\in B\exists!z\in C\psi(y,z)\wedge\forall z\in C\exists!y\in B\psi(y,z)]\to\\
+   &\forall x\in A\exists!z\in C\chi(x,z)\wedge\forall z\in C\exists!x\in A\chi(x,z)
+   \end{align*}
+   #+END_proof
+*  Ordinals \rom{1}
+  In this section, we continue working in \(BST^-\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  \(z\) is a transitive set iff \(\forall y\in z[y\subseteq z]\)
+  #+END_definition
+
+  #+BEGIN_exercise
+  label:ex1.7.2
+  Assuming the Axiom of Foundation, show that every non-empty transitive set contains 0 and show
+  that every non-singleton transitive set contains 1. Then show that 1 is the only one-element
+  transitive set, and 2 is the only two-element transitive set
+  #+END_exercise
+
+  #+BEGIN_proof
+  If \(t\) is transitive and \(x\) is the least element in \(t\), then \(x\) is empty since if there
+  is \(y\in x\), then \(y\) is the new least element.
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  \(z\) is a (von Neumann) *ordinal* iff \(z\) is transitive set and \(z\) is well-ordered by \(\in\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  Assuming the Axiom of Foundation, \(z\) is an ordinal iff \(z\) is a transitive set and \(z\) is
+  totally ordered by \(\in\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  By Foundation and Lemma ref:lemma1.6.28, \(\in\) is well-founded on \(V\), and hence on \(z\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemma1.7.5
+  If \(x\) is an ordinal, then \(x\not\in x\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  If \(x\in x\) then \(\in\) would not be irreflexive on \(x\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  If \(x\) is an ordinal, then \(S(x)\) is an ordinal
+  #+END_lemma
+
+  #+BEGIN_proof
+  To prove that \(S(x)\) is well-ordered by \(\in\), sue Lemma ref:lemma1.7.5
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_notation
+  When discussing ordinals, Greek letters "range over the ordinals; that is, \(\forall \alpha\varphi(\alpha)\) abbreviates
+  \begin{equation*}
+   \forall x[x\text{ is an ordinal }\to\varphi(x)]
+  \end{equation*}
+  Also \(\alpha<\beta\) means \(\alpha\in\beta\) and \(\alpha\le\beta\) means \(\alpha\in\beta\vee\alpha=\beta\)
+
+  \(ON\) denotes the class of all ordinal
+  #+END_notation
+
+  \(ON\) is a proper class.
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  \(ON\) is a transitive class. That is, if \(\alpha\in ON\) and \(z\in\alpha\), then \(z\in ON\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  \alpha is a transitive set, so \(z\subseteq\alpha\). Since \(\in\) well-orders \alpha, it well-orders every subset of \alpha,
+  and it is easy to check that \(z\) is a transitive set. [[https://proofwiki.org/wiki/Element_of_Ordinal_is_Ordinal][proof]]
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemma1.7.9
+  For all \(\alpha,\beta\in ON\), \(\alpha\cap\beta\in ON\)
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemma1.7.10
+  For all \(\alpha,\beta\in ON\), \(\alpha\subseteq\beta\leftrightarrow\alpha\in\beta\vee\alpha=\beta\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  Assume \(\alpha\subseteq\beta\) and \(\alpha\neq\beta\). Let \(X=\beta\setminus\alpha\). Then \(X\neq\emptyset\), so let \xi be the \(\in\)-least member
+  of \(X\). Then \(\xi=\alpha\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  label:thm1.7.11
+  \(ON\) is well-ordered by \(\in\). That is
+  1. \(\in\)is transitive on the ordinals: \(\forall \alpha\beta\gamma[\alpha<\beta\wedge\beta<\gamma\to\alpha<\gamma]\)
+  2. \(\in\) is irreflexive on the ordinals
+  3. \(\in\) satisfies trichotomy on the ordinals: \(\forall\alpha\beta[\alpha<\beta\vee\beta<\alpha\vee\alpha=\beta]\)
+  4. \(\in\) is well-founded on the ordinals
+
+  #+END_theorem
+
+  #+BEGIN_proof
+  1. \gamma is transitive
+  2. Lemma ref:lemma1.7.5
+  3. let \(\delta=\alpha\cap\beta\). Then \delta is an ordinal by Lemma ref:1.7.9., and \(\delta\subseteq\alpha\) and \(\delta\subseteq\beta\), so \(\delta\in\alpha\)
+     or \(\delta=\alpha\) and \(\delta\in\beta\) or \(\delta=\beta\) by Lemma ref:lemma1.7.10. If either \(\delta=\alpha\) or \(\delta=\beta\) we are
+     done. If not, then \(\delta\in\alpha\) and \(\delta\in\beta\), so \(\delta\in\delta\), contradicting 2
+  4. Let \(X\) be any non-empty set of ordinals, and fix an \(\alpha\in X\). If \alpha is least, we're done.
+     Otherwise, \(\alpha\cap X=\{\xi\in X:\xi<\alpha\}\neq\emptyset\), and \(\alpha\cap X\)has a least element, \xi, since \alpha is well-ordered
+     by \(\in\). Then \xi is also the least element of \(X\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  \(ON\) is a proper class
+  #+END_theorem
+
+  #+BEGIN_proof
+  If \(X\) were a set, then by Theorem ref:thm1.7.11, \(ON\) would be an ordinal, so \(ON\in ON\),
+  contradicting Theorem ref:thm1.7.11
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemma1.7.13
+  If \(X\) is a subset of \(ON\) and \(X\) is transitive, then \(X\in ON\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  Theorem ref:thm1.7.11 implies that \(X\) is well-ordered by \(\in\)
+  #+END_proof
+
+  Note that when \(X\subset ON\), \(X\) is transitive iff \(X\) is an initial segment of \(ON\); that
+  is, \(\forall\beta\in X\forall\alpha<\beta[\alpha\in X]\). Then \(X\in ON\) is the least ordinal not in \(X\).
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  If \alpha,\beta are ordinals, then \(\alpha\cup\beta\) and \(\alpha\cap\beta\) are ordinals, with \(\alpha\cup\beta=\max(\alpha,\beta)\)
+  and \(\alpha\cap\beta=\min(\alpha,\beta)\). If \(X\) is a non-empty set of ordinals, then \(\bigcap X\) and \(\bigcup X\) are
+  ordinals, with \(\bigcap X=\min(X)\) and \(\bigcup X=\max(X)\)
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  If \alpha is any ordinal, then \(S(\alpha)\) is an ordinal, \(\alpha\in S(\alpha)\) and for all ordinals \gamma: \(\gamma<S(\alpha)\)
+  iff \(\gamma\le\alpha\)
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  An ordinal \beta is
+  - a *successor ordinal* iff \(\beta=S(\alpha)\) for some \alpha
+  - a *limit ordinal* iff \(\beta\neq 0\) and \beta is not a successor ordinal
+  - a *natural number* iff every \(\alpha\le\beta\) is either 0 or a successor
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  label:lemma1.7.17
+  If \(n\) is a natural number, then \(S(n)\) is a natural number and every element of \(n\) is a
+  natural number
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  \(\omega=\{n:n\text{ is a natural number}\}\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options [Principle of Ordinary Induction]
+  #+BEGIN_theorem
+  label:thm1.7.19
+  For any class \(X\): if \(\emptyset\in X\) and \(\forall y\in X(S(y)\in X)\), then \(X\) contains all natural numbers
+  #+END_theorem
+
+  #+BEGIN_proof
+  Suppose that \(n\) is a natural number and \(n\not\in X\). Then \(n\in S(n)\setminus X\),
+  so \(S(n)\setminus X\neq\emptyset\). \(S(n)\) is well-ordered, so let \(m\) be the least element of \(S(n)\setminus X\).
+  Then \(m\neq 0\) since \(0\in X\), and \(m\neq S(y)\) for any \(y\) since then \(y\in X\)
+  and \(S(y)\not\in X\), so \(m\) is not a natural number, contradicting Lemma ref:lemma1.7.17
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  For all \(y\in\omega\), \(S(y)\not\preceq y\)
+  #+END_lemma
+
+  #+BEGIN_proof
+  Let \(X=\{y\in\omega:S(y)\not\preceq y\}\). Clearly \(\emptyset\in X\), so it is sufficient to show that \(y\in X\to S(y)\in X\);
+  equivalently, \(S(S(y))\preceq S(y)\to S(y)\preceq y\). So suppose that \(f:S(S(y)\xrightarrow{1-1}S(y)=y\cup\{y\})\)
+
+  If \(f(S(y))=y\) or \(y\not\in\ran(f)\), then \(f\restriction S(y):S(y)\xrightarrow{1-1}y\), so \(S(y)\preceq y\)
+
+  Now suppose that \(f(S(y)\neq y)\) and \(y\in\ran(f)\). Then \(f(i)=y\) for some \(i\le y\),
+  and \(j:+f(S(y))\in y\). Let \(h=((f\restriction S(y))\setminus\{(i,y)\}\cup\{(i,j)\})\), then \(h:S(y)\xrightarrow{1-1}y\),
+  so \(S(y)\preceq y\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  The following are equivalent
+  1. The Axiom of Infinity
+  2. \omega exists (is a set)
+  3. Some limit ordinal exists
+
+
+   Assuming the Axiom of Infinity, \(\omega=\N\) and \omega is the smallest limit ordinal
+  #+END_theorem
+
+
+
+  #+BEGIN_proof
+  \(1\to 2\). If \(X\) is an inductive set, then \(\omega\subseteq X\) by Theorem ref:thm1.7.19, so \omega exists by
+  Comprehension
+
+  \(2\to 3\). Apply Lemma ref:lemma1.7.13
+
+  \(3\to 1\). Every limit ordinal is an inductive set
+
+
+  Assuming Infinity, \omega is a limit ordinal, and it is the least one because all ordinals \(<\omega\) is
+  not limit ordinals. To prove \(\omega=\N\), let \(X=\N\cap\omega\). THen \(X=\N\) by Theorem ref:thm1.5.3
+  and \(X=\omega\)  by Theorem ref:thm1.7.19
+  #+END_proof
+
+  Without assuming infinity, we can use \(\preceq\) to define finite and prove the finite ordinals are the
+  natural numbers
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  A set \(A\) is finite iff \(A\preceq n\) for some natural number \(n\). "infinite" means "not finite"
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  For any ordinal \alpha: \alpha is finite iff \alpha is a natural number
+  #+END_lemma
+
+  #+BEGIN_proof
+
+  #+END_proof
