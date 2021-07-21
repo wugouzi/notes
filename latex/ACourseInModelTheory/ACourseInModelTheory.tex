@@ -1,4 +1,4 @@
-% Created 2021-01-10 日 20:48
+% Created 2021-07-21 Wed 20:29
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -14,7 +14,7 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
-\input{../preamble.tex}
+\input{preamble.tex}
 \setcounter{secnumdepth}{2}
 \setcounter{tocdepth}{2}
 \author{Katin Tent \& Martin Ziegler}
@@ -25,7 +25,7 @@
  pdftitle={A Course in Model Theory},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 27.1 (Org mode 9.3)}, 
+ pdfcreator={Emacs 27.2 (Org mode 9.5)}, 
  pdflang={English}}
 \begin{document}
 
@@ -34,10 +34,28 @@
 
 
 \section{The Basics}
-\label{sec:org5ec6b21}
+\label{sec:orgb190d5f}
 
 \subsection{Structures}
-\label{sec:org376d1bd}
+\label{sec:org93e94ef}
+\begin{definition}[]
+A \textbf{language} \(L\) is a set of constants, function symbols and relation symbols
+\end{definition}
+
+\begin{definition}[]
+Let \(L\) be a language. An \textbf{\(L\)-structure} is a pair \(\fA=(A,(Z^{\fA})_{Z\in L})\) where
+\begin{center}
+\begin{tabular}{ll}
+\(A\) & if a non-empty set, the \textbf{domain} or \textbf{universe} of \(\fA\)\\
+\(z^{\fA}\in A\) & if \(Z\) is a constant\\
+\(Z^{\fA}:A^n\to A\) & if \(Z\) is an \(n\)-ary function symbol\\
+\(Z^{\fA}\subseteq A^n\) & if \(Z\) is an \(n\)-ary relation symbol\\
+\end{tabular}
+\end{center}
+\end{definition}
+
+
+
 \begin{definition}[]
 Let \(\fA,\fB\) be \(L\)-structures. A map \(h:A\to B\) is called a
 \textbf{homomorphism} if for all \(a_1,\dots,a_n\in A\)
@@ -61,6 +79,18 @@ If in addition \(h\) is injective and
 for all \(a_1,\dots,a_n\in A\), then \(h\) is called an (isomorphic)
 \textbf{embedding}. An \textbf{isomorphism} is a surjective embedding
 \end{definition}
+
+\begin{definition}[]
+We call \(\fA\) a \textbf{substructure} of \(\fB\) if \(A\subseteq B\) and if the inclusion map is an embedding
+from \(\fA\) to \(\fB\). We denote this by
+\begin{equation*}
+\fA\subseteq\fB
+\end{equation*}
+We say \(\fB\) is an \textbf{extension} of \(\fA\) if \(\fA\) is a substructure of \(\fB\)
+\end{definition}
+
+
+
 
 \begin{lemma}[]
 \label{lemma1.1.8}
@@ -158,21 +188,21 @@ an \(L_{Perm}\)-structure \((X,G)\) is given by a set \(X\) and an
 \end{examplle}
 
 \subsection{Language}
-\label{sec:org0ab008b}
+\label{sec:orgd516642}
 \begin{lemma}[]
 \label{lemma1.2.11}
 Suppose \(\vv{b}\) and \(\vv{c}\) agree on all variables which are free
 in \(\varphi\). Then 
 \begin{equation*}
-\fA\models\varphi[\vv{b}]\Leftrightarrow\fA\models\varphi[\vv{c}]
+\fA\vDash\varphi[\vv{b}]\Leftrightarrow\fA\vDash\varphi[\vv{c}]
 \end{equation*}
 \end{lemma}
 
 We define
 \begin{equation*}
-\fA\models\varphi[a_1,\dots,a_n]
+\fA\vDash\varphi[a_1,\dots,a_n]
 \end{equation*}
-by \(\fA\models\varphi[\vv{b}]\), where \(\vv{b}\) is an assignment
+by \(\fA\vDash\varphi[\vv{b}]\), where \(\vv{b}\) is an assignment
 satisfying \(\vv{b}(x_i)=a_i\). Because of Lemma \ref{lemma1.2.11} this is
 well defined.
 
@@ -181,7 +211,7 @@ well defined.
 
 Thus \(\varphi(x_1,\dots,x_n)\) defines an \(n\)-ary relation
 \begin{equation*}
-\varphi(\fA)=\{\bbar{a}\mid\fA\models\varphi[\bbar{a}]\}
+\varphi(\fA)=\{\bbar{a}\mid\fA\vDash\varphi[\bbar{a}]\}
 \end{equation*}
 on \(A\), the \textbf{realisation set} of \(\varphi\). Such realisation sets are called
 \textbf{0-definable subsets} of \(A^n\), or 0-definable relations
@@ -202,7 +232,23 @@ two new formulas: the formula \(\top\), which is always true, and the formula
 \end{align*}
 
 A formula is in \textbf{negation normal form} if it is built from basic formulas using
-\(\wedge,\vee,exists,\forall\)
+\(\wedge,\vee,\exists,\forall\)
+
+\begin{lemma}[]
+Every formula can be transformed into an equivalent formula which is in negation normal form
+\end{lemma}
+
+\begin{proof}
+Let \(\sim\) denote equivalence of formulas. We consider formulas which are built
+using \(\wedge,\vee,\exists,\forall,\neg\) and move the negation symbols in front of atomic formulas using
+\begin{align*}
+\neg(\varphi\wedge\psi)&\sim(\neg\varphi\vee\neg\psi)\\
+\neg(\varphi\vee\psi)&\sim(\neg\varphi\wedge\neg\psi)\\
+\neg\exists x\varphi&\sim\forall x\neg\varphi\\
+\neg\forall x\varphi&\sim\exists x\neg\varphi\\
+\neg\neg\varphi&\sim\varphi
+\end{align*}
+\end{proof}
 
 \begin{definition}[]
 A formula in negation normal form which does not contain any existential
@@ -210,16 +256,42 @@ quantifier is called \textbf{universal}. Formulas in negation normal form withou
 universal quantifiers are called \textbf{existential}
 \end{definition}
 
+\begin{lemma}[]
+\label{lemma1.2.16}
+Let \(h:\fA\to\fB\) be an embedding. Then for all existential formulas \(\varphi(x_1,\dots,x_n)\) and
+all \(a_1,\dots,a_n\in A\) we have
+\begin{equation*}
+\fA\vDash\varphi[a_1,\dots_,a_n]\Rightarrow\fB\vDash\varphi[h(a_1),\dots,h(a_n)]
+\end{equation*}
+For universal \(\varphi\), the dual holds
+\begin{equation*}
+\fB\vDash\varphi[h(a_1),\dots,h(a_n)]\Rightarrow
+\fA\vDash\varphi[a_1,\dots,a_n]
+\end{equation*}
+\end{lemma}
+
 
 Let \(\fA\) be an \(L\)-structure. The \textbf{atomic diagram} of \(\fA\) is
 \begin{equation*}
-\Diag(\fA)=\{\varphi\text{ basic $L(A)$-sentence}\mid\fA_A\models\varphi\}
+\Diag(\fA)=\{\varphi\text{ basic $L(A)$-sentence}\mid\fA_A\vDash\varphi\}
 \end{equation*}
 
 \begin{lemma}[]
-The models of \(\Diag(\fa)\) are precisely those structures
+The models of \(\Diag(\fA)\) are precisely those structures
 \((\fB,h(a))_{a\in A}\) for embeddings \(h:\fA\to\fB\)
 \end{lemma}
+
+\begin{proof}
+The structures \((\fB,h(a))_{a\in A}\) are models of the atomic diagram by Lemma \ref{1.2.16}.  For
+the converse, note that a map \(h\) is an embedding iff it preserves the validity of all formulas
+of the form
+\begin{align*}
+&(\neg)x_1\dot{=}x_2\\
+&c\dot=x_1\\
+&f(x_1,\dots,x_n)\dot=x_0\\
+&(\neg)R(x_1,\dots,x_n)
+\end{align*}
+\end{proof}
 
 \begin{exercise}
 \label{ex1.2.3}
@@ -232,29 +304,29 @@ The \(Q_i\) are quantifiers and \(\varphi\) is quantifier-free
 
 \begin{proof}
 \begin{align*}
-&(\forall x)\phi\wedge\psi\models\rmodels
+&(\forall x)\phi\wedge\psi\vDash\rmodels
 \forall x(\phi\wedge\psi)\text{ if }\exists x\top(\text{at least one individual exists})\\
-&(\forall x\phi)\vee\psi\models\rmodels\forall x(\phi\vee\psi)\\
-&(\exists x\phi)\wedge\psi\models\rmodels\exists x(\phi\wedge\psi)\\
-&(\exists x\phi)\vee\psi\models\rmodels\exists x(\phi\vee\psi)\text{ if }\exists x\top\\
-&\neg\exists x\phi\models\rmodels\forall x\neg\phi\\
-&\neg\forall x\phi\models\rmodels\exists x\neg\phi\\
-&(\forall x\phi)\to\psi\models\rmodels\exists x(\phi\to\psi)\text{ if }\exists x\top\\
-&(\exists x\phi)\to\psi\models\rmodels\forall x(\phi\to\psi)\\
-&\phi\to(\exists x\psi)\models\rmodels\exists x(\phi\to\psi)\text{ if }\exists x\top\\
-&\phi\to(\forall x\psi)\models\rmodels\forall x(\phi\to\psi)
+&(\forall x\phi)\vee\psi\vDash\rmodels\forall x(\phi\vee\psi)\\
+&(\exists x\phi)\wedge\psi\vDash\rmodels\exists x(\phi\wedge\psi)\\
+&(\exists x\phi)\vee\psi\vDash\rmodels\exists x(\phi\vee\psi)\text{ if }\exists x\top\\
+&\neg\exists x\phi\vDash\rmodels\forall x\neg\phi\\
+&\neg\forall x\phi\vDash\rmodels\exists x\neg\phi\\
+&(\forall x\phi)\to\psi\vDash\rmodels\exists x(\phi\to\psi)\text{ if }\exists x\top\\
+&(\exists x\phi)\to\psi\vDash\rmodels\forall x(\phi\to\psi)\\
+&\phi\to(\exists x\psi)\vDash\rmodels\exists x(\phi\to\psi)\text{ if }\exists x\top\\
+&\phi\to(\forall x\psi)\vDash\rmodels\forall x(\phi\to\psi)
 \end{align*}
 \end{proof}
 
 \subsection{Theories}
-\label{sec:org4dda678}
+\label{sec:org7e67b98}
 \begin{definition}[]
 An \textbf{\(L\)-theory} \(T\) is a set of \(L\)-sentences
 \end{definition}
 
 A theory which has a model is a \textbf{consistent} theory. We call a set \(\Sigma\) of
 \(L\)-formulas \textbf{consistent} if there is an \(L\)-structure and \textbf{an assignment}
-\(\vv{b}\) \textbf{s.t.} \(\fA\models[\vv{b}]\) for all \(\varphi\in\Sigma\)
+\(\vv{b}\) \textbf{s.t.} \(\fA\vDash[\vv{b}]\) for all \(\varphi\in\Sigma\)
 
 \begin{lemma}[]
 Let \(T\) be an \(L\)-theory and \(L'\) be an extension of \(L\). Then \(T\)
@@ -265,10 +337,10 @@ is consistent as an \(L\)-theory iff \(T\) is consistent as a \(L'\)-theory
 \begin{lemma}[]
 \label{lemma1.3.4}
 \begin{enumerate}
-\item If \(T\models\varphi\) and \(T\models(\varphi\to\psi)\), then \(T\models\psi\)
-\item If \(T\models\varphi(c_1,\dots,c_n)\) and the constants \(c_1,\dots,c_n\)
-occur neither in \(T\) nor in \(\varphi(x_1,\dots,x_n)\), then \(T\models\forall
-      x_1\dots x_n\varphi(x_1,\dots,x_n)\)
+\item If \(T\vDash\varphi\) and \(T\vDash(\varphi\to\psi)\), then \(T\vDash\psi\)
+\item If \(T\vDash\varphi(c_1,\dots,c_n)\) and the constants \(c_1,\dots,c_n\)
+occur neither in \(T\) nor in \(\varphi(x_1,\dots,x_n)\), then
+\(T\vDash\forall x_1\dots x_n\varphi(x_1,\dots,x_n)\)
 \end{enumerate}
 \end{lemma}
 
@@ -277,8 +349,8 @@ occur neither in \(T\) nor in \(\varphi(x_1,\dots,x_n)\), then \(T\models\forall
 \setcounter{enumi}{1}
 \item Let \(L'=L\setminus\{c_1,\dots,c_n\}\). If the \(L'\)-structure is a
 model of \(T\) and \(a_1,\dots,a_n\) are arbitrary elements, then
-\((\fA,a_1,\dots,a_n)\models\varphi(c_1,\dots,c_n)\). This means
-\(\fA\models\forall x_1\dots x_n\varphi(x_1,\dots,x_n)\).
+\((\fA,a_1,\dots,a_n)\vDash\varphi(c_1,\dots,c_n)\). This means
+\(\fA\vDash\forall x_1\dots x_n\varphi(x_1,\dots,x_n)\).
 \end{enumerate}
 \end{proof}
 
@@ -289,7 +361,7 @@ the same models
 A consistent \(L\)-theory \(T\) is called \textbf{complete} if for all \(L\)-sentences
 \(\varphi\)
 \begin{equation*}
-T\models\varphi \quad\text{ or }\quad T\models\neg\varphi
+T\vDash\varphi \quad\text{ or }\quad T\vDash\neg\varphi
 \end{equation*}
 \end{definition}
 
@@ -302,10 +374,11 @@ For a complete theory \(T\) we define
 
 The typical example of a complete theory is the theory of a structure \(\fA\)
 \begin{equation*}
-\Th(\fA)=\{\varphi\mid\fA\models\varphi\}
+\Th(\fA)=\{\varphi\mid\fA\vDash\varphi\}
 \end{equation*}
 
 \begin{lemma}[]
+\label{lemma1.3.7}
 A consistent theory is complete iff it is maximal consistent, i.e., if it is
 equivalent to every consistent extension
 \end{lemma}
@@ -336,14 +409,14 @@ Let \(T\) be a consistent theory. Then the following are equivalent
 
 
 \section{Elementary Extensions and Compactness}
-\label{sec:org0ed2543}
+\label{sec:orgc7e4022}
 \subsection{Elementary substructures}
-\label{sec:orgae81414}
+\label{sec:orgc85d506}
 Let \(\fA,\fB\) be two \(L\)-structures. A map \(h:A\to B\) is called
 \textbf{elementary} if for all \(a_1,\dots,a_n\in A\) we have
 \begin{equation*}
-\fA\models\varphi[a_1,\dots,a_n]\Leftrightarrow
-\fB\models\varphi[h(a_1),\dots,h(a_n)]
+\fA\vDash\varphi[a_1,\dots,a_n]\Leftrightarrow
+\fB\vDash\varphi[h(a_1),\dots,h(a_n)]
 \end{equation*}
 We write
 \begin{equation*}
@@ -370,6 +443,32 @@ the universe of an elementary substructure iff every \(L(A)\)-formula
 \(\varphi(x)\) which is satisfiable in \(\fB\) can be satisfied by an element of \(A\)
 \end{theorem}
 
+\begin{proof}
+If \(\fA\prec\fB\) and \(\fB\vDash\exists\varphi(x)\), we also have \(\fA\vDash\exists x\varphi(x)\) and there eexists \(a\in A\)
+s.t. \(\fA\vDash\varphi(a)\). Thus \(\fB\vDash\varphi(a)\)
+
+Conversely, suppose that the condition of Tarski'test is satisfied. First we show that \(A\) is
+the universe of a substructure \(\fA\). The \(L(A)\)-formula \(x\dot=x\) is satisfiable in \(\fA\),
+so \(A\) is not empty. If \(f\in L\) is an \(n\)-ary function symbol \((n\ge 0)\) and \(a_1,\dots,a_n\) is
+from \(A\), we consider the formula
+\begin{equation*}
+\varphi(x)=f(a_1,\dots,a_n)\dot=x
+\end{equation*}
+Since \(\varphi(x)\) is always satisfied by an element of \(A\), it follows that \(A\) is closed
+under \(f^{\calb}\)
+
+Now we show, by induction on \(\psi\), that
+\begin{equation*}
+\fA\vDash\psi\Leftrightarrow\fB\vDash\psi
+\end{equation*}
+for all \(L(A)\)-sentences \(\psi\).
+
+For \(\psi=\exists x\varphi(x)\). If \(\psi\) holds in \(\fA\). If \(\psi\) holds in \(\fA\), there exists \(a\in A\)
+s.t. \(\fA\vDash\varphi(a)\). The induction hypothesis yields \(\fB\vDash\varphi(x)\), thus \(\fB\vDash\psi\). For the converse
+suppose \(\psi\) holds in \(\fB\). Then \(\varphi(x)\) is satisfied in \(\calb\) and by Tarski's test we
+find \(a\in A\) s.t. \(\fB\vDash\varphi(a)\). By induction \(\fA\vDash\varphi(a)\) and \(\fA\vDash\psi\)
+\end{proof}
+
 We use Tarski's Test to construct small elementary substructures
 
 \begin{corollary}[]
@@ -382,15 +481,13 @@ elementary substructure \(\fA\) containing \(S\) and of cardinality at most
 \end{corollary}
 
 \begin{proof}
-We construct \(A\) as the union of an ascending sequence \(S_0\subseteq
-   S_1\subseteq\dots\) of subsets of \(B\). We start with \(S_0=S\). If \(S_i\)
-is already defined, we choose an element \(a_\varphi\in B\) for every
-\(L(S_i)\)-formula \(\varphi(x)\) which is satisfiable in \(\fB\) and define
-\(S_{i+1}\) to be \(S_i\) together with these \(a_{\varphi}\).
+We construct \(A\) as the union of an ascending sequence \(S_0\subseteq S_1\subseteq\dots\) of subsets of \(B\). We
+start with \(S_0=S\). If \(S_i\) is already defined, we choose an element \(a_\varphi\in B\) for
+every \(L(S_i)\)-formula \(\varphi(x)\) which is satisfiable in \(\fB\) and define \(S_{i+1}\) to
+be \(S_i\) together with these \(a_{\varphi}\).
 
-An \(L\)-formula is a finite sequence of symbols from \(L\), auxiliary
-symbols and logical symbols. These are
-\(\abs{L}+\aleph_0=\max(\abs{L},\aleph_0)\) many symbols and there are
+An \(L\)-formula is a finite sequence of symbols from \(L\), auxiliary symbols and logical
+symbols. These are \(\abs{L}+\aleph_0=\max(\abs{L},\aleph_0)\) many symbols and there are
 exactly\(\max(\abs{L},\aleph_0)\) many \(L\)-formulas
 
 Let \(\kappa=\max(\abs{S},\abs{L},\aleph_0)\). There are \(\kappa\) many
@@ -411,13 +508,40 @@ its members
 Let \(\fA=\bigcup_{i\in I}(\fA_i)_{i\in I}\). We prove by induction on
 \(\varphi(\bbar{x})\) that for all \(i\) and \(\bbar{a}\in\fA_i\)
 \begin{equation*}
-\fA_i\models\varphi(\bbar{a})\Leftrightarrow\fA\models\varphi(\bbar{a})
+\fA_i\vDash\varphi(\bbar{a})\Leftrightarrow\fA\vDash\varphi(\bbar{a})
 \end{equation*}
+\end{proof}
+
+\begin{exercise}
+\label{ex2.1.1}
+Let \(\fA\) be an \(L\)-structure and \((\fA_i)_{i\in I}\) a chain of elementary substructures of \(\fA\).
+Show that \(\bigcup_{i\in I}A_i\) is an elementary substructure of \(\fA\).
+\end{exercise}
+
+\begin{exercise}
+\label{ex2.1.2}
+Consider a class \(\calc\) of \(L\)-structures. Prove
+\begin{enumerate}
+\item Let \(\Th(\calc)=\{\varphi\mid \fA\vDash\varphi\text{ for all }\fA\in\calc\}\) be the \textbf{theory of} \(\calc\). Then \(\fM\) is a model
+of \(\Th(C)\) iff \(\fM\) is elementary equivalent to an ultraproduct of elements of \(\calc\)
+\item Show that \(\calc\) is an elementary class iff \(\calc\) is closed under ultraproduct and elementary equivalence
+\item Assume that \(\calc\) is a class of finite structures containing only finitely many structures of
+size \(n\) for each \(n\in\omega\). Then the infinite models of \(\Th(\calc)\) are exactly the models of
+\begin{equation*}
+\Th_a(\calc)=\{\varphi\mid\fA\vDash\varphi\text{ for all but finitely many }\fA\in\calc\}
+\end{equation*}
+\end{enumerate}
+\end{exercise}
+
+\begin{proof}
+Chang\&Keisler p220
 \end{proof}
 
 
 \subsection{The Compactness Theorem}
-\label{sec:org56e9380}
+\label{sec:orgebdacda}
+We call a theory \(T\) \textbf{finitely satisfiable} if every finite subset of \(T\) is consistent
+
 \begin{theorem}[Compactness Theorem]
 Finitely satisfiable theories are consistent
 \end{theorem}
@@ -428,11 +552,40 @@ is a constant \(c\in C\) s.t.
 \begin{equation*}
 \exists x\varphi(x)\to\varphi(c)\in T'
 \end{equation*}
+The elements of \(C\) are called \textbf{Henkin constants} of \(T'\)
+
+An \(L\)-theory \(T\) is \textbf{finitely complete} if it is finitely satisfiable and if
+every \(L\)-sentence \(\varphi\) satisfies \(\varphi\in T\) or \(\neg\varphi\in T\)
 
 \begin{lemma}[]
 Every finitely satisfiable \(L\)-theory \(T\) can be extended to a finitely
 complete Henkin Theory \(T^*\)
 \end{lemma}
+
+Note that conversely the lemma follows directly from the Compactness Theorem. Choose a
+model \(\fA\) of \(T\). Then \(\Th(\fA_A)\) is a finitely complete Henkin theory with \(A\) as a set
+of Henkin constants
+
+\begin{proof}
+We define an increasing sequence \(\emptyset=C_0\subseteq C_1\subseteq\cdots\) of new constants by assigning to
+every \(L(C_i)\)-formula \(\varphi(x)\) a constant \(c_{\varphi(x)}\) and
+\begin{equation*}
+C_{i+1}=\{c_{\varphi(x)}\mid \varphi(x)\text{ a }L(C_i)\text{-formula}\}
+\end{equation*}
+Let \(C\) be the union of the \(C_i\) and \(T^H\) the set of all Henkin axioms
+\begin{equation*}
+\exists x\varphi(x)\to\varphi(c_{\varphi(x)})
+\end{equation*}
+for \(L(C)\)-formulas \(\varphi(x)\). It is easy to see that one can expand every \(L\)-structure to a
+model of \(T^H\). Hence \(T\cup T^H\) is a finitely satisfiable Henkin theory. Using the fact that the
+union of a chain of finitely satisfiable theories is also finite satisfiable, we can apply Zorn's
+Lemma and get a maximal finitely satisfiable \(L(C)\)-theory \(T^*\) which contains \(T\cup T^H\). As
+in Lemma \ref{lemma1.3.7} we show that \(T^*\) is finitely complete: if neither \(\varphi\) nor \(\neg\varphi\)
+belongs to \(T^*\), neither \(T^*\cup\{\varphi\}\) nor \(T^*\cup\{\neg\varphi\}\) would be finitely satisfiable. Hence
+there would be a finite subset \(\Delta\) of \(T^*\) which would be consistent neither with \(\varphi\) nor
+with \(\neg\varphi\). Then \(\Delta\) itself would be inconsistent and \(T^*\) would not be finite satisfiable.
+This proves the lemma.
+\end{proof}
 
 \begin{lemma}[]
 \label{lemma2.2.3}
@@ -444,10 +597,48 @@ complete Henkin theory \(T^*\)
 Every finitely complete Henkin theory \(T^*\) has a model \(\fA\) (unique up
 to isomorphism) consisting of constants; i.e.,
 \begin{equation*}
-(\fA,a_c)_{c\in C}\models T^*
+(\fA,a_c)_{c\in C}\vDash T^*
 \end{equation*}
 with \(A=\{a_c\mid c\in C\}\)
 \end{lemma}
+
+\begin{proof}
+Since \(T^*\) is finite complete, every sentence which follows from a finite subset of \(T^*\)
+belongs to \(T^*\)
+
+Define for \(c,d\in C\)
+\begin{equation*}
+c\simeq d\Leftrightarrow c\dot=d\in T^*
+\end{equation*}
+\(\simeq\) is an equivalence relation. We denote the equivalence class of \(c\) by \(a_c\), and set
+\begin{equation*}
+A=\{a_c\mid c\in C\}
+\end{equation*}
+We expand \(A\) to an \(L\)-structure \(\fA\) by defining
+\begin{align*}
+R^{\fA}(a_{c_1},\dots,a_{c_n})&\Leftrightarrow R(c_1,\dots,c_n)\in T^*\tag{\star}\\
+f^{\fA}(a_{c_1},\dots,a_{c_n})&\Leftrightarrow f(c_1,\dots,c_n)\dot=c_0\in T^*\tag{\star\star}
+\end{align*}
+
+We have to show that this is well-defined. For (\(\star\)) we have to show that
+\begin{equation*}
+a_{c_1}=a_{d_1},\dots,a_{c_n}=a_{d_n}, R(c_1,\dots,c_n)\in T^*
+\end{equation*}
+implies \(R(d_1,\dots,d_n)\in T^*\), which is obvious.
+
+For (\(\star\star\)), we have to show that for all \(c_1,\dots,c_n\) there exists \(c_0\)
+with \(f(c_1,\dots,c_n)\dot=c_0\in T^*\).
+
+Let \(\fA^*\) be the \(L(C)\)-structure \((\fA,a_c)_{c\in C}\). We show by induction on the complexity
+of \(\varphi\) that for every \(L(C)\)-sentence \(\varphi\)
+\begin{equation*}
+\fA^*\vDash\varphi\Leftrightarrow\varphi\in T^*
+\end{equation*}
+\end{proof}
+
+\begin{corollary}[]
+We have \(T\vDash\varphi\) iff \(\Delta\vDash\varphi\) for a finite subset \(\Delta\) of \(T\)
+\end{corollary}
 
 
 
@@ -468,7 +659,7 @@ Let \(\fA\) be an \(L\)-structure and \(B\subseteq A\). Then \(a\in A\)
 \textbf{realises} a set of \(L(B)\)-formulas \(\Sigma(x)\) if \(a\) satisfied all formulas
 from \(\Sigma\). We write 
 \begin{equation*}
-\fA\models\Sigma(a)
+\fA\vDash\Sigma(a)
 \end{equation*}
 
 We call \(\Sigma(x)\) \textbf{finitely satisfiable} in \(\fA\) if every finite subset of \(\Sigma\)
@@ -501,7 +692,7 @@ denote the set of types over \(B\).
 
 Every element \(a\) of \(\fA\) determines a type
 \begin{equation*}
-\tp(a/B)=tp^{\fA}(a/B)=\{\varphi(x)\mid\fA\models\varphi(a),\varphi\text{ an $L(B)$-formula}\}
+\tp(a/B)=tp^{\fA}(a/B)=\{\varphi(x)\mid\fA\vDash\varphi(a),\varphi\text{ an $L(B)$-formula}\}
 \end{equation*}
 So an element \(a\) realises the type \(p\in S(B)\) exactly if
 \(p=\tp(a/B)\). If \(\fA'\) is an elementary extension of \(\fA\), then
@@ -509,8 +700,8 @@ So an element \(a\) realises the type \(p\in S(B)\) exactly if
 S^{\fA}(B)=S^{\fA'}(B)\quad\text{ and }\quad
 \tp^{\fA'}(a/B)=\tp^{\fA}(a/B)
 \end{equation*}
-If \(\fA'\models p(x)\) then \(\fA'\models\exists xp(x)\), so
-\(\fA\models\exists xp(x)\).
+If \(\fA'\vDash p(x)\) then \(\fA'\vDash\exists xp(x)\), so
+\(\fA\vDash\exists xp(x)\).
 
 We use the notation \(\tp(a)\) for \(\tp(a/\emptyset)\)
 
@@ -521,7 +712,7 @@ S_n(B)=S_N^{\fA}(B)
 \end{equation*}
 denotes the set of \(n\)-types over \(B\).
 \begin{equation*}
-\tp(C/B)=\{\varphi(x_{c_1},\dots,x_{c_n})\mid\fA\models\varphi(c_1,\dots,c_n),\varphi
+\tp(C/B)=\{\varphi(x_{c_1},\dots,x_{c_n})\mid\fA\vDash\varphi(c_1,\dots,c_n),\varphi
 \text{ an $L(B)$-formula}\}
 \end{equation*}
 
@@ -557,7 +748,7 @@ suitable elementary extension \(\fA_\beta\succ\fA_\alpha\) by Lemma
 \end{proof}
 
 \subsection{The Löwenheim-Skolem Theorem}
-\label{sec:orgbbc4945}
+\label{sec:orgb7da57a}
 \begin{theorem}[Löwenheim-Skolem]
 Let \(\fB\) be an \(L\)-structure, \(S\) a subset of \(B\) and \(\kappa\) an infinite
 cardinal
@@ -574,6 +765,21 @@ then \(\fB\) has an elementary substructure of cardinality \(\kappa\) containing
 then \(\fB\) has an elementary extension of cardinality \(\kappa\)
 \end{enumerate}
 \end{theorem}
+
+\begin{proof}
+\begin{enumerate}
+\item Choose a set \(S\subseteq S'\subseteq B\) of cardinality \(\kappa\) and apply Corollary \ref{cor2.1.3}
+\item We first construct an elementary extension \(\fB'\) of cardinality at least \(\kappa\). Choose a
+set \(C\) of new constants of cardinality \(\kappa\). As \(\fB\) is infinite, the theory
+\begin{equation*}
+\Th(\fB_B)\cup\{\neg c\dot=d\mid c,d\in C,c\neq d\}
+\end{equation*}
+is finitely satisfiable. By Lemma \ref{lemma2.1.1} any model \((\fB'_B,b_c)_{c\in C}\) is an
+elementary extension of \(\calb\) with \(\kappa\) many different elements \((b_c)\)
+
+Finally we apply the first part of the theorem to \(\calb'\) and \(S=B\)
+\end{enumerate}
+\end{proof}
 
 \begin{corollary}[]
 A theory which has an infinite model has a model in every cardinality \(\kappa\ge\max(\abs{L},\aleph_0)\)
@@ -608,8 +814,9 @@ assumption \(\fA'\) and \(\fB'\) are isomorphic, and it follows that
 \begin{examplle}[]
 \begin{enumerate}
 \item The theory \(\DLO\) of dense linear orders without endpoints is
-\(\aleph_0\)-categorical and by Vaught's test complete. Let \(A=\{a_i\mid
-      i\in\omega\}\), \(B=\{b_i\mid i\in\omega\}\). We inductively define
+\(\aleph_0\)-categorical and by Vaught's test complete. Let
+\(A=\{a_i\mid i\in\omega\}\), \(B=\{b_i\mid i\in\omega\}\).
+We inductively define
 sequences \((c_i)_{i<\omega}\), \((d_i)_{i<\omega}\) exhausting \(A\) and \(B\).
 Assume that \((c_i)_{i<m},(d_i)_{i<m}\) have defined so that \(c_i\mapsto
       d_i,i<m\) is an order isomorphism. If \(m=2k\) let \(c_m=a_j\) where
@@ -618,7 +825,8 @@ not occurring in \((c_i)_{i<m}\). Since \(\fB\) is a dense linear order
 without endpoints there is some element \(d_m\in\{b_i\mid i\in\omega\}\)
 s.t. \((c_i)_{i\le m}\) and \((d_i)_{i\le m}\) are order isomorphic. If
 \(m=2k+1\) we interchange the roles of \(\fA\) and \(\fB\)
-\item 
+\item For any prime \(p\) or \(p=0\), the theory \(\ACF_p\) of algebraically closed fields of
+characteristic \(p\) is \(\kappa\)-categorical for any \(\kappa>\aleph_0\)
 \end{enumerate}
 \end{examplle}
 
@@ -632,9 +840,9 @@ isomorphism, has exactly one model of cardinality \(\kappa\)
 
 
 \section{Quantifier Elimination}
-\label{sec:org0ed44d7}
+\label{sec:org75a56c2}
 \subsection{Preservation theorems}
-\label{sec:org672e375}
+\label{sec:org2ae2861}
 \begin{lemma}[Separation Lemma]
 Let \(T_1, T_2\) be two theories. Assume \(\calh\) is a set of sentences
 which is closed under \(\wedge,\vee\) and contains \(\bot\) and \(\top\).
@@ -643,13 +851,13 @@ Then the following are equivalent
 \item There is a sentence \(\varphi\in\calh\) which separates \(T_1\) from
 \(T_2\). This means
 \begin{equation*}
-  T_1\models\varphi \quad\text{ and }\quad
-  T_2\models\neg\varphi
+  T_1\vDash\varphi \quad\text{ and }\quad
+  T_2\vDash\neg\varphi
 \end{equation*}
 \item All models \(\fA_1\) of \(T_1\) can be separated from all models \(\fA_2\)
 of \(T_2\) by a sentence \(\varphi\in\calh\). This means
 \begin{equation*}
-  \fA_1\models\varphi \quad\text{ and }\quad\fA_2\models\neg\varphi
+  \fA_1\vDash\varphi \quad\text{ and }\quad\fA_2\vDash\neg\varphi
 \end{equation*}
 \end{enumerate}
 \end{lemma}
@@ -661,11 +869,13 @@ that \(\calh_{\fA_1}\) and \(T_2\) cannot have a common model. By the
 Compactness Theorem there is a finite conjunction \(\varphi_{\fA_1}\) of
 sentences from \(\calh_{\fA_1}\) inconsistent with \(T_2\). Clearly
 \begin{equation*}
- T_1\cup\{\neg\varphi_{\fA_1}\mid\fA_1\models T_1\}
+ T_1\cup\{\neg\varphi_{\fA_1}\mid\fA_1\vDash T_1\}
 \end{equation*}
 is inconsistent. Again by compactness \(T_1\) implies a disjunction \(\varphi\) of
-finitely many of the \(\varphi_{\fA_1}\)
+finitely many of the \(\varphi_{\fA_1}\) (Corollary \ref{cor2.2.5})
 \end{proof}
+
+
 
 For structures \(\fA,\fB\) and a map \(f:A\to B\) preserving all formulas
 from a set of formulas \(\Delta\), we use the notation
@@ -685,21 +895,24 @@ under existential quantification, conjunction and substitution of variables.
 Then the following are equivalent
 \begin{enumerate}
 \item All sentences \(\varphi\in\Delta\) which are true in \(\fA\) are
-consistent with \(T\) (There is a model \(\fB\models\Th_\Delta(\fA_A)\cup T\) and \(\fA\Rightarrow_\Delta\fB\))
-\item There is a model \(\fB\models T\) and a map \(f:\fA\to_\Delta\fB\)
+consistent with \(T\)
+\item There is a model \(\fB\vDash T\) and a map \(f:\fA\to_\Delta\fB\)
 \end{enumerate}
 \end{lemma}
 
 \begin{proof}
-\(1\to2\). Consider \(\Th_\Delta(\fA_A)\), the set of all sentences
-\(\delta(\bbar{a})\)
+\(2\to 1\). Assume \(f:\fA\to_\Delta\fB\vDash T\). If \(\varphi\in\Delta\) is true in \(\fA\), it is also true in \(\fB\) and
+therefore consistent with \(T\).
+
+\(1\to2\). Consider \(\Th_\Delta(\fA_A)\), the set of all sentences \(\delta(\bbar{a})\)
 (\(\delta(\bbar{x})\in\Delta\)), which are true in \(\fA_A\). The models
 \((\fB,f(a)_{a\in A})\) of this theory correspond to maps
 \(f:\fA\to_\Delta\fB\). \textbf{This means that we have to find a model of}
 \(T\cup\Th_\Delta(\fA_A)\). To show finite satisfiability it is enough to
 show that \(T\cup D\) is consistent for every finite subset \(D\) of
 \(\Th_\Delta(\fA_A)\). Let \(\delta(\bbar{a})\) be the conjunction of the elements
-of \(D\). Then \(T\) has a model   \(\fB\) which is also a model of \(\varphi=\exists\bbar{x}\delta(\bbar{x})\)
+of \(D\). Then \(\fA\) is a model of \(\varphi=\exists\bar{x}\delta(\barx)\), so by assumption \(T\) has a
+model \(\fB\) which is also a model of \(\varphi\). This means that there is a tuple \(\barb\) s.t. \((\fB,\barb)\vDash\delta(\bara)\)
 \end{proof}
 
 Lemma \ref{lemma3.1.2} applied to \(T=\Th(\fB)\) shows that
@@ -716,21 +929,33 @@ Let \(T_1\) and \(T_2\) be two theories. Then the following are equivalent
 \end{theorem}
 
 \begin{proof}
-\(2\to1\). If \(T_1\) and \(T_2\) cannot be separated by a universal
-sentence, then they have models \(\fA_1\) and \(\fA_2\) which cannot be separated
-by a universal sentence. This can be denoted by
+\(1\to 2\).  Let \(\varphi\) be a universal sentence which separates \(T_1\) and \(T_2\). Let \(\fA_1\) be a model
+of \(T_1\) and \(\fA_2\) a substructure of \(\fA_1\). Since \(\fA_1\) is a model of \(\varphi\), \(\fA_2\) is also a
+model of \(\varphi\). Therefore \(\fA_2\) cannot be a model of \(T_2\)
+
+ \(2\to1\).   Here we add some details for the proof \(2\to 1\). If \(T_1\) and \(T_2\) cannot be separated by a
+universal sentence, then they have models \(\fA_1\) and \(\fA_2\)  which cannot be separated by a
+universal sentence. That is, for all universal sentence \(\varphi\), if \(\fA_1\vDash\varphi\) then \(\fA_2\vDash\varphi\).
+Thus \(\fA_1\Rightarrow_\forall\fA_2\), here \(\Rightarrow_\forall\) means for all universal sentence.
+
+Now note that
 \begin{equation*}
-\fA_2\Rightarrow_\exists\fA_1
+\fA_1\vDash\varphi\to\fA_2\vDash\varphi\quad\Leftrightarrow\quad\fA_2\vDash\neg\varphi\to\fA_2\vDash\neg\varphi
 \end{equation*}
- Now Lemma \ref{lemma3.1.2} implies that \(\fA_2\) there is a map
- \(\fA_2\to_\exists\fA_1'\) where \(\fA_1'\models T_1\)
-. Hence \(\fA_2\) has an extension \(\fA_2'\) s.t. \(\fA_2'\equiv\fA_1'\).
-Then \(\fA'\) is gain a model of \(T_1\) contradicting (2)
+and \(\neg\varphi\) is an existential sentence. Hence we have
+\begin{equation*}
+\fA_2\Rightarrow_{\exists}\fA_1
+\end{equation*}
+
+The reason that we want to use \(\exists\) is that it holds in the substructure case and we could
+imagine that \(\fA_2\subseteq\fA_1\) (I guess this is our intuition). Now by Lemma \ref{lemma3.1.2} we
+have \(\fA_1'\equiv\fA_1\) and a map \(f:\fA_2\to_\exists\fA_1'\).
+Apparently \(\fA_1'\vDash\Diag(\fA_2)\). Hence \(\fA_1'\) is a model of \(T_1\) and \(T_2\)
 \end{proof}
 
 \begin{definition}[]
 For any \(L\)-theory \(T\), the formulas \(\varphi(\bbar{x}),\psi(\bbar{x})\) are said
-to be \textbf{equivalent} modulo \(T\) (or relative to \(T\)) if \(T\models\forall\bbar{x}(\varphi(\bbar{x})\leftrightarrow\psi(\bbar{x}))\)
+to be \textbf{equivalent} modulo \(T\) (or relative to \(T\)) if \(T\vDash\forall\bbar{x}(\varphi(\bbar{x})\leftrightarrow\psi(\bbar{x}))\)
 \end{definition}
 
 \begin{corollary}[]
@@ -741,7 +966,7 @@ Let \(T\) be a theory
 \begin{enumerate}
 \item \(\varphi(x_1,\dots,x_n)\) is, modulo \(T\), equivalent to a universal formula
 \item If \(\fA\subseteq\fB\) are models of \(T\) and \(a_1,\dots,a_n\in A\),
-then \(\fB\models\varphi(a_1,\dots,a_n)\) implies \(\fA\models\varphi(a_1,\dots,a_n)\)
+then \(\fB\vDash\varphi(a_1,\dots,a_n)\) implies \(\fA\vDash\varphi(a_1,\dots,a_n)\)
 \end{enumerate}
 \item We say that a theory which consists of universal sentences is universal.
 Then \(T\) is equivalent to a universal theory iff all substructures of
@@ -760,22 +985,22 @@ T_2=T\cup\{\neg\varphi(\bbar{c})\}
 Then (2) says the substructures of models of \(T_1\) cannot be models of
 \(T_2\). By Theorem \ref{thm3.1.3} \(T_1\) and \(T_2\) can be separated by a
 universal \(L(\bbar{c})\)-sentence \(\psi(\bbar{c})\). By Lemma
-\ref{lemma1.3.4}, \(T_1\models\psi(\bbar{c})\) implies
+\ref{lemma1.3.4}, \(T_1\vDash\psi(\bbar{c})\) implies
 \begin{equation*}
-T\models\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))
+T\vDash\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))
 \end{equation*}
-and from \(T_2\models\neg\psi(\bbar{c})\) we see
+and from \(T_2\vDash\neg\psi(\bbar{c})\) we see
 \begin{equation*}
-T\models\forall\bbar{x}(\neg\varphi(\bbar{x})\to\neg\psi(\bbar{x}))
+T\vDash\forall\bbar{x}(\neg\varphi(\bbar{x})\to\neg\psi(\bbar{x}))
 \end{equation*}
 \item Suppose a theory \(T\) has this property. Let \(\varphi\) be an axiom of \(T\). If
 \(\fA\) is a substructure of \(\fB\), it is not possible for \(\fB\) to be
-a model of \(T\) and for \(\fA\) to be a model of \(\neg\psi\) at the same
+a model of \(T\) and for \(\fA\) to be a model of \(\neg\varphi\) at the same
 time. By Theorem \ref{thm3.1.3} there is a universal sentence \(\psi\) with
-\(T\models\psi\) and \(\neg\varphi\models\neg\psi\). Hence all axioms of
+\(T\vDash\psi\) and \(\neg\varphi\vDash\neg\psi\). Hence all axioms of
 \(T\) follow from
 \begin{equation*}
-T_\forall=\{\psi\mid T\models\psi,\psi\text{ universal}\}
+T_\forall=\{\psi\mid T\vDash\psi,\psi\text{ universal}\}
 \end{equation*}
 \end{enumerate}
 \end{proof}
@@ -786,6 +1011,7 @@ An \(\forall\exists\)-formula is of the form
 \end{equation*}
 where \(\psi\) is existential
 \begin{lemma}[]
+\label{lemma3.1.6}
 Suppose \(\varphi\) is an \(\forall\exists\)-sentence, \((\fA_i)_{i\in I}\) is a
 directed family of models of \(\varphi\) and \(\fB\) the union of the \(\fA_i\). Then
 \(\fB\) is also a model of \(\varphi\).
@@ -818,6 +1044,10 @@ models of \(T_1\)
 
 
 \begin{proof}
+\(1\to 2\). Assume \(\varphi\) is a \(\forall\exists\)-sentence which separates \(T_1\) from \(T_2\), \((\fA_i)_{i\in I}\) is a
+directed family of models of \(\varphi\), by Lemma \ref{lemma3.1.6} \(\fB\) is also a model of \(\varphi\).
+Since \(\fB\vDash\varphi\), \(\fB\) cannot be a model of \(T_2\)
+
 \(2\to1\). If (1) is not true, \(T_1,T_2\) have models which cannot be
 separated by an \(\forall\exists\)-sentence. Since
 \(\exists\forall\)-formulas are equivalent to negated
@@ -877,21 +1107,40 @@ T_1=T\cup\{\varphi\} \quad\text{ and }\quad T_2=T\cup\{\neg\varphi\}
 Part (b) says that the union of a chain of models of \(T_1\) cannot be a
 model of \(T_2\). By Theorem \ref{thm3.1.8} we can separate \(T_1\) and
 \(T_2\) by an \(\forall\exists\)-sentence \(\psi\). Hence
-\(T\cup\{\varphi\}\models\psi\) and
-\(T\cup\{\neg\varphi\}\models\neg\psi\)
+\(T\cup\{\varphi\}\vDash\psi\) and
+\(T\cup\{\neg\varphi\}\vDash\neg\psi\)
 \item Clearly \(\forall\exists\)-axiomatised theories are inductive. For the
-converse assume that \(T\) is inductive and \(\varphi\) is an axiom of \(T\). If
+converse assume that \(T\) is inductive and \(\varphi\) is an axiom of \(T\). Ifpp
 \(\fB\) is a union of models of \(T\), it cannot be a model of
 \(\neg\varphi\). By Theorem \ref{thm3.1.8} there is an
-\(\forall\exists\)-sentence \(\psi\) with \(T\models\psi\) and
-\(\neg\varphi\models\neg\psi\). Hence all axioms of \(T\) follows from
+\(\forall\exists\)-sentence \(\psi\) with \(T\vDash\psi\) and
+\(\neg\varphi\vDash\neg\psi\). Hence all axioms of \(T\) follows from
 \begin{equation*}
-T_{\forall\exists}=\{\psi\mid T\models\psi,\psi\text{ $\forall\exists$-formula}\}
+T_{\forall\exists}=\{\psi\mid T\vDash\psi,\psi\text{ $\forall\exists$-formula}\}
 \end{equation*}
 \end{enumerate}
 \end{proof}
+
+\begin{exercise}
+\label{ex3.1.1}
+Let \(X\) be a topological space, \(Y_1\) and \(Y_2\) quasi-compact subsets, and \(\calh\) a set of
+clopen subsets. Then the following are equivalent
+\begin{enumerate}
+\item There is a positive Boolean combination \(B\) of elements from \(\calh\) s.t. \(Y_1\subseteq B\)
+and \(Y_2\cap B=\emptyset\)
+\item For all \(y_1\in Y_1\) and \(y_2\in Y_2\) there is an \(H\in\calh\) s.t. \(y_1\in H\) and \(y_2\not\in H\)
+\end{enumerate}
+\end{exercise}
+
+\begin{proof}
+\(2\to 1\). Consider an element \(y_1\in Y_1\) and \(\calh_{y_1}\), the set of all elements of \(\calh\)
+containing \(y_1\). 2 implies that the intersection of the sets in \(\calh_{y_1}\) is disjoint
+from \(Y_2\). So a finite intersection \(h_{y_1}\) of elements of \(\calh_{y_1}\) is disjoint
+from \(Y_2\). The \(h_{y_i},y_1\in Y_1\), cover \(Y_1\). So \(Y_1\) is contained in the union \(H\) of
+finitely many of the \(h_{y_i}\). Hence \(H\) separates \(Y_1\) from \(Y_2\)
+\end{proof}
 \subsection{Quantifier elimination}
-\label{sec:org4eb1e83}
+\label{sec:org3589caf}
 \begin{definition}[]
 A theory \(T\) has \textbf{quantifier elimination} if every \(L\)-formula
 \(\varphi(x_1,\dots,x_n)\) in the theory is equivalent modulo \(T\) to some
@@ -912,15 +1161,13 @@ A \textbf{prime structure} of \(T\) is a structure which embeds into all models 
 \(T\)
 
 \begin{lemma}[]
-A consistent theory \(T\) with quantifier elimination which posseses a prime
+A consistent theory \(T\) with quantifier elimination which possess a prime
 structure is complete
 \end{lemma}
 
 \begin{proof}
-If \(\fM,\fN\models T\) and \(\fM\models\varphi\) and
-\(\fN\models\neg\varphi\). The prime structure is \(\fH\). Then we have
-\(h_1:\fH\to\fM\) and \(h_2:\fH\to\fN\). If \(\varphi\) doesn't contain existential
-quantification, then there is a contradiction.
+If \(\fM,\fN\vDash T\) and \(\fM\vDash\varphi\) and
+\(\fN\vDash\neg\varphi\). Suppose prime structure is \(\fH\), then \(\fH\vDash\varphi\) and \(\fH\vDash\neg\varphi\) since we have quantifier elimination
 \end{proof}
 
 \begin{definition}[]
@@ -939,15 +1186,14 @@ formula is, modulo \(T\), equivalent to a quantifier-free formula
 \end{lemma}
 
 \begin{proof}
-We can write every simple existential formula in the form \(\exists
-   y\bigvee_{i<n}\rho_i\) for \(\rho_i\) which are conjunctions of basic
-formulas. This shows that every simple existential formula is equivalent to a
-disjunction of primitive existential formulas, namely to
-\(\bigvee_{i<n}(\exists y\rho_i)\). We can therefore assume that every simple
-existential formula is, modulo \(T\), equivalent to a quantifier-free formula
+We can write every simple existential formula in the form \(\exists y\bigvee_{i<n}\rho_i\) for \(\rho_i\) which are
+conjunctions of basic formulas. This shows that every simple existential formula is equivalent to
+a disjunction of primitive existential formulas, namely to \(\bigvee_{i<n}(\exists y\rho_i)\). We can therefore
+assume that every simple existential formula is, modulo \(T\), equivalent to a quantifier-free
+formula
 
-We are now able to eliminate the quantifiers in arbitrary formulas in prenex
-normal form (Exercise \ref{ex1.2.3})
+We are now able to eliminate the quantifiers in arbitrary formulas in prenex normal form
+(Exercise \ref{ex1.2.3})
 \begin{equation*}
 Q_1x_1\dots Q_nx_n\rho
 \end{equation*}
@@ -973,15 +1219,25 @@ For a theory \(T\) the following are equivalent
 \(\fA\) and for all primitive existential formulas \(\varphi(x_1,\dots,x_n)\)
 and parameter \(a_1,\dots,a_n\) from \(A\) we have
 \begin{equation*}
-\fM^1\models\varphi(a_1,\dots,a_n)\Rightarrow\fM^2\models\varphi(a_1,\dots,a_n)
+\fM^1\vDash\varphi(a_1,\dots,a_n)\Rightarrow\fM^2\vDash\varphi(a_1,\dots,a_n)
 \end{equation*}
 (this is exactly the equivalence relation)
 \end{enumerate}
 
-If \(L\) has no constants, \(\fA\) is allowed to be the empty "structure"
+If \(L\) has no constants, \(\fA\) is allowed to be the empty ``structure''
 \end{theorem}
 
 \begin{proof}
+\(1\to 2\). Let \(\varphi(\bara)\) be an \(L(A)\)-sentence which holds in \(\fM^1\). Choose a
+quantifier-free \(\rho(\barx)\) which is, modulo \(T\), equivalent to \(\varphi(\barx)\). Then
+\begin{center}
+\begin{tabular}{llllllll}
+\(\fM^1\) & \(\vDash\) & \(\varphi(\bara)\) & \(\Rightarrow\) & \(\fM^1\) & \(\vDash\) & \(\rho(\bara)\) & \\
+ &  &  & \(\Rightarrow\) & \(\fA\) & \(\vDash\) & \(\rho(\bara))\) & \(\Rightarrow\)\\
+\(\fM^2\) & \(\vDash\) & \(\rho(\bara))\) & \(\Rightarrow\) & \(\fM^2\) & \(\vDash\) & \(\varphi(\bara)\) & \\
+\end{tabular}
+\end{center}
+
 \(3\to1\). Let \(\varphi(\bbar{x})\) be a primitive existential formula. In order
 to show that \(\varphi(\bbar{x})\) is equivalent, modulo \(T\), to a
 quantifier-free formula \(\rho(\bbar{x})\) we extend \(L\) by an \(n\)-tuple
@@ -994,8 +1250,8 @@ quantifier-free formula \(\rho(\bbar{x})\) we extend \(L\) by an \(n\)-tuple
 \((\fM^1,\bbar{a}^1)\) and \((\fM^2,\bbar{a}^2)\) satisfy the same
 quantifier-free \(L(\bbar{c})\)-sentences. We have to show that
 \begin{equation*}
-\fM^1\models\varphi(\bbar{a}^1)\Rightarrow
-\fM^2\models\varphi(\bbar{a}^2)
+\fM^1\vDash\varphi(\bbar{a}^1)\Rightarrow
+\fM^2\vDash\varphi(\bbar{a}^2)
 \end{equation*}
 then there is no \(L(\bbar{c})\)-sentence that can separate the models of
 \(T\cup\{\varphi(\bbar{c})\}\) and the models of \(T\cup\{\neg\varphi(\bbar{c})\}\)
@@ -1018,7 +1274,7 @@ and injective. Assume
 \begin{equation*}
 s^{\fM^1}[\bbar{a}^1]=t^{\fM^1}[\bbar{af^1}]
 \end{equation*}
-Then \(\fM^1,\bbar{a}^1\models s(\bbar{c})\dot{=}t(\bbar{c})\), and by out
+Then \(\fM^1,\bbar{a}^1\vDash s(\bbar{c})\dot{=}t(\bbar{c})\), and by out
 assumption it also holds in \((\fM^2,\bbar{a}^2)\), which means
 \begin{equation*}
 s^{\fM^2}[\bbar{a}^2]=t^{\fM^2}[\bbar{a}^2]
@@ -1028,19 +1284,19 @@ Swapping the two sides yields injectivity.
 Surjectivity is clear. It remains to show that \(f\) commutes with the
 interpretation of the relation symbols. Now
 \begin{equation*}
-\fM^1\models R\left[t_1^{\fM^1}[\bbar{a}^1],\dots,t_m^{\fM^1}[\bbar{a}^1]\right]
+\fM^1\vDash R\left[t_1^{\fM^1}[\bbar{a}^1],\dots,t_m^{\fM^1}[\bbar{a}^1]\right]
 \end{equation*}
-is equivalent to \((\fM^1,\bbar{a}^1)\models
+is equivalent to \((\fM^1,\bbar{a}^1)\vDash
    R(t_1(\bbar{c}),\dots,t_m(\bbar{c}))\), which is equivalent to
-\((\fM^2,\bbar{a}^2)\models
+\((\fM^2,\bbar{a}^2)\vDash
    R(t_1(\bbar{c}),\dots,t_m(\bbar{c}))\), which in turn is equivalent to
 \begin{equation*}
-\fM^2\models R\left[t_1^{\fM^2}[\bbar{a}^2],\dots,t_m^{\fM^2}[\bbar{a}^2]\right]
+\fM^2\vDash R\left[t_1^{\fM^2}[\bbar{a}^2],\dots,t_m^{\fM^2}[\bbar{a}^2]\right]
 \end{equation*}
 \end{proof}
 
 Note that (2) of Theorem \ref{thm3.2.5} is saying that \(T\) is \textbf{substructure
-complete}; i.e., for any model \(\fM\models T\) and substructure
+complete}; i.e., for any model \(\fM\vDash T\) and substructure
 \(\fA\subseteq\fM\) the theory \(T\cup\Diag(\fA)\) is complete
 
 \begin{definition}[]
@@ -1051,7 +1307,7 @@ We call \(T\) \textbf{model complete} if for all models \(\fM^1\) and \(\fM^2\) 
 \end{equation*}
 \end{definition}
 
-\(T\) is model complete iff for any \(\fM\models T\) the theory
+\(T\) is model complete iff for any \(\fM\vDash T\) the theory
 \(T\cup\Diag(\fM)\) is complete
 
 \begin{lemma}[Robinson's Test]
@@ -1061,7 +1317,7 @@ Let \(T\) be a theory. Then the following are equivalent
 \item For all models \(\fM^1\subseteq\fM^2\) of \(T\) and all existential
 sentences \(\varphi\) from \(L(M^1)\)
 \begin{equation*}
-\fM^2\models\varphi\Rightarrow\fM^1\models\varphi
+\fM^2\vDash\varphi\Rightarrow\fM^1\vDash\varphi
 \end{equation*}
 \item Each formula is, modulo \(T\), equivalent to a universal formula
 \end{enumerate}
@@ -1097,7 +1353,7 @@ A theory \(T\) has, up to equivalence, at most one model companion \(T^*\)
 
 \begin{proof}
 If \(T^+\) is another model companion of \(T\), every model of \(T^+\) is
-contained in a model of \(T^*\) and conversely. Let \(\fA^0\models T^+\) .
+contained in a model of \(T^*\) and conversely. Let \(\fA^0\vDash T^+\) .
 Then \(\fA_0\) can be embedded in a model \(\fB_0\) of \(T^*\). In turn
 \(\fB_0\) is contained in a model \(\fA^1\) of \(T^+\). In this way we find
 two elementary chains \((\fA_i)\) and \((\fB_i)\), which have a common union
@@ -1105,10 +1361,10 @@ two elementary chains \((\fA_i)\) and \((\fB_i)\), which have a common union
 \(\fA_0\equiv\fB_0\) since \(T\) are all sentences. Thus \(\fA_0\) is a model of \(T^*\)
 \end{proof}
 \subsubsection{Existentially closed structures and the Kaiser hull}
-\label{sec:orgdf45f5c}
+\label{sec:orgd562735}
 Let \(T\) be an \(L\)-theory. It follows from \ref{lemma3.1.2} that the models
 of \(T_\forall\) are the substructures of models of \(T\). The conditions
-(1) and (2) in the definition of "model companion" can therefore be
+(1) and (2) in the definition of ``model companion'' can therefore be
 expressed as
 \begin{equation*}
 T_{\forall}=T_{\forall}^*
@@ -1217,11 +1473,11 @@ relation symbol \(R\) and consider the \(L\)-theory \(T=\{\forall x\forall
 \begin{enumerate}
 \item For any \(T\)-structure \(\fM\) and \(a,b\in M\) with
 \(b\not\in\{a,f^{\fM}(a),(f^{\fM})^2(a),\dots\}\) we have
-\(\fM\models\exists z(R(z,a)\wedge\neg R(z,b))\)
+\(\fM\vDash\exists z(R(z,a)\wedge\neg R(z,b))\)
 \item Let \(\fM\) be a model of \(T\) and \(a\) an element of \(M\) s.t.
 \(\{a,f^{\fM}(a),(f^{\fM})^2(a),\dots\}\) is infinite. Then in an
 elementary extension \(\fM'\) there is an element \(b\) with
-\(\fM'\models\forall z(R(z,a)\to R(z,b))\)
+\(\fM'\vDash\forall z(R(z,a)\to R(z,b))\)
 \item The class of \(T\)-ec structures is not elementary, so \(T\) does not
 have a model companion
 \end{enumerate}
@@ -1237,7 +1493,7 @@ the form
 where \(\psi\) is primitive existential formula
 \end{exercise}
 \subsection{Examples}
-\label{sec:org777134a}
+\label{sec:org626a540}
 \textbf{Infinite sets}. The models of the theory  \(\Infset\) of \textbf{infinite sets} are all
 infinite sets without additional structure. The language \(L_{\emptyset}\) is
 empty, the axioms are (for \(n=1,2,\dots\))
@@ -1269,7 +1525,7 @@ existential formulas.
 Let \(A\) be a finite common substructure of the two models \(O_1\) and
 \(O_2\). We choose an ascending enumeration \(A=\{a_1,\dots,a_n\}\). Let
 \(\exists y\rho (y)\) be a simple existential \(L(A)\)-sentence, which is
-true in \(O_1\) and assume \(O_1\models\rho(b_1)\). We want to extend the
+true in \(O_1\) and assume \(O_1\vDash\rho(b_1)\). We want to extend the
 order preserving map \(a_i\mapsto a_i\) to an order preserving map
 \(A\cup\{b_1\}\to O_2\). For this we have an image \(b_2\) of \(b_1\). There
 are four cases
@@ -1282,7 +1538,7 @@ of the same kind
 \end{enumerate}
 
 
-This defines an isomorphism \(A\cup\{b_1\}\to A\cup\{b_2\}\), which show that \(O_2\models\rho(b_2)\)
+This defines an isomorphism \(A\cup\{b_1\}\to A\cup\{b_2\}\), which show that \(O_2\vDash\rho(b_2)\)
 \end{proof}
 
 \textbf{Modules}. Let \(R\) be a (possibly non-commutative) ring with 1. An
@@ -1319,7 +1575,7 @@ Choose a \(b_1\) from \(V_1\) which satisfies \(\rho(y)\). If \(b_1\) belongs to
 \(A\), we finished. If not, we choose a \(b_2\in V_2\setminus A\). Possibly
 we have to replace \(V_2\) by an elementary extension. The vector spaces
 \(A+Kb_1\) and \(A+Kb_2\) are isomorphic by an isomophism which maps \(b_1\)
-to \(b_2\) and fixes \(A\) elementwise. Hence \(V_2\models\rho(b_2)\)
+to \(b_2\) and fixes \(A\) elementwise. Hence \(V_2\vDash\rho(b_2)\)
 
 The theory is complete since a quantifier-free sentence is true in a vector
 space iff it is true in the zero-vector space.
@@ -1359,17 +1615,18 @@ Let \(F_1\) and \(F_2\) be the quotient fields of \(R\) in \(K_1\) and
 \(R\). Then \(f\) extends to an isomorphism \(g:G_1\to G_2\) between the
 relative algebraic closures \(G_i\) of \(F_i\) in \(K_i\).
 \end{proof}
+
 \section{Countable Models}
-\label{sec:org0bc8979}
+\label{sec:orgaa5828d}
 \subsection{The omitting types theorem}
-\label{sec:orgda800c8}
+\label{sec:org43857a8}
 \begin{definition}[]
 Let \(T\) be an \(L\)-theory and \(\Sigma(x)\) a set of \(L\)-formulas. A model
 \(\fA\) of \(T\) not realizing \(\Sigma(x)\) is said to \textbf{omit} \(\Sigma(x)\). A
 formula \(\varphi(x)\) \textbf{isolates} \(\Sigma(x)\) if
 \begin{enumerate}
 \item \(\varphi(x)\) is consistent with \(T\)
-\item \(T\models\forall x(\varphi(x)\to\sigma(x))\) for all \(\sigma(x)\in\Sigma(x)\)
+\item \(T\vDash\forall x(\varphi(x)\to\sigma(x))\) for all \(\sigma(x)\in\Sigma(x)\)
 \end{enumerate}
 \end{definition}
 
@@ -1445,7 +1702,7 @@ If \(\Sigma(x_1,\dots,x_n)\), then
 Combine the two case
 \end{proof}
 \subsection{The space of types}
-\label{sec:orgf4f66cd}
+\label{sec:orgf408c92}
 Fix a theory \(T\). An \textbf{\(n\)-type} is a maximal set of formulas
 \(p(x_1,\dots,x_n)\) consistent with \(T\). We denote by \(S_n(T)\) the set
 of all \(n\)-types of \(T\). We also write \(S(T)\) for \(S_1(T)\).
@@ -1518,7 +1775,7 @@ A map \(f\) from a subset of a structure \(\fA\) to a structure \(\fB\) is
 elementary if for every formula \(\varphi(x_1,\dots,x_n)\) and \(\bbar{a}\in A_0\)
 we have
 \begin{equation*}
-\fA\models\varphi(\bbar{a})\Rightarrow\fB\models\varphi(f(\bbar{a}))
+\fA\vDash\varphi(\bbar{a})\Rightarrow\fB\vDash\varphi(f(\bbar{a}))
 \end{equation*}
 \end{definition}
 
@@ -1534,7 +1791,7 @@ If \(q(\bbar{x})\in S_n(B_0)\), we define
 S(f)(q)=\{\varphi(x_1,\dots,x_n,\bbar{a})\mid\bbar{a}\in A_0,\varphi(x_1,\dots,x_n,f(\bbar{a}))\in q(\bbar{x})\}
 \end{equation*}
 If \(\varphi(\bbar{x},f(\bbar{a}))\not\in q(\bbar{x})\), then
-\(\fB\not\models\varphi(\bbar{x},\bbar{a})\). Therefore \(\fA\not\models\varphi(\bbar{x},\bbar{a})\).
+\(\fB\not\vDash\varphi(\bbar{x},\bbar{a})\). Therefore \(\fA\not\vDash\varphi(\bbar{x},\bbar{a})\).
 \(S(f)\) defines a map from \(S_n(B_0)\) to \(S_n(A_0)\). Moreover, it is
 surjective since
 \(\{\varphi(x_1,\dots,x_n,f(\bbar{a}))\mid\varphi(x_1,\dots,x_n,a)\in p\}\) is
@@ -1562,7 +1819,7 @@ is an \textbf{atom} in the Boolean algebra of clopen subsets of \(S_n(T)\)
 If \(\varphi\) isolates \(p\). Then \(\varphi\in p\) and hence \([\varphi]=\{\varphi\}\).
 
 If \([\varphi]=\{p\}\), then \(\varphi\in p\). What's more,
-\(\fM\models\varphi\Leftrightarrow \fM\models p\) in \(T\)
+\(\fM\vDash\varphi\Leftrightarrow \fM\vDash p\) in \(T\)
 
 
 The set \([\varphi]\) is a singleton iff \([\varphi]\) is non-empty and cannot be
@@ -1571,13 +1828,13 @@ divided into two non-empty clopen subsets \([\varphi\wedge\psi]\) and
 \(\neg\psi\) follows from \(\varphi\) modulo \(T\). So \([\varphi]\) is a singleton iff \(\varphi\)
 generates the type
 \begin{equation*}
-\la\varphi\ra=\{\psi(\bbar{x})\mid T\models\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))\}
+\la\varphi\ra=\{\psi(\bbar{x})\mid T\vDash\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))\}
 \end{equation*}
 \end{proof}
 
 We call a formula \(\varphi(x)\) \textbf{complete} if
 \begin{equation*}
-\{\psi(\bbar{x})\mid T\models\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))\}
+\{\psi(\bbar{x})\mid T\vDash\forall\bbar{x}(\varphi(\bbar{x})\to\psi(\bbar{x}))\}
 \end{equation*}
 is a type.
 \end{enumerate}
@@ -1588,8 +1845,8 @@ A formula isolates a type iff it is complete
 \begin{exercise}
 \label{ex4.2.2}
 \begin{enumerate}
-\item Closed subsets of \(S_n(T)\) have the form \(\{p\in
-      S_n(T)\mid\Sigma\subseteq p\}\), where \(\Sigma\) is any set of formulas
+\item Closed subsets of \(S_n(T)\) have the form
+\(\{p\in S_n(T)\mid\Sigma\subseteq p\}\), where \(\Sigma\) is any set of formulas
 \item Let \(T\) be countable and consistent. Then any meagre\footnote{A subset of a topological space is \textbf{nowhere dense} if its closure has no interior. A countable union of nowhere dense sets is meagre} subset \(X\)
 of \(S_n(T)\) can be omitted, i.e., there is a model which omits all
 \(p\in X\)
@@ -1602,8 +1859,8 @@ of \(S_n(T)\) can be omitted, i.e., there is a model which omits all
 closed sets of \(S_n(T)\) are exactly the intersections
 \(\bigcap_{\varphi\in\Sigma}[\varphi]=\{p\in S_n(T)\mid\Sigma\subseteq p\}\)
 \item The set \(X\) is the union of a sequence of countable nowhere dense sets
-\(X_i\). We may assume that \(X_i\) are closed, i.e., of the form \(\{p\in
-      S_n(T)\mid \Sigma_i\subseteq p\}\). That \(X_i\) has no interior means
+\(X_i\). We may assume that \(X_i\) are closed, i.e., of the form
+\(\{p\in S_n(T)\mid \Sigma_i\subseteq p\}\). That \(X_i\) has no interior means
 that \(\Sigma_i\) is not isolated. The claim follows now from Corollary \ref{cor4.1.3}
 \end{enumerate}
 \end{proof}
@@ -1617,13 +1874,13 @@ Consider the space \(S_\omega(T)\) of all complete types in variables
 \(v_0,v_1,\dots\). Note that \(S_\omega(T)\) is again a compact space and
 therefore not meagre by Baire's theorem
 \begin{enumerate}
-\item Show that \(\{\tp(a_0,a_1,\dots)\mid\text{ the $a_i$ enumerate a model of
-      }T\}\) is comeagre in \(S_\omega(T)\)
+\item Show that
+\(\{\tp(a_0,a_1,\dots)\mid\text{ the $a_i$ enumerate a model of }T\}\)
+ is comeagre in \(S_\omega(T)\)
 \end{enumerate}
-\#+END\_\#+BEGIN\textsubscript{exercise}
 \end{exercise}
 \subsection{\(ℵ_0\)-categorical theories}
-\label{sec:org17eb313}
+\label{sec:org8de31c9}
 \begin{theorem}[]
 \label{thm4.3.1}
 Let \(T\) be a countable complete theory. Then \(T\) is
@@ -1667,13 +1924,13 @@ are two cases:
 \(i=2n\); We will extend \(f_i\) to \(A_{i+1}=A_i\cup\{a_n\}\). Consider the
 type
 \begin{equation*}
-p(x)=\tp(a_n/A_i)=\{\varphi(x)\mid\fA\models\varphi(a_n), \varphi(x)\text{ a $L(A_i)$-formula}\}
+p(x)=\tp(a_n/A_i)=\{\varphi(x)\mid\fA\vDash\varphi(a_n), \varphi(x)\text{ a $L(A_i)$-formula}\}
 \end{equation*}
 Since \(f_i\) is elemantarily, \(f_i(p)(x)\) is in \(\fB\) a type over
 \(B_i\). Since \(\fB\) is \(\omega\)-saturated, there is a realisation \(b'\)
 of this type. So for \(\bbar{a}\in A_i\)
 \begin{equation*}
-\fA\models\varphi(a_n,\bbar{a}) \Rightarrow\fB\models\varphi(b',f_i(\bbar{a}))
+\fA\vDash\varphi(a_n,\bbar{a}) \Rightarrow\fB\vDash\varphi(b',f_i(\bbar{a}))
 \end{equation*}
 This shows that \(f_{i+1}(a_n)=b'\) defines an elementary extension of
 \(f_i\)
@@ -1753,10 +2010,12 @@ If \(T\) has a finite model \(\fA\), \(T\) is small and \(\fA\) is
 
 
 \section{{\bfseries\sffamily TODO} Don't understand}
-\label{sec:org95389cf}
+\label{sec:org0afee6a}
 Lemma \ref{lemma3.2.13}
 
 Exercise \ref{ex3.2.3}
 
 theorem \ref{thm4.3.1} need to enhance my TOPOLOGY and ALGEBRA!!!
+
+\label{Problem1}
 \end{document}
