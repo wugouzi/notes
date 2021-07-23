@@ -8,13 +8,13 @@
    (TeX-add-to-alist 'LaTeX-provided-package-options
                      '(("inputenc" "utf8") ("fontenc" "T1") ("ulem" "normalem")))
    (add-to-list 'LaTeX-verbatim-environments-local "minted")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
-   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
    (add-to-list 'LaTeX-verbatim-macros-with-braces-local "href")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperref")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperimage")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "hyperbaseurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "nolinkurl")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "url")
+   (add-to-list 'LaTeX-verbatim-macros-with-braces-local "path")
    (add-to-list 'LaTeX-verbatim-macros-with-delims-local "path")
    (TeX-run-style-hooks
     "latex2e"
@@ -35,59 +35,60 @@
     "capt-of"
     "hyperref")
    (LaTeX-add-labels
-    "sec:orgb190d5f"
-    "sec:org93e94ef"
+    "sec:org757f4c4"
+    "sec:org6122857"
     "lemma1.1.8"
-    "sec:orgd516642"
+    "sec:org9a57cf2"
     "lemma1.2.11"
     "lemma1.2.16"
     "ex1.2.3"
-    "sec:org7e67b98"
+    "sec:orgff03480"
     "lemma1.3.4"
     "lemma1.3.7"
-    "sec:orgc7e4022"
-    "sec:orgc85d506"
+    "sec:org859c23f"
+    "sec:org0316d57"
     "lemma2.1.1"
     "thm2.1.2"
     "cor2.1.3"
     "thm2.1.4"
     "ex2.1.1"
     "ex2.1.2"
-    "sec:orgebdacda"
+    "sec:orgd21ce1c"
     "lemma2.2.3"
     "cor2.2.5"
     "lemma2.2.7"
-    "sec:orgb7da57a"
+    "sec:org9ce1e4a"
     "thm2.3.4"
-    "sec:org75a56c2"
-    "sec:org2ae2861"
+    "sec:orgd90dfd6"
+    "sec:org1dcdb38"
     "lemma3.1.2"
     "thm3.1.3"
     "cor3.1.5"
     "lemma3.1.6"
     "thm3.1.8"
     "ex3.1.1"
-    "sec:org3589caf"
+    "sec:org68b7c67"
+    "lemma3.2.2"
     "lemma3.2.4"
     "thm3.2.5"
     "thm3.2.9"
-    "sec:orgd562735"
+    "sec:orga576f33"
     "lemma3.2.11"
     "lemma3.2.13"
     "ex3.2.1"
     "ex3.2.3"
-    "sec:org626a540"
-    "sec:orgaa5828d"
-    "sec:org43857a8"
+    "sec:orgaac8af4"
+    "sec:orgcb66703"
+    "sec:org48799e4"
     "cor4.1.3"
     "ex4.1.1"
-    "sec:orgf408c92"
+    "sec:orge349936"
     "ex4.2.2"
     "ex4.2.3"
-    "sec:org8de31c9"
+    "sec:org76a53e0"
     "thm4.3.1"
     "lemma4.3.3"
-    "sec:org0afee6a"
+    "sec:orgf82048b"
     "Problem1")
    (LaTeX-add-index-entries
     "type"))
