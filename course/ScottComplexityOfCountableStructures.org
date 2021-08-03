@@ -1,0 +1,423 @@
+#+TITLE: Scott Complexity Of Countable Structures
+#+AUTHOR: Antonio Montalban
+
+#+EXPORT_FILE_NAME: ../latex/ScottComplexityOfCountableStructures/ScottComplexityOfCountableStructures.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \makeindex
+
+* Overview of the notions and the main results
+  *Orbit complexity*: How complex are the automorphism orbits of tuples
+
+  *Identification complexity*: How difficult is it to recognize the structure from other structures
+
+  *Isomorphism complexity*: How complex are isomorphisms between representations of the structures
+
+  Tools: back-and-forth relations (orbit), borel/baire complexity (identification and isomorphism),
+  infinitary formulas (orbit and identification)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  Let \alpha be a successor ordinal and \(\cala\) a countable structure. TFAE
+  1. All automorphism orbits in \(\cala\) are \(\Sigma_\alpha^{in}\)-definable
+  2. The set of representations of \(\cala\) in \(\Pi_{\alpha+1}\) in the Borel hierarchy
+  3. There is an isomorphism fucntion that is of Baire class \(\alpha-1\)
+  #+END_theorem
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Let \(Rank(\cala)\) be the least such \alpha
+  #+END_definition
+
+  Technique 1: *Back-and-forth relations* for *orbit* complexity
+
+  Fix a structure \(\cala=(A;e_A,*_A,\dots,\le_A,\dots)\). Consider tuples \(\bara,\barb\in A^{<\N}\)
+
+  *Idea*: For \(n\in\N\), define relations \(\bara\le_n\barb\) which say that \(\bara\) looks
+   like \(\barb\). \(akRank(\cala)=\) the least \(n\) s.t. \(\bara\le_n\barb\Rightarrow\bara\cong\barb\) where \(\cong\)
+   means automorphism
+
+   Define
+   * \(\bara\equiv_0\barb\) \(\Longleftrightarrow\) \(\bara\) and \(\barb\) generate isomorphic structures
+     matching \(\bara\) and \(\barb\)
+   * \(\bara\le_1\barb\) \(\Longleftrightarrow\) \(\forall\bard\in A^{<\N}\exists\barc\in A^{<\N}\bara\barc\equiv_0\barb\bard\)
+   * \(\bara\le_2\barb\Longleftrightarrow\forall\bard\in A^{<\N}\exists\barc\in A^{<\N}\bara\barc\ge_1\barb\bard\)
+   * \(\vdots\)
+   * \(\bara\le_{n+1}\barb\Longleftrightarrow\forall\bard\in A^{<\N}\exists\barc\in A^{<\N}\bara\barc\ge_n\barb\bard\)
+   * \(\vdots\)
+   * \(\bara\le_\omega\barb\Longleftrightarrow\forall n\in\N\; \bara\le_n\barb\)
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+      Consider the order \((\Q;<)\)
+   \((a_1,\dots,a_k)\equiv_0(b_1,\dots,b_k)\) \(\Longleftrightarrow\) \((\forall i,j<k)a_i<a_j\leftrightarrow b_i<b_j\); that is,
+     \((a_1,\dots,a_k)\cong_{\Q}(b_1,\dots,b_k)\). Thus \(\bara\equiv_0\barb\Longleftrightarrow\bara\cong\barb\) and
+    \(akRank(\Q;<)=0\)
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+    Consider the order \(\Z\)
+    \begin{align*}
+    (a_1,\dots,a_k)\equiv_0(b_1,\dots,b_k)&\Longleftrightarrow(\forall i,j<k)a_i<a_j\leftrightarrow b_i<b_j\\
+    &\not\Longleftrightarrow(a_1,\dots,a_k)\cong_{\Z}(b_1,\dots,b_k)
+    \end{align*}
+    Consider \((-1,3)\equiv_0(1,2)\) but there is no automorphism between them. Also
+    \begin{align*}
+    (a_1,a_2)\le_1(b_1,b_2)\Longleftrightarrow(a_1,a_2)\equiv_0(b_1,b_2)\text{ and }\abs{a_2-a_1}\ge\abs{b_2-b_1}
+    \end{align*}
+    Thus \(\bara\cong\barb\Longleftrightarrow\bara\le_1\barb\&\barb\le_1\bara\). Therefore \(akRank(\Z;<)=2\)
+   #+END_examplle
+
+   Define
+   * \(\bara\equiv_0\barb\) \(\Longleftrightarrow\) \(\bara\) and \(\barb\) generate isomorphic structures
+   * \(\bara\le_\alpha\barb\Longleftrightarrow(\forall\beta<\alpha)\forall\bard\in A^{<\N}\exists\barc\in A^{<\N}\bara\barc\ge_\beta\barb\bard\)
+
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Given a structure \(\cala\), there exists an ordinal \alpha s.t. \(\forall \bara,\barb\in A^{<\N}(\bara\le_\alpha\barb\Rightarrow\bara\cong\barb)\)
+   #+END_theorem
+
+   Also for any \alpha, \(\bara\cong\barb\Rightarrow\bara\le_\alpha\barb\)
+
+   \(akRank(\cala)=\) the least \alpha (\(\bara\le_\alpha\barb\Longrightarrow\bara\cong\barb\))
+
+   Technique 2: *Borel/Baire complexity* for *identification* and *isomorphism* complexity
+
+   Note: every countable structure is isomorphic to one with domain \(\N\)
+
+   Fix a vocabulary \tau, say \(\tau=\{e,*,\prec\}\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(\Chi_\tau\) be the set of structures on vocabulary \tau and domain \(\N\)
+   #+END_definition
+
+   \(\Chi_\tau\cong\N\times\N^{\N\times\N}\times 2^{\N\times\N}\subseteq\N^{1\coprod\N\times\N\coprod\N\times\N}\cong\N^{\N}\)
+
+   \(\N^{\N}\) is the Baire space
+
+   Equip \(\Chi_\tau\) with the topology from \(\N^{\N}\) given the power of the discrete topology on \(\N\)
+
+   For \(\sigma\in\N^{<\N}\), \([\sigma]=\{f\in\N^{\N}\mid\sigma\subseteq f\}\), \([\sigma]\) is the basic open sets
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For a structure \(\cala\), let \(Copies(\cala)=\{\calb\in\Chi_\tau:\calb\cong\cala\}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   For every \(\cala\), \(Copies(\cala)\) is Borel
+   #+END_definition
+
+   The *Borel* sets are the smallest \sigma-algebra containing the open sets
+
+   They are built from the clopen sets using countable unions and intersections
+
+   A \(\Sigma_n\) subset of \(\Chi_\tau\) is
+   \begin{equation*}
+   \underbrace{\bigcup_{i_0\in\N}\bigcap_{i_1\in\N}\bigcup_{i_2\in\N}}_{n\text{ alternatives}}\dots\underbrace{\left( C_{i_0,i_1,i_2,\dots} \right)}_{\text{clopen}}
+   \end{equation*}
+
+   A \(\Pi_n\) subset of \(\Chi_\tau\) is
+   \begin{equation*}
+   \bigcap_{i_0\in\N}\bigcup_{i_1\in\N}\dots\left( C_{i_0,i_1,\dots} \right)
+   \end{equation*}
+
+   \(\Sigma_1\) same as open, \(\Pi_1\) same as closed, \(\Sigma_2\) same as \(F_\sigma\) (closed union), \(\Pi_2\) same
+   as \(G_\delta\) (open intersection)
+
+   A \(\Sigma_\alpha\) subset of \(\Chi_\tau\)  is a countable intersection of \(\Sigma_\beta\) sets for \(\beta<\alpha\)
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   Every Borel set is \(\Pi_\alpha\) for some countable ordinal \alpha
+   #+END_lemma
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For every \(\cala\), \(Copies(\cala)\) is Borel
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(BorelRank(\cala)\) be the least \alpha s.t. \(Copies(\cala)\) is \(\Pi_{\alpha+1}\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   \(BorelRank(\cala)=bfRank(\cala)\)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   \(Copies(\Q;<)\) is \(\Pi_2\) and \(Rank(\Q;<)=1\)
+
+   \(Copies(\Z;<)\) is \(\Pi_3\) and \(Rank(\Z;<)=2\)
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   \(F:Copies(\cala)^2\to\N^{\N}\) is an *isomorphism function for \(\cala\)* if for any two copies \(\calc,\cald\)
+   of \(\cala\) with domain \(\N\), \(F(\calc,\cald)\) is an isomorphism from \(\calc\) to \(\cald\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A function is
+   * of *Baire class 0* if it is continuous
+   * of *Baire class 1* if it is a pointwise limit of continuous functions
+   * of *Baire class* \alpha if it is a pointwise limit of functions of Baire class \beta for some \(\beta<\alpha\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   Consider the order \((\Q;<)\)
+
+   Let \(\calc=(\N;<_C)\) and \(\cald=(\N;<_D)\) be two copies of \((\Q;<)\).  \((\Q;<)\) has a continuous
+   isomorphism function.
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   \(\Z;<\) has an isomorphism function of Baire class 1
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(BaireRank(\cala)\) be the least \alpha s.t. \(\cala\) has an *isomorphism function* that is of Baire class \(\alpha-1\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   \(BorelRank(\cala)=BaireRank(\cala)\)
+   #+END_theorem
+
+   Technique 3: *Infinitary formulas* for *orbit* and *identification* complexity
+
+   In infinitary languages, conjunctions and disjunctions can be infinitary
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_examplle
+   In a group \(\calg=(G;e,*)\). \(torsion(x)\equiv\bigvee_{n\in\N}(\underbrace{x*x*\dots*x}_{n\text{ times}}=e)\)
+   #+END_examplle
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For every automorphism invariant set \(B\subset\cala^k\), there is an infinitary formula \(\varphi(\barx)\)
+   s.t. \(B=\{\barb\in A^k:\cala\models\varphi(\barb)\}\)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   For every countable structure \(\cala\), there is an infinitary sentence \(\psi_{\cala}\) s.t. for countable
+   structures,
+   \(\calc\models\psi_{\cala}\Longleftrightarrow\calc\cong\cala\).
+   #+END_theorem
+
+   We count alternations of \(\exists\) and \(\vee\) *versus* \(\forall\) and \(\wedge\)
+
+   A \(\Sigma_n^{in}\)  formula is one of the form
+   \begin{equation*}
+   \underbrace{\bigvee_{i_0\in\N}\exists\bary_0\bigwedge_{i_1\in\N}\forall\bary_1\bigvee_{i_2\in\N}\exists\bary_2\bigwedge_{i_3\in\N}\forall\bary_3\dots}_{n\text{ alternatives}}
+   \underbrace{\left( \psi_{i_0,\dots,i_n}(\barx,\bary_0,\dots,\bary_n) \right)}_{\text{finitary,quantifier free}}
+   \end{equation*}
+   A \(\Pi_n^{in}\) formula is
+   \begin{equation*}
+   \underbrace{\bigvee_{i_0\in\N}\forall\bary_0\bigvee_{i_1\in\N}\exists\bary_1\bigvee_{i_2\in\N}\forall\bary_2\bigvee_{i_3\in\N}\exists\bary_3\dots}_{n\text{ alternatives}}
+   \underbrace{\left( \psi_{i_0,\dots,i_n}(\barx,\bary_0,\dots,\bary_n) \right)}_{\text{finitary,quantifier free}}
+   \end{equation*}
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(OrbitRank(\cala)\) be the least \alpha s.t. every automorphism orbit is \(\Sigma_\alpha^{in}\)-definable
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   Let \(SSRank(\cala)\) be the least \alpha s.t. there is a \(\Pi_{\alpha+1}^{in}\) sentence true only about \(\cala\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   * \(SSRank(\cala)=borelRank(\cala)\)
+   * \(SSRank(\cala)=OrbitRank(\cala)\)
+   #+END_theorem
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_theorem
+   Let \alpha be an ordinal and \(\cala\) a countable structure. TFAE
+   1. Orbit complexity
+      * \(\forall\bara\in A^{<\N}\exists\bara'\in A^{<\N}\forall\barb,\barb'\in A^{<\N},\bara\bara'\le_\alpha\barb\barb'\Rightarrow\bara\cong_{\cala}\barb\)
+      * All automorphism orbits in \(\cala\) are \(\Sigma_\alpha^{in}\)-definable
+   2. Identification complexity
+      * The set of copies of \(\cala\) is \(\Pi_{\alpha+1}\) in the Borel hierarchy
+      * There is a \(\Pi_{\alpha+1}^{in}\) sentence uniquely identifying \(\cala\)
+   3. Isomorphism complexity
+      * \(\cala\) has an isomorphism function that is of Baire class \(\alpha-1\)
+   #+END_theorem
+
+   Let \(Rank(\cala)\) be the least such \alpha
+   \begin{equation*}
+   =bfRank(\cala)=OrbitRank(\cala)=BorelRank(\cala)=SSRank(\cala)=BaireRank(\cala)
+   \end{equation*}
+
+* The Infinitary language
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Fix \tau, \(L_{\omega_1\omega}\) is the smallest class contains
+  * all q.f. finitary \tau formulas
+  * if \(\varphi,\psi\) are in \(L_{\omega_1\omega}\), then so is \(\neg\varphi\), \(\varphi\wedge\psi\),\(\varphi\vee\psi\),\(\exists x\varphi\),\(\forall x\varphi\)
+  * if \(\barx\) is a finite tuple of variables and \(S\subseteq L_{\omega_1\omega}\) is a countable set of formulas
+    with all free variables in \(\barx\), then \(\bigdoublevee_{\varphi\in S}\varphi\)
+    and \(\bigdoublewedge_{\varphi\in S}\varphi\) are in \(L_{\omega_1\omega}\)
+  #+END_definition
+
+  Obs: \(\neg\bigdoublewedge_{i\in S}\varphi\) sames
+  as \(\bigdoublevee_{i \in S}\neg\varphi_i\). \(\bigwedge_{i<k}\bigdoublevee_{j\in\N}\varphi_{ij}\) can be written as \(\bigdoublevee_{\sigma\in\N^k}\bigwedge_{i<k}\varphi_{i,\sigma}\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_examplle
+  In a linear ordering, \(\call=(L,\le_L)\), we want a formula \(Fin(x,y)\) that says \([x,y)\) in \(\call\)
+  is finite.
+  \begin{equation*}
+  \bigdoublevee_{n\in\omega}\exists z_1\dots z_n(x<z_1<\dots<z_n<y\wedge\forall w(x<w<y\to\bigvee_{i\le n}w=z_i))
+  \end{equation*}
+  #+END_examplle
+
+  A \(\Pi_\beta^{in}\) formula is one of the form
+  \begin{equation*}
+  \bigvee_{i\in\N}\exists\bary\underbrace{\left( \varphi_i(\barx,\bary) \right)}_{\Sigma_\gamma^{in}\text{ for }\gamma<\beta}
+  \end{equation*}
+
+  Let \(\calp=(P;\le_P)\) be a partial ordering. let \(rk_{\calp}(a)\) denote the *WF-rank* of \(a\) in \(\calp\)
+  \begin{align*}
+  &rk_{\calp}(a)=\sup\{rk(b)+1:b<_{P}a\}\\
+  &rk_{\calp}(a)=0\text{ if $a$ is minimal}
+  \end{align*}
+
+  We want a formula \(\varphi_\alpha(x)\) s.t. given \(\alpha<\omega_1\)
+  \begin{equation*}
+  \calp\models\varphi_\alpha(a)\Longleftrightarrow rk_{\calp}(a)\le\alpha
+  \end{equation*}
+  We define \(\varphi_\alpha(x)\) by transfinite recursion
+
+  Let \(\varphi_\alpha(x)\) be \(\forall y<_Px\left( \bigdoublevee_{\beta<\alpha}\psi_\beta(y) \right)\)
+
+  Claim: \(\calp\models\varphi_\alpha(a)\Longleftrightarrow rk(a)<\alpha\)
+
+  \(\varphi_0(x)\) is \(rk(x)\le 0\), that is \(\neg\exists y(y<x)\), that is, \(\Pi_1^{in}\)
+
+  \(\varphi_1(x)\) \(\forall y<x(\varphi_0(y))\) \(\Pi_1\)
+
+  \(\varphi_n(x)\) \(\forall y<x(\varphi_0(y)\vee\dots\vee\varphi_{n-1}(y))\) \(\Pi_1\)
+
+  \(\varphi_\omega(x)\) \(\forall y<x( \underbrace{\bigdoublevee_{n\in\omega}\underbrace{\varphi_n(y)}_{\Pi_1}}_{\Sigma_2})\) \(\Pi_3\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  For each ordinal \alpha, there is a \(\Sigma_{2\alpha}^{in}\) formula \(\varphi_{\omega^\alpha}(x,y)\) s.t. in every linear
+  ordering \(\call\)
+  \begin{equation*}
+  \call\models\varphi_{\omega^\alpha}(x,y)\Longleftrightarrow\text{ the interval }[x,y)\text{ has order type }<\omega^{\alpha}
+  \end{equation*}
+  #+END_lemma
+
+  #+BEGIN_proof
+  If \lambda is limit, \(\varphi_{\omega^\lambda}(x,y)\equiv\bigdoublevee_{\alpha<\lambda}\varphi_{\omega^{\alpha}}\).
+  For \(\alpha+1\), \(\varphi_{\omega^{\alpha+1}}(x,y)=\bigdoublevee_{n\in\omega}\varphi_{\omega^{\alpha}\cdot n}\) where \(\varphi_{\omega^\alpha\cdot n}(x,y)\)
+  says \([x,y)\) \(\omega^\alpha\cdot n\)
+  \begin{equation*}
+  \equiv\forall z_1\dots z_n(x=z_1<\dots<z_n=y\wedge\bigvee\varphi)
+  \end{equation*}
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  For every structure \(\cala\) there is an \(L_{\omega_1\omega}\) sentence \(\psi_{\cala}\) s.t. \(\cala\models\psi_{A}\) and if
+  \(\calc\models\psi_{A}\) then \(\calc\cong\cala\)
+  #+END_theorem
+
+  \(\psi_{A}\) is a Scott sentence for \(\cala\)
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_definition
+  Given structures \(\cala,\calb\), a set \(I\subseteq A^{<\omega}\times B^{<\omega}\) has the back-and-forth property if for
+  every \((\bara,\barb)\in I\)
+  - \(\bara\) and \(\barb\) satisfy the same q.f. formulas among the
+  - for any \(d\in B\) there is \(c\in A\) \((\bara c,\barb d)\in I\)
+  - for any \(c\in A\) there is \(d\in B\) \((\bara c,\barb d)\in I\)
+  #+END_definition
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  If \(I\subseteq A^{<\omega}\times B^{<\omega}\) has the b&f property then \(\forall(\bara,\barb)\in I\) there is an isomorphism
+  \(f:\cala\to\calb\) s.t. \(f(\bara)=\barb\)
+  #+END_lemma
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  If two countable structures \(\cala,\calb\) satisfy the same \(L_{\omega_1\omega}\)-sentences, then they are isomorphic
+  #+END_lemma
+
+  #+BEGIN_proof
+  Let \(I=\{(\bara,\barb)\in A^{<\omega}\times B^{<\omega}\) that satisfy the same \(L_{\omega_1\omega}\)-formulas}
+
+  Claim: that \(I\) has the b&f property
+
+  Then, by assumption \((\emptyset,\emptyset)\in I\), so we would get an isomorphism
+
+  Now we prove the claim. For \((\bara,\barb)\in I\)
+  1. automatically
+  2. Suppose it's false. there is \(d\in B\) s.t. for every \(c\in\cala\) \((\bara c,\barb d)\not\in I\). For
+     each \(c\in A\) there is an \(L_{\omega_1\omega}\) formula \(\varphi_c(\barx,y)\)  s.t. \(\calb\models\varphi_c(\barb,d)\)
+     but \(\cala\not\vDash\varphi_c(\bara,c)\)
+
+     Consider \(\psi(\barx)\equiv\exists y\bigdoublewedge_{c\in A}\varphi_c(\barx,y)\), then \(\calb\models\psi(\barb)\) as witnessed
+     by \(d\) but \(\cala\models\neg\psi(\bara)\) because for every \(c\), \(\cala\models\neg\varphi_c(\bara,c)\).
+
+     this would contradict that \((\bara,\barb)\in I\).
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_lemma
+  For any tuple \(\bara\in A^{<\omega}\) there is an \(L_{\omega_1\omega}\) formula \(\varphi_{\bara}(\barx)\) s.t.
+  \(\cala\models\varphi_{\bara}(\barx)\Longleftrightarrow(\cala,\bara)\cong(\cala,\barb)\)
+  #+END_lemma
+  \(autoOrbit(\bara)=\{\barb\in A^{\bara}:\cala\models\varphi_{\bara}(\barb)\}\)
+
+  #+BEGIN_proof
+  We know that if \((\cala,\barb)\not\cong(\cala,\bara)\) there is a sentence \(\psi_{\bara,\barb}\) s.t.
+  \((\cala,\bara)\models\psi_{\bara,\barb}\) and \((\cala,\barb)\models\neg\psi_{\bara,\barb}\) by previous lemma. We can think
+  of \(\psi_{\bara,\barb}\) as a formula \(\psi_{\bara,\barb}(\barx)\) s.t.
+  \begin{equation*}
+  \cala\models\psi_{\bara,\barb}(\bara)\wedge\neg\psi_{\bara,\barb}(\barb)
+  \end{equation*}
+  Then
+  let
+  \(\varphi_{\bara}(x)=\displaystyle\bigdoublewedge_{\barb\in A,\barb\not\cong\bara}\psi_{\bara,\barb}(\barx)\).
+  note that \(\cala\models\varphi_{\bara}(\bara)\) and if \(\barb\not\cong\bara\) then \(\cala\models\neg\varphi_{\bara}(\barb)\)
+  #+END_proof
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_corollary
+  If \(R\subseteq A^k\) is automorphism invariant, then there is \(L_{\omega_1\omega}\) formula \(\varphi(\barx)\) s.t.
+  \begin{equation*}
+  \bara\in R\Longleftrightarrow\cala\models\varphi(\bara)\quad\forall\bara\in  A^k
+  \end{equation*}
+  #+END_corollary
+
+  every automorphism invariant set is a union of automorphism orbits
+
+  #+ATTR_LATEX: :options []
+  #+BEGIN_theorem
+  For every structure \(\cala\) there is an \(L_{\omega_1\omega}\) sentence \(\psi_{\cala}\) s.t. \(\cala\models\psi_{A}\) and if
+  \(\calc\models\psi_{A}\) then \(\calc\cong\cala\)
+  #+END_theorem
+
+  #+BEGIN_proof
+
+  #+END_proof
