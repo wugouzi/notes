@@ -7,6 +7,8 @@
 #+LATEX_HEADER: \setcounter{tocdepth}{2}
 #+EXPORT_FILE_NAME: ../latex/ACourseInModelTheory/ACourseInModelTheory.tex
 #+LATEX_HEADER: \def \acl {\text{acl}}
+#+LATEX_HEADER: \def \Graph {\textsf{Graph}}
+#+LATEX_HEADER: \def \RG {\textsf{RG}}
 * The Basics
 
 ** Structures
@@ -707,6 +709,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_corollary
+   label:cor2.2.9
    Every structure \(\fA\) has an elementary extension \(\fB\) in which all
    types over \(A\) are realised
    #+END_corollary
@@ -1123,6 +1126,8 @@
    from \(Y_2\). So a finite intersection \(h_{y_1}\) of elements of \(\calh_{y_1}\) is disjoint
    from \(Y_2\). The \(h_{y_i},y_1\in Y_1\), cover \(Y_1\). So \(Y_1\) is contained in the union \(H\) of
    finitely many of the \(h_{y_i}\). Hence \(H\) separates \(Y_1\) from \(Y_2\)
+
+
    #+END_proof
 ** Quantifier elimination
    #+ATTR_LATEX: :options []
@@ -1809,7 +1814,37 @@
    is true. Hence it is also true in \((K,<)\)
    #+END_proof
 
+   #+BEGIN_exercise
+   label:ex3.3.1
+   Let \(\Graph\) be the theory of graphs. The theory \(\RG\) of the *random graph* is the extension
+   of \(\Graph\) by the following axiom scheme
+   \begin{align*}
+   \forall x_0\dots x_{m-1}y_1\dots y_{n-1}\Big(&\bigwedge_{i\neq j}\neg x_i\dot=y_j\to\\
+   &\exists z(\bigwedge_{i<m}zRx_i)\wedge(\bigwedge_{j<n}\neg zRy_j\wedge\neg z\dot=y_j)
+    \Big)
+   \end{align*}
+   #+END_exercise
 
+   From [[http://www.math.uchicago.edu/~may/VIGRE/VIGRE2010/REUPapers/Fuchs.pdf][here]], some definitions of random graphs
+
+   Let \(p\in[0,1]\) denote the probability with which a given pair is included. We assume all the
+   edges have the same probability of occurrence. We denote the set of graphs constructed in this
+   manner by \(\calg(n,p)\), where \(n\) is the number of elements in the vertex set.
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_definition
+   A graph \(G\) has property \(\calp_{i,j}\) with \(i,j=0,1,2,3,\dots\) if, for any disjoint vertex
+   sets \(V_1\) and \(V_2\) with \(\abs{V_1}\le i\) and \(\abs{V_2}\le j\), there exists a vertex \(v\in G\)
+   that satisfies three conditions
+   1. \(v\not\in V_1\cup V_2\)
+   2. \(v\leftrightarrow x\) for every \(x\in V_1\) and
+   3. \(v\not\leftrightarrow y\) for every \(y\in V_2\)
+   #+END_definition
+
+   #+ATTR_LATEX: :options []
+   #+BEGIN_lemma
+   An infinite graph \(G\in\calg(\aleph_0,p)\) has all the properties \(\calp_{i,j}\) with probability 1
+   #+END_lemma
 
 
 
@@ -1966,6 +2001,7 @@
 
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
+
    A map \(f\) from a subset of a structure \(\fA\) to a structure \(\fB\) is
    *elementary* if it preserves the truth of formulas; i.e., \(f:A_0\to B\) is
    elementary if for every formula \(\varphi(x_1,\dots,x_n)\) and \(\bbar{a}\in A_0\)
@@ -1991,7 +2027,7 @@
    \(\fB\not\vDash\varphi(\bbar{x},\bbar{a})\). Therefore \(\fA\not\vDash\varphi(\bbar{x},\bbar{a})\).
    \(S(f)\) defines a map from \(S_n(B_0)\) to \(S_n(A_0)\). Moreover, it is surjective since
    \(\{\varphi(x_1,\dots,x_n,f(\bbar{a}))\mid\varphi(x_1,\dots,x_n,a)\in p\}\) is finitely satisfiable for all \(p\in S_n(A_0)\).
-   And \(S(f)\) is continuous since \([\varphi[x_1,\dots,x_n,f(\bbar{a})]]\) is the preimage of
+   And \(S(f)\) is continuous since \([\varphi(x_1,\dots,x_n,f(\bbar{a}))]\) is the preimage of
    \([\varphi(x_1,\dots,x_n,\bbar{a})]\) under \(S(f)\)
    #+END_proof
 
@@ -2003,8 +2039,11 @@
       the restriction of \(q\) to \(A_0\). We call \(q\) an extension of
       \(q\restriction A_0)\)
 
+
+
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:lemma4.2.6
       A type \(p\) is isolated in \(T\) iff \(p\) is an isolated point in
       \(S_n(T)\). In fact, \varphi isolates \(p\) iff \([\varphi]=\{p\}\). That is, \([\varphi]\)
       is an *atom* in the Boolean algebra of clopen subsets of \(S_n(T)\)
@@ -2024,6 +2063,9 @@
       which is the only element of \([\varphi]\)
 
       This shows that \([\varphi]=\{p\}\) implies that \varphi isolates \(p\).
+
+      Conversely, \varphi isolates \(p\), this means that \(\la\varphi\ra\) is consistent with \(T\) and
+      contains \(p\). Since \(p\) is a type, we have \(p=\la\varphi\ra\)
     #+END_proof
 
       We call a formula \(\varphi(x)\) *complete* if
@@ -2132,10 +2174,15 @@
    p(x)=\tp(a_n/A_i)=\{\varphi(x)\mid\fA\vDash\varphi(a_n), \varphi(x)\text{ a $L(A_i)$-formula}\}
    \end{equation*}
    Since \(f_i\) is elemantarily, \(f_i(p)(x)\) is in \(\fB\) a type over
-   \(B_i\). Since \(\fB\) is \(\omega\)-saturated, there is a realisation \(b'\)
+   \(B_i\). (note that \(f_i\) is elementary iff \(\fA_{A_i}\equiv\fB_{B_i}\))
+   Since \(\fB\) is \(\omega\)-saturated, there is a realisation \(b'\)
    of this type. So for \(\bbar{a}\in A_i\)
    \begin{equation*}
    \fA\vDash\varphi(a_n,\bbar{a}) \Rightarrow\fB\vDash\varphi(b',f_i(\bbar{a}))
+   \end{equation*}
+   Given \(b'\), then the type that it realises is fixed. Hence
+   \begin{equation*}
+   \fB\vDash\varphi(b',f_i(\bara))\Rightarrow\fA\vDash\varphi(a_n,\bara)
    \end{equation*}
    This shows that \(f_{i+1}(a_n)=b'\) defines an elementary extension of
    \(f_i\)
@@ -2152,12 +2199,14 @@
    equivalence, in the variable \(x_1,\dots,x_{n+1}\), there are, up to
    equivalence in \(\fM\), at most \(N\) many \(L(A)\)-formulas \(\varphi(x)\). Thus,
    each type \(\varphi(x)\in S(A)\) is isolated (w.r.t. \(\Th(\fM_A)\)) by a smallest formula \(\varphi_p(x)\)
-   (obviously conjunction). Each element of \(M\) which realises
+   (\(\bigwedge p(x)\)). Each element of \(M\) which realises
    \(\varphi_p(x)\) also realises \(p(x)\), so \(\fM\) is \(\omega\)-saturated.
 
    Conversely, if there are infinitely many \(\varphi(x_1,\dots,x_n)\) modulo \(T\)
    for some \(n\), then - as the type space \(S_n(T)\) is compact - there must
-   be some non-isolated type \(p\). By the Omitting Types Theorem there is a
+   be some non-isolated type \(p\) (if \(p\) is isolated, then \(\{p\}\) is open). Then by Lemma
+   ref:lemma4.2.6 \(p\) is not isolated in \(T\).
+   By the Omitting Types Theorem there is a
    countable model of \(T\) in which this type is not realised. On the other
    hand, there also exists a countable model of \(T\) realizing this type. So
    \(T\) is not \(\aleph_0\)-categorical
@@ -2165,6 +2214,8 @@
 
    The proof shows that a countable complete theory with infinite models is
    \(\aleph_0\)-categorical iff all countable models are \(\omega\)-saturated
+
+   given a variables \(\varphi_i(a_i)\) where \(a_i\in A\), we can consider \(\bigwedge\exists x_i\varphi_i(x_i)\).
 
    #+ATTR_LATEX: :options []
    #+BEGIN_definition
@@ -2185,6 +2236,14 @@
    Let \(\fA\) be a structure and \(a_1,\dots,a_n\) elements of \(\fA\). Then
    \(\Th(\fA)\) is \(\aleph_0\)-categorical iff \(\Th(\fA,a_1,\dots,a_n)\) is \(\aleph_0\)-categorical
    #+END_corollary
+
+   #+BEGIN_proof
+   If \(\Th(\fA)\) is \(\aleph_0\)-categorical, then for any \(m+n\) there is only finitely many
+   formulas \(\varphi(x_1,\dots,x_{m+n})\) up to equivalence relative to \(\Th(\fA)\), hence there is only finitely
+   many \(\varphi(x_1,\dots,x_m,a_1,\dots,a_n)\) up to equivalence relative to \(\Th(\fA,a_1,\dots,a_n)\)
+
+   For the converse, \(\Th(\fA)\subset\Th(\fA,a_1,\dots,a_n)\)
+   #+END_proof
 
    #+ATTR_LATEX: :options []
    #+BEGIN_examplle
@@ -2214,8 +2273,160 @@
 
    #+BEGIN_proof
    If \(T\) has a finite model \(\fA\), \(T\) is small and \(\fA\) is
-   \(\omega\)-saturated (countable assignment). So we may assume that \(T\) has infinite models
+   \(\omega\)-saturated: since \(T\) is complete, for any type \(p(x)\in S_n(T)\), \(T\vDash p(x)\). For finite
+   model \(\fA\), there are only finitely many assignments. If we have two distinct
+   types \(p(x),q(x)\in S_n(T)\), then there is \(\phi(x)\in p(x)\) and \(\phi(x)\not\in q(x)\). Since they are
+   maximally consistent, \(q(x)\vDash\neg\phi(x)\) hence \(p(x)\) and \(q(x)\) cannot be realised by the same
+   element. So we may assume that \(T\) has infinite
+   models
+
+   If all types can be realised in a single countable model, there can be at most countably many
+   types.
+
+   if conversely all \(S_{n+1}(T)\) are at most countable, then over any \(n\)-element subset of a
+   model of \(T\) there are at most countably many types. We construct an elementary chain
+   \begin{equation*}
+   \fA_0\prec\fA_1\prec\dots
+   \end{equation*}
+   of models of \(T\). For \(\fA_0\) we take any countable model. if \(\fA_i\) is already constructed, we
+   use Corollary ref:cor2.2.9 and Theorem ref:thm2.3.1 to construct a countable model \(\fA_{i+1}\) in
+   such a way that all types over finite subsets of \(A_i\) are realised in \(\fA_{i+1}\). This can be
+   done since there are only countable many such types. The union \(\fA=\bigcup_{i\in\omega}\fA_i\) is countable
+   and \(\omega\)-saturated since every type over a finite subset \(B\) of \(\fA\) is realised
+   in \(\fA_{i+1}\) if \(B\subseteq A_i\)
    #+END_proof
+
+   #+ATTR_LATEX: :options [Vaught]
+   #+BEGIN_theorem
+   A countable complete theory cannot have exactly two countably models
+   #+END_theorem
+
+   #+BEGIN_proof
+   We can assume that \(T\) is small and not \(\aleph_0\)-categorical (if \(T\) is not small, then it has
+   no countable model). We will show that \(T\) has at
+   least three non-isomorphic countable models. First, \(T\) has an \(\omega\)-saturated countable
+   model \(\fA\) and there is a non-isolated type \(p(\barx)\) which can be omitted in a countable
+   model \(\fB\). Let \(p(\barx)\) be realised in \(\fA\) by \(\bara\). Since \(\Th(\fA,\bara)\) is
+   not \(\aleph_0\)-categorical as \(T\subset\Th(\fA,\bara)\), \(\Th(\fA,\bara)\) has a countable model \((\fC,\barc)\) which is not
+   \omega-saturated. Then \(\fC\) is not \omega-saturated and therefore not isomorphic to \(\fA\). But \(\fC\)
+   realises \(p(\barx)\) and is therefore not isomorphic to \(\fB\)
+   #+END_proof
+
+   #+BEGIN_exercise
+   label:ex4.3.3
+   Show that \(T\) is \(\aleph_0\)-categorical iff \(S_n(T)\) is finite for all \(n\)
+   #+END_exercise
+
+   #+BEGIN_exercise
+   label:ex4.3.5
+   Show that for every \(n>2\) there is a countable complete theory with exactly \(n\) countable models
+   #+END_exercise
+
+   #+BEGIN_proof
+   [[https://math.stackexchange.com/questions/213721/a-theory-with-exactly-n-countable-models-for-each-n1/581921][StackExchange]]
+   #+END_proof
+
+
+** The amalgamation method
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For any language \(L\), the *skeleton* \(\calk\) of an \(L\)-structure \(\fM\) is the class of all
+    finitely-generated \(L\)-structures which are isomorphic to a substructure of \(\fM\). We say that
+    an \(L\)-structure \(\fM\) is *\(\calk\)-saturated* if its skeleton is \(\calk\) and if for
+    all \(\fA\), \(\fB\) in \(\calk\) and all embeddings \(f_0:\fA\to\fM\) and \(f_1:\fA\to\fB\) there is an
+    embedding \(g_1:\fB\to\fM\) with \(f_0=g_1\circ f_1\)
+
+    \begin{center}\begin{tikzcd}[sep column=tiny]
+    \fA\ar[rr,"f_0"]\ar[rd,"f_1"']&&\fM\\
+    &\fB\ar[ur,"g"']
+    \end{tikzcd}\end{center}
+
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:thm4.4.2
+    Let \(L\) be a countable language. Any two countable \(\calk\)-saturated structures are isomorphic
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(\fM\) and \(\fN\) be countable \(L\)-structures with the same skeleton \(\calk\), and assume
+    that \(\fM\) and \(\fN\) are \(\calk\)-saturated. As in the proof of Lemma ref:lemma4.3.3 we construct
+    an isomorphisms between \(\fM\) and \(\fN\) as the union of an ascending sequence of isomorphisms
+    between finitely-generated substructures of \(M\) and \(N\).
+
+    If \(f_1:\fA\to\fN\) is an embedding of a finitely-generated substructure of \(\fA\) of \(\fM\) into \(\fN\),
+    and \(a\) is an element of \(\fM\), then by \(\calk\)-saturation \(f_1\) can be extended to an
+    embedding \(g_1:\fA'\to\fN\) where \(\fA'=\la Aa\ra^{\fM}\). Now interchange the roles of \(\fM\) and \(\fN\).
+    #+END_proof
+
+    The proof shows that any countable \(\calk\)-saturated structure \(\fM\) is *ultrahomogeneous* i.e., any
+    isomorphism between finitely generated substructure extends to an automorphism of \(\fM\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(L\) be a countable language and \(\calk\) a countable class of
+    finitely-generated \(L\)-structures. There is a countable \(\calk\)-saturated \(L\)-structure \(\fM\)
+    iff
+    1. (Heredity) if \(\fA_0\in\calk\), then all elements of the skeleton of \(\fA_0\) also belongs to \(\calk\)
+    2. (Joint Embedding) for \(\fB_0,\fB_1\in\calk\) there are some \(\cald\in\calk\) and embeddings \(g_i:\fB_i\to\fD\)
+    3. (Amalgamation) if \(\fA,\fB_0,\fB_1\in\calk\) and \(f_i:\fA\to\fB_i\), (\(i=0,1\)) are embeddings, there is
+       some \(\cald\in\calk\) and two embeddings \(g_i:\fB_i\to\fD\) s.t. \(g_0\circ f_0=g_1\circ f_1\)
+
+       \begin{center}\begin{tikzcd}
+       &\fD\\
+       \fB_0\ar[ur,"g_0"]&&\fB_1\ar[ul,"g_1"']\\
+       &\fA\ar[ul,"f_0"]\ar[ur,"f_1"']
+       \end{tikzcd}\end{center}
+       in this case, \(\fM\) is unique up to isomorphism and is called the Fraïssé limit of \(\calk\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(\calk\) be the skeleton of a countably \(\calk\)-saturated structure \(\fM\). Clearly, \(\calk\) has the
+    hereditary property (substructure of a substructure is still a substructure).  To see that \(\calk\)
+    has the Amalgamation Property, let \(\fA,\fB_0,\fB_1,f_0\) and \(f_1\) be as in 3. We may assume
+    that \(\fB_0\subseteq\fM\) and \(f_0\) is the inclusion map. Furthermore we can assume \(\fA\subseteq\fB_1\) and
+    that \(f_1\) is the inclusion map. Now the embedding \(g_1:\fB_1\to\fM\) is the extension of the
+    isomorphism \(f_0:\fA\to f_0(\fA)\) to \(\fB_1\) and satisfies \(f_0=g_1\circ f_1\). For \(\fD\) we choose a
+    finitely-generated substructure of \(\fM\) which contains \(\fB_0\) and the image of \(g_1\).
+    For \(g_0:\fB_0\to\fD\) take the inclusion map. For Joint Embedding Property take \(\la B_0B_1\ra^{\fM}\)
+
+    For the converse assume that \(\calk\) has properties 1, 2 and 3. Choose an
+    enumeration \((\fB_i)_{i\in\omega}\) of all isomorphism types in \(\calk\) (they are not isomorphic). We
+    construct \(\fM\) as the union of
+    an ascending chain
+    \begin{equation*}
+    \fM_0\subseteq\fM_1\subseteq\dots\subseteq\fM
+    \end{equation*}
+    of elements of \(\calk\). Suppose that \(\fM_i\) is already constructed. If \(i=2n\), we
+    choose \(\fM_{i+1}\) as the top of a diagram
+    \begin{center}\begin{tikzcd}
+    &\fM_{i+1}\\
+    \fM_i\ar[ur,"g_0"]&&\fB_n\ar[lu,"g_1"']
+    \end{tikzcd}\end{center}
+    where we can assume that \(g_0\) is the inclusion map. if \(i=2n+1\), let \(\fA\) and \(\fB\)
+    from \(\calk\) and two embeddings \(f_0:\fA\to\fM_i\) and \(f_1:\fA\to\fB\) be given.
+    \begin{center}\begin{tikzcd}
+    &\fM_{i+1}\\
+    \fM_i\ar[ur,"g_0"]&&\fB\ar[ul,"g_1"']\\
+    &\fA\ar[ul,"f_0"]\ar[ru,"f_1"']
+    \end{tikzcd}\end{center}
+    To ensure that \(\fM\) is \(\calk\)-saturated we have in the odd steps to make the right choice
+    of \(\fA,\fB,f_0\) and \(f_1\). Assume that we have \(\fA,\fB\in\calk\) and embeddings \(f_0:\fA\to\fM\)
+    and \(f_1:\fA\to\fB\). For large \(j\) the image of \(f_0\) will be contained in \(\fM_j\). During the
+    construction of the \(\fM_i\), in order to guarantee the \(\calk\)-saturation of \(\fM\), we have to
+    ensure that eventually, for some odd \(i\ge j\), the embeddings \(f_0:\fA\to\fM_i\) and \(f_1:\fA\to\fB\) were
+    used in the construction of \(\fM_{i+1}\). This can be done since for each \(j\) there are - up to
+    isomorphism - at most countably many possibilities. Thus there exists an
+    embedding \(g_1:\fB\to\fM_{i+1}\) with \(f_0=g_1\circ f_1\).
+
+    \(\calk\) is the skeleton of \(\fM\): the finitely-generated substructure are the substructures of
+    the \(\fM_1\). Since \(\fM_i\in\calk\), their finitely-generated substructure also belong to \(\calk\). On the
+    other hand each \(B_n\) is isomorphic to a substructure of \(\fM_{2n+1}\)
+
+    Uniqueness follows from Theorem ref:thm4.4.2
+    #+END_proof
+
 
 
 * Appendix :ignore:
@@ -2245,8 +2456,6 @@
   Exercise ref:ex3.2.3
 
   theorem ref:thm4.3.1 need to enhance my TOPOLOGY and ALGEBRA!!!
-
-  <<Problem1>>
 
 
 * Footnotes                                                          :ignore:
