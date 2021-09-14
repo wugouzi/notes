@@ -37,8 +37,36 @@
 %\\addtolength{\\textheight}{-3cm}
 %\\setlength{\\topmargin}{1.5cm}
 %\\addtolength{\\topmargin}{-2.54cm}")
+ '(org-preview-latex-process-alist
+   '((dvipng :programs
+             ("latex" "dvipng")
+             :description "dvi > png" :message "you need to install the programs: latex and dvipng." :image-input-type "dvi" :image-output-type "png" :image-size-adjust
+             (1.0 . 1.0)
+             :latex-compiler
+             ("latex -interaction nonstopmode -output-directory %o %f")
+             :image-converter
+             ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
+     (dvisvgm :programs
+              ("latex" "dvisvgm")
+              :description "pdf > svg" :message "you need to install the programs: latex and dvisvgm." :image-input-type "pdf" :image-output-type "svg" :image-size-adjust
+              (1.7 . 1.5)
+              :latex-compiler
+              ("xelatex -interaction nonstopmode -output-directory %o %f")
+              :image-converter
+              ("dvisvgm --pdf %f -n -b min -c %S -o %O"))
+     (imagemagick :programs
+                  ("latex" "convert")
+                  :description "pdf > png" :message "you need to install the programs: latex and imagemagick." :image-input-type "pdf" :image-output-type "png" :image-size-adjust
+                  (1.0 . 1.0)
+                  :latex-compiler
+                  ("xelatex -interaction nonstopmode -output-directory %o %f")
+                  :image-converter
+                  ("convert -density %D -trim -antialias %f -quality 100 %O"))))
  '(package-selected-packages '(xah-math-input org-ref))
  '(pdf-view-midnight-colors (cons "#bbc2cf" "#282c34"))
+ '(preview-dvipng-command
+   "dvipng -D 300 -picky -noghostscript %d -o %m/prev%%03d.png")
+ '(preview-dvipng-image-type 'png)
  '(rustic-ansi-faces
    ["#282c34" "#ff6c6b" "#98be65" "#ECBE7B" "#51afef" "#c678dd" "#46D9FF" "#bbc2cf"])
  '(vc-annotate-background "#282c34")

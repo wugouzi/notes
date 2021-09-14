@@ -61,3 +61,6 @@
 (package! unicode-fonts
   :recipe (:host github :repo "rolandwalker/unicode-fonts"))
 (package! company-prescient)
+(package! svg-clock)
+(package! proof-general)
+(package! valign)

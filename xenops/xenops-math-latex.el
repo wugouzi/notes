@@ -52,7 +52,7 @@ the commands used to run these processes.")
      :message "you need to install the programs: latex and dvisvgm."
      :image-input-type "xdv"
      :image-output-type "svg"
-     :image-size-adjust (1.7 . 1.7)
+     :image-size-adjust (1.0 . 1.0)
      :latex-compiler ("xelatex -interaction nonstopmode -shell-escape -no-pdf -output-directory %o %f")
      :image-converter ("dvisvgm %f -n -b %B -c %S -o %O"))
      ;;:image-converter ("dvisvgm --pdf %f -o %O"))
@@ -72,7 +72,7 @@ This variable plays exactly the same role for Xenops.")
 
 (defvar-local xenops-math-latex-tasks-semaphore nil)
 
-(defvar xenops-math-latex-max-tasks-in-flight 6
+(defvar xenops-math-latex-max-tasks-in-flight 8
   "Maximum number of latex processing tasks allowed to be simultaneously active.
 
 Your operating system will schedule these processes onto

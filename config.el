@@ -20,7 +20,9 @@
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
 (setq doom-font (font-spec :family "DejaVu Sans Mono" :size 12)
-      doom-variable-pitch-font (font-spec :family "Source Han Serif SC" :size 11))
+      ;;doom-variable-pitch-font (font-spec :family "Source Han Serif SC" :size 1)
+      doom-variable-pitch-font (font-spec :family "Merriweather" :size 1)
+      )
 (setq doom-unicode-font (font-spec :family "DejaVu Sans Mono"))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
@@ -57,7 +59,9 @@
 
 (use-package ivy
   :bind (("C-s" . swiper)
-         ("C-x b" . ivy-switch-buffer)))
+         ("C-x b" . ivy-switch-buffer)
+         :map org-mode-map
+         ("M-." . counsel-org-goto)))
 
 
 (use-package smartparens
@@ -193,6 +197,8 @@ parent."
       (quote
        ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f" "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
       )
+(setq org-preview-latex-default-process 'imagemagick)
+(setq preview-scale-function 2.0)
 ;; (defun my-latex-mode-setup ()
 ;;   (setq-local company-backends
 ;;               ;;              (append '((company-dabbrev company-math-symbols-latex company-latex-commands))
@@ -205,7 +211,7 @@ parent."
 (setq company-dabbrev-minimum-length 5)
 (setq company-dabbrev-char-regexp "[A-Za-z]+")
 (setq company-idle-delay 0)
-(set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
+(set-company-backend! 'org-mode 'company-dabbrev 'company-yasnippet 'company-math-symbols-latex 'company-latex-commands)
 
 ;; (use-package company
 ;;   :bind (("M-/" . company-complete)
@@ -281,7 +287,7 @@ parent."
   :load-path "~/.doom.d/xenops"
   :hook
   (org-mode . xenops-mode)
-  :bind (:map org-mode-map
+  :bind (
          (("C-c C-g C-c" . xenops-reveal-at-point))
          (("C-c C-g C-i" . xenops-increase-size)))
   )
@@ -313,9 +319,9 @@ parent."
 (unicode-fonts-setup)
 
 (setq my-symbols-alist
-      '(("[ ]" . ?☐)
-        ("[X]" . ?☑)
-        ("[-]" . ?⛝)
+      '(;;("[ ]" . ?☐)
+        ;;("[X]" . ?☑)
+        ;;("[-]" . ?⛝)
 
         ("#+ARCHIVE:" . ?📦)
         ("#+AUTHOR:" . ?👤)
@@ -354,6 +360,9 @@ parent."
         texfrag-LaTeX-frag-alist '(("\\\\begin{tikzcd}" "\\\\end{tikzcd}"  :display t))
         ))
 
+;;zero width space
+(define-key org-mode-map (kbd "M-SPC M-SPC")
+  (lambda () (interactive) (insert "\u200b")))
 
 
 (global-prettify-symbols-mode +1)
