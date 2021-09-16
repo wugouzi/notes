@@ -1,0 +1,766 @@
+#+TITLE: Introduction To Model Theory
+
+#+AUTHOR: Will Johnson
+#+EXPORT_FILE_NAME: ../latex/IntroductionToModelTheory/IntroductionToModelTheory.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \def \EF {\text{EF}}
+#+LATEX_HEADER: \def \tint {\text{int}}
+* Back-and-forth Equivalence
+    Convention: Relations and functions are sets of pairs \((x,y)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *binary relation* is a pair \((E,R)\) where \(E\) is a set and \(R\subseteq E^2\). We call \(E\) the
+    *universe* of the relation. For \(a,b\in E\), write \(aEb\) if \((a,b)\in R\)
+    #+END_definition
+
+    We abbreviate \((E,R)\) as \(R\) or \(E\), if \(E\) or \(R\) is clear
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \((\R,<)\), \((\R,=)\), \((\R,\ge)\),\((\Z,<)\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A binary relation \(R\) is said to be
+    - *reflexive* if \(aRa\) (\(\forall a\in E\))
+    - *symmetric* if \(aRb\Rightarrow bRa\) (\(\forall a,b\in E\))
+    - *transitive* if \(aRb\wedge bRc\Rightarrow aRc\) (\(\forall a,b,c\in E\))
+    - *antisymmetric* if \(aRb\wedge bRa\Rightarrow a=b\) (\(\forall a,b\in E\))
+    - *total* if \(aRb\vee bRa\) (\(\forall a,b\in E\))
+    - an *equivalence relation* if it's reflexive, symmetric and transitive
+    - a *partial order* if it's reflexive, antisymmetric and transitive
+    - a *linear order*  if it's a total partial order
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(=\) is an equivalence relation
+
+    \(\subseteq\) is a partial order
+
+    \(\le\) is a linear order
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    An *isomorphism* from \((E,R)\) to \((E',R')\) is a bijection \(f:E\to E'\) s.t. for any \(a,b\in E\),
+    \(aRb\Leftrightarrow f(a)R'f(b)\). Two binary relations \((E,R)\) and \((E',R')\) are *isomorphic* (\(\cong\)) if
+    there is an isomorphism between them
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(f:(\Z,<)\to(2\Z,>)\) and \(f(x)=-2x\) is an isomorphism. \(x<y\Leftrightarrow -2x>-2y\)
+    #+END_examplle
+
+    \(\cong\) is an equivalence relation
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *local isomorphism* from \(R\) to \(R'\) is an isomorphism from a finite restriction of \(R\) to
+    a finite restriction of \(R'\). The set of local isomorphisms from \(R\) to \(R'\) is
+    denoted \(S_0(R,R')\). For \(f\in S_0(R,R')\), \(\dom(f)\) and \(\im(f)\) denote the domain and
+    range of \(f\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+     \((\Z,<)\) is a restriction of \((\R,<)\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(R=R'=(\Z,<)\), there is \(f\in S_0(R,R')\) given by \(\dom(f)​=\{1,2,3\}\)
+    and \(\im(f)​=\{10,20,30\}\) and \(f(1)=10\),\(f(2)=20\), \(f(3)=30\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(f,g\) be local isomorphisms from \(R\) to \(R'\). Then \(f\) is a *restriction* of \(g\)
+    if \(f\subseteq g\) and \(f\) is an *extension* of \(g\) if \(f\supseteq g\).
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(g:\{0,1,2,3\}\to\{5,10,20,30\}\), \(g\) extends \(f\) in the previous example
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(R,R'\) be binary relations with universe \(E,E'\). A *Karpian family* for \((R,R')\) is a
+    set \(K\subseteq S_0(R,R')\) satisfying the following two conditions for any \(f\in K\)
+    1. (*forth*) if \(a\in E\) then there is \(g\in K\) with \(g\supseteq f\) and \(a\in\dom(g)\)
+    2. (*back*) if \(b\in E'\) then there is \(g\in K\) with \(g\supseteq f\) and \(b\in\im(g)\)
+
+
+    \(R\) and \(R'\) are *\(\infty\)-equivalent*, write \(R\sim_\infty R'\), if there is a non-empty
+    Karpian family
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(f:(E,R)\to(E',R')\) an isomorphism and \(K=\{g\subseteq f:g\text{ is finite}\}\), then \(K\) is Karpian
+    and \(R\sim_\infty R'\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Suppose \(g\in K\)
+    * (forth) Suppose \(a\in E\), take \(b=f(a)\) and let \(h=g\cup\{(a,b)\}\). Then \(h\subseteq f\),
+      so \(h\in K\), \(h\supseteq g\), \(a\in\dom(h)\)
+    * (back) similarly
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \((E,R)\) and \((E',R')\) are countable and \(R\sim_\infty R'\), then \(R\cong R'\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(K\subseteq S_0(R,R')\) be Karpian, \(K\neq\emptyset\), \(E=\{e_1,e_2,e_3,\dots\}\), \(E'=\{e_1',e_2',e_3',\dots\}\)
+
+    Recursively build \(f_1\subseteq f_2\subseteq\cdots\), \(f_i\in K\)
+
+    Let \(f_1\) be anything in \(K\) as \(K\) is non-empty.
+
+    \(f_{2i}\) some extension of \(f_{2i-1}\) with \(e_i\in\dom(f_{2i})\)
+
+    \(f_{2i+1}\) some extension of \(f_{2i}\) with \(e_i'\in\im(f_{2i+1})\)
+
+    Now let \(g=\bigcup_{i=1}^\infty f_i\), then \(g\) is an isomorphism
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *dense linear order without endpoints* (DLO) is a linear order \((C,\le)\) satisfying
+    1. \(C\neq\emptyset\)
+    2. \(\forall x,y\in C\), \(x<y\Rightarrow\exists z\in C\; x<z<y\)
+    3. \(\forall x\in C\), \(\exists y,z\in C\;y<x<z\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \((\Q,\le)\), \((\R,\le)\)
+
+    non-example: \((\Z,\le)\), \(([0,1],\le)\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \((C,\le)\) and \((C',\le)\) be DLO's. Then \(S_0(C,C')\) is Karpian. So \(C\sim_\infty C'\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(f\in S_0(C,C')\), \(\dom(f)=\{a_1,\dots,a_n\}\), \(a_1<\dots<a_n\)
+    and \(\im(f)=b_1,\dots,b_n\), \(b_1<\dots<b_n\). Since \(f\) is a local isomorphism, \(f(a_i)=b_i\)
+    * (forth) Suppose \(a\in C\). We want \(b\in C'\) s.t. \(f\cup\{(a,b)\}\in S_0(C,C')\).
+      + if \(a_i<a<a_{i+1}\). We take \(b\in C'\) s.t. \(b_i<b<b_{i+1}\) since dense
+      + if \(a<a_1\). We take \(b\in C'\) s.t. \(b<b_1\) since no endpoints
+      + if \(a>a_n\), take \(b\in C'\) s.t. \(b>b_n\)
+      + if \(a=a_i\), take \(b=b_i\)
+    * (back) similar
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \((C,\le)\) and \((C',\le)\) are countable DLOs, then \(C\sim_\infty C'\), so \(C\cong C'\)
+    #+END_proposition
+    Hence
+    \begin{align*}
+    (\Q,\le)&\cong(\Q\setminus\{0\},\le)\\
+    &\cong(\Q\cup\{\sqrt{2}\},\le)\\
+    &\cong(\Q\cap(0,1),\le)
+    \end{align*}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(R,R'\) be binary relations with universe \(E,E'\)
+    * A *0-isomorphism* from \(R\) to \(R'\) is a local isomorphism from \(R\) to \(R'\)
+    * For \(p>0\), a *\(p\)-isomorphism* from \(R\) to \(R'\) is a local isomorphism \(f\) from \(R\)
+      to \(R'\) satisfying the following two conditions
+      1. (*forth*) For any \(a\in E\), there is a \((p-1)\)-isomorphism \(g\supseteq f\) with \(a\in\dom(g)\)
+      2. (*back*) For any \(b\in E'\), there is a \((p-1)\)-isomorphism \(g\supseteq f\) with \(b\in\im(g)\)
+    * An *\omega-isomorphism* from \(R\) to \(R'\) is a local isomorphism \(f\) from \(R\) to \(R'\)
+      s.t. \(f\) is a \(p\)-isomorphism for all \(p<\omega\)
+
+
+    The set of \(p\)-isomorphisms from \(R\) to \(R'\) is denoted \(S_p(R,R')\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(R=R'=(\Z,<)\), \(f:\{2,4\}\to\{1,2\}\) is a local isomorphism with \(f(2)=1\) and \(f(4)=2\).
+    Then \(f\notin S_1(\Z,\Z)\) (forth) fails. For \(a=3\), there is no \(b\) s.t. \(1<b<2\)
+
+    \(g:\{2,4\}\to\{1,5\}\) is a 1-isomorphism but not a 2-isomorphism
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(f\in S_p(R,R')\) and \(g\subseteq f\), then \(g\in S_p(R,R')\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    if \(p=0\) easy
+
+    if \(p>0\) (forward), \(\forall a\in E\), \(\exists h\in S_{p-1}(R,R')\) has \(a\in\dom(h)\) and \(h\supseteq f\supseteq g\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(S_p(R,R')\neq\emptyset\) iff \(\emptyset\in S_p(R,R')\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\Leftarrow\) immediate
+
+    \(\Rightarrow\). Suppose \(f\in S_p(R,R')\). Then \(\emptyset\subseteq f\). Hence \(\emptyset\in S_p(R,R')\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(R\) and \(R'\) are *\(p\)-equivalent*, written \(R\sim_p R'\), if there is a \(p\)-isomorphism
+    from \(R\to R'\)
+    #+END_definition
+
+    \(R\) and \(R'\) are *\omega-equivalent* or *elementarily equivalent*, written \(R\sim_\omega R'\)
+    or \(R\equiv R'\), if there is an \omega-isomorphism from \(R\) to \(R'\)
+
+    Note: \(R\sim_\omega R'\) iff \(S_\omega(R,R')\neq\emptyset\) iff \(\emptyset\in S_\omega(R,R')\) iff \(\forall p\;\emptyset\in S_p(R,R')\)
+    iff \(\forall p\; R\sim_pR'\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(R,R'\) be binary relations with universe \(E,E'\). The Ehfrenfeucht-Fraïssé game of
+    length \(n\), denoted \(\EF_n(R,R')\) is played as follows
+    * There are two players, the Duplicator and Spoiler
+    * There are \(n\) rounds
+    * In the \(i\)th round, the Spoiler chooses either an \(a_i\in E\) or a \(b_i\in E'\)
+    * The Duplicator responds with a \(b_i\in E'\) or an \(a_i\in E\) respectively
+    * At the ends of the game, the Duplicator wins
+      \begin{equation*}
+      \{(a_i,b_i),\dots,(a_n,b_n)\}
+      \end{equation*}
+      is a local isomorphism from \(R\) to \(R'\)
+    * Otherwise, the Spoiler wins
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    For \(\EF_3(\Q,\R)\)
+    | \(\Q\)        | \(\R\)             |
+    |--------------+-------------------|
+    | S:\(a_1=7\)   | D:\(b_1=7\)        |
+    | D:\(a_2=1.4\) | S:\(b_2=\sqrt{2}\) |
+    | D:\(a_3=-10\) | S:\(b_3=1.41\)     |
+
+    So \(D\) wins
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(\EF_3(\R,\Z)\)
+
+    | \(\R\)         | \(\Z\)      |
+    | D:\(a_1=1\)    | S:\(b_1=1\) |
+    | D:\(a_2=1.1\)  | S:\(b_2=2\) |
+    | S:\(a_3=1.01\) |              |
+    D fails
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(\EF_n(R,R')\) is a win for Duplicator iff \(R\sim_nR'\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    In \(\EF_n(R,R')\) if moves so far are \(a_1,b_1,\dots,a_i,b_i\), \(p=n-1\), \(f=\{(a_1,b_1),\dots,(a_i,b_i)\}\).
+    Then Duplicator wins iff \(f\in S_p(R,R')\)
+    #+END_proposition
+
+* Appendices                  :ignore:
+  #+LATEX: \appendix
+** Metric Spaces
+    \(\R_{\ge 0}\) denotes \([0,+\infty]=\{x\in\R:x\ge 0\}\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *metric* on a set \(M\) is a function \(d:M\times M\to\R_{\ge 0}\) satisfying the following properties
+    1. \(d(x,y)=0\Leftrightarrow x=y\)
+    2. \(d(x,y)=d(y,x)\)
+    3. \(d(x,z)\le d(x,y)+d(y,z)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(M=\R^2\), \(d(x,y)=\)(the distance from \(x\) to \(y\))
+    \begin{equation*}
+      d(x_1,x_2;y_1,y_2)=\sqrt{(x_1-y_1)^2+(x_2-y_2)^2}
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The *Manhattan metric* on \(\R^2\) is given by
+    \begin{equation*}
+      d(x_1,x_2;y_1,y_2)=\abs{x_1-y_1}+\abs{x_2-y_2}
+    \end{equation*}
+
+    measure distances in a city grid
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Let \(M\) be the set of strings. The *edit distance* from \(x\) to \(y\) is the minimum number of
+    intersections, deletions, and substitutions to go from \(x\) to \(y\)
+    \begin{gather*}
+      d(drip,rope)=3\\
+      drip\mapsto drop\mapsto rop\mapsto rope
+    \end{gather*}
+    Edit distance is a metric on \(M\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *metric space* is a pair \((M,d)\) where \(M\) is a set and \(d\) is a metric space
+    #+END_definition
+
+    * \((\R^n,d_{Euclidean})\) where \(d_{Euclidean}\) is the usual Euclidean distance
+    * \((\R^2,d_{Manhattan})\) where \(d_{Manhattan}\) is the Manhattan distance
+
+
+    Often we abbreviate \((M,d)\) as \(M\), when \(d\) is clear
+
+    Fix a metric space \((M,d)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(p\in M\) and \(\epsilon>0\), then
+    \begin{align*}
+    &B_\epsilon(p)=\{x\in M:d(x,p)<\epsilon\}\\
+    &\barB_\epsilon(p)=\{x\in M:d(x,p)\le\epsilon\}\\
+    \end{align*}
+    \(B_\epsilon(p)\) and \(\barB_\epsilon(p)\) are called the *open* and *closed* balls of radius \epsilon around \(p\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    In \(\R^2\) with the Euclidean metric, the open ball of radius 2 around \((0,0)\) the open disk
+    \begin{equation*}
+    \{(x,y)\in\R^2:x^2+y^2<2^2\}
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    In \(\R^2\) with the Manhattan metric, the open ball of radius 1 around \((0,0)\) the open disk
+    \begin{equation*}
+    \{(x,y)\in\R^2:\abs{x}+\abs{y}\le 1\}
+    \end{equation*}
+    #+END_examplle
+
+    Suppose \(p\in M\) and \(X\subseteq M\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(p\) is an *interior point* of \(X\) if \(X\) contains an open ball of positive radius around \(p\)
+    #+END_definition
+
+    In particular, \(p\) must be an element of \(X\)
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    If \(X=[-1,1]\times[-1,1]\), then \((0,0)\) is an interior point of \(X\), but \((1,0)\)
+    and \((0,2)\) are not
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *interior* \(\tint(X)\) is the set of interior points
+    #+END_definition
+
+    Warning: There are metric spaces where the interior of \(\barB_\epsilon(p)\) isn't \(B_\epsilon(p)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A set \(X\subseteq M\) is *open* if \(X=\tint(X)\), i.e., every point of \(X\) is an interior point of \(X\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [in \(\R\)]
+    #+BEGIN_examplle
+    The set \((-1,2)\) is open. The sets \([-1,2]\) and \([-1,2)\) are not; they have interior \((-1,2)\)
+    #+END_examplle
+
+    Fact: the interior \(\tint(X)\) is the unique largest open set contained in \(X\)
+
+    Let \(a_1,a_2,\dots\) be a sequence in a metric space \((M,d)\) and let \(p\) be a point
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    "\(\lim_{i\to\infty}a_i=p\)" if for every \(\epsilon>0\), there is \(n\) s.t.
+    \begin{equation*}
+    \{a_n,a_{n+1},a_{n+2},\dots\}\subseteq B_\epsilon(p)
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Work in \(\R\) with the usual distance. Let \(a_n=1/n\). Then \(\lim_{n\to\infty}a_n=0\)
+    but \(\lim_{n\to\infty}a_n\neq 1\)
+    #+END_examplle
+
+    Fact: For any sequence \(a_1,a_2,a_3,\cdots\) in \((M,d)\), there is at most one point \(p\)
+    s.t. \(\lim_{i\to\infty}a_i=p\)
+
+    If such a \(p\) exists, it is called the *limit*, and written \(\lim_{i\to\infty}a_i\)
+
+    let \(X\) be a set and \(p\) be a point in a metric space \((M,d)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(p\) is an *accumulation point* of \(X\) if \(p=\lim_{n\to\infty}a_n\) for some sequence \(a_n\) in \(X\)
+    #+END_definition
+
+    Equivalently
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(p\) is an accumulation point of \(X\) if for every \(\epsilon>0\), we have \(B_\epsilon(p)\cap X\neq\emptyset\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *closure* of \(X\), written \(\cl(X)\) or \(\barX\), is the set of accumulation points
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A set \(X\subseteq M\) is *closed* if \(X=\cl(X)\)
+    #+END_definition
+
+
+    Fact: The closure \(\cl(X)\) is the unique smallest closed set containing \(X\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Work in \(\R\) with the distance \(d(x,y)=\abs{x-y}\)
+
+    \(\Q\) is neither closed nor open
+
+    \(\R\) is both closed and open, so is \(emptyset\)
+    #+END_examplle
+
+    Let \(X^c\) denote the completement \(M\setminus X\)
+
+    Fact: \(X\) is closed iff \(X^c\) is open
+
+    Fact: \(\tint(X)=\cl(X^c)^c\) and \(\cl(X)=\tint(X^c)^c\)
+
+    Let \((M,d)\) and \((M',d)\) be metric spaces. Let \(f:M\to M'\) be a function
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(f\) is *continuous* if
+    \begin{equation*}
+    \lim_{n\to\infty}a_n=p\Rightarrow\lim_{n\to\infty}f(a_n)=f(p)
+    \end{equation*}
+    for \(a_1,a_2,a_3,\dots,p\in M\)
+    #+END_definition
+
+    idea: \(f\) is continuous iff \(f\) preserves limits
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Let \(f:\R\to\R\) be given by
+    \begin{equation*}
+    f(x)=
+    \begin{cases}
+    1&\text{if }x>0\\
+    -1&\text{if }x\le 0
+    \end{cases}
+    \end{equation*}
+    Then \(\lim_{n\to\infty}1/n=0\), but
+    \begin{equation*}
+    \lim_{n\to\infty}f(1/n)=\lim_{n\to\infty}1=1\neq-1=f(0)
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Fix \(f:(M,d)\to(M',d)\). The following are equivalent
+    1. \(f\) is continuous
+    2. For every open set \(U\subseteq M'\), the preimage \(f^{-1}(U)\) is open
+    3. For every \(p\in M\), for every \(\epsilon>0\), there is \(\delta>0\) s.t. for every \(x\in M\),
+       \begin{equation*}
+      d(x,p)<\delta\Rightarrow d(f(x),f(p))<\epsilon
+       \end{equation*}
+    #+END_proposition
+
+    Fact: The functions \(\sin\), \(\cos\), \(\exp\), \(\sqrt[3]{-}\) and polynomials are continuous
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(f,g:\R\to\R\) are continuous, then \(f+g,f\cdot g,f-g,f\circ g\) are continuous
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(f:\R\to\R\) is continuous and \(f(x)\neq 0\) for all \(x\), then \(1/f(x)\) is continuous.
+    If \(f(x)\ge 0\) for all \(x\), then \(\sqrt{f(x)}\) is continuous
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    This function is continuous
+    \begin{equation*}
+    h(x)=\exp\left( \frac{1}{1+x^2} \right)-\frac{1}{17+\sin(\sqrt[3]{x})}
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A function \(f:M\to M'\) is *Lipschitz continuous* if there is \(c\in\R\) s.t. for any \(x,y\in M\)
+    \begin{equation*}
+    d(f(x),f(y))\le c\cdot d(x,y)
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options [In \(\R\)]
+    #+BEGIN_examplle
+    The function \(f(x)=\abs{x}+\abs{x-1}\) is Lipschitz continuous with \(c=2\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(f\) is Lipschitz continuous, then \(f\) is continuous
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The function \(f(x)=x^2\) is continuous but not Lipschitz continuous
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \((M,d)\)be a metric space and \(S\subseteq M\) be a set. Then \((S,d')\) is a metric space,
+    where \(d'(x,y)=d(x,y)\) for \(x,y\in S\)
+    * \(d'\) is the restriction of \(d\) to \(S\times S\)
+    * We say that \((S,d')\) is a *subspace* of \((M,d)\)
+    #+END_definition
+
+    Let \((M,d)\), \((M',d)\) be metric spaces, \(S\subseteq M\) and \(f:S\to M'\) be a function
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(f\)  is *continuous* if \(f\) is continuous as a map from the subspace \((S,d')\) to \((M',d)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [in \(\R\)]
+    #+BEGIN_examplle
+    Let \(f:(-\infty,0)\cup(0,\infty)\to\R\)  be given by \(f(x)=1/x\). Then \(f\) is continuous
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    An *isometry* or *isomorphism* from \((M,d)\) to \((M',d')\) is a bijection \(f:M\to M'\) s.t. for
+    any \(x,y\in M\)
+    \begin{equation*}
+    d(x,y)=d'(f(x),f(y))
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options [in \(\R^2\)]
+    #+BEGIN_examplle
+    The map \((x,y)\mapsto(x+1,y-7)\) is an isometry
+
+    So is the map \((x,y)\mapsto(3/5x+4/5y,-4/5x+3/5y)\)
+
+    These two metric spaces are isometric via the isometry \(x\mapsto(x,0)\)
+    * \(\R\) with the usual distance
+    * The subspace \(\R\times\{0\}\) inside \(\R^2\) with the usual distance
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    The isometries of \(\R^2\) are exactly the rotations, translations, reflections and glide reflections
+    #+END_proposition
+
+    Let \(X\) be a non-empty set in a metric space
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *diameter* of \(X\), written \(\diam(X)\), is
+    \begin{equation*}
+    \sup\{d(p,q):p,q\in X\}
+    \end{equation*}
+    (Possibly \(\diam(X)=+\infty\))
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    In \(\R^2\) with the usual metric, the diameter of \(B_r(p)\) is \(2r\)
+    #+END_examplle
+
+    Work in a metric space \(M\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *Cauchy sequence* is a sequence \(a_1,a_2,a_3,\dots\) s.t.
+    \begin{equation*}
+    \lim_{n\to\infty}\diam(\{a_n,a_{n+1},a_{n+2},\dots\})=0
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Every sequence which converges to a point in \(M\) is a Cauchy sequence
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(a_1,a_2,a_3,\dots\) be a sequence in a metric space \((M,d)\). The following are equivalent
+    * The sequence is a Cauchy sequence
+    * There is some metric space \(M'\) s.t. \(M\) is a subspace of \(M'\), and \(\lim_{n\to\infty}a_n\)
+      converges in \(M'\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    In \(\R\), every Cauchy sequence converges
+    #+END_proposition
+
+    This fails in the subspace \(\Q\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A metric space \((M,d)\) is *complete* if every Cauchy sequence in \(M\) converges (to a point in \(M\))
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(\R\) is complete. The subspace \(\Q\) and \((-1,1)\) are not complete
+    #+END_examplle
+
+    Let \((M,d)\) be a metric space
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *completion* of \(M\) is a new metric space \(\barM\). Objects of \(\barM\) are equivalence
+    classes of Cauchy sequences in \(M\). Two Cauchy sequences \((a_i)_{i\in\N}\) and \((b_i)_{i\in\N}\) are
+    equivalent if \(\lim_{i\to\infty}d(a_i,b_i)=0\). The distance in \(\barM\) between two Cauchy
+    sequences \((a_i)_{i\in\N}\) and \((b_i)_{i\in\N}\) is \(\lim_{i\to\infty}d(a_i,b_i)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    This is well-defined, and \(\barM\) is complete
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If we identify \(c\in M\)with the constant sequence \(c,c,c,c,\dots\) then \(M\) is a dense subspace
+    of \(\barM\). If \(M\) is complete, then \(\barM=M\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(\R\) is the completion of \(\Q\) w.r.t. its usual metric
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The *\(p\)-adic norm* on \(\Q\) is defined by
+    \begin{gather*}
+    \abs{0}_p=0\\
+    \abs{p^ka/b}_p=p^{-k}\text{ if }a,b\text{ are integers not divisible by }p
+    \end{gather*}
+    For example, \(\abs{1.3}_5=\abs{5^{-1}\cdot 13/2}_5=5^1\)
+
+    The *\(p\)-adic metric* on \(\Q\) is given by \(d(x,y)=\abs{x-y}_p\). This is an incomplete metric.
+    The completion is called \(\Q_p\), the set of *\(p\)-adic numbers*
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(C([0,1])\) is the space of continuous functions \(f:[0,1]\to\R\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    There is a metric on \(C([0,1])\) where \(d(f,g)=\max\{\abs{f(x)-g(x)}:x\in[0,1]\}\). This
+    makes \(C([0,1])\) into a complete metric space.
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A metric space \((M,d)\) is *connected* if the only clopen sets are \(M\) and \(\emptyset\).
+    Otherwise \(M\) is disconnected
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A set \(X\subseteq M\) is *connected* (resp. *disconnected*) if the subspace \((X,d)\)is connected or
+    disconnected as a metric space.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(X\) is disconnected iff there is a non-constant continuous function \(f:X\to\{0,1\}\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The set \([-10,-1]\cup[1,10]\) is disconnected, as witnessed by
+    \begin{equation*}
+    f(x)=
+    \begin{cases}
+    0&x<0\\
+    1&x>0
+    \end{cases}
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The set \([-10,10]\setminus\{0\}\) is disconnected
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The set \(\Q\) is disconnected, witnessed by
+    \begin{equation*}
+    f(x)=
+    \begin{cases}
+    0&x<\sqrt{2}\\
+    1&x>\sqrt{2}
+    \end{cases}
+    \end{equation*}
+    The set \(\R\setminus\Q\) is disconnected by a similar argument
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(X\subseteq\R\) is non-empty, then the following are equivalent
+    * \(X\) is connected
+    * \(X\) is convex: if \(a,b\in X\), then \([a,b]\subseteq X\)
+    * \(X\) is an interval, a set of the form
+      \begin{gather*}
+      [a,b],(a,b),(a,b],[a,b)\\
+      (-\infty,a),(-\infty,a],[a,+\infty),(a,+\infty),(-\infty,\infty)
+      \end{gather*}
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(f:M\to M'\) be continuous. If \(X\subseteq M\) is connected, then \(f(X)\subseteq M'\) is connected
+    #+END_proposition
+
+    #+ATTR_LATEX: :options [Intermediate Value Theorem]
+    #+BEGIN_corollary
+    If \(f:[a,b]\to\R\) is continuous and \(f(a)<y<f(b)\), then there is \(x\in[a,b]\) with \(f(x)=y\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    \(f([a,b])\) is connected, hence convex, so it contains \(y\in[f(a),f(b)]\). Therefore there
+    is \(x\in[a,b]\) with \(f(x)=y\)
+    #+END_proof
+
+    There are discontinuous functions \(f:\R\to\R\) satisfying the IVT

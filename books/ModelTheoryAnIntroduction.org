@@ -3046,7 +3046,9 @@
 ** Omitting Types and Prime Models
     For \(T\) an \(\call\)-theory, we let \(S_n(T)\) be the set of all complete \(n\)-types \(p\)
     s.t. \(p\cup T\) is satisfiable. If \(T\) is complete and \(\calm\vDash T\), then \(S_n(T)=S_n^{\calm}(\emptyset)\)
-    since \(\calm\vDash\phi\) iff \(T\vDash\phi\). In particular, \(S_n(T)\) is a totally disconnected compact
+    since \(\calm\vDash\phi\) iff \(T\vDash\phi\). Also, \(S_n^{\calm}(A)=S_n(\Th_A(\calm))\)
+
+    In particular, \(S_n(T)\) is a totally disconnected compact
     topological space with basic open sets
     \begin{equation*}
     [\phi]=\{p:\phi\in p\}
@@ -3275,6 +3277,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:thm4.2.8
     Let \(\call\) be a countable language and let \(T\) be a complete \(\call\)-theory with infinite models.
     Then \(\calm\vDash T\) is prime iff it is countable and atomic
     #+END_theorem
@@ -3308,13 +3311,275 @@
     #+BEGIN_lemma
     Suppose that \((\bara,\barb)\in M^{m+n}\) realizes an isolated type in \(S_{m+n}(T)\).
     Then \(\bara\) realizes an isolated type in \(S_m(T)\). Indeed if \(A\subseteq M\)
-    and \((bara,\barb)\in M^{m+n}\) realizes an isolated type in \(S_{m+n}^{\calm}(A)\),
+    and \((\bara,\barb)\in M^{m+n}\) realizes an isolated type in \(S_{m+n}^{\calm}(A)\),
     then \(\tp^{\calm}(\bara/A)\) is isolated
     #+END_lemma
 
     #+BEGIN_proof
-
+    Let \(\phi(\barv,\barw)\) isolate \(\tp^{\calm}(\bara,\barb/A)\). We claim
+    that \(\exists\barw\;\phi(\barv,\barw)\) isolates \(\tp^{\calm}(\bara/A)\). Let \(\psi(\barv)\) be
+    any \(\call_A\)-formula s.t. \(\calm\vDash\psi(\bara)\). We must show that
+    \begin{equation*}
+    \Th_A(\calm)\vDash\exists\barw(\phi(\barv,\barw)\to\psi(\barv))
+    \end{equation*}
     #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The isolated types are *dense* in \(T\) if every consistent \(L\)-formula \(\psi(x_1,\dots,x_n)\) belongs
+    to an isolated type \(p(x_1,\dots,x_n)\in S_n(T)\)
+    #+END_definition
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(\call\) be a countable language and let \(T\) be a complete \(\call\)-theory with infinite models.
+    Then, the following are equivalent
+    1. \(T\) has a prime model
+    2. \(T\) has an atomic model \(\calm\)
+    3. the isolated types in \(S_n(T)\) are dense for all \(n\) (in the sense of topology)
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(2\to 3\). Let \(\phi(\barv)\) be an \(\call\)-formula s.t. \([\phi(\barv)]\) is a nonempty open set
+    in \(S_n(T)\). We must show that \([\phi(\barv)]\) contains an isolated type
+
+    Let \(\calm\vDash T\) be atomic. Because \(T\) is complete and \(T\cup\{\phi(\barv)\}\) is
+    satisfiable, \(T\vDash\exists\barv\phi(\barv)\). Thus there is \(\bara\in M^n\) s.t. \(\calm\vDash\phi(\bara)\).
+    Then \(\tp^{\calm}(\bara)\in[\phi]\) and because \(\calm\) is atomic, \(\tp^{\calm}(\bara)\) is isolated.
+
+    \(3\to 2\). (From tent) A structure \(\fM_0\) is atomic iff for all \(n\) the set
+    \begin{equation*}
+    \Sigma_n(x_1,\dots,x_n)=\{\neg\varphi(x_1,\dots,x_n)\mid\varphi(x_1,\dots,x_n)\text{ complete}\}
+    \end{equation*}
+    is not realised in \(\fM_0\). By Theorem ref:thm4.2.4 it is enough to show that
+    the \(\Sigma_n(x_1,\dots,x_n)\)  are not isolated in \(T\). This is the case iff for every
+    consistent \(\psi(x_1,\dots,x_n)\) there is a complete formula \(\varphi(x_1,\dots,x_n)\)
+    with \(T\not\vDash\forall\barx(\psi(\barx)\to\neg\varphi(\barx))\). We conclude that \(\Sigma_n\) is not isolated iff the
+    isolated \(n\)-types are dense
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:thm4.2.11
+    Suppose that \(T\) is a complete theory in a countable language and \(A\subseteq M\vDash T\) is countable.
+    If \(\abs{S_n^{\calm}(A)}<2^{\aleph_0}\), then
+    1. the isolated types in \(S_n^{\calm}(A)\) are dense
+    2. \(\abs{S_n^{\calm}(A)}\le\aleph_0\)
+
+
+    In particular, if \(\abs{S_n(T)}<2^{\aleph_0}\), then \(T\) has a prime model
+    #+END_theorem
+
+    #+BEGIN_proof
+    1. We first prove that the isolated types are dense. Suppose that there is a formula \phi
+       s.t. \([\phi]\) contains no isolated types. Because \phi does not isolate a type, we can find \psi
+       s.t. \([\phi\wedge\psi]\neq\emptyset\) and \([\phi\wedge\neg\psi]\neq\emptyset\). Because \([\phi]\) does not contain an isolated type, neither
+       does \([\phi\wedge\pm\psi]\)
+
+       We build a binary tree of formulas \((\phi_\sigma:\sigma\in 2^{<\omega})\) s.t.
+       1. each \([\phi_\sigma]\) is nonempty but contains no isolated types
+       2. if \(\sigma\subset\tau\), then \(\phi_\tau\vDash\phi_\sigma\)
+       3. \(\phi_{\sigma,i}\vDash\neg\phi_{\sigma,1-i}\)
+       Let \(\phi_\emptyset=\phi\) for some formula \phi where \([\phi]\) contains no isolated types. Suppose
+       that \([\phi_\sigma]\) is nonempty but contains no isolated types. As above, we can find \psi
+       s.t. \([\phi_\sigma\wedge\psi]\) and \([\phi_\sigma\wedge\neg\psi]\) are both nonempty and neither contains an isolated type.
+       Let \(\phi_{\sigma,0}=\phi\wedge\psi\) and \(\phi_{\sigma,1}=\phi\wedge\neg\psi\)
+
+       Let \(f:\omega\to 2\). Because
+       \begin{equation*}
+        [\phi_{f|0}]\supseteq[\phi_{f|1}]\supseteq[\phi_{f|2}]\supseteq\cdots
+        \end{equation*}
+       and \(S_n^{\calm}(A)\) is compact, there is
+       \begin{equation*}
+        p_f\in\bigcap_{n=0}^\infty[\phi_{f|n}]
+        \end{equation*}
+       If \(g\neq f\), we can find \(m\) s.t. \(f|m=g|m\) but \(f(m)\neq g(m)\). By
+       construction, \(\phi_{f|m+1}\vDash\neg\phi_{g|m+1}\); thus \(p_f\neq p_g\). Because \(f\mapsto p_f\) is a one-to-one
+       function from \(2^\omega\) into \(S_n^{\calm}(A)\), \(\abs{S_n^{\calm}(A)}=2^{\aleph_0}\)
+    2. Suppose that \(\abs{S_n^{\calm}(A)}>\aleph_0\). We claim that \(\abs{S_n^{\calm}(A)}=2^{\aleph_0}\).
+       Because \(\abs{S_n^{\calm}(A)}>\aleph_0\), and there are only countably many \(\call_A\)-formulas, there
+       is a formula \phi s.t. \(\abs{[\phi]}>\aleph_0\)
+
+       *Claim* if \(\abs{[\phi]}>\aleph_0\), there is an \(\call_A\)-formula \psi s.t. \(\abs{[\phi\wedge\psi]}>\aleph_0\)
+       and \(\abs{[\phi\wedge\neg\psi]}>\aleph_0\)
+
+       Suppose not. Let \(p=\{\psi(\barv):\abs{[\phi\wedge\psi]}>\aleph_0\}\). We claim that \(p\) is satisfiable.
+       Suppose \(\psi_1,\dots,\psi_m\in p\). Either \(\psi_1\wedge\dots\wedge\psi_m\in p\), in which case \(\{\psi_1,\dots,\psi_m\}\cup\Th_A(\calm)\) is
+       satisfiable, or \(\neg\psi_1\vee\dots\vee\neg\psi_m\in p\). Because
+       \begin{equation*}
+       [\neg\psi_1\vee\dots\vee\neg\psi_m]=[\neg\psi_1]\cup\dots\cup[\neg\psi_m]
+       \end{equation*}
+       We must have \(\abs{[\phi\wedge\neg\psi_i]}>\aleph_0\) for some \(i\), a contradiction. Thus \(p\in S_n^{\calm}(A)\).
+       Moreover, if \(\psi\not\in p\), then \([\phi\wedge\psi]\le\aleph_0\). But
+       \begin{equation*}
+       [\phi]=\bigcup_{\psi\not\in p}[\phi\wedge\psi]\cup\{p\}
+       \end{equation*}
+       (Consider \([\phi]\setminus\bigcup_{\psi\notin p}[\phi\wedge\psi]\), which is exactly \(p\))
+       Because \([\phi]\) is the union of at most \(\aleph_0\) sets each of size at most \(\aleph_0\), we
+       have \(\abs{[\phi]}\le\aleph_0\), a contradiction.
+
+       We build a binary tree of formulas \((\phi_\sigma:\sigma\in 2^{<\omega})\) s.t.
+       1. if \(\sigma\subset\tau\), then \(\phi_\tau\vDash\phi_\sigma\)
+       2. \(\phi_{\sigma,i}\vDash\neg\phi_{\sigma,1-i}\)
+       3. \(\abs{[\phi_\sigma]}>\aleph_0\)
+       Let \(\phi_\emptyset=\phi\) for some \phi with \(\abs{[\phi]}>\aleph_0\). Given \(\phi_\sigma\) where \(\abs{[\phi_\sigma]}>\aleph_0\), by
+       the chain we can find \psi s.t. \(\abs{[\phi_\sigma\wedge\psi]}>\aleph_0\) and \(\abs{[\phi_\sigma\wedge\neg\psi]}>\aleph_0\).
+       Let \(\phi_{\sigma,0}=\phi_\sigma\wedge\psi\) and \(\phi_{\sigma,1}=\phi_\sigma\wedge\neg\psi\)
+
+       As in 1, for each \(f\in 2^\omega\) there is a
+       \begin{equation*}
+       p_f\in\bigcap_{m=0}^\infty[\phi_{f|m}]
+       \end{equation*}
+       and if \(f\neq g\), then \(p_f\neq p_g\). Thus \(\abs{S_n^{\calm}}=2^{\aleph_0}\)
+    #+END_proof
+
+
+*** Countable Homogeneous Models
+    Our next goal is to show that prime models are unique up to isomorphism
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \kappa be an infinite cardinal. We say that \(\calm\vDash T\) is *\kappa-homogeneous* if
+    whenever \(A\subset M\) with \(\abs{A}<\kappa\), \(f:A\to M\) is a partial elementary map, and \(a\in M\),
+    there is \(f^*\supseteq f\) s.t. \(f^*:A\cup\{a\}\to M\) is partial elementary
+
+    We say that \(\calm\) is *homogeneous* if it is \(\abs{M}\)-homogeneous
+    #+END_definition
+
+    In homogeneous models, partial elementary maps are just restrictions of automorphisms
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Suppose that \(\calm\) is homogeneous, \(A\subset M\), \(\abs{A}<\abs{M}\), and \(f:A\to M\) is a partial
+    elementary map. Then there is an automorphism \sigma of \(\calm\) with \(\sigma\supseteq f\).
+
+    In particular, if \(\calm\) is homogeneous and \(\bara,\barb\in M^n\) realize the same \(n\)-type, then
+    there is an automorphism \sigma of \(\calm\) with \(\sigma(\bara)=\barb\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(\abs{M}=\kappa\) and let \((a_\alpha:\alpha<\kappa)\) be an enumeration of \(M\). We build a sequence of
+    partial elementary maps \((f_\alpha:\alpha<\kappa)\) extending \(f\) with \(f_\alpha\subseteq f_\beta\) for \(\alpha<\beta\) s.t. \(a_\alpha\)
+    is in the domain and image of \(f_{\alpha+1}\) and \(\abs{f_{\alpha+1}}\le\abs{f_\alpha}+2<\kappa\).
+    Then \(\sigma=\bigcup_{\alpha<\kappa}f_\alpha\) is the desired automorphism. Let \(f_0=f\).
+
+    If \alpha is a limit ordinal and \(f_\beta\) is partial elementary with
+    \begin{equation*}
+    \abs{f_\beta}\le\abs{A}+\abs{\beta}+\aleph_0<\kappa
+    \end{equation*}
+    for all \(\beta<\alpha\), let \(f_\alpha=\bigcup_{\beta<\alpha}f_\beta\). Then \(f_\alpha\) is partial elementary and
+    \begin{equation*}
+    \abs{f_\alpha}\le\abs{\alpha}(\abs{A}+\abs{\alpha}+\aleph_0)\le\abs{A}+\abs{\alpha}+\aleph_0<\kappa
+    \end{equation*}
+    Given \(f_\alpha\) with \(\abs{f_\alpha}<\kappa\), because \(\calm\) is homogeneous, there is \(b\in M\) s.t.
+    if \(g_\alpha=f_\alpha\cup\{(a_\alpha,b)\}\), then \(g_\alpha\) is partial elementary. Note that \(g_\alpha^{-1}\) is also
+    partial elementary. Thus there is \(c\in M\) s.t. \(g^{-1}_\alpha\cup\{(a_\alpha,c)\}\) is partial elementary.
+    Thus \(f_{\alpha+1}=g_\alpha\cup\{(c,a_\alpha)\}\) is partial
+    elementary, \(\abs{f_{\alpha+1}}\le\abs{f_\alpha}+2\le\abs{A}+\abs{\alpha}+\aleph_0\) and \(a_\alpha\) is in the domain and
+    range of \(f_{\alpha+1}\)
+    #+END_proof
+
+    If \(\calm\) is homogeneous and \(\tp^{\calm}(\bara)=\tp^{\calm}(\barb)\), then \(\bara\mapsto\barb\) is a partial
+    elementary map that must extend to an automorphism
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma4.2.14
+    If \(\calm\) is atomic, then \(\calm\) is \(\aleph_0\)-homogeneous. In particular, countable atomic models
+    are homogeneous
+    #+END_lemma
+
+    #+BEGIN_proof
+    Suppose that \(\bara\mapsto\barb\) is elementary and \(c\in M\). Let \(\phi(\barv,w)\)
+    isolate \(\tp^{\calm}(\bara,c)\). Because \(\calm\vDash\exists w\;\phi(\bara,w)\) and \(\bara\mapsto\barb\) is
+    elementary, \(\calm\vDash\exists w\;\phi(\barb,w)\). Suppose that \(\calm\vDash\phi(\barb,d)\). Because \(\phi(\barv,w)\)
+    isolates a type, \(\tp^{\calm}(\bara,c)=\tp^{\calm}(\barb,d)\). Thus \(\bara,c\mapsto\barb,d\) is elementary
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:thm4.2.15
+    Let \(T\) be a complete theory in a countable language. Suppose that \(\calm\) and \(\caln\) are
+    countable homogeneous models of \(T\) and \(\calm\) and \(\caln\) realize the same types in \(S_n(T)\)
+    for \(n\ge 1\). Then \(\calm\cong\caln\).
+    #+END_theorem
+
+    #+BEGIN_proof
+    We build an isomorphism \(f:\calm\to\caln\) by a back-and-forth argument. We will build \(f_0\subset f_1\subset\cdots\) a
+    sequence of partial elementary maps with finite domain, and let \(f=\bigcup_{i=0}^\infty f_i\).
+    Let \(a_0,a_1,\dots\) enumerate \(M\) and \(b_0,b_1,\dots\) enumerate \(N\). We will ensure
+    that \(a_i\in\dom(f_{2i+1})\) and \(b_i\in\im(f_{2i+2})\).
+
+    _stage 0_: Let \(f_0=\emptyset\). Because \(T\) is complete \(f_0\) is partial elementary
+
+    We inductively assume that \(f_s\) is partial elementary. Let \(\bara\) be the domain of \(f_s\)
+    and \(\barb=f_s(\bara)\)
+
+    _stage \(s+1=2i+1\)_: Let \(p=\tp^{\calm}(\bara,a_i)\). Because \(\calm\) and \(\caln\) realize the same types,
+    we can find \(\barc,d\in N\) s.t. \(\tp^{\caln}(\barc,d)=p\). Note
+    that \(\tp^{\caln}(\barc)=\tp^{\calm}(\bara)\) by choice of \(\barc\)
+    and \(\tp^{\calm}(\bara)=\tp^{\caln}(\barb)\) because \(f_s\) is partial elementary.
+    Thus \(tp^{\caln}(\barc)=\tp^{\caln}(\barb)\). Because \(\caln\) is homogeneous, there is \(e\in N\) s.t.
+    \(\tp^{\caln}(\barb,e)=\tp^{\caln}(\barc,d)=p\). Thus \(f_{s+1}=f_s\cup\{(a_i,e)\}\) is partial elementary
+    with \(a_i\) in the domain
+
+    _stage \(s+1=2i+2\)_: the same
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \(T\) be a complete theory in a countable language. If \(\calm\) and \(\caln\) are prime models
+    of \(T\), then \(\calm\cong\caln\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    By Theorem ref:thm4.2.8, \(\calm\) and \(\caln\) are atomic. Because the types in \(S_n(T)\) realized in
+    an atomic model are exactly the isolated types, \(\calm\)and \(\caln\) realize the same types. By Lemma
+    ref:lemma4.2.14, countable atomic models are homogeneous. Thus by Theorem ref:thm4.2.15 \(\calm\cong\caln\)
+    #+END_proof
+
+*** Prime Model Extensions of \omega-Stable Theories
+    Suppose that \(\calm\vDash T\) and \(A\subseteq M\). We say that \(\calm\) is *prime over* \(A\) if whenever \(\caln\vDash T\)
+    and \(f:A\to\caln\) is partial elementary, there is an elementary \(f^*:\calm\to\caln\) extending \(f\)
+
+    Let \(L\) be any linear order. We build \(L^*\vDash\DLO\) prime over \(L\) as follows. If \(L\) has a
+    least element \(a\), add a copy of \(\Q\) below \(a\). If \(L\) has a greatest element \(b\), add
+    a copy of \(\Q\) above \(b\). If \(c,d\in L\) with \(c<d\) but there are no element of \(L\)
+    between \(c\) and \(d\), add a copy of \(\Q\) between \(c\) and \(d\). We add no new elements.
+    Then \(L^*\vDash\DLO\) and that if \(f:L\to\calm\vDash\DLO\), then \(f\) extends to \(f^*:L^*\to\calm\).
+    Because \(\DLO\) has quantifier elimination, it is model-complete and \(f^*\)is elementary
+
+    For \(\ACF\), if \(R\) is any integral domain and \(F\) is the algebraic closure of the fraction
+    field of \(R\), then \(F\) is prime over \(R\) and any embedding of \(R\) into an algebraically
+    closed field \(K\) extends to \(F\). Because \(\ACF\) is model-complete, this map is elementary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(T\) be a complete theory in a countable language, and let \kappa be an infinite cardinal. We
+    say that \(T\) is *\kappa-stable* if whenever \(\calm\vDash T\), \(A\subseteq M\)
+    and \(\abs{A}=\kappa\), then \(\abs{S_n^{\calm}(A)}=\kappa\)
+
+    We say that \(\calm\) is *\kappa-stable* if \(\Th(\calm)\) is \kappa-stable
+    #+END_definition
+
+    By Corollary ref:cor4.1.18 \(\ACF\) is \omega-stable. On the other hand, \(\abs{S_1^{\Q}(\Q)}=2^{\aleph_0}\)
+    so \(\DLO\) is not \omega-stable
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(T\) be a complete theory in a countable language. If \(T\) is \omega-stable, then \(T\) is
+    \kappa-stable for all infinite cardinals \kappa
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose that \(\calm\vDash T\), \(A\subseteq M\), \(\abs{A}=\kappa\) and \(\abs{S_n^{\calm}(A)}>\kappa\). Because there are
+    only \kappa formulas with parameters from \(A\), there is some \(\call_A\)-formula \(\phi_\emptyset(\barv)\)
+    s.t. \(\abs{[\phi_\emptyset]}>\kappa\) as \(S_n^{\calm}(A)=\bigcup[\phi]\) where \(\phi\) is consistent with \(\Th_A(\calm)\). The
+    argument from Theorem ref:thm4.2.11
+    #+END_proof
+
+
 
 
 ** Exercise
@@ -3592,5 +3857,4 @@
     [[Problem1]]
     [[Problem2]]
     [[Problem3]]
-    [[Problem4]]
     [[Problem5]]
