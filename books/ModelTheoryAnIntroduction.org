@@ -6,6 +6,8 @@
 #+EXPORT_FILE_NAME: ../latex/ModelTheoryAnIntroduction/ModelTheoryAnIntroduction.tex
 #+STARTUP: noindent
 #+STARTUP: overview
+#+LATEX_HEADER: \def \Pr {\text{Pr}}
+#+LATEX_HEADER: \def \RM {\text{RM}}
 * Structures and Theories
 ** Languages and Structures
    #+ATTR_LATEX: :options []
@@ -2162,6 +2164,8 @@
    We need to show that \(T\vDash\forall\bar{v}(\exists w\phi(\bar{v},w)\leftrightarrow\psi(\bar{v}))\).
    Suppose that \(\calm\vDash\exists w\phi(\bar{v},w)\), then
    \(\caln\vDash\exists w\phi(\bar{v},w)\). Note that \(\calm\) and \(\caln\) are interchangeable.
+
+   We are actually talks about \(\exists v\phi(\bara,v)\)
    #+END_proof
 
 *** Divisible Abelian Groups
@@ -2336,9 +2340,6 @@
     Then \(T\) has quantifier elimination
     #+END_corollary
 
-    #+BEGIN_proof
-    Suppose \(\cala\vDash T_\forall\), then 
-    #+END_proof
 
 
     #+ATTR_LATEX: :options []
@@ -2497,8 +2498,11 @@
     \exists y\; v=\underbrace{y+\dots+y}_{n\text{-times}}
     \end{equation*}
     It turns out that this is the only obstruction to quantifer elimination.
-    Let \(\call^*=\call\cup\{P_n:n=2,3,\dots\}\) whre \(P_n\) is a unary
-    predicate which we will interpret as the elements divisible by \(n\)
+    Let \(\call^*=\call\cup\{P_n:n=2,3,\dots\}\) where \(P_n\) is a unary
+    predicate which we will interpret as the elements divisible by \(n\). We will see that
+    the \(\call^*\)-theory of \(\Z\) has quantifier elimination and is decidable. Because we are only
+    adding predicates for sets that we define already in the language \(\call\), we will not change the
+    definable sets (See Exercise ref:ex1.4.15)
 
     For any language \(\call\) and \(\call\)-theory \(T\), there is a language
     \(\call'\supseteq\call\) and an \(\call'\)-theory \(T'\supseteq T\) s.t. for
@@ -2515,19 +2519,42 @@
     \forall\overbar{v}(\phi(\overbar{v})\leftrightarrow R_\phi(\overbar{v}))
     \end{equation*}
 
-    Consider the \(\call^*\)-theory, which we call Pr for *Presburger
-    arithmetic*, with axioms:
+    Consider the \(\call^*\)-theory, which we call \(\Pr\) for *Presburger arithmetic*, with axioms:
     1. axioms for ordered Abelian groups
     2. \(0<1\)
     3. \(\forall x(x\le0\vee x\ge1)\)
     4. \(\forall x(P_n(x)\leftrightarrow\exists y\;x=\underbrace{y+\dots+y}_{n\text{-times}})\), for \(n=2,3,\dots\)
-    5. \(\forall x\bigvee_{i=0}^{n-1}[P_n(x+\underbrace{1+\dots+1}_{i\text{ times}})\wedge\bigwedge_{j\neq i}\neg P_n(x+\underbrace{1+\dots+1}_{j\text{times}})]\)
+    5. \(\forall x\bigvee_{i=0}^{n-1}[P_n(x+\underbrace{1+\dots+1}_{i\text{ times}})\wedge\bigwedge_{j\neq i}\neg P_n(x+\underbrace{1+\dots+1}_{j\text{ times}})]\)
        for \(n=2,3,\dots\)
 
 
     Suppose that \((G,+,-,<,0,1)\) is a model of Pr. For each \(n\), axiom (4)
     asserts that \(P_n^G=nG\). Axiom (5) asserts that
     \(\frac{G}{nG}\cong \frac{\Z}{n\Z}\)
+
+    Axioms 1,2,3 and 5 are universal, whereas axiom 4 is not. Let us define a theory \(T\) that we
+    will eventually show is \(\Pr_\forall\). The axioms for \(T\) are:
+
+    axioms 1,2,3 and 5
+    6. [@6] \(P_n\) is closed under + and -
+    7. \(\forall x,y\;(\underbrace{y+\dots+y}_{n\text{ times}}=x)\to P_n(x)\)
+    8. (for \(m\) dividing \(n\)) \(\forall x(P_m(x)\to P_n(x))\)
+    9. \(\forall x(P_{kn}(\underbrace{x+\dots+x}_{k\text{ times}})\to P_n(x))\) for \(k,n=2,3,\dots\)
+
+
+    6 ensures that the \(P_n\) are additive subgroups. Axiom 7 asserts that \(nG\subset P_n\). Axiom 8
+    asserts that if \(m\mid n\), then \(P_n\subset P_m\). Axiom 9 asserts that if \(kx\in P_{kn}\)
+    then \(x\in P_n\). Clearly \(T\subseteq\Pr_{\forall}\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \((G,+,<,P_2,P_3,\dots)\vDash T\). There is \(H\supseteq G\) s.t. \(H\vDash\Pr\) and if \(H'\supseteq G\) and \(H'\vDash\Pr\),
+    then there is \(h:H\to H'\) s.t. \(h|G\) is the identity
+    #+END_lemma
+
+    #+BEGIN_proof
+
+    #+END_proof
 
 
 ** Algebraically Closed Fields
@@ -2692,13 +2719,32 @@
 ** Exercises
     #+BEGIN_exercise
     label:ex3.4.3
-    1. Show that the theory of \((\Z,s)\) has quantifier elimination where \(s(x)=x+1\). Shwo that
+    1. Show that the theory of \((\Z,s)\) has quantifier elimination where \(s(x)=x+1\). Show that
        this theory is strongly minimal and that \(\acl(A)\) is the set of elements "reachable" from \(A\)
     2. Show that the theory of \((\N,s)\) does not have quantifier elimination
     #+END_exercise
 
     #+BEGIN_proof
-    1.
+    [[https://math.stackexchange.com/questions/3203714/exercise-3-4-3-in-david-markers-model-theory][StackExchange]]
+
+       Let \(T=\Th((\Z,s))\), suppose \(\fM,\fN\vDash T\), \((\Z,s)\) is a common substructure of \(\fM\)
+       and \(\fN\). For any quantifier free \varphi,
+       \begin{equation*}
+       \varphi(\barv,w)\leftrightarrow\bigvee_{i=1}^n\bigwedge_{j=1}^m\theta_{i,j}(\barv,w)
+       \end{equation*}
+       where each \(\theta_{i,j}(\barv,w)\) is atomic or negated atomic formula.
+
+       Atomic formula of \(\call=\{s\}\) is \(s^m(x)=s^n(y)\) for \(m,n\in\N\). Thus if \(\fM\vDash\varphi(\bara,b)\)
+      \begin{equation*}
+       \varphi(\bara,x)\leftrightarrow\bigwedge_{i}s^{m_i}(x)=s^{n_i}(a_i)\wedge\bigwedge_is^{m_i'}(x)\neq s^{n_i'}(a_i)
+      \end{equation*}
+       For \((\Z,s)\), \(\forall x,y(s(x)=s(y)\to x=y)\in T\).
+
+    But this is not true in \((\N,s)\) as we can't
+       establish comparison without a base element. Thus
+       \begin{equation*}
+       \varphi\leftrightarrow\bigwedge_is^{m_i}(x_i)=y_i\wedge\bigwedge_is^{m_i'}(x'_i)\neq y_i'
+       \end{equation*}
     #+END_proof
 * Realizing and Omitting Types
 
@@ -3665,6 +3711,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:thm4.2.20
     Suppose that \(T\) is \omega-stable. Let \(\calm\vDash T\) and \(A\subseteq M\). There is \(\calm_0\prec\calm\), a prime model
     extension of \(A\). Moreover, we can choose \(\calm_0\) s.t. every element of \(\calm_0\) realizes an
     isolated type over \(A\)
@@ -3685,7 +3732,11 @@
 
     We apply the Tarski-Vaught test. Suppose that \(\calm\vDash\exists v\phi(v,\bara)\), where \(\bara\in A_\delta\). By
     Proposition ref:prop4.2.19, the isolated types in \(S^{\calm}(A_\delta)\) are dense. Thus, there
-    is \(b\in M\) s.t. \(\calm\vDash\phi(b,\bara)\) and \(\tp^{\calm}(b/A_\delta)\) <<Problem4>> is isolated. By Choice of
+    is \(b\in M\) s.t. \(\calm\vDash\phi(b,\bara)\) and \(\tp^{\calm}(b/A_\delta)\) <<Problem4>> is isolated.
+    #+LATEX: \wu{
+    (\(\phi(x,\bara)\) is contained in an isolated type, and isolated type is realised in \(\calm\))
+    #+LATEX: }
+    By Choice of
     \delta, \(b\in A_\delta\). Thus by Proposition ref:prop2.3.5, \(\calm_0\prec\calm\)
 
     *Claim 2* \(\calm_0\) is a prime model extension of \(A\)
@@ -3696,7 +3747,17 @@
     if \alpha is a limit ordinal, we let \(f_\alpha=\bigcup_{\beta<\alpha}f_\beta\)
 
     Given \(f_\alpha:A_\alpha\to\caln\) partial elementary, \(\phi(v,\bara)\) isolate \(\tp^{\calm_0}(a_\alpha/A_\alpha)\).
+    Because \(f_\alpha\) is partial elementary, by Lemma ref:lemma4.1.9 (3), \(\phi(v,f_\alpha(\bara))\)
+    isolates \(f_\alpha(\tp^{\calm}(a_\alpha/A_\alpha))\) in \(S_1^{\caln}(f_\alpha(A))\). Also, because \(f_\alpha\) is partial
+    elementary, there is \(b\in N\) with \(\caln\vDash\phi(b,f_\alpha(\bara))\). Thus \(f_{\alpha+1}=f_\alpha\cup\{(a_\alpha,b)\}\) is
+    elementary
+
+    In particular, \(f_\delta:\calm_0\to\caln\) is elementary. Thus \(\calm_0\) is a prime model extension of \(A\)
     #+END_proof
+
+    #+LATEX: \wu{
+    So the isolated types are dense in the sense of build elementary maps?
+    #+LATEX: }
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
@@ -3739,6 +3800,8 @@
     #+END_theorem
 ** Saturated and Homogeneous Models
     Assume that \(T\) is a complete theory with infinite models in a countable language \(\call\)
+
+    [[index:saturated model]]
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     Let \kappa be an infinite cardinal. \(\calm\vDash T\) is *\kappa-saturated* if for all \(A\subseteq M\),
@@ -4455,6 +4518,7 @@
     #+END_proof
 
     #+BEGIN_exercise
+    label:ex4.5.2
     Let \(T\) be the theory of \((\Z,s)\) where \(s(x)=x+1\). Determine the types in \(S_n(T)\) for
     each \(n\). Which types are isolated? Do the same for \((\Z,<,s)\)
     #+END_exercise
@@ -4464,6 +4528,8 @@
     \begin{equation*}
     \bigvee\left(\bigwedge s^{m_i}(x_i)=s^{n_i}(y_i)\wedge\bigwedge s^{m_i'}(x_i')\neq s^{n_i'}(y_i')\right)
     \end{equation*}
+
+    At least three \(+\infty\), \(-\infty\)
     #+END_proof
 
     #+BEGIN_exercise
@@ -5285,6 +5351,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:thm6.1.11
     Suppose \(T\) is a strongly minimal theory. If \(\calm,\caln\vDash T\), then \(\calm\cong\caln\) iff \(\dim(M)=\dim(N)\)
 
     More generally, if \(\calm,\caln\) and \phi are as in Lemma ref:lemma6.1.6 and \(\dim(\phi(\calm))=\dim(\phi(\caln))\),
@@ -5327,6 +5394,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:lemma6.1.13
     Let \(T\) be \omega-stable
     1. If \(\calm\vDash T\), then there is a minimal formula in \(\calm\)
     2. If \(\calm\vDash T\) is \(\aleph_0\)-saturated and \(\phi(\barv,\bara)\) is a minimal formula in \(\calm\),
@@ -5394,8 +5462,201 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_corollary
+    label:cor6.1.15
     If \(T\) has no Vaughtian pairs, then any minimal formula is strongly minimal
     #+END_corollary
+
+    #+BEGIN_proof
+    Let \(\phi(\barv)\) be a minimal formula over \(\calm\vDash T\) (possibly with parameters). Suppose, for
+    purpose of contradiction, that there is an elementary \(\caln\) of \(\calm\), \(\barb\in N\), and
+    an \(\call\)-formula \(\psi(\barv,\barw)\) s.t. \(\psi(\caln,\barb)\) is an infinite coinfinite subset
+    of \(\phi(\caln)\).
+
+    By Lemma ref:lemma6.1.14, there is a number \(n\) s.t. for any \(\calm\prec\caln'\)
+    and \(\bara\in N'\), \(\psi(\caln',\bara)\) is an infinite coinfinite subset of \(\phi(\caln')\)
+    iff \(\abs{\psi(\caln',\bara)\cap\phi(\caln')}>n\) and \(\abs{\neg\psi(\caln',\bara)\cap\phi(|caln')}>n\). But
+    \begin{equation*}
+    \calm\vDash\forall\barw(\abs{\psi(\calm,\barw)\cap\phi(\calm)}\le n\vee\abs{\neg\psi(\calm,\barw)\cap\phi(\calm)}\le n)
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(T\) is \omega-stable and has no Vaughtian pairs, then for any \(\calm\vDash T\) there is a strongly
+    minimal formula over \(\calm\). In particular, there is a strongly minimal formula with parameters
+    from \(\calm_0\), the prime model of \(T\).
+    #+END_corollary
+*** The Categoricity Theorem
+    Our proof of categoricity will follow the argument in Theorem ref:thm6.1.11. We can find a
+    strongly minimal formula \(\phi(v)\) over the prime model. If \(\calm\) and \(\caln\) are models of \(T\)
+    of the same uncountable cardinality, then we can find a partial elementary bijection
+    between \(\phi(\calm)\) and \(\phi(\caln)\). The next lemma allows to extend this to an isomorphism
+    between \(\calm\) and \(\caln\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma6.1.17
+    If \(T\) has no Vaughtian pairs, \(\calm\vDash T\), and \(X\subseteq M^n\) is infinite and definable, then no
+    proper elementary submodel of \(\calm\) contains \(X\). If in addition, \(T\) is \omega-stable,
+    then \(\calm\) is prime over \(X\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Let \(\phi(\barv)\) defines \(X\). If \(\caln\) is a proper elementary submodel of \(\calm\)
+    containing \(X\), then \(X=\phi(\calm)=\phi(\caln)\) and \((\calm,\caln)\) is a Vaughtian pair.
+
+    If \(T\) is \omega-stable, then by Theorem ref:thm4.2.20, there is \(\caln\prec\calm\), a prime model over \(X\).
+    Because \(T\) has no Vaughtian pairs, we must have \(\caln=\calm\), so \(\calm\) is prime over \(X\)
+    #+END_proof
+
+    We can now prove the Baldwin-Lachlan characterization of uncountably categorical theories and
+    deduce Morley's Categoricity Theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(T\) be a complete theory in a countable language with infinite models, and let \kappa be an
+    uncountable cardinal. \(T\) is \kappa-categorical iff \(T\) is \omega-stable and has no Vaughtian pairs
+
+    In particular, if \(T\) is \kappa-categorical for some uncountable cardinal, then \(T\) is
+    \lambda-categorical for all uncountable cardinals \lambda
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\). If \(T\) is \kappa-categorical, then, by Corollaries ref:cor5.2.10 and
+    ref:cor5.2.11, \(T\) is \omega-stable and has no Vaughtian pairs
+
+    \(\Leftarrow\). Suppose \(T\) is \omega-stable and has no Vaughtian pairs. Because \(T\) is \omega-stable, it has a
+    prime model \(\calm_0\). By Lemma ref:lemma6.1.13 and Corollary ref:cor6.1.15 , there is \(\phi(v)\), a
+    strongly minimal formula with parameters from \(\calm_0\).
+
+    Suppose that \(\calm\) and \(\caln\) are models of \(T\) of cardinality \(\kappa\ge\aleph_1\). We can view \(\calm\)
+    and \(\caln\) as elementary extensions of \(\calm_0\). Then \(\dim(\phi(\calm))=\dim(\phi(\caln))=\kappa\). <<Problem9>>
+    #+LATEX: \wu{
+    As there is no Vaughtian pairs, \(\abs{\phi(\calm)}>\abs{\phi(\calm_0)}\) and \(\abs{\phi(\caln)}>\abs{\phi(\calm_0)}\).
+    #+LATEX: }
+    By Theorem
+    ref:thm6.1.11 there is \(f:\phi(\calm)\to\phi(\caln)\), a partial elementary bijection. By Lemma
+    ref:lemma6.1.17, \(\calm\) is prime over \(\phi(\calm)\). Thus we can extend \(f\) to an
+    elementary \(f':\calm\to\caln\). But by Lemma ref:lemma6.1.17, \(\caln\) has no proper elementary submodels
+    containing \(\phi(\caln)\). Thus \(f'\) is surjective and \(f'\) is an isomorphism
+
+    Because the Baldwin-Lachlan characterization of \kappa-categorical theories does not depend on
+    \kappa, \(T\) is \kappa-categorical for some uncountable cardinal iff \(T\) is \lambda-categorical for every
+    uncountable cardinal \lambda
+    #+END_proof
+
+    The proof shows that if \(\calm_0\) is the prime model of \(T\), \(\phi(v)\) is a strongly minimal
+    formula with parameters from some finite \(A\subset M_0\), \(\calm,\caln\vDash T\)
+    and \(\dim(\phi(\calm)/A)=\dim(\phi(\caln)/A)\), then \(\calm\cong\caln\). Because there are only \(\aleph_0\) possibilities
+    for \(\dim(\calm/A)\), we also get an upper bound on the number of countable models
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(T\) is uncountably categorical, then \(I(T,\aleph_0)\le\aleph_0\)
+    #+END_proposition
+
+    Note that in the analysis above we did not assert that if \(\calm\cong\caln\),
+    then \(\dim(\phi(\calm/A))=\dim(\phi(\caln)/A)\). This converse is true if \(A=\emptyset\). If \(\phi(v)\) is a strongly
+    minimal \(\call\)-formula, then any isomorphism maps \(\phi(\calm)\) onto \(\phi(\caln)\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose that \(T\) is an \omega-stable \(\call\)-theory and \(\phi(v)\) is a strongly minimal \(\call\)-formula
+    (with no additional parameters). Suppose that \(\calm\vDash T\) and \(\dim(\phi(\calm))=n<\aleph_0\). Then for
+    all \(m\ge n\) there is \(\caln\vDash T\) with \(\dim(\phi(\caln))=m\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Let \(\calm^*\vDash T\)  be an \omega-saturated elementary extension of \(\calm\). It is
+    #+END_proof
+
+** Morley Rank
+    \(T\) is a complete theory with infinite models
+
+    Suppose that \(K\) is an infinite field and \(V\subseteq K^n\) is an \(m\)-dimensional vector space.
+    Suppose that \(f\) is a linear function that is not constant on \(V\). For \(a\in K\),
+    let \(V_a=\{x\in V:f(x)=a\}\). Then \(\{V_a:a\in K\}\) is an infinite family of \((m-1)\)-dimensional
+    affine subsets of \(V\). Morley rank is an attempt to generalize this property of dimension. The
+    basic idea is that if a definable set \(X\) contains infinitely many pairwise disjoint sets of
+    dimension \(m\), then \(X\) should have dimension at least \(m+1\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Suppose that \(\calm\) is an \(\call\)-structure and \(\phi(\barv)\) is an \(\call_M\)-formula. We will
+    define \(\RM^{\calm}(\phi)\), the *Morley rank* of \phi in \(\calm\). First we inductively
+    define \(\RM^{\calm}(\phi)\ge\alpha\) for \alpha an ordinal:
+    1. \(\RM^{\calm}(\phi)\ge 0\) iff \(\phi(\calm)\) is nonempty
+    2. if \alpha is a limit ordinal, then \(\RM^{\calm}(\phi)\ge\alpha\) iff \(\RM^{\calm}(\phi)\ge\beta\) for all \(\beta<\alpha\)
+    3. for any ordinal \alpha, \(\RM^{\calm}(\phi)\ge\alpha+1\) iff there
+       are \(\call_M\)-formulas \(\psi_1(\barv),\psi_2(\barv),\dots\) s.t. \(\psi_1(\calm),\psi_2(\calm),\dots\) is an infinite family
+       of pairwise disjoint subsets of \(\phi(\calm)\) and \(\RM^{\calm}(\psi_i)\ge\alpha\) for all \(i\)
+
+
+    If \(\phi(\calm)=\emptyset\), then \(\RM^{\calm}(\phi)=-1\). If \(\RM^{\calm}(\phi)\ge\alpha\) but \(\RM^{\calm}(\phi)\not\ge\alpha+1\),
+    then \(\RM^{\calm}(\phi)=\alpha\). If \(\RM^{\calm}(\phi)\ge\alpha\) for all ordinals \alpha, then \(\RM^{\calm}(\phi)=\infty\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose that \(\theta(\barv,\barw)\) is an \(\call\)-formula, \(\calm\)
+    is \(\aleph_0\)-saturated, \(\bara,\barb\in M\) and \(\tp^{\calm}(\bara)=\tp^{\calm}(\barb)\).
+    Then \(\RM^{\calm}(\theta(\barv,\bara))=\RM^{\calm}(\theta(\barv,\barb))\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    We prove by induction on \alpha that if \(\theta(\barv,\barw)\) is any \(\call\)-formula
+    and \(\tp^{\calm}(\bara)=\tp^{\calm}(\barb)\), then \(\RM^{\calm}(\theta(\barv,\bara))\ge\alpha\)
+    iff \(\RM^{\calm}(\theta(\barv,\barb))\ge\alpha\)
+
+    If \alpha is a limit ordinal, then it's trivial
+
+    Suppose the claim is true for \alpha and \(\RM^{\calm}(\theta(\barv,\bara))\ge\alpha+1\). There
+    are \(\call_M\)-formulas \(\psi_1,\psi_2,\dots\) s.t. \(\psi_1(\calm),\psi_2(\calm),\dots\) is an infinite sequence of pairwise
+    disjoint subsets of \(\theta(\calm,\bara)\) and \(\RM^{\calm}(\psi_i)\ge\alpha\) for all \(i\). For each \(i\), there is
+    an \(\call\)-formula \(\chi_i(\barv,w_1,\dots,w_{m_i})\) and \(\barc_i\in M^{m_i}\) s.t. \(\psi_i(\barv)\)
+    is \(\chi_i(\barv,\barc_i)\). Because \(\calm\) is \(\aleph_0\)-saturated, we can do a back-and-forth argument
+    to find \(\bard_1,\bard_2,\dots\) s.t.
+    \begin{equation*}
+    \tp^{\calm}(\bara,\barc_1,\dots,\barc_m)=\tp^{\calm}(\barb,\bard_1,\dots,\bard_m)
+    \end{equation*}
+    for all \(m<\omega\).
+    #+LATEX: \wu{
+    Check Proposition ref:prop4.3.3 if forgot.
+    #+LATEX: }
+    Then \(\chi_1(\calm,\bard_1),\chi_2(\calm,\bard_2),\dots\) is an infinite sequence of pairwise disjoint subsets
+    of \(\theta(\calm,\barb)\). Thus \(\RM^{\calm}(\theta(\barv,\barb))\ge\alpha+1\)
+
+    Consequently
+    \begin{equation*}
+    \RM^{\calm}(\theta(\barv,\bara))=\RM^{\calm}(\theta(\barv,\barb))
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose that \(\calm\) and \(\caln\) are \(\aleph_0\)-saturated models of \(T\) and \(\calm\prec\caln\). If \phi is
+    an \(\call_M\)-formula, then \(\RM^{\calm}(\phi)=\RM^{\caln}(\phi)\).
+    #+END_lemma
+
+    #+BEGIN_proof
+    Prove by induction on \alpha that if \phi is an \(\call_M\)-formula, then \(\RM^{\calm}(\phi)\ge\alpha\)
+    iff \(\RM^{\caln}(\phi)\ge\alpha\).
+
+    Because \(\calm\prec\caln\), \(\phi(\calm)=\emptyset\) iff \(\phi(\caln)=\emptyset\). Thus \(\RM^{\calm}(\phi)\ge 0\) iff \(\RM^{\caln}(\phi)\ge 0\)
+
+    If \alpha is a limit ordinal...
+
+    If \(\RM^{\calm}(\phi)\ge\alpha+1\), then we can find \(\call_M\)-formulas \(\psi_1,\psi_2,\dots\) s.t. \(\psi_1(\calm),\psi_2(\calm),\dots\) is
+    an infinite sequence of pairwise disjoint subsets of \(\phi(\calm)\) and \(\RM^{\calm}(\psi_i)\ge\alpha\) for
+    all \(i\). By induction, \(\RM^{\caln}(\psi_i)\ge\alpha\). Because \(\calm\prec\caln\), \(\psi_1(\caln),\psi_2(\caln),\dots\) is an infinite
+    sequence of pairwise disjoint subsets of \(\phi(\caln)\)
+
+    Suppose that \(\RM^{\caln}(\phi)\ge\alpha+1\). There are  \(\call_N\)-formulas \(\psi_1,\psi_2,\dots\) s.t. \(\psi_1(\caln),\psi_2(\caln),\dots\) is
+    an infinite sequence of pairwise disjoint subsets of \(\phi(\caln)\) and \(\RM^{\caln}(\psi_i)\ge\alpha\) for
+    all \(i\). Let \(\bara\) be the parameters from \(M\) occurring in the formula \phi.
+    Let \(\psi_i(\barv)\) be \(\theta_i(\barv,\barb_i)\), where \(\theta_i\) is an \(\call\)-formula and \(\barb_i\in N\).
+    #+END_proof
+
 * Appendix :ignore:
   #+LATEX: \appendix
 ** Set Theory
@@ -5477,10 +5738,10 @@
     [[Problem2]]: done
 
 
-    [[Problem3]]:
+    [[Problem3]]: done
 
 
-    [[Problem4]]:
+    [[Problem4]]: done
 
 
     [[Problem5]]
@@ -5490,6 +5751,10 @@
     [[Problem7]]
 
     [[Problem8]]
+
+    [[Problem9]]
+
+    ref:ex4.5.2
 * Footnotes :ignore:
 
 [fn:EM] \(\caln\vDash T\) on book, but \(\caln\vDash T^*\) is also true and it's used later
