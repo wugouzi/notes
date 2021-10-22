@@ -1,16 +1,14 @@
-% Created 2021-10-18 Mon 09:45
+% Created 2021-10-21 Thu 14:05
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
-\usepackage{grffile}
 \usepackage{longtable}
 \usepackage{wrapfig}
 \usepackage{rotating}
 \usepackage[normalem]{ulem}
 \usepackage{amsmath}
-\usepackage{textcomp}
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
@@ -98,8 +96,11 @@ the order on \(M\) is not complete: there is a bounded set with no supremum
 \begin{proof}
 Take \(\Q\subseteq\R\), then by Löwenheim's theorem, we can find an elementarily restriction \(\fQ\)
 of \((\R,+,\cdot,<,0,1)\) whose domain \(Q\) contains \(\Q\) and \(\abs{\fQ}=\aleph_0\). Thus by Theorem 1.7 \(\fQ\) is
-also a dense linear order. As every countable dense linear set is isomorphic to \(\Q\), \(\fQ\cong\Q\).
-Since \(\Q\) is not complete, \(\fQ\) is also not complete.
+also a dense linear order. As every countable dense linear set is isomorphic to \(\Q\), there is
+a \(f\) s.t. \(f:\fQ\cong\Q\).
+Since \(\Q\) is not complete, \(\fQ\) is also not complete: if \(\fQ\) is complete, then for any bounded
+subset \(A\subset\Q\), \(f(A)\) is also a bounded in \(\fQ\) and thus has a supremum \(a\) in \(\fQ\).
+Then \(f^{-1}(a)\) is the supremum in \(\Q\), a contradiction.
 \end{proof}
 
 \begin{exercise}
@@ -124,27 +125,58 @@ Show that every formula is equivalent to a ``nice'' formula.
 \end{exercise}
 
 \begin{proof}
+First we show that any formula \(\varphi\) of the form \(y=t(\barx)\) can be transformed into a
+``nice'' formula. We describe an algorithm for this transformation:
+\begin{enumerate}
+\item If \(t\) is a variable or constant, then return \(y=t(\barx)\)
+\item If \(t=f(t_1(\barx),\dots,t_n(\barx))\) and
+ \(t_{r_1}(\barx),\dots,t_{r_m}(\barx)\) among \(t_1(\barx),\dots,t_n(\barx)\) are not ``nice'', let
+\(\varphi_i(y_i,\barx)\) be \(y_i=t_{r_i}(\barx)\) for \(1\le i\le m\) and we transform them into ``nice''
+formula \(\varphi_i'\) by the algorithm
+\item Let \(\varphi'(y,\barx)\) be
+\begin{equation*}
+y=\exists y_1\dots y_m\left( f(t_1(\barx),\dots,t_n(\barx))^{t_{r_1}(\barx),\dots,t_{r_m}(\barx)}_{y_1,\dots,y_n}
+\wedge\bigwedge_{i=1}^m\varphi_i'(y_i,\barx)
+ \right)
+\end{equation*}
+and return \(\varphi'(y,\barx)\)
+\end{enumerate}
+As every formula \(\varphi\) is a finite string, this process will end and we will get a ``nice'' formula \(\varphi'\)
+s.t. \(\vDash\varphi\leftrightarrow\varphi'\)
+
 We prove this by induction on the complexity of \(\varphi\)
 \begin{enumerate}
 \item If \(\varphi\) is atomic formula
 \begin{enumerate}
 \item If \(\varphi\) is of the form \(t_1(\barx)=t_2(\barx)\)
 
-If both of \(t_1\) and \(t_2\) are not good, then we replace \(\varphi\)
-with \(\exists y(t_1(\barx)=y\wedge t_2(\barx)=y)\).
-Obviously \(\vDash \varphi(\barx)\leftrightarrow\exists y(t_1(\barx)=y\wedge t_2(\barx)=y)\)
+Let \(\varphi_i:=y_i=t_i(\barx)\) for \(i=1,2\). We can transform \(\varphi_i\) into ``nice'' formula \(\varphi_i'\).
+Hence we have nice formula
+\begin{equation*}
+\varphi'(\barx):=\exists y_1y_2(y_1=y_2\wedge\varphi_1'(y_1,\barx)\wedge\varphi_2'(y_2,\barx))
+\end{equation*}
+and \(\vDash\varphi\leftrightarrow\varphi'\)
+
 \item If \(\varphi\) is of the form \(R(t_1(\barx),\dots,t_m(\barx))\)
 
-If among \(t_1(\barx),\dots,t_m(\barx)\), \(t_{r_1},\dots,t_{r_n}\) where \(n\le m\) are not good. Then we
-replace \(\varphi\) with
+Let \(\varphi_i:=y_i=t_i(\barx)\) for \(1\le i\le m\). We can transform \(\varphi_i\) into ``nice'' formula \(\varphi_i'\)
+and let
 \begin{equation*}
-\psi=\exists y_1\dots y_{n}\left( \left(R(t_1(\barx),\dots,t_m(\barx))\right)^{t_{r_1}(\barx),\dots,t_{r_n}(\barx)}_{y_1,\dots,y_n}\wedge
-\bigwedge_{i=1}^nt_{r_i}(\barx)=y_i\right)
+\varphi'(\barx):=\exists y_1\dots y_n\left(
+R(y_1,\dots,y_m)\wedge\bigwedge_{i=1}^m\varphi_i'(y_i,\barx)\right)
 \end{equation*}
-and we have \(\vDash\varphi(\barx)\leftrightarrow\psi(\barx)\)
+which is  ``nice'' and \(\vDash\varphi\leftrightarrow\varphi'\)
 \end{enumerate}
-\item If \(\varphi\) is of the form \(\neg\psi\), \(\psi\wedge\theta\), \(\psi\vee\theta\) or \(\exists x\psi\). As we can transform \(\psi\) and \(\theta\) into nice
-formulas, \(\varphi\) is equivalent to a ``nice'' formula
+
+\item If \(\varphi\) is of the form \(\neg\psi\), \(\psi\wedge\theta\), \(\psi\vee\theta\) , \(\forall x\psi\) or \(\exists x\psi\). As we can transform \(\psi\) and \(\theta\) into nice
+formulas \(\psi'\) and \(\theta'\) respectively
+\begin{enumerate}
+\item for \(\neg\psi\), \(\psi\wedge\theta\) or \(\exists x\psi\), \(\neg\psi'\), \(\psi'\wedge\theta'\) and \(\exists x\psi'\) are want we want
+
+\item for \(\psi\vee\theta\), let \(\varphi'=\neg(\neg\psi'\wedge\theta')\)
+
+\item for \(\forall x\psi\), let \(\varphi'=\neg\exists x\neg\psi'\)
+\end{enumerate}
 \end{enumerate}
 \end{proof}
 
