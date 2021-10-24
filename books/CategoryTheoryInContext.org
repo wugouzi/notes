@@ -1,0 +1,230 @@
+#+TITLE: Category Theory In Context
+
+#+AUTHOR: Emily Riehl
+#+EXPORT_FILE_NAME: ../latex/CategoryTheoryInContext/CategoryTheoryInContext.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \def \MODEL {\textbf{MODEL}}
+#+LATEX_HEADER: \def \Cop {\calc^{\op}}
+#+LATEX_HEADER: \def \fop {f^{\op}}
+#+LATEX_HEADER: \def \gop {g^{\op}}
+#+LATEX_HEADER: \makeindex
+
+* Categories, Functors, Natural Transformations
+** Abstract and concrete categories
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *category* consists of
+    * a collection of *objects* \(X,Y,Z,\dots\)
+    * a collection of *morphisms* \(f,g,h,\dots\)
+
+
+    so that
+    * Each morphism has specified *domain* and *codomain* objects; the notation \(f:X\to Y\)
+      signifies that \(f\) is a morphism with domain \(X\) and codomain \(Y\)
+    * Each object has a designated *identity morphism* \(1_X:X\to X\)
+    * For any pair of morphisms \(f,g\) with the codomain of \(f\) equal to the domain of \(g\),
+      there exists a specified *composite morphism* \(gf\) whose domain is equal to the domain
+      of \(f\) and whose codomain is equal to the codomain of \(g\), i.e., :
+      \begin{equation*}
+      f:X\to Y,\quad g:Y\to Z\hspace{0.7cm}\leadsto\hspace{0.7cm}gf:X\to Z
+      \end{equation*}
+
+
+    This data is subject to the following two axioms
+    * For any \(f:X\to Y\), the composites \(1_Yf\) and \(f1_X\) are both equal to \(f\)
+    * For any composable triple of morphisms \(f,g,h\), the composites \(h(gf)\) and \((hg)f\) are
+      equal and hence denoted by \(hgf\).
+      \begin{equation*}
+      f:X\to Y,\quad g:Y\to Z,\quad h:Z\to W\hspace{0.7cm}\leadsto\hspace{0.7cm}hgf:X\to W
+      \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    1. For any language \(\call\) and any theory \(T\) of \(\call\), there is a category \(\MODEL_T\) whose
+       objects are models of \(T\). Morphisms is just homomorphisms
+    #+END_examplle
+
+    *Concrete categories* are those whose objects have underlying sets and whose morphisms are
+    functions between underlying sets
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A category is *small* if it has only a set's worth of arrows
+
+    Both \(\ob(\calc)\) and \(\hom(\calc)\) are sets
+    #+END_definition
+
+    Thus it has only a set's worth of objects
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A category is *locally small* if between any pair of objects there is only a set's worth of morphisms
+    #+END_definition
+
+    The set of arrows between a pair of fixed objects in a locally small category is typically
+    called a *hom-set*
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    An *isomorphism* in a category is a morphism \(f:X\to Y\) for which there exists a
+    morphism \(g:Y\to X\) so that \(gf=1_X\) and \(fg=1_X\), denoted by \(X\cong Y\)
+    #+END_definition
+
+    An *endomorphism* is a morphism whose domain equals its codomain
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *groupoid* is a category in which every morphism is an isomorphism
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Any category \(\calc\) contains a *maximal groupoid*, the subcategory containing all of the objects
+    and only those morphisms that are isomorphisms
+    #+END_lemma
+
+    #+BEGIN_exercise
+    label:1.1.1
+    1. Consider a morphism \(f:x\to y\). Show that if there exists a pair of
+       morphisms \(g,h:y\rightrightarrows:x\) s.t. \(gf=1_x\) and \(fh=1_y\), then \(g=h\) and \(f\)
+       is an isomorphism
+    2. Show that a morphism can have at most one inverse isomorphism
+    #+END_exercise
+
+    #+BEGIN_proof
+    1. \(g=1_xg=(hf)g=h(fg)=h1_y=h\)
+    2. From 1
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex1.1.3
+    For any category \(\calc\) and any object \(c\in\calc\), show that
+    1. There is a category \(c/\calc\) whose objects are morphisms \(f:c\to x\) with domain \(c\) in which
+       a morphism from \(f:c\to x\) to \(g:c\to y\) is a map \(h:x\to y\) between the codomains so that
+       the triangle
+       \begin{center}\begin{tikzcd}[column sep=small]
+       &c\ar[dl,"f"']\ar[dr,"g"]\\
+       x\ar[rr,"h"']&&y
+       \end{tikzcd}\end{center}
+       commutes.
+    2. There is a category \(\calc/c\) whose objects are morphisms \(f:x\to c\) with codomain \(c\) in which
+       a morphism from \(f:x\to c\) to \(g:y\to c\) is a map \(h:x\to y\) between the codomains so that
+       the triangle
+       \begin{center}\begin{tikzcd}[column sep=small]
+       x\ar[rr,"h"]\ar[dr,"f"']&&y\ar[dl,"g"]\\
+       &c
+       \end{tikzcd}\end{center}
+       commutes
+
+
+    The category \(c/\calc\) and \(\calc/c\) are called *slice categories* of \(\calc\) *under* and *over* \(c\), respectively
+    #+END_exercise
+** Duality
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(\calc\) be any category. The *opposite category* \(\calc^{\op}\) has
+    * the same objects as in \(\calc\)
+    * a morphism \(\fop\) in \(\Cop\) for each a morphism \(f\) in \(\calc\) so that the domain
+      of \(\fop\) is defined to be the codomain of \(f\) and the codomain of \(\fop\) is defined to
+      be the domain of \(f\)
+    * For each object \(X\), the arrow \(1_X^{\op}\) serves as its identity in \(\Cop\)
+    * A pair of morphisms \(\fop,\gop\) in \(\Cop\) is composable precisely when the pair \(g,f\) is
+      composable in \(\calc\). We then define \(\gop\circ\fop\) to be \((f\circ g)^{\op}\): i.e.
+      \begin{equation*}
+      \dom(\fop)=\cod(f)=\dom(g)=\cod(\gop)
+      \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma1.2.3
+    T.F.A.E.
+    1. \(f:x\to y\) is an isomorphism
+    2. For all objects \(c\in\calc\), post-composition with \(f\) defines a bijection
+       \begin{equation*}
+       f_*:\Hom(c,x)\to\Hom(c,y)
+       \end{equation*}
+    3. For all objects \(c\in\calc\), pre-composition with \(f\) defines a bijection
+       \begin{equation*}
+       f^*:\Hom(y,c)\to\Hom(x,c)
+       \end{equation*}
+    #+END_lemma
+
+    Lemma ref:lemma1.2.3 asserts that isomorphisms in a locally small category are defined
+    /representably/ in terms of isomorphisms in the category of sets.
+
+    #+BEGIN_proof
+    \(2\to 1\). Let \(c=y\), since \(f_*\) in an bijection, there must be an element \(g\in\Hom(y,x)\)
+    s.t. \(f_*(g)=1_y\). Hence \(fg=1_y\). Thus \(gf,1_x\) have common image under \(f_*\),
+    thus \(gf=1_x\). Whence \(f\) and \(g\) are inverse isomorphisms
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A morphism \(f:x\to y\) in a category is
+    1. a *monomorphism* if for any parallel morphisms \(h,k:w\rightrightarrows x\), \(fg=fk\) implies
+       that \(h=k\)
+    2. an *epimorphism* if for any parallel morphisms \(h,k:w\rightrightarrows x\), \(hf=kf\) implies
+       that \(h=k\)
+    #+END_definition
+
+    Also, we can re-express it
+    1. \(f:x\to y\) is a monomorphism in \(\calc\) iff for all
+       objects \(c\in\calc\), \(f_*:\Hom(c,x)\to\Hom(c,y)\) is injective
+    2. \(f:x\to y\) is an epimorphism in \(\calc\) iff for all \(c\in\calc\), \(f^*:\Hom(y,c)\to\Hom(x,c)\)  is
+       injective
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose that \(x\xrightarrow{s}y\xrightarrow{r}x\) are morphisms s.t. \(rs=1_x\). The map \(s\) is a *section* or *right
+    inverse* to \(r\), while the map \(r\) defines a *retraction* or *left inverse* to \(s\). The
+    maps \(s\) and \(r\) express the object \(x\) as a *retract* of the object \(y\)
+
+    In this case, \(s\) is always a monomorphism and, dually, \(r\) is always an epimorphism. To
+    ackowledge the presence of these one-sided inverses, \(s\) is said to be a *split monomorphism*
+    and \(r\) is said to be a *split epimorphism*
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    By the previous example, an isomorphism is necessarily both monic and epic, but the converse
+    need not hold in general. For example, the inclusion \(\Z\hookrightarrow\Q\) is both monic and epic in the
+    category \(\Rng\), but this map is not an isomorphism: there are no ring homomorphisms
+    from \(\Q\) to \(\Z\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. If \(f:x\rightarrowtail y\) and \(g:y\rightarrowtail z\) are monomorphisms, then so
+       is \(gf:x\rightarrowtail z\)
+    2. If \(f:x\to y\) and \(g:y\to z\) are morphisms so that \(gf\) is monic, then \(f\) is monic
+
+
+    Dually
+    1. If \(f:x\twoheadrightarrow y\) and \(g:y\twoheadrightarrow z\) are epimorphisms, then so
+       is \(gf:x\twoheadrightarrow z\)
+    2. If \(f:x\to y\) and \(g:y\to z\) are morphisms so that \(gf\) is epic, then \(g\) is epic
+    #+END_lemma
+
+    #+BEGIN_exercise
+    label:ex1.2.2
+    1. Show that a morphism \(f:x\to y\) is a split epimorphism in a category \(\calc\) iff for
+       all \(c\in\calc\), the post-composition function \(f_*:\Hom(c,x)\to\Hom(c,y)\) is surjective
+    2. Show that a morphism \(f:x\to y\) is a split monomorphism in a category \(\calc\) iff for
+       all \(c\in\calc\), the post-composition function \(f^*:\Hom(y,c)\to\Hom(x,c)\) is surjective
+    #+END_exercise
+
+    #+BEGIN_exercise
+    label:ex1.2.6
+    Prove that a morphism that is both a monomorphism and a split epimorphism is necessarily an
+    isomorphism. Argue by duality that a split monomorphism that is an epimorphism is also an isomorphism
+    #+END_exercise
+
+    #+BEGIN_proof
+    Suppose \(y\xrightarrow{g}x\xrightarrow{f}y\) and \(fg=1_y\), then \(f\) is epi and \(g\) is mono. Then \(f\) is mono
+    and hence \(gf\) is mono.
+    #+END_proof
