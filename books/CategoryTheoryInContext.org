@@ -225,6 +225,119 @@
     #+END_exercise
 
     #+BEGIN_proof
-    Suppose \(y\xrightarrow{g}x\xrightarrow{f}y\) and \(fg=1_y\), then \(f\) is epi and \(g\) is mono. Then \(f\) is mono
-    and hence \(gf\) is mono.
+    Suppose \(y\xrightarrow{g}x\xrightarrow{f}y\) and \(fg=1_y\), then \(fgf=f=f\circ 1_x\). Since \(f\) is mono, \(gf=1_x\)
     #+END_proof
+** Functoriality
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *functor* \(F:\calc\to\cald\), between categories \(\calc\) and \(\cald\), consists of the following data:
+    * An object \(Fc\in\cald\), for each objects \(c\in\calc\)
+    * A morphism \(Ff:Fc\to Fc'\in\cald\), for each morphism \(f:c\to c'\in\calc\)
+
+
+    *Functoriality axioms*
+    * For any composable pair \(f,g\in\calc\), \(Fg\circ Ff=F(g\circ f)\)
+    * For each object \(c\in\calc\), \(F(1_c)=1_{Fc}\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *contravariant functor* \(F\) from \(\calc\) to \(\cald\) is a functor \(F:\Cop\to\cald\)
+    * A morphism \(Ff:Fc'\to Fc\in\cald\) for each morphism \(f:c\to c'\in\calc\)
+    * For any composable pair \(f,g\in\calc\), \(Ff\circ Fg=F(g\circ f)\)
+    #+END_definition
+
+    \begin{center}\begin{tikzcd}
+    \Cop\ar[r,"F"]&\cald\\
+    c\ar[r,mapsto]\ar[dd,"f"']&Fc\\
+    {}\ar[r,mapsto]&{}\\
+    c'\ar[r,mapsto]&Fc'\ar[uu,"Ff"']
+    \end{tikzcd}\end{center}
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Functors preserve isomorphisms
+    #+END_lemma
+
+    #+BEGIN_proof
+    Consider a functor \(F:\calc\to\cald\) and an isomorphism \(f:x\to y\) in \(\calc\) with inverse \(g:y\to x\).
+    Then
+    \begin{equation*}
+    F(g)F(f)=F(gf)=F(1_x)=1_{Fx}
+    \end{equation*}
+    Thus \(Fg:Fy\to Fx\) is a left inverse to \(Ff:Fx\to Fy\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(\calc\) is locally small, then for any object \(c\in\calc\) we may define a pair of covariant and
+    contravariant *functors represented by* \(c\):
+    \begin{center}\begin{tikzcd}[column sep=tiny]
+    \calc\ar[rrr,"{\Hom(c,-)}"]&\quad&\quad&\Sets\\
+    x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(c,x)\ar[dd,"f_*"]\\
+    {}&\ar[r,mapsto]&{}&{}\\
+    y&\ar[r,mapsto]&{}&\Hom(c,y)
+    \end{tikzcd}\hspace{1cm}
+    \begin{tikzcd}[column sep=tiny]
+    \Cop\ar[rrr,"{\Hom(-,c)}"]&\quad&\quad&\Sets\\
+    x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(x,c)\\
+    {}&\ar[r,mapsto]&{}&{}\\
+    y&\ar[r,mapsto]&{}&\Hom(y,c)\ar[uu,"f^*"]
+    \end{tikzcd}
+    \end{center}
+
+    #+END_definition
+
+    Post-composition defines a *covariant* action on hom-sets
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For any categories \(\calc\) and \(\cald\), there is a category \(\calc\times\cald\), their *product*, whose
+    * objects are ordered pairs \((c,d)\), where \(c\) is an object of \(\calc\) and \(d\) is an object
+      of \(\cald\)
+    * morphisms are ordered pairs \((f,g):(c,d)\to(c',d')\), where \(f:c\to c'\in\calc\) and \(g:d\to d'\in\cald\) and
+    * in which composition and identities are defined componentwise
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(\calc\) is locally small, then there is a *two-sided represented functor*
+    \begin{equation*}
+    \calc(-,-):\Cop\times\calc\to\Sets
+    \end{equation*}
+    A pair of objects \((x,y)\) is mapped to the hom-set \(\Hom(x,y)\). A pair of
+    morphisms \(f:w\to x\) and \(h:y\to z\) is sent to the function
+    \begin{center}\begin{tikzcd}
+    \Hom(x,y)\ar[r,"{(f^*,h_*)}"]&\Hom(w,z)\\
+    g\ar[r,mapsto]&hgf
+    \end{tikzcd}\end{center}
+
+
+    #+END_definition
+
+    An *isomorphism of categories* is given by a pair of inverse functors \(F:\calc\to\cald\) and \(G:\cald\to\calc\) s.t.
+    the composites \(Gf\) and \(FG\), respectively, equal the identity functors on \(\calc\) and \(\cald\)
+** Naturality
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Given categories \(\calc\) and \(\cald\) and functors \(F,G:\calc\rightrightarrows\cald\), a *natural
+    transformation* \(\alpha:F\Rightarrow G\) consists of
+    * an arrow \(\alpha_c:Fc\to Gc\) in \(\cald\) for each object \(c\in\calc\), the collection of which define the
+      *components* of the natural transformation s.t. for any morphism \(f:c\to c'\) in \(\calc\), the
+      following square of morphisms in \(\cald\)
+      \begin{center}\begin{tikzcd}
+      Fc\ar[r,"\alpha_c"]\ar[d,"Ff"']&Gc\ar[d,"Gf"]\\
+      Fc'\ar[r,"\alpha_{c'}"']&Gc'
+      \end{tikzcd}\end{center}
+      *commutes*
+
+
+    A *natural isomorphism* is a natural transformation \(\alpha:F\Rightarrow G\) in which every component \(\alpha_c\) is
+    an isomorphism. In this case, the natural isomorphism may be depicted as \(\alpha:F\cong G\)
+
+    \begin{center}\begin{tikzcd}
+    A\ar[r,bend left=50,""{name=U}]\ar[r,bend right=50,""{name=D}]&B
+    \ar[Rightarrow,from=U,to=D,yshift=-3pt,"\alpha"]
+    \end{tikzcd}\end{center}
+
+    #+END_definition

@@ -1,0 +1,388 @@
+% Created 2021-10-25 Mon 11:17
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{preamble.tex}
+\def \MODEL {\textbf{MODEL}}
+\def \Cop {\calc^{\op}}
+\def \fop {f^{\op}}
+\def \gop {g^{\op}}
+\makeindex
+\author{Emily Riehl}
+\date{\today}
+\title{Category Theory In Context}
+\hypersetup{
+ pdfauthor={Emily Riehl},
+ pdftitle={Category Theory In Context},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 27.2 (Org mode 9.5)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Categories, Functors, Natural Transformations}
+\label{sec:org545e280}
+\subsection{Abstract and concrete categories}
+\label{sec:org15a7cdd}
+\begin{definition}[]
+A \textbf{category} consists of
+\begin{itemize}
+\item a collection of \textbf{objects} \(X,Y,Z,\dots\)
+\item a collection of \textbf{morphisms} \(f,g,h,\dots\)
+\end{itemize}
+
+
+so that
+\begin{itemize}
+\item Each morphism has specified \textbf{domain} and \textbf{codomain} objects; the notation \(f:X\to Y\)
+signifies that \(f\) is a morphism with domain \(X\) and codomain \(Y\)
+\item Each object has a designated \textbf{identity morphism} \(1_X:X\to X\)
+\item For any pair of morphisms \(f,g\) with the codomain of \(f\) equal to the domain of \(g\),
+there exists a specified \textbf{composite morphism} \(gf\) whose domain is equal to the domain
+of \(f\) and whose codomain is equal to the codomain of \(g\), i.e., :
+\begin{equation*}
+f:X\to Y,\quad g:Y\to Z\hspace{0.7cm}\leadsto\hspace{0.7cm}gf:X\to Z
+\end{equation*}
+\end{itemize}
+
+
+This data is subject to the following two axioms
+\begin{itemize}
+\item For any \(f:X\to Y\), the composites \(1_Yf\) and \(f1_X\) are both equal to \(f\)
+\item For any composable triple of morphisms \(f,g,h\), the composites \(h(gf)\) and \((hg)f\) are
+equal and hence denoted by \(hgf\).
+\begin{equation*}
+f:X\to Y,\quad g:Y\to Z,\quad h:Z\to W\hspace{0.7cm}\leadsto\hspace{0.7cm}hgf:X\to W
+\end{equation*}
+\end{itemize}
+\end{definition}
+
+\begin{examplle}[]
+\begin{enumerate}
+\item For any language \(\call\) and any theory \(T\) of \(\call\), there is a category \(\MODEL_T\) whose
+objects are models of \(T\). Morphisms is just homomorphisms
+\end{enumerate}
+\end{examplle}
+
+\textbf{Concrete categories} are those whose objects have underlying sets and whose morphisms are
+functions between underlying sets
+
+\begin{definition}[]
+A category is \textbf{small} if it has only a set's worth of arrows
+
+Both \(\ob(\calc)\) and \(\hom(\calc)\) are sets
+\end{definition}
+
+Thus it has only a set's worth of objects
+
+\begin{definition}[]
+A category is \textbf{locally small} if between any pair of objects there is only a set's worth of morphisms
+\end{definition}
+
+The set of arrows between a pair of fixed objects in a locally small category is typically
+called a \textbf{hom-set}
+
+
+\begin{definition}[]
+An \textbf{isomorphism} in a category is a morphism \(f:X\to Y\) for which there exists a
+morphism \(g:Y\to X\) so that \(gf=1_X\) and \(fg=1_X\), denoted by \(X\cong Y\)
+\end{definition}
+
+An \textbf{endomorphism} is a morphism whose domain equals its codomain
+
+\begin{definition}[]
+A \textbf{groupoid} is a category in which every morphism is an isomorphism
+\end{definition}
+
+\begin{lemma}[]
+Any category \(\calc\) contains a \textbf{maximal groupoid}, the subcategory containing all of the objects
+and only those morphisms that are isomorphisms
+\end{lemma}
+
+\begin{exercise}
+\label{1.1.1}
+\begin{enumerate}
+\item Consider a morphism \(f:x\to y\). Show that if there exists a pair of
+morphisms \(g,h:y\rightrightarrows:x\) s.t. \(gf=1_x\) and \(fh=1_y\), then \(g=h\) and \(f\)
+is an isomorphism
+\item Show that a morphism can have at most one inverse isomorphism
+\end{enumerate}
+\end{exercise}
+
+\begin{proof}
+\begin{enumerate}
+\item \(g=1_xg=(hf)g=h(fg)=h1_y=h\)
+\item From 1
+\end{enumerate}
+\end{proof}
+
+\begin{exercise}
+\label{ex1.1.3}
+For any category \(\calc\) and any object \(c\in\calc\), show that
+\begin{enumerate}
+\item There is a category \(c/\calc\) whose objects are morphisms \(f:c\to x\) with domain \(c\) in which
+a morphism from \(f:c\to x\) to \(g:c\to y\) is a map \(h:x\to y\) between the codomains so that
+the triangle
+\begin{center}\begin{tikzcd}[column sep=small]
+&c\ar[dl,"f"']\ar[dr,"g"]\\
+x\ar[rr,"h"']&&y
+\end{tikzcd}\end{center}
+commutes.
+\item There is a category \(\calc/c\) whose objects are morphisms \(f:x\to c\) with codomain \(c\) in which
+a morphism from \(f:x\to c\) to \(g:y\to c\) is a map \(h:x\to y\) between the codomains so that
+the triangle
+\begin{center}\begin{tikzcd}[column sep=small]
+x\ar[rr,"h"]\ar[dr,"f"']&&y\ar[dl,"g"]\\
+&c
+\end{tikzcd}\end{center}
+commutes
+\end{enumerate}
+
+
+The category \(c/\calc\) and \(\calc/c\) are called \textbf{slice categories} of \(\calc\) \textbf{under} and \textbf{over} \(c\), respectively
+\end{exercise}
+\subsection{Duality}
+\label{sec:org124d7b1}
+\begin{definition}[]
+Let \(\calc\) be any category. The \textbf{opposite category} \(\calc^{\op}\) has
+\begin{itemize}
+\item the same objects as in \(\calc\)
+\item a morphism \(\fop\) in \(\Cop\) for each a morphism \(f\) in \(\calc\) so that the domain
+of \(\fop\) is defined to be the codomain of \(f\) and the codomain of \(\fop\) is defined to
+be the domain of \(f\)
+\item For each object \(X\), the arrow \(1_X^{\op}\) serves as its identity in \(\Cop\)
+\item A pair of morphisms \(\fop,\gop\) in \(\Cop\) is composable precisely when the pair \(g,f\) is
+composable in \(\calc\). We then define \(\gop\circ\fop\) to be \((f\circ g)^{\op}\): i.e.
+\begin{equation*}
+\dom(\fop)=\cod(f)=\dom(g)=\cod(\gop)
+\end{equation*}
+\end{itemize}
+\end{definition}
+
+\begin{lemma}[]
+\label{lemma1.2.3}
+T.F.A.E.
+\begin{enumerate}
+\item \(f:x\to y\) is an isomorphism
+\item For all objects \(c\in\calc\), post-composition with \(f\) defines a bijection
+\begin{equation*}
+f_*:\Hom(c,x)\to\Hom(c,y)
+\end{equation*}
+\item For all objects \(c\in\calc\), pre-composition with \(f\) defines a bijection
+\begin{equation*}
+f^*:\Hom(y,c)\to\Hom(x,c)
+\end{equation*}
+\end{enumerate}
+\end{lemma}
+
+Lemma \ref{lemma1.2.3} asserts that isomorphisms in a locally small category are defined
+\emph{representably} in terms of isomorphisms in the category of sets.
+
+\begin{proof}
+\(2\to 1\). Let \(c=y\), since \(f_*\) in an bijection, there must be an element \(g\in\Hom(y,x)\)
+s.t. \(f_*(g)=1_y\). Hence \(fg=1_y\). Thus \(gf,1_x\) have common image under \(f_*\),
+thus \(gf=1_x\). Whence \(f\) and \(g\) are inverse isomorphisms
+\end{proof}
+
+\begin{definition}[]
+A morphism \(f:x\to y\) in a category is
+\begin{enumerate}
+\item a \textbf{monomorphism} if for any parallel morphisms \(h,k:w\rightrightarrows x\), \(fg=fk\) implies
+that \(h=k\)
+\item an \textbf{epimorphism} if for any parallel morphisms \(h,k:w\rightrightarrows x\), \(hf=kf\) implies
+that \(h=k\)
+\end{enumerate}
+\end{definition}
+
+Also, we can re-express it
+\begin{enumerate}
+\item \(f:x\to y\) is a monomorphism in \(\calc\) iff for all
+objects \(c\in\calc\), \(f_*:\Hom(c,x)\to\Hom(c,y)\) is injective
+\item \(f:x\to y\) is an epimorphism in \(\calc\) iff for all \(c\in\calc\), \(f^*:\Hom(y,c)\to\Hom(x,c)\)  is
+injective
+\end{enumerate}
+
+
+\begin{examplle}[]
+Suppose that \(x\xrightarrow{s}y\xrightarrow{r}x\) are morphisms s.t. \(rs=1_x\). The map \(s\) is a \textbf{section} or \textbf{right
+inverse} to \(r\), while the map \(r\) defines a \textbf{retraction} or \textbf{left inverse} to \(s\). The
+maps \(s\) and \(r\) express the object \(x\) as a \textbf{retract} of the object \(y\)
+
+In this case, \(s\) is always a monomorphism and, dually, \(r\) is always an epimorphism. To
+ackowledge the presence of these one-sided inverses, \(s\) is said to be a \textbf{split monomorphism}
+and \(r\) is said to be a \textbf{split epimorphism}
+\end{examplle}
+
+\begin{examplle}[]
+By the previous example, an isomorphism is necessarily both monic and epic, but the converse
+need not hold in general. For example, the inclusion \(\Z\hookrightarrow\Q\) is both monic and epic in the
+category \(\Rng\), but this map is not an isomorphism: there are no ring homomorphisms
+from \(\Q\) to \(\Z\)
+\end{examplle}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item If \(f:x\rightarrowtail y\) and \(g:y\rightarrowtail z\) are monomorphisms, then so
+is \(gf:x\rightarrowtail z\)
+\item If \(f:x\to y\) and \(g:y\to z\) are morphisms so that \(gf\) is monic, then \(f\) is monic
+\end{enumerate}
+
+
+Dually
+\begin{enumerate}
+\item If \(f:x\twoheadrightarrow y\) and \(g:y\twoheadrightarrow z\) are epimorphisms, then so
+is \(gf:x\twoheadrightarrow z\)
+\item If \(f:x\to y\) and \(g:y\to z\) are morphisms so that \(gf\) is epic, then \(g\) is epic
+\end{enumerate}
+\end{lemma}
+
+\begin{exercise}
+\label{ex1.2.2}
+\begin{enumerate}
+\item Show that a morphism \(f:x\to y\) is a split epimorphism in a category \(\calc\) iff for
+all \(c\in\calc\), the post-composition function \(f_*:\Hom(c,x)\to\Hom(c,y)\) is surjective
+\item Show that a morphism \(f:x\to y\) is a split monomorphism in a category \(\calc\) iff for
+all \(c\in\calc\), the post-composition function \(f^*:\Hom(y,c)\to\Hom(x,c)\) is surjective
+\end{enumerate}
+\end{exercise}
+
+\begin{exercise}
+\label{ex1.2.6}
+Prove that a morphism that is both a monomorphism and a split epimorphism is necessarily an
+isomorphism. Argue by duality that a split monomorphism that is an epimorphism is also an isomorphism
+\end{exercise}
+
+\begin{proof}
+Suppose \(y\xrightarrow{g}x\xrightarrow{f}y\) and \(fg=1_y\), then \(fgf=f=f\circ 1_x\). Since \(f\) is mono, \(gf=1_x\)
+\end{proof}
+\subsection{Functoriality}
+\label{sec:orgcf39a04}
+\begin{definition}[]
+A \textbf{functor} \(F:\calc\to\cald\), between categories \(\calc\) and \(\cald\), consists of the following data:
+\begin{itemize}
+\item An object \(Fc\in\cald\), for each objects \(c\in\calc\)
+\item A morphism \(Ff:Fc\to Fc'\in\cald\), for each morphism \(f:c\to c'\in\calc\)
+\end{itemize}
+
+
+\textbf{Functoriality axioms}
+\begin{itemize}
+\item For any composable pair \(f,g\in\calc\), \(Fg\circ Ff=F(g\circ f)\)
+\item For each object \(c\in\calc\), \(F(1_c)=1_{Fc}\)
+\end{itemize}
+\end{definition}
+
+\begin{definition}[]
+A \textbf{contravariant functor} \(F\) from \(\calc\) to \(\cald\) is a functor \(F:\Cop\to\cald\)
+\begin{itemize}
+\item A morphism \(Ff:Fc'\to Fc\in\cald\) for each morphism \(f:c\to c'\in\calc\)
+\item For any composable pair \(f,g\in\calc\), \(Ff\circ Fg=F(g\circ f)\)
+\end{itemize}
+\end{definition}
+
+\begin{center}\begin{tikzcd}
+\Cop\ar[r,"F"]&\cald\\
+c\ar[r,mapsto]\ar[dd,"f"']&Fc\\
+{}\ar[r,mapsto]&{}\\
+c'\ar[r,mapsto]&Fc'\ar[uu,"Ff"']
+\end{tikzcd}\end{center}
+
+\begin{lemma}[]
+Functors preserve isomorphisms
+\end{lemma}
+
+\begin{proof}
+Consider a functor \(F:\calc\to\cald\) and an isomorphism \(f:x\to y\) in \(\calc\) with inverse \(g:y\to x\).
+Then
+\begin{equation*}
+F(g)F(f)=F(gf)=F(1_x)=1_{Fx}
+\end{equation*}
+Thus \(Fg:Fy\to Fx\) is a left inverse to \(Ff:Fx\to Fy\)
+\end{proof}
+
+\begin{definition}[]
+If \(\calc\) is locally small, then for any object \(c\in\calc\) we may define a pair of covariant and
+contravariant \textbf{functors represented by} \(c\):
+\begin{center}\begin{tikzcd}[column sep=tiny]
+\calc\ar[rrr,"{\Hom(c,-)}"]&\quad&\quad&\Sets\\
+x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(c,x)\ar[dd,"f_*"]\\
+{}&\ar[r,mapsto]&{}&{}\\
+y&\ar[r,mapsto]&{}&\Hom(c,y)
+\end{tikzcd}\hspace{1cm}
+\begin{tikzcd}[column sep=tiny]
+\Cop\ar[rrr,"{\Hom(-,c)}"]&\quad&\quad&\Sets\\
+x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(x,c)\\
+{}&\ar[r,mapsto]&{}&{}\\
+y&\ar[r,mapsto]&{}&\Hom(y,c)\ar[uu,"f^*"]
+\end{tikzcd}
+\end{center}
+\end{definition}
+
+Post-composition defines a \textbf{covariant} action on hom-sets
+
+\begin{definition}[]
+For any categories \(\calc\) and \(\cald\), there is a category \(\calc\times\cald\), their \textbf{product}, whose
+\begin{itemize}
+\item objects are ordered pairs \((c,d)\), where \(c\) is an object of \(\calc\) and \(d\) is an object
+of \(\cald\)
+\item morphisms are ordered pairs \((f,g):(c,d)\to(c',d')\), where \(f:c\to c'\in\calc\) and \(g:d\to d'\in\cald\) and
+\item in which composition and identities are defined componentwise
+\end{itemize}
+\end{definition}
+
+\begin{definition}[]
+If \(\calc\) is locally small, then there is a \textbf{two-sided represented functor}
+\begin{equation*}
+\calc(-,-):\Cop\times\calc\to\Sets
+\end{equation*}
+A pair of objects \((x,y)\) is mapped to the hom-set \(\Hom(x,y)\). A pair of
+morphisms \(f:w\to x\) and \(h:y\to z\) is sent to the function
+\begin{center}\begin{tikzcd}
+\Hom(x,y)\ar[r,"{(f^*,h_*)}"]&\Hom(w,z)\\
+g\ar[r,mapsto]&hgf
+\end{tikzcd}\end{center}
+\end{definition}
+
+An \textbf{isomorphism of categories} is given by a pair of inverse functors \(F:\calc\to\cald\) and \(G:\cald\to\calc\) s.t.
+the composites \(Gf\) and \(FG\), respectively, equal the identity functors on \(\calc\) and \(\cald\)
+\subsection{Naturality}
+\label{sec:orgb117201}
+\begin{definition}[]
+Given categories \(\calc\) and \(\cald\) and functors \(F,G:\calc\rightrightarrows\cald\), a \textbf{natural
+transformation} \(\alpha:F\Rightarrow G\) consists of
+\begin{itemize}
+\item an arrow \(\alpha_c:Fc\to Gc\) in \(\cald\) for each object \(c\in\calc\), the collection of which define the
+\textbf{components} of the natural transformation s.t. for any morphism \(f:c\to c'\) in \(\calc\), the
+following square of morphisms in \(\cald\)
+\begin{center}\begin{tikzcd}
+Fc\ar[r,"\alpha_c"]\ar[d,"Ff"']&Gc\ar[d,"Gf"]\\
+Fc'\ar[r,"\alpha_{c'}"']&Gc'
+\end{tikzcd}\end{center}
+\textbf{commutes}
+\end{itemize}
+
+
+A \textbf{natural isomorphism} is a natural transformation \(\alpha:F\Rightarrow G\) in which every component \(\alpha_c\) is
+an isomorphism. In this case, the natural isomorphism may be depicted as \(\alpha:F\cong G\)
+
+\begin{center}\begin{tikzcd}
+A\ar[r,bend left=50,""{name=U}]\ar[r,bend right=50,""{name=D}]&B
+\ar[Rightarrow,from=U,to=D,yshift=-3pt,"\alpha"]
+\end{tikzcd}\end{center}
+\end{definition}
+\end{document}
