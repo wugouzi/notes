@@ -15,7 +15,7 @@
 #+LATEX_HEADER: \def \Skolem {\textsf{Skolem}}
 #+LATEX_HEADER: \def \Tree {\textsf{Tree}}
 #+LATEX_HEADER: \DeclareMathOperator{\MR}{MR}
-
+#+LATEX_HEADER: \DeclareMathOperator{\MD}{MD}
 * The Basics
 
 ** Structures
@@ -4643,8 +4643,8 @@
 ** Morley rank
     Let \(T\) be a complete (possibly uncountable) theory
 
-    We now define the Morley rank \(\MR\) for formulas \(\varphi(x)\) with parameters in the monster
-    model.
+    We now define the Morley rank \(\MR\) for formulas \(\varphi(x)\) with *parameters in the monster*
+    *model*.
 
     | \(\MR\varphi\ge 0\)  | if \varphi is consistent                                         |
     | \(\MR\varphi\ge\beta+1\) | if there is an infinite family \((\varphi_i(x)\mid i<\omega)\) of formulas |
@@ -4689,6 +4689,324 @@
     #+LATEX: }
     If considered as a formula in two variables, \(\varphi(x_1,x_2)=x_1\dote a\), it has Morley rank 1
     #+END_examplle
+
+    The next lemma expresses the fact that the formulas of rank less than \alpha form an *ideal* in the
+    Boolean algebra of equivalence classes of formulas
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \begin{equation*}
+    \MR(\varphi\vee\psi)=\max(\MR\varphi,\MR\psi)
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    By the previous remark, we have \(\MR(\varphi\vee\psi)\ge\max(\MR\varphi,\MR\psi)\). For the other inequality we show
+    by induction on \alpha that
+    \begin{equation*}
+    \MR(\varphi\vee\psi)\ge\alpha+1\text{ implies }\max(\MR\varphi,\MR\psi)\ge\alpha+1
+    \end{equation*}
+    Let \(\MR(\varphi\vee\psi)\ge\alpha+1\). Then there is an infinite family of formulas \((\varphi_i)\) that imply \(\varphi\vee\psi\),
+    are pairwise inconsistent and s.t. \(\MR\varphi_i\ge\alpha\). By the induction hypothesis, for each \(i\) we
+    have \(\MR(\varphi_i\wedge\varphi)\ge\alpha\) or \(\MR(\varphi_i\wedge\psi)\ge\alpha\)
+    #+LATEX: \wu{
+    as \(\MR((\varphi\wedge\psi)\wedge\varphi_i)\ge\alpha\) and \(((\varphi\wedge\psi)\wedge\varphi_i)(\fM)=\varphi_i(\fM)\).
+    #+LATEX: }
+    If the first case holds for infinite many \(i\), then \(\MR\varphi\ge\alpha+1\). Otherwise \(\MR\psi\ge\alpha+1\)
+    #+END_proof
+
+    We call \varphi and \psi \alpha-equivalent
+    \begin{equation*}
+    \varphi\sim_\alpha\psi
+    \end{equation*}
+    if their symmetric difference \(\varphi\triangle\psi\) has rank less than \alpha.Then \alpha-equivalence is an equivalence
+    relation.
+    #+LATEX: \wu{
+    \(\varphi\triangle\psi=(\varphi\wedge\neg\psi)\vee(\neg\varphi\wedge\psi)=\neg(\varphi\to\psi)\vee\neg(\psi\to\varphi)=\neg((\varphi\to\psi)\wedge(\psi\to\varphi))\)
+
+    Suppose \(\varphi\sim_\alpha\psi\) and \(\psi\sim_\alpha\theta\). Note that \(\varphi\triangle\theta=(\varphi\triangle\psi)\triangle(\psi\triangle\theta)\). As
+    \(\MR((\varphi\triangle\psi)\vee(\psi\triangle\theta))<\alpha\) and \((\varphi\triangle\psi)\triangle(\psi\triangle\theta)\subset(\varphi\triangle\psi)\vee(\psi\triangle\theta)\), \(\MR((\varphi\triangle\psi)\triangle(\psi\triangle\theta))<\alpha\) and thus
+    \(\MR(\varphi\triangle\theta)<\alpha\).
+    #+LATEX: }
+
+    [[index:$\alpha$-strongly minimal]]
+    We call a formula \varphi *\alpha-strongly minimal* if it has rank \alpha and for any formula \psi
+    implying \varphi either \psi or \(\varphi\wedge\neg\psi\) has rank less than \alpha, (equivalently, if every \(\psi\subseteq\varphi\) is
+    \alpha-equivalent to \(\emptyset\) or to \varphi).
+    #+LATEX: \wu{
+    Or, note that, under logical equivalence, \(\{\varphi\wedge\psi\}=\{\psi\text{ implying }\varphi\}\). Thus we are actually
+    talking about for any formula \psi, either \(\varphi\wedge\psi\) or \(\varphi\wedge\neg\psi\) has rank less than \alpha, which is
+    natural for building a tree
+    #+LATEX: }
+    In particular, \varphi is 0-strongly minimal iff \varphi is realised by a
+    single element and \varphi is 1-strongly minimal iff \varphi is strongly minimal
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Each formula \varphi of rank \(\alpha<\infty\) is equivalent to a disjunction of finitely many pairwise disjoint
+    \alpha-strongly minimal formulas \(\varphi_1,\dots,\varphi_d\), the \alpha-strongly minimal components (or just components)
+    of \varphi. The components are uniquely determined up to \alpha-equivalence
+    #+END_lemma
+
+    #+BEGIN_proof
+    Suppose \varphi is a formula of rank \alpha without such a decomposition. Then \varphi can be written as the
+    disjoint disjunction of a formula \(\varphi_1\) of rank \alpha and another formula \(\psi_1\) of rank \alpha not having
+    such a decomposition.
+    #+LATEX: \wu{
+    \varphi is not \alpha-strongly minimal and \(\MR\varphi=\alpha\) implies that there is a \psi implying
+    \varphi s.t. \(\MR\psi=\MR(\varphi\wedge\neg\psi)=\alpha\).
+    As \(\varphi\leftrightarrow \psi\vee(\varphi\wedge\neg\psi)\). At least one of them is not \alpha-strongly minimal. If one of them is \alpha-strongly
+    minimal, then the other doesn't have such decomposition. If both of them is not \alpha-strongly
+    minimal, then we can continue this process for both of them. This will end since
+    otherwise \(\MR\varphi\) will be greater than \alpha. (ANOTHER TREE!)
+    #+LATEX: }
+    Inductively there are formulas \(\varphi=\varphi_0,\varphi_1,\dots\) of rank \alpha and \(\psi_1,\psi_2,\dots\) so
+    that \(\varphi_i\) is the disjoint union of \(\varphi_{i+1}\) and \(\psi_{i+1}\). But then the rank of \varphi would
+    be greater than \alpha
+
+    Let \psi be an \alpha-strongly minimal formula implying \varphi and let \(\varphi_1,\dots,\varphi_d\) be the \alpha-strongly minimal
+    components. Then \psi can be decomposed into the formulas \(\psi\wedge\varphi_i\), one of which must be
+    \alpha-equivalent to \psi.
+    #+LATEX: \wu{
+    \(\psi\triangle(\psi\wedge\varphi_i)=(\varphi\vee\neg\psi_i)\)...
+    #+LATEX: }
+    So up to \alpha-equivalence the components of \varphi are exactly the \alpha-strongly minimal formulas implying \varphi
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For a formula \varphi of Morley rank \(\alpha<\infty\), the *Morley degree* \(\MD(\varphi)\) is the number of its
+    \alpha-strongly minimal components
+    #+END_definition
+
+    The Morley degree is not defined for inconsistent formulas or formulas not having Morley rank.
+    The Morley degree of a consistent algebraic formula is the number of its realisations. Strongly
+    minimal formulas are exactly the formulas of Morley rank and Morley degree 1. As with strongly
+    minimal formulas it is easy to see that Morley rank and degree are preserved under definable
+    bijections
+
+    Defining \(\MD_\alpha(\varphi)\) as the Morley degree for formulas \varphi of rank \alpha
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \varphi is the disjoint union of \(\psi_1\) and \(\psi_2\), then
+    \begin{equation*}
+    \MD_\alpha(\varphi)=\MD_\alpha(\psi_1)+\MD_\alpha(\psi_2)
+    \end{equation*}
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    The theory \(T\) is totally transcendental iff each formula has Morley rank
+    #+END_theorem
+
+    #+BEGIN_proof
+    Since there are no arbitrarily large ordinal Morley ranks, each formula \(\varphi(x)\) without Morley
+    rank can be decomposed into two disjoint formulas without Morley rank, yielding a binary tree of
+    consistent formulas in the free variable \(x\)
+    #+LATEX: \wu{
+    Let \(\beta=\sup\{\MR\psi:\psi\text{ implies }\varphi\text{ and }\MR\psi<\infty\}\). Then as \(\MR\varphi=\infty\ge\beta+2\), then there is
+    an infinite family \((\varphi_i(x)\mid i<\omega)\) of formulas which implies \varphi, are pairwise inconsistent and
+    s.t. \(\MR\varphi_i\ge\beta+1\) for all \(i\). Then \(\MR(\varphi\wedge\neg\varphi_i)\ge\beta+2\ge\beta+1\). Hence \(\MR(\varphi\wedge\varphi_i)=\MR(\varphi\wedge\neg\varphi_i)=\infty\).
+    #+LATEX: }
+
+    Let \((\varphi_s(x)\mid s\in\tensor[^{<\omega}]{2}{})\) be a binary tree of consistent formulas. Then non of
+    the \(\varphi_s\) has Morley rank. Otherwise there is a \(\varphi_s\) whose ordinal rank \alpha is minimal and
+    (among the formulas of rank \alpha) of minimal degree. Then both \(\varphi_{s0}\) and \(\varphi_{s1}\) have rank
+    \alpha and therefore smaller degree than \varphi, a contradiction
+    #+END_proof
+
+    A group is said to have the *descending chain condition* (dcc) on definable subgroups, if there is
+    no infinite properly descending chain \(H_0\supset H_1\supset H_2\supset\cdots\) of definable subgroups
+
+    #+BEGIN_remark
+    A totally transcendental has the descending chain condition on definable subgroups
+    #+END_remark
+
+    #+BEGIN_proof
+    If \(H\) is a definable proper subgroup of a totally transcendental group \(G\), then either the
+    Morley rank or the Morley degree of \(H\) must be smaller than that of \(G\) since any coset
+    of \(H\) has the same Morley rank and degree as \(H\). Therefore the claim follows from the fact
+    that the ordinals are well-ordered
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *Morley rank* \(\MR(p)\) of a type \(p\) is the minimal rank of any formula in \(p\).
+    If \(\MR(p)\) is an ordinal, then its *Morley degree* \(\MD(p)\) is the minimal degree of a
+    formula of \(p\) having rank \alpha. If \(p=\tp(a/A)\) we also write \(\MR(a/A)\) and \(\MD(a/A)\)
+    #+END_definition
+
+    Algebraic types have Morley rank 0 and
+    \begin{equation*}
+    \MD(p)=\deg(p)
+    \end{equation*}
+    Strongly minimal types are exactly the types of Morley rank and Morley degree 1.
+
+    Let \(p\in S(A)\) have Morley rank \alpha and Morley degree \(d\). Then by definition there is
+    some \(\varphi\in p\) of rank \alpha and degree \(d\). Clearly, \varphi is uniquely determined up to \alpha-equivalence
+    since for all \psi we have \(\MR(\varphi\wedge\neg\psi)<\alpha\) iff \(\psi\in p\). Thus \(p\) is uniquely determined by \varphi:
+    \begin{equation}
+    p=\{\psi(x)\mid \psi\in L(A),\MR(\varphi\wedge\neg\psi)<\alpha\}\label{6.2}
+    \end{equation}
+    Obviously, \alpha-equivalent formulas determines the same type (see Lemma ref:lemma5.7.3)
+    <<Problem10>>
+    #+LATEX: \wu{
+    i guess here is an analogy
+    #+LATEX: }
+
+    [[index:$\alpha$-minimal]]
+    Thus \(\varphi\in L(A)\) belongs to a unique type of rank \alpha iff \varphi is *\alpha-minimal* over \(A\); i.e., if
+    \varphi has rank \alpha and cannot be decomposed as the union of two \(L(A)\)-formulas of rank \alpha
+    #+LATEX: \wu{
+    If \(\varphi=\psi\vee\theta\) and \(\MR\varphi=\MR\psi=\MR\theta=\alpha\), then \(\MD(\varphi)=\MD(\psi)+\MD(\theta)\).
+
+    Strongly minimality requires that the two sets are disjoint. Strongly minimal is too strong \emoji{😁}
+    #+LATEX: }
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \varphi be a consistent \(L(A)\)-formula
+    1. \(\MR\varphi=\max\{\MR(p)\mid\varphi\in p\in S(A)\}\)
+    2. Let \(\MR\varphi=\alpha\). Then
+       \begin{equation*}
+       \MD\varphi=\sum\left( \MD(p)\mid\varphi\in p\in S(A),\MR(p)=\alpha \right)
+       \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. If \(\MR\varphi=\infty\), then \(\{\varphi\}\cup\{\neg\psi\mid\psi\in L(A),\MR\psi<\infty\}\) is consistent.
+       #+LATEX: \wu{
+       Suppose \(\{\varphi\}\cup\{\neg\psi_1,\dots,\neg\psi_n\}\) is inconsistent, then \(\vDash\varphi\to\neg\bigwedge\neg\psi_i\), which is equivalent to
+       \(\vDash\varphi\to\bigvee\psi_i\). But \(\MR(\bigvee\psi_i)=\max\MR(\psi_i)<\infty\) and \(\MR(\varphi)=\infty\), a contradiction
+       #+LATEX: }
+       Any type over \(A\) containing this set of formulas has rank \(\infty\)
+
+       If \(\MR\varphi=\alpha\), there is a decomposition of \varphi in \(L(A)\)-formulas \(\varphi_1,\dots,\varphi_k\), \alpha-minimal
+       over \(A\). (Note that \(k\) is bounded by \(\MD\varphi\)). By eqref:6.2, the \(\varphi_i\) determine a
+       type \(p_i\) of rank \alpha.For each type containing \varphi, it contains exactly one \(\varphi_i\). Hence there
+       is only finitely many types and each has \(\MR\varphi\).
+       #+LATEX: \wu{
+       So ordinal value case is trivial?
+       #+LATEX: }
+
+    2. The \(p_i\) are exactly the types of rank \alpha containing \varphi. Furthermore
+       \begin{equation*}
+       \MD\varphi_i=\MD(p_i)
+       \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(p\in S(A)\) has Morley rank and \(A\subseteq B\), then
+    \begin{equation*}
+    \MD(p)=\sum\left\{\MD(q)\mid p\subseteq q\in S(B),\MR(p)=\MR(q)\right\}
+    \end{equation*}
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \(p\in S(A)\) have Morley rank and \(A\subseteq B\). Then \(p\in S(A)\) has at least one and at
+    most \(MD(p)\) many extension to \(B\) of the same rank
+    #+END_corollary
+
+    *Caveat*: Set-theoretically we defined the Morley rank as a function which maps each \alpha to a class
+    of formulas. In Bernays-Gödel set theory one cannot in general define functions from ordinals to
+    classes by a recursive scheme. The more conscientious reader should therefore use a different
+    definition: for each set \(A\) define the relation \(\MR_A(\varphi)\ge\alpha\) using only formulas with
+    parameters from \(A\), and put \(\MR\varphi\ge\alpha\) if \(\MR_A(\varphi)\ge\alpha\) for some (sufficiently large) \(A\).
+    The following exercise shows that if \varphi is defined over an \omega-saturated model \(M\), we
+    have \(\MR\varphi=\MR_M\varphi\)
+
+    #+BEGIN_exercise
+    label:ex6.2.1
+    Let \varphi be a formula with parameters in the \omega-saturated model \(M\). If \(\MR\varphi>\alpha\), show that
+    there is an infinite family of formulas *with parameters in* \(M\) which each imply \varphi, are
+    pairwise inconsistent and have Morley rank \(\ge\alpha\).
+    #+END_exercise
+
+    #+BEGIN_proof
+    From Marker's Lemma 6.2.2
+
+    There are an infinite family \((\psi_i(\barx,\barc_i)\mid i\in\omega)\), each of which implies \varphi and are
+    pairwise inconsistent. Let \(\bara\) be the elements of \(M\) occurring in \varphi. As \(M\) is
+    \omega-saturated and each \(\barc_i\) is finite, for each \(m\in\omega\) we have
+    \begin{equation*}
+    \tp^{\fC}(\bara,\barc_1,\dots,\barc_m)=\tp^{M}(\bara,\bard_1,\dots,\bard_m)=\tp^{\fC}(\bara,\bard_1,\dots,\bard_m)
+    \end{equation*}
+    for \(\bard_i\in M\).
+
+    *Claim* If \(\tp^{\fC}(\bara)=\tp^{\fC}(\barb)\), then \(\MR(\theta(\barx,\bara))=\MR(\theta(\barx,\barb))\) for
+    any \(\theta(\barx,\bary)\)
+
+    We prove that \(\MR(\theta(\barx,\bara))\ge\alpha\) iff \(\MR(\theta(\barx,\barb))\ge\alpha\)
+
+    If \(\MR(\theta(\barx,\bara))=-\infty\), then \(\vDash\neg\exists\barx\theta(\barx,\bara)\) and so \(\vDash\neg\exists\barb\barx\theta(\barb)\).
+    So \(\MR(\theta(\barx,\barb))=-\infty\). And vice versa. So \(\MR(\theta(\barx,\bara))\ge 0\)
+    iff \(\MR(\theta(\barx,\barb))\ge 0\).
+
+    If \(\alpha=\beta+1\). We have \(\psi_1(\barx,\barc_1),\psi_2(\barx,\barc_2),\dots\). As \(\fC\) is saturated, for
+    each \(m\in\omega\), we have
+    \begin{equation*}
+    \tp(\bara,\barc_1,\dots,\barc_m)=\tp(\barb,\bard_1,\dots,\bard_m)
+    \end{equation*}
+    Then \(\psi_1(\barx,\bard_1),\psi_2(\barx,\bard_2),\dots\) is what we want
+
+    Hence \(\MR(\psi_i(\barv,\bard_i))=\MR(\psi_i(\barv,\barc_i))\ge\alpha\) and we are done.
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex6.2.2
+    Let \varphi be a formula of Morley rank \(\alpha<\infty\) and \(\psi_0,\psi_1,\dots\) an infinite sequence of formulas.
+    Assume that there is a number \(k\) s.t. the conjunction any \(k\) of the \(\psi_i\) has Morley rank
+    smaller than \alpha. Then \(\MR(\varphi\wedge\psi_i)<\alpha\)  for almost all \(i\)
+    #+END_exercise
+
+    #+BEGIN_proof
+    Note that \(\vDash\varphi\leftrightarrow\bigvee_{i=1}^{n}\varphi_i\). If we have an upper bound for the size of
+    each \(\abs{[\varphi_i]_{\sim_\alpha}}\), then the number of formulas of Morley rank \alpha is finite.
+
+    \(\varphi\wedge\psi_0,\varphi\wedge\psi_1,\dots\) is just a infinite sequence of formulas implying \varphi. We can
+    consider \(\theta_0,\theta_1,\dots\) for simplicity.
+
+    *Claim* If \(\MR\theta_i=\MR\theta_j=\alpha\) and \(\MR(\theta_i\triangle\theta_j)<\alpha\), then \(\MR(\theta_i\wedge\theta_j)=\alpha\). Or more generally,
+    if \(\varphi=\varphi_0\vee\varphi_1\) and \(\varphi_0\) and \(\varphi_1\) are inconsistent. If \(\MR\varphi=\alpha\) and \(\MR\varphi_i<\alpha\),
+    then \(\MR\varphi_{1-i}=\alpha\).
+
+    *Claim* If \(\theta_1\sim_\alpha\theta_2\) and \(\theta_1\wedge\theta_2\) consistent, then \(\theta_1\wedge\theta_2\sim_\alpha\theta_1\).
+
+    Hence if \(\theta_1\sim_\alpha\theta_2\sim_\alpha\theta_3\), then \(\MR(\theta_1\wedge\theta_2)=\alpha\) and \(\MR(\theta_1\wedge\theta_2\wedge\theta_3)=\alpha\)
+
+    Let \(I\) be set of all \(i\) for which \(\theta_i\) has rank \alpha. If there is a \(k\)-elements
+    subsets \(A\) of \(I\) whose elements are all \alpha-equivalent. Then for
+    any \(i,j\in A\), \(\MR(\theta_i\wedge\theta_j)=\alpha\). Then \(\MR(\bigwedge_{i\in A}\theta_i)=\alpha\), a contradiction. Thus we get an
+    upper bound
+
+    So \(\abs{I}\le(k-1)\MD\varphi\).
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex6.2.4
+    If \(T\) is totally transcendental, then all types over \omega-saturated models have Morley degree 1
+    #+END_exercise
+
+    #+BEGIN_proof
+    Let \(M\) be an \omega-saturated model and let \(p\) be a type over \(M\) of Morley rank \alpha and
+    degree \(n\), witnessed by \(\varphi(x,\barm)\in p\). If \(n>1\), there is a formula \(\psi(x,\barb)\) s.t.
+    \(\varphi(x,\barm)\wedge\psi(x,\barb)\) and \(\varphi(x,\barm)\wedge\neg\psi(x,\barb)\) both have Morley rank \alpha.
+    Choose \(\bara\in M\) with \(\tp(\bara/\barm)=\tp(\barb/\barm)\). Then both formulas
+    \(\varphi(x,\barm)\wedge\psi(x,\bara)\) and \(\varphi(x,\barm)\wedge\neg\psi(x,\bara)\) have rank \alpha and degree less than \(d\),
+    a contradiction
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:ex6.2.8
+    If \(p\) is a type over \(\acl(A)\), then \(p\) and \(p\upharpoonright A\) have the same Morley rank
+    #+END_exercise
+
+    #+BEGIN_proof
+
+    #+END_proof
+
 * Appendix :ignore:
   #+LATEX: \appendix
 ** Set Theory
@@ -4943,6 +5261,8 @@
   [[Problem8]]
 
   [[Problem9]]
+
+  [[Problem10]]:done
 
 * Footnotes                                                          :ignore:
 
