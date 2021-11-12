@@ -4,6 +4,7 @@
 
 #+LATEX_HEADER: \input{preamble.tex}
 #+EXPORT_FILE_NAME: ../latex/ModelTheoryAnIntroduction/ModelTheoryAnIntroduction.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
 #+STARTUP: noindent
 #+STARTUP: overview
 #+LATEX_HEADER: \def \Pr {\text{Pr}}
@@ -5921,7 +5922,12 @@
     The set \(S\) is a binary tree. We claim that \(S\) is finite. If \(S\) is infinite, then, by
     Kőnig's Lemma (Lemma ref:lemmaA.21), there is \(f:\omega\to 2\) s.t. \(f|n\in S\) for all \(n\).
     Let \(\psi_n\) be the formula \(\phi_{f|n}\wedge\neg\phi_{f|n+1}\) for \(n=1,2,\dots\). Then \(\RM(\psi_n)=\alpha\) for
-    all \(n\) and \(\psi_1(\M),\psi_2(\M),\dots\) are disjoint subsets of \(\phi(\M)\). But then \(\RM(\phi)\ge\alpha+1\), a
+    all \(n\)
+    #+LATEX: \wu{
+    \(\phi_{f\mid n+1}=\phi_{f\mid n}\wedge\psi\) for some \psi and \(\psi_n=\phi_{f\mid n}\wedge(\neg\phi_{f\mid n}\vee\neg\psi)=\phi_{f\mid n}\vee\neg\psi\supseteq\phi_{f\mid n}\) which has
+    Morley rank at least \alpha
+    #+LATEX: }
+    and \(\psi_1(\M),\psi_2(\M),\dots\) are disjoint subsets of \(\phi(\M)\). But then \(\RM(\phi)\ge\alpha+1\), a
     contradiction. Thus \(S\) is finite
 
     Let \(S_0=\{\sigma\in S:\tau\notin S\text{ for all }\tau\supset\sigma\}\) be the terminal nodes of the tree \(S\).
@@ -5965,8 +5971,10 @@
     Suppose \(\phi(\barv,\barw)\) has the order property. By compactness and saturation, we can
     find \((\bara_q,\barb_q:q\in\Q)\) s.t. \(\M\vDash\phi(\bara_q,\barb_r)\) iff \(q<r\).
     #+LATEX: \wu{
-    Lemma ref:lemma5.2.5 needs compactness, the new model is elementarily embedded into \(\M\) by
-    Lemma ref:lemma4.3.17.
+    Add those constants and consider \(p(\bara_q,\barb_q)=\Diag_{\el}(\M)\cup\{\phi(\bara_q,\barb_q)\mid q\in\Q\}\)
+
+    This is satisfiable by compactness and by viewing \((\bara_q,\barb_q)_{q\in\Q}\) as variables, this type
+    are realised in \(\M\)
     #+LATEX: }
     Note that \(\{q\in\Q:\phi(\bara_q,\barb_r)\}=(-\infty,r)\) is an infinite convex set. Thus there
     is \(\psi(\barv)\), an \(\call_{\M}\)-formula of minimal rank and degree s.t. \(C=\{q\in\Q:\M\vDash\psi(\bara_q)\}\)
@@ -5979,6 +5987,9 @@
     let \(\psi_1(\barv)\) be \(\psi(\barv)\wedge\neg\phi(\barv,\barb_r)\). The set \(\{q\in\Q:\psi_i(\bara_q)\}\) is infinite
     and convex for \(i=0,1\), and if neither \(\psi_i\) has lower Morley rank than \psi, then both have
     lower Morley degree, a contradiction
+    #+LATEX: \wu{
+    So we actually build a tree:D
+    #+LATEX: }
     #+END_proof
 *** Ranks of Types
     #+ATTR_LATEX: :options []
@@ -6024,9 +6035,220 @@
     \(\Rightarrow\). Suppose \(\phi(v_1,\dots,v_n)\) is an \(\call_{\M}\)-formula s.t. \(\RM(\phi)=\infty\).
     Let \(\beta=\sup\{\RM(\psi):\psi\text{ an $\call_{\M}$-formula and }\RM(\psi)<\infty\}\)
 
-    Because \(\RM(\phi)=\infty\ge\beta+2\), we can find an \(\call_{\M}\)-formula \psi s.t. \(\RM(\phi\wedge\psi)\ge\beta+1\) and \(\RM(\phi\wedge\neg\psi)\ge\beta+1\)
+    Because \(\RM(\phi)=\infty\ge\beta+2\), we can find an \(\call_{\M}\)-formula \psi s.t. \(\RM(\phi\wedge\psi)\ge\beta+1\)
+    and \(\RM(\phi\wedge\neg\psi)\ge\beta+1\)
+    #+LATEX: \wu{
+    As there is pairwise disjoint \(\phi\wedge\psi_1(\M),\phi\wedge\psi_2(\M),\dots\), then \(\RM(\phi\wedge\psi)=\beta+1\) and for \(\phi\wedge\neg\psi_1\)
+    contains \(\phi\wedge\psi_2,\phi\wedge\psi_3,\dots\) and thus \(\RM(\phi\wedge\neg\psi)\ge\beta+2\ge\beta+1\)
+    #+LATEX: }
+    Then \(\RM(\phi\wedge\psi)=\RM(\phi\wedge\neg\psi)=\infty\).
+
+    Iterating this construction we can build a binary tree of \(\call_{\M}\)-formulas \((\phi_\sigma:\sigma\in 2^{<\omega})\)
+    s.t.
+    1. \(\phi_\emptyset=\phi\)
+    2. \(\RM(\phi_\sigma)=\infty\) for all \sigma
+    3. for each \sigma there is a formula \(\psi_\sigma\) s.t. \(\phi_{\sigma,0}=\phi_\sigma\wedge\psi_\sigma\) and \(\phi_{\sigma,1}=\phi_\sigma\wedge\neg\psi_\sigma\)
+
+
+    There is a countable \(A\subseteq M\) s.t. \(\phi_\sigma\) is an \(\call_A\)-formula but \(\abs{S_n(A)}=2^{\aleph_0}\)
+    so \(T\) is not \omega-stable
+
+    \(\Leftarrow\). Suppose that \(\abs{A}\le\aleph_0\). For each \(p\in S_n(A)\), \(\RM(p)<\infty\) so there is \(\phi_p\) as
+    above. Because \(\phi_p\neq\phi_q\) for \(p\neq q\) and there are only countably many choices
+    for \(\phi_p\), \(\abs{S_n(A)\le\aleph_0}\). Thus \(T\) is \omega-stable
     #+END_proof
 
+    *Because we are concentrating on theories in countable languages, we will not mention totally
+    transcendental theories again*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(A\subset\M\) and \(\bara\in\M\), we write \(\RM(\bara)\) for \(\RM(\tp(\bara))\) and \(\RM(\bara/A)\)
+    for \(\RM(\tp(\bara/A))\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    <<Problem11>>
+    label:lemma6.2.16
+    1. If \(X\subseteq\M^n\) is definable,
+       then \(\RM(X)=\sup\{\RM(\bara/A):\bara\in X,A\subseteq\M,\abs{A}<\abs{\M},X\text{ is }A\text{-definable}\}\)
+    2. If \(X\subseteq\M^n\) is definable, and \(\beta<\RM(X)\), then there is a definable \(Y\subset X\)
+       with \(\RM(Y)=\beta\). In particular, if \(\RM(X)=\alpha\) and \(\beta<\alpha\) we can find disjoint definable
+       sets \(Y_1,Y_2,\dots\) s.t. each \(Y_i\) has Morley rank \beta
+    3. For any \(\call_A\)-formula \phi, \(\abs{\{p\in S_n(\M):\phi\in p\text{ and }\RM(p)=\RM(\phi)\}}=\deg_{\M}(\phi)\)
+    #+END_lemma
+
+    #+LATEX: \wu{
+    Tent's Lemma 6.2.11
+    #+LATEX: }
+
+    #+BEGIN_proof
+    1. If \(X\subseteq\M^n\) is \(A\)-definable, then \(X=\varphi(\M)\) for some \(L(A)\)-formula \varphi.
+
+       If \(\RM(\varphi)=\infty\), then \(\{\varphi\}\cup\{\neg\psi\mid\psi\in L(A),\RM(\psi)<\infty\}\) is consistent. Any type over \(A\)
+       containing this set of formulas has rank \(\infty\)
+
+       If \(\RM(\varphi)=\alpha\), there is a decomposition of \varphi in \(L(A)\)-formulas \(\varphi_1,\dots,\varphi_k\), \alpha-minimal
+       over \(A\) (\(k\) is bounded by \(\MD(\varphi)\)). Each of which determine a unique type of rank \alpha
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma6.2.17
+    Suppose that \(A\subset\M\), \(\bara,b\in\M\) and \(b\) is algebraic over \(A\cup\{\bara\}\). Then \(\RM(\bara,b/A)=\RM(\bara/A)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    W.L.O.G., we will assume that \(A=\emptyset\). We leave as an exercise the proof
+    that \(\RM(\bara,b)\ge\RM(\bara)\).
+    #+LATEX: \wu{
+    \(\tp(\bara,b)\supset\tp(\bara)\).
+    #+LATEX: }
+    We will prove by induction on \alpha that if \(\bara,b\in\M\), \(b\) is algebraic over \(\bara\), and
+    if \(\RM(\bara,b)\ge\alpha\), then \(\RM(\bara)\ge\alpha\).
+
+    By Exercise ref:ex6.6.10, \(\RM(\bara)\ge 0\). Thus the claim is true for \(\alpha=0\). If \alpha is a limit
+    ordinal and the claim is true for all \(\beta<\alpha\)
+
+    Suppose that the claim is true for \alpha and \(\RM(\bara,b)\ge\alpha+1\). By induction \(\RM(\bara)\ge\alpha\).
+    Suppose, for purpose of contradiction, that \(\RM(\bara)=\alpha\). Let \(\phi(\barv)\) be
+    an \(\call\)-formula s.t. \(\RM(\phi(\barv))=\alpha\) and there is no \(\call\)-formula \(\phi_1\)
+    s.t. \(\RM(\phi\wedge\phi_1)=\RM(\phi\wedge\neg\phi_1)=\alpha\)
+    #+LATEX: \wu{
+    so \phi is actually \(\phi_{\tp(\bara)}\)
+    #+LATEX: }
+
+    Because \(b\) is algebraic over \(\bara\), there is a formula \(\psi(\barv,w)\) s.t. \(\psi(\bara,b)\)
+    and \(\abs{\{x:\psi(\bara,x)\}}=n\). Let \(\hatphi(\barv,w)\) be the formula
+    \begin{equation*}
+    \phi(\barv)\wedge\psi(\barv,w)\wedge\abs{\{x:\psi(\barv,x)\}}=n
+    \end{equation*}
+    Because \(\hatphi(\bara,b)\) holds and \(\RM(\bara,b)>\alpha\), \(\RM(\hatphi)>\alpha\). Suppose
+    that \(\theta_1,\theta_2,\dots\) are \(\call_{\M}\)-formulas s.t. \(\theta_1(\M),\theta_2(\M),\dots\) is a sequence of disjoint subsets
+    of \(\hatphi(\M)\) and \(\RM(\theta_i)\ge\alpha\) for all \(i\). Let \(\chi_i(\barv)\) be the
+    formula \(\exists w\;\theta_i(\barv,w)\).
+
+    *Claim 1*. \(\RM(\chi_i)\ge\alpha\) for all \(i\)
+
+    Because \(\RM(\theta_i)\ge\alpha\), there is \(\barc,d\in\M\) s.t. \(\theta_i(\barc,d)\) and \(\RM(\barc,d)\ge\alpha\).
+    #+LATEX: \wu{
+    Each \varphi of rank \(\beta\ge\alpha\) is equivalent to a disjunction of finitely many pairwise disjoint
+    \beta-strongly minimal formulas \(\varphi_1,\dots,\varphi_d\). And each \(\varphi_i\) determines a unique type of rank \beta.
+    Thus we can find such types.
+
+    Also a remark, consider \(\RM(\varphi(\barx,y))\) and \(\RM(\exists y\;\varphi(\barx,y))\).
+
+    Suppose \(\RM(\varphi(\barx,y))\) has a infinite family of disjoint
+    subsets \(\varphi_1(\M),\varphi_2(\M),\dots\). \(\exists y\;\varphi_1(\M,y),\exists y\;\varphi_2(\M,y),\dots\) may not be still disjoint
+
+    But the converse is true. Thus if \(\RM(\exists y\;\varphi(\barx,y))\ge\alpha\) then \(\RM(\varphi(\barx,y))\ge\alpha\).
+    So \(\RM(\exists y\;\varphi(\barx,y))\le\RM(\varphi(\barx,y))\)
+    #+LATEX: }
+    By induction, \(\RM(\barc)\ge\alpha\)
+    #+LATEX: \wu{
+    \(d\) is algebraic over \(\barc\) since \(\theta_i(\M)\subset\hatphi(\M)\) and \(\hatphi(\barc,d)\)
+    #+LATEX: }
+    Because \(\chi_i(\barc)\), \(\RM(\chi_i)\ge\alpha\).
+
+    *Claim 2*. \(\RM(\chi_1\wedge\dots\chi_m)\ge\alpha\) for all \(m\)
+
+    Suppose that \(m\) is the least s.t. this fails. Then
+    \begin{equation*}
+    \RM(\chi_1\wedge\dots\wedge\chi_{m-1}),\RM\left( \chi_m\wedge\neg\bigwedge_{i=1}^{m-1}\chi_i \right)\ge\alpha
+    \end{equation*}
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME: Illustration
+    #+CAPTION:
+    [[../images/ModelTheoryAnIntroduction/1.jpg]]
+    contradicting our assumption that we cannot find an \(\call\)-formula \(\phi_1\) s.t. \(\phi\wedge\phi_1\)
+    and \(\phi\wedge\neg\phi_1\) both have rank \alpha
+    #+LATEX: \wu{
+    \(\chi_i(\M)\subset\phi(\M)\). Hence \(\RM(\bigwedge_{i=1}^{m-1}\chi_i)\ge\alpha\), \(\RM(\neg\bigwedge_{i=1}^{m-1}\chi_i)\ge\RM(\chi_m\wedge\neg\bigwedge\chi_i)\ge\alpha\). But
+    as \(\RM(\phi)=\alpha\). Hence \(\RM(\bigwedge\chi_i)=\RM(\neg\wedge\chi_i)=\alpha\)
+    #+LATEX: }
+
+    Because  \(\M\) is saturated, we can find \(\barc\in\M\) s.t. \(\chi_i(\barc)\) for all \(i\)
+    #+LATEX: \wu{
+    they are finitely satisfiable since \(\RM(\bigwedge\chi_i)\ge\alpha\).
+    #+LATEX: }
+    For each \(i\), we can find \(d_i\) s.t. \(\theta_i(\barc,d_i)\). Because the \(\theta_i(\M)\) are
+    disjoint, \(d_1,d_2,\dots\) are distinct. But \(\theta_i(\M)\subseteq\hatphi(\M)\). Thus \(\psi(\barc,d_i)\) holds for
+    all \(i\), contradicting the fact that \(\abs{\{x:\psi(\barc,x)\}}=n\). Thus \(\RM(\bara)\ge\alpha+1\) and
+    the lemma follows by induction
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Suppose that \(T\) is \omega-stable, \(\calm\vDash T\), \(X\subseteq\M^n\), \(Y\subseteq\M^m\) are definable, and \(f:X\to Y\) is a
+    definable finite-to-one function from \(X\) onto \(Y\). Then \(\RM(X)=\RM(Y)\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    Let \(A\subset\M\) s.t. \(X,Y\) and \(f\) are definable over \(A\). Suppose that \(f(\bara)=\barb\).
+    Then \(\barb\) is definable over \(A,\bara\) and, because \(f\) is finite-to-one, \(\bara\) is
+    algebraic over \(A,\barb\). By Lemma ref:lemma6.2.17
+    \begin{equation*}
+    \RM(\bara/A)=\RM(\bara,\barb/A)=\RM(\barb/A)
+    \end{equation*}
+    #+LATEX: \wu{
+    Definabillity is a strongly than algebraicality
+    #+LATEX: }
+    If \(\bara\in X\) s.t. \(\RM(\bara/A)=\RM(X)\) by Lemma ref:lemma6.2.16 then
+    \begin{equation*}
+    \RM(Y)\ge\RM(f(\bara)/A)=\RM(\bara/A)=\RM(X)
+    \end{equation*}
+
+    On the other hand, if \(\barb\in Y\) s.t. \(\RM(\barb/A)=\RM(Y)\), then, because \(f\) is
+    surjective, there is \(\bara\in X\) s.t. \(f(\bara)=\barb\) and
+    \begin{equation*}
+    \RM(X)\ge\RM(\bara/A)=\RM(\barb/A)=\RM(Y)
+    \end{equation*}
+    Hence \(\RM(X)=\RM(Y)\)
+    #+END_proof
+*** Morley Rank in Strongly Minimal Theories
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Suppose that \(T\) is a strongly minimal theory. If \(A\subseteq\M\) and \(\bara\in\M\), then \(\RM(\bara/A)=\dim(\bara/A)\)
+    #+END_theorem
+
+    1#+BEGIN_proof
+    We will first show by induction that if \(a_1,\dots,a_k\) are independent over \(A\),
+    then \(\RM(\bara)=k\). We prove this by induction
+
+    Suppose that \(k=1\). If \(\phi(v)\in\tp(a/A)\), then, because \(a\notin\acl(A)\), \(\phi(\M)\) is infinite
+    and \(\RM(\phi)\ge 1\). Because \(T\) is strongly minimal, \(\RM(v=v)=1\). Thus \(\RM(\phi)\le 1\).
+
+    Suppose \(k>1\) and \(a_1,\dots,a_k\) are independent over \(A\). Let \(\phi(\barv)\in\tp(\bara/A)\) be a
+    formula of minimal Morley rank. We first argue that \(\RM(\bara/A)\ge k\). Let \(b_1,b_2,\dots\) be
+    distinct elements of \(\M\) that are not in \(\acl(A)\).
+    #+LATEX: \wu{
+    \(\abs{\acl(A)}\le\max\{\abs{A},\abs{T}\}<\abs{\M}\).
+    #+LATEX: }
+    Let \(\psi_i(\barv)\) be the formula \(\phi(\barv)\wedge v_1=b_i\)
+    #+LATEX: \wu{
+    \(\phi(\M)\) is cofinite. If \(\M\vDash\neg\phi(b_i)\), then \(b_i\) is algebraic over \(A\), a contradiction
+    #+LATEX: }
+    Clearly \(\psi_1(\M),\psi_2(\M),\dots\) is a family of pairwise disjoint subsets of \(\phi(\M)\). If \(c_2,\dots,c_k\)
+    are independent over \(A\cup\{b_i\}\), then by Lemma
+    ref:lemma6.1.6, \(\tp(b_i,\barc/A)=\tp(a_1,\dots,a_k/A)\). In particular, \(\M\vDash\phi(b_i,\barc)\).
+    Thus \(\M\vDash\psi_i(b_i,\barc)\). Then
+    \begin{equation*}
+    \RM(\psi_i)\ge\RM(b_i,\barc/A)\ge\RM(\barc/A)
+    \end{equation*}
+    and by induction
+    #+END_proof
+
+
+** Exercises
+    #+BEGIN_exercise
+    label:ex6.6.10
+    Show that \(\RM(\bara)\ge 0\) for all \(\bara\in\M\)
+    #+END_exercise
+
+    #+BEGIN_proof
+    \(\tp(\bara)\) cannot be empty
+    #+END_proof
 
 * Appendix :ignore:
   #+LATEX: \appendix
@@ -6128,6 +6350,9 @@
     [[Problem10]]
 
     ref:ex4.5.2
+
+    [[Problem11]]
+
 * Footnotes :ignore:
 
 [fn:EM] \(\caln\vDash T\) on book, but \(\caln\vDash T^*\) is also true and it's used later
