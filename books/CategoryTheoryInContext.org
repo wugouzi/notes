@@ -10,6 +10,7 @@
 #+LATEX_HEADER: \def \gop {g^{\op}}
 #+LATEX_HEADER: \def \Vect {\textbf{Vect}}
 #+LATEX_HEADER: \def \BG {\textsf{B}G}
+#+LATEX_HEADER: \def \sk {\text{sk}}
 #+LATEX_HEADER: \makeindex
 
 * Categories, Functors, Natural Transformations
@@ -353,4 +354,163 @@
     \ar[Rightarrow,from=U,to=D,yshift=-3pt,"\alpha"]
     \end{tikzcd}\end{center}
 
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Consider morphism \(f:w\to x\) and \(h:y\to z\) in a locally small category \(C\). Post-composition
+    by \(h\) and pre-composition by \(f\) define functions between hom-sets
+    \begin{center}\begin{tikzcd}
+    C(x,y)\ar[r,"h\circ-"]\ar[d,"-\circ f"]&C(x,z)\ar[d,"-\circ f"]\\
+    C(w,y)\ar[r,"h\circ -"']&C(w,z)
+    \end{tikzcd}\end{center}
+    \(h\circ -\) is denoted by \(h_*\) and \(-\circ f\) is denoted by \(f^*\). By interpreting the
+    horizontal arrows as the image of \(h\) under the actions of the functors \(C(x,-)\)
+    and \(C(w,-)\), the square demonstrates that there is a natural transformation
+    \begin{equation*}
+    f^*:C(x,-)\Rightarrow C(w,-)
+    \end{equation*}
+    #+END_examplle
+
+    #+BEGIN_exercise
+    label:ex1.4.6
+    Given a pair of functors \(F:\bA\times \bB\times \bB^{\op}\to \bD\) and \(G:\bA\times \bC\times \bC^{\op}\to \bD\), a family of
+    morphisms
+    \begin{equation*}
+    \alpha_{a,b,c}:F(a,b,b)\to G(a,c,c)
+    \end{equation*}
+    in \(\bD\) defines the components of an *extranatural transformation* \(\alpha:F\Rightarrow G\) if for
+    any \(f:a\to a'\), \(g:b\to b'\) and \(h:c\to c'\) the following diagram commutes
+    \begin{center}\begin{tikzcd}
+    F(a,b,b)\ar[r,"{\alpha_{a,b,c}}"]\ar[d,"{F(f,1_b,1_b)}" description]&G(a,c,c)\ar[d,"{G(f,1_c,1_c)}" description]\\
+    F(a',b,b)\ar[r,"{\alpha_{a',b,c}}"']&G(a',c,c)
+    \end{tikzcd}\begin{tikzcd}
+    F(a,b,b')\ar[r,"{F(1_a,1_b,g)}"]\ar[d,"{F(1_a,g,1_{b'})}" description]&F(a,b,b)\ar[d,"{\alpha_{a,b,c}}" description]\\
+    F(a,b',b')\ar[r,"{\alpha_{a,b',c}}"']&G(a,c,c)
+    \end{tikzcd}\begin{tikzcd}
+    F(a,b,b)\ar[r,"{\alpha_{a,b,c}}"]\ar[d,"{F(f,1_b,1_b)}" description]&G(a,c,c)\ar[d,"{G(f,1_c,1_c)}" description]\\
+    F(a',b,b)\ar[r,"{\alpha_{a',b,c}}"']&G(a',c,c)
+    \end{tikzcd}
+    \end{center}
+    #+END_exercise
+** Equivalence of categories
+    Let \(\bbone\) denote the discrete category with a single object and let \(\bbtwo\) denote the
+    category with two objects \(0,1\in\bbtwo\) and a single non-identity arrow \(0\to 1\). There are two
+    evident functors \(i_0,i_1:\bbone\rightrightarrows\bbtwo\) whose subscripts designate the objects
+    in their image
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Fixing a parallel pair of functors \(F,G:\bC\rightrightarrows\bD\), natural
+    transformations \(\alpha:F\Rightarrow G\) correspond bijectively to functors \(H:\bC\times\bbtwo\to\bD\) s.t. \(H\)
+    restricts along \(i_0\) and \(i_1\) to the functors \(F,G\), i.e., so that
+    \begin{center}\begin{tikzcd}
+    \bC\ar[r,"i_0"]\ar[rd,"F"']&\bC\times 2\ar[d,"H"]&\bC\ar[l,"i_1"']\ar[ld,"G"]\\
+    &\bD
+    \end{tikzcd}\end{center}
+    commutes
+    #+END_lemma
+
+    Hence \(i_0\) denotes the functor defined on objects by \(c\mapsto(c,0)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    An *equivalence of categories* consists of functors \(F:\bC\leftrightarrows \bD:G\) together with
+    natural isomorphisms \(\eta:1_{\bC}\cong GF\), \(\epsilon:FG\cong 1_{\bD}\). Categories \(\bC\)  and \(\bD\) are
+    *equivalent*, written \(\bC\simeq\bD\), if there exists an equivalence between them
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(\bC\simeq\bD\) and \(\bD\simeq\bE\), then \(\bC\simeq\bE\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A functor \(F:\bC\to\bD\) is
+    * *full* if for each \(x,y\in\bC\), the map \(\bC(x,y)\to \bD(Fx,Fy)\) is surjective
+    * *faithful* if for each \(x,y\in\bC\), the map \(\bC(x,y)\to\bD(Fx,Fy)\) is injective
+    * *essentially surjective on objects* if for every object \(d\in\bD\) there is \(c\in\C\) s.t. \(d\) is
+      isomorphic to \(Fc\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:lemma1.5.10
+    Any morphism \(f:a\to b\) and fixed isomorphism \(a\cong a'\) and \(b\cong b'\) determine a unique
+    morphism \(f':a'\to b'\) so that any of - or, equivalently, all of - the following four diagrams
+    commutes
+    \begin{center}\begin{tikzcd}
+    a\ar[d,"f"']&a'\ar[l,"\cong"']\ar[d,"f'"]\\
+    b\ar[r,"\cong"']&b'
+    \end{tikzcd}\begin{tikzcd}
+    a\ar[r,"\cong"]\ar[d,"f"']&a'\ar[d,"f'"]\\
+    b\ar[r,"\cong"']&b'
+    \end{tikzcd}\begin{tikzcd}
+    a\ar[d,"f"']&a'\ar[l,"\cong"']\ar[d,"f'"]\\
+    b&b'\ar[l,"\cong"]
+    \end{tikzcd}\begin{tikzcd}
+    a\ar[r,"\cong"]\ar[d,"f"']&a'\ar[d,"f'"]\\
+    b&b'\ar[l,"\cong"]
+    \end{tikzcd}\end{center}
+    #+END_lemma
+
+    #+ATTR_LATEX: :options [characterizing equivalences of categories]
+    #+BEGIN_theorem
+    label:thm1.5.9
+    A functor defining an equivalence of categories is full, faithful and essentially surjective on
+    objects. Assuming the axiom of choice, any functor with these properties defines an equivalence
+    of categories
+    #+END_theorem
+
+    #+BEGIN_proof
+    First suppose that \(F:\bC\leftrightarrows\bD:G\), \(\eta:1_{\bC}\cong GF\) and \(\epsilon:FG\cong 1_{\bD}\) define an
+    equivalence of categories. For any \(d\in\bD\), the component of the natural
+    isomorphism \(\epsilon_d:FGd\cong d\) demonstrates that \(F\) is essentially surjective. Consider a
+    parallel pair \(f,g:c\rightrightarrows c'\) in \(\bC\). If \(Ff=Fg\), then both \(f\) and \(g\)
+    define an arrow \(c\to c'\) making the diagram
+    \begin{center}\begin{tikzcd}
+    c\ar[r,"\eta_c","\cong"']\ar[d,"f\text{ or }g" description]&GFc\ar[d,"GFf=GFg" description]\\
+    c'\ar[r,"cong","\eta_{c'}"']&GFc'
+    \end{tikzcd}\end{center}
+    that expresses the naturality of \eta commute. Lemma implies that there is a unique arrow \(c\to c'\)
+    with this property, whence \(f=g\). Thus \(F\) is faithful and by symmetry, so is \(G\).
+    Given \(k:Fc\to Fc'\), by Lemma ref:lemma1.5.10, \(Gk\) and the isomorphism \(\eta_c\) and \(\eta_{c'}\)
+    define a unique \(h:c\to c'\) for which both \(Gk\) and \(GFh\) make the diagram
+    \begin{center}\begin{tikzcd}
+    c\ar[r,"\eta_c","\cong"']\ar[d,dashed,"h"']&GFc\ar[d,"Gk\text{ or }GFh" description]\\
+    c'\ar[r,"\cong","\eta_{c'}"']&GFc'
+    \end{tikzcd}\end{center}
+    commute. By Lemma ref:lemma1.5.10, \(GFh=Gk\)
+
+    For the converse, suppose now that \(F:\bC\to\bD\) is full, faithful and essentially surjective on
+    objects. Using essential surjectivity and the axiom of choice, choose, for each \(d\in\bD\), an
+    object \(Gd\in\bC\) and an isomorphism \(\epsilon_d:FGd\cong d\). For each \(l:d\to d'\), Lemma ref:lemma1.5.10
+    defines a unique morphism making the square
+    \begin{center}\begin{tikzcd}
+    FGd\ar[r,"\epsilon_d","\cong"']\ar[d,dashed]&d\ar[d,"l"]\\
+    FGd'\ar[r,"\cong","\epsilon_{d'}"']&d'
+    \end{tikzcd}\end{center}
+    commute. Since \(F\) is fully faithful, there is a unqiue morphism \(Gd\to G'\) with this image
+    under \(F\), which we define to be \(Gl\).
+    #+END_proof
+
+    A category is *connected* if any pair of objects can be connected by a finite zig-zag of morphisms
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Any connected groupoid is equivalent, as a category, to the automorphism group of any of its objects.
+    #+END_proposition
+
+    #+BEGIN_proof
+    Choose any object \(g\) of a connected groupoid \(\bG\) and let \(G=\bG(g,g)\) denote its
+    automorphism group. The inclusion \(\bB G\hookrightarrow\bG\) mapping the unique object of \(\bB G\) to \(g\in\bG\) is
+    full and faithful, by definition, and essentially surjective, since \(\bG\) was assumed to be
+    connected. Apply Theorem ref:thm1.5.9
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A category \(\bC\) is *skeletal* if it contains just one object in each isomorphism class. The
+    *skeleton* \(\sk\bC\) of a category \(\bC\) is the unique skeletal category that is equivalent to \(\bC\)
     #+END_definition
