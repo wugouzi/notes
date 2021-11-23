@@ -1,4 +1,4 @@
-% Created 2021-10-25 Mon 11:17
+% Created 2021-11-23 Tue 09:24
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -18,6 +18,9 @@
 \def \Cop {\calc^{\op}}
 \def \fop {f^{\op}}
 \def \gop {g^{\op}}
+\def \Vect {\textbf{Vect}}
+\def \BG {\textsf{B}G}
+\def \sk {\text{sk}}
 \makeindex
 \author{Emily Riehl}
 \date{\today}
@@ -27,7 +30,7 @@
  pdftitle={Category Theory In Context},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 27.2 (Org mode 9.5)}, 
+ pdfcreator={Emacs 27.2 (Org mode 9.6)}, 
  pdflang={English}}
 \begin{document}
 
@@ -36,9 +39,9 @@
 
 
 \section{Categories, Functors, Natural Transformations}
-\label{sec:org545e280}
+\label{sec:org7bba68c}
 \subsection{Abstract and concrete categories}
-\label{sec:org15a7cdd}
+\label{sec:orgcbf87b6}
 \begin{definition}[]
 A \textbf{category} consists of
 \begin{itemize}
@@ -76,11 +79,23 @@ f:X\to Y,\quad g:Y\to Z,\quad h:Z\to W\hspace{0.7cm}\leadsto\hspace{0.7cm}hgf:X\
 \begin{enumerate}
 \item For any language \(\call\) and any theory \(T\) of \(\call\), there is a category \(\MODEL_T\) whose
 objects are models of \(T\). Morphisms is just homomorphisms
+\item For a fixed unital but not necessarily commutative ring \(R\), \(\Mod_R\) is the category of
+left \(R\)-modules and \(R\)-modules homomorphisms. This category is denoted by \(\Vect_{\Bbbk}\)
+when the ring happens to be a field \(\Bbbk\) and abbreviated as \(\Ab\) in the case
+of \(\Mod_{\Z}\), as a \(\Z\)-module is precisely ab abelian group
 \end{enumerate}
 \end{examplle}
 
 \textbf{Concrete categories} are those whose objects have underlying sets and whose morphisms are
 functions between underlying sets
+
+Abstract categories
+\begin{examplle}[]
+\begin{enumerate}
+\item A group defines a category \(\BG\) with a single object
+\item A category is \textbf{discrete} if every morphism is an identity
+\end{enumerate}
+\end{examplle}
 
 \begin{definition}[]
 A category is \textbf{small} if it has only a set's worth of arrows
@@ -157,7 +172,7 @@ commutes
 The category \(c/\calc\) and \(\calc/c\) are called \textbf{slice categories} of \(\calc\) \textbf{under} and \textbf{over} \(c\), respectively
 \end{exercise}
 \subsection{Duality}
-\label{sec:org124d7b1}
+\label{sec:orgc070e96}
 \begin{definition}[]
 Let \(\calc\) be any category. The \textbf{opposite category} \(\calc^{\op}\) has
 \begin{itemize}
@@ -271,7 +286,7 @@ isomorphism. Argue by duality that a split monomorphism that is an epimorphism i
 Suppose \(y\xrightarrow{g}x\xrightarrow{f}y\) and \(fg=1_y\), then \(fgf=f=f\circ 1_x\). Since \(f\) is mono, \(gf=1_x\)
 \end{proof}
 \subsection{Functoriality}
-\label{sec:orgcf39a04}
+\label{sec:orgc801b4c}
 \begin{definition}[]
 A \textbf{functor} \(F:\calc\to\cald\), between categories \(\calc\) and \(\cald\), consists of the following data:
 \begin{itemize}
@@ -361,7 +376,7 @@ g\ar[r,mapsto]&hgf
 An \textbf{isomorphism of categories} is given by a pair of inverse functors \(F:\calc\to\cald\) and \(G:\cald\to\calc\) s.t.
 the composites \(Gf\) and \(FG\), respectively, equal the identity functors on \(\calc\) and \(\cald\)
 \subsection{Naturality}
-\label{sec:orgb117201}
+\label{sec:orgb315c46}
 \begin{definition}[]
 Given categories \(\calc\) and \(\cald\) and functors \(F,G:\calc\rightrightarrows\cald\), a \textbf{natural
 transformation} \(\alpha:F\Rightarrow G\) consists of
@@ -385,4 +400,345 @@ A\ar[r,bend left=50,""{name=U}]\ar[r,bend right=50,""{name=D}]&B
 \ar[Rightarrow,from=U,to=D,yshift=-3pt,"\alpha"]
 \end{tikzcd}\end{center}
 \end{definition}
+
+\begin{examplle}[]
+Consider morphism \(f:w\to x\) and \(h:y\to z\) in a locally small category \(C\). Post-composition
+by \(h\) and pre-composition by \(f\) define functions between hom-sets
+\begin{center}\begin{tikzcd}
+C(x,y)\ar[r,"h\circ-"]\ar[d,"-\circ f"]&C(x,z)\ar[d,"-\circ f"]\\
+C(w,y)\ar[r,"h\circ -"']&C(w,z)
+\end{tikzcd}\end{center}
+\(h\circ -\) is denoted by \(h_*\) and \(-\circ f\) is denoted by \(f^*\). By interpreting the
+horizontal arrows as the image of \(h\) under the actions of the functors \(C(x,-)\)
+and \(C(w,-)\), the square demonstrates that there is a natural transformation
+\begin{equation*}
+f^*:C(x,-)\Rightarrow C(w,-)
+\end{equation*}
+\end{examplle}
+
+\begin{exercise}
+\label{ex1.4.6}
+Given a pair of functors \(F:\bA\times \bB\times \bB^{\op}\to \bD\) and \(G:\bA\times \bC\times \bC^{\op}\to \bD\), a family of
+morphisms
+\begin{equation*}
+\alpha_{a,b,c}:F(a,b,b)\to G(a,c,c)
+\end{equation*}
+in \(\bD\) defines the components of an \textbf{extranatural transformation} \(\alpha:F\Rightarrow G\) if for
+any \(f:a\to a'\), \(g:b\to b'\) and \(h:c\to c'\) the following diagram commutes
+\begin{center}\begin{tikzcd}
+F(a,b,b)\ar[r,"{\alpha_{a,b,c}}"]\ar[d,"{F(f,1_b,1_b)}" description]&G(a,c,c)\ar[d,"{G(f,1_c,1_c)}" description]\\
+F(a',b,b)\ar[r,"{\alpha_{a',b,c}}"']&G(a',c,c)
+\end{tikzcd}\begin{tikzcd}
+F(a,b,b')\ar[r,"{F(1_a,1_b,g)}"]\ar[d,"{F(1_a,g,1_{b'})}" description]&F(a,b,b)\ar[d,"{\alpha_{a,b,c}}" description]\\
+F(a,b',b')\ar[r,"{\alpha_{a,b',c}}"']&G(a,c,c)
+\end{tikzcd}\begin{tikzcd}
+F(a,b,b)\ar[r,"{\alpha_{a,b,c}}"]\ar[d,"{F(f,1_b,1_b)}" description]&G(a,c,c)\ar[d,"{G(f,1_c,1_c)}" description]\\
+F(a',b,b)\ar[r,"{\alpha_{a',b,c}}"']&G(a',c,c)
+\end{tikzcd}
+\end{center}
+\end{exercise}
+\subsection{Equivalence of categories}
+\label{sec:org6937661}
+Let \(\bbone\) denote the discrete category with a single object and let \(\bbtwo\) denote the
+category with two objects \(0,1\in\bbtwo\) and a single non-identity arrow \(0\to 1\). There are two
+evident functors \(i_0,i_1:\bbone\rightrightarrows\bbtwo\) whose subscripts designate the objects
+in their image
+
+\begin{lemma}[]
+Fixing a parallel pair of functors \(F,G:\bC\rightrightarrows\bD\), natural
+transformations \(\alpha:F\Rightarrow G\) correspond bijectively to functors \(H:\bC\times\bbtwo\to\bD\) s.t. \(H\)
+restricts along \(i_0\) and \(i_1\) to the functors \(F,G\), i.e., so that
+\begin{center}\begin{tikzcd}
+\bC\ar[r,"i_0"]\ar[rd,"F"']&\bC\times 2\ar[d,"H"]&\bC\ar[l,"i_1"']\ar[ld,"G"]\\
+&\bD
+\end{tikzcd}\end{center}
+commutes
+\end{lemma}
+
+Hence \(i_0\) denotes the functor defined on objects by \(c\mapsto(c,0)\)
+
+\begin{definition}[]
+An \textbf{equivalence of categories} consists of functors \(F:\bC\leftrightarrows \bD:G\) together with
+natural isomorphisms \(\eta:1_{\bC}\cong GF\), \(\epsilon:FG\cong 1_{\bD}\). Categories \(\bC\)  and \(\bD\) are
+\textbf{equivalent}, written \(\bC\simeq\bD\), if there exists an equivalence between them
+\end{definition}
+
+\begin{lemma}[]
+If \(\bC\simeq\bD\) and \(\bD\simeq\bE\), then \(\bC\simeq\bE\)
+\end{lemma}
+
+\begin{definition}[]
+A functor \(F:\bC\to\bD\) is
+\begin{itemize}
+\item \textbf{full} if for each \(x,y\in\bC\), the map \(\bC(x,y)\to \bD(Fx,Fy)\) is surjective
+\item \textbf{faithful} if for each \(x,y\in\bC\), the map \(\bC(x,y)\to\bD(Fx,Fy)\) is injective
+\item \textbf{essentially surjective on objects} if for every object \(d\in\bD\) there is \(c\in\C\) s.t. \(d\) is
+isomorphic to \(Fc\)
+\end{itemize}
+\end{definition}
+
+\begin{lemma}[]
+\label{lemma1.5.10}
+Any morphism \(f:a\to b\) and fixed isomorphism \(a\cong a'\) and \(b\cong b'\) determine a unique
+morphism \(f':a'\to b'\) so that any of - or, equivalently, all of - the following four diagrams
+commutes
+\begin{center}\begin{tikzcd}
+a\ar[d,"f"']&a'\ar[l,"\cong"']\ar[d,"f'"]\\
+b\ar[r,"\cong"']&b'
+\end{tikzcd}\begin{tikzcd}
+a\ar[r,"\cong"]\ar[d,"f"']&a'\ar[d,"f'"]\\
+b\ar[r,"\cong"']&b'
+\end{tikzcd}\begin{tikzcd}
+a\ar[d,"f"']&a'\ar[l,"\cong"']\ar[d,"f'"]\\
+b&b'\ar[l,"\cong"]
+\end{tikzcd}\begin{tikzcd}
+a\ar[r,"\cong"]\ar[d,"f"']&a'\ar[d,"f'"]\\
+b&b'\ar[l,"\cong"]
+\end{tikzcd}\end{center}
+\end{lemma}
+
+\begin{theorem}[characterizing equivalences of categories]
+\label{thm1.5.9}
+A functor defining an equivalence of categories is full, faithful and essentially surjective on
+objects. Assuming the axiom of choice, any functor with these properties defines an equivalence
+of categories
+\end{theorem}
+
+\begin{proof}
+First suppose that \(F:\bC\leftrightarrows\bD:G\), \(\eta:1_{\bC}\cong GF\) and \(\epsilon:FG\cong 1_{\bD}\) define an
+equivalence of categories. For any \(d\in\bD\), the component of the natural
+isomorphism \(\epsilon_d:FGd\cong d\) demonstrates that \(F\) is essentially surjective. Consider a
+parallel pair \(f,g:c\rightrightarrows c'\) in \(\bC\). If \(Ff=Fg\), then both \(f\) and \(g\)
+define an arrow \(c\to c'\) making the diagram
+\begin{center}\begin{tikzcd}
+c\ar[r,"\eta_c","\cong"']\ar[d,"f\text{ or }g" description]&GFc\ar[d,"GFf=GFg" description]\\
+c'\ar[r,"cong","\eta_{c'}"']&GFc'
+\end{tikzcd}\end{center}
+that expresses the naturality of \(\eta\) commute. Lemma implies that there is a unique arrow \(c\to c'\)
+with this property, whence \(f=g\). Thus \(F\) is faithful and by symmetry, so is \(G\).
+Given \(k:Fc\to Fc'\), by Lemma \ref{lemma1.5.10}, \(Gk\) and the isomorphism \(\eta_c\) and \(\eta_{c'}\)
+define a unique \(h:c\to c'\) for which both \(Gk\) and \(GFh\) make the diagram
+\begin{center}\begin{tikzcd}
+c\ar[r,"\eta_c","\cong"']\ar[d,dashed,"h"']&GFc\ar[d,"Gk\text{ or }GFh" description]\\
+c'\ar[r,"\cong","\eta_{c'}"']&GFc'
+\end{tikzcd}\end{center}
+commute. By Lemma \ref{lemma1.5.10}, \(GFh=Gk\)
+
+For the converse, suppose now that \(F:\bC\to\bD\) is full, faithful and essentially surjective on
+objects. Using essential surjectivity and the axiom of choice, choose, for each \(d\in\bD\), an
+object \(Gd\in\bC\) and an isomorphism \(\epsilon_d:FGd\cong d\). For each \(l:d\to d'\), Lemma \ref{lemma1.5.10}
+defines a unique morphism making the square
+\begin{center}\begin{tikzcd}
+FGd\ar[r,"\epsilon_d","\cong"']\ar[d,dashed]&d\ar[d,"l"]\\
+FGd'\ar[r,"\cong","\epsilon_{d'}"']&d'
+\end{tikzcd}\end{center}
+commute. Since \(F\) is fully faithful, there is a unqiue morphism \(Gd\to G'\) with this image
+under \(F\), which we define to be \(Gl\).
+\end{proof}
+
+A category is \textbf{connected} if any pair of objects can be connected by a finite zig-zag of morphisms
+
+\begin{proposition}[]
+Any connected groupoid is equivalent, as a category, to the automorphism group of any of its objects.
+\end{proposition}
+
+\begin{proof}
+Choose any object \(g\) of a connected groupoid \(\bG\) and let \(G=\bG(g,g)\) denote its
+automorphism group. The inclusion \(\bB G\hookrightarrow\bG\) mapping the unique object of \(\bB G\) to \(g\in\bG\) is
+full and faithful, by definition, and essentially surjective, since \(\bG\) was assumed to be
+connected. Apply Theorem \ref{thm1.5.9}
+\end{proof}
+
+\begin{definition}[]
+A category \(\bC\) is \textbf{skeletal} if it contains just one object in each isomorphism class. The
+\textbf{skeleton} \(\sk\bC\) of a category \(\bC\) is the unique skeletal category that is equivalent to \(\bC\)
+\end{definition}
+\subsection{The art of the diagram chase}
+\label{sec:orgbd3573c}
+\begin{definition}[]
+A \textbf{monoid} is an object \(M\in\Sets\) together with a pair of morphisms \(\mu:M\times M\to M\) and \(\eta:1\to M\)
+so that the following diagrams commute:
+\begin{center}\begin{tikzcd}
+M\times M\times M\ar[r,"1_M\times\mu"]\ar[d,"\mu\times 1_M"]&M\times M\ar[d,"\mu"]\\
+M\times M\ar[r,"\mu"']&M
+\end{tikzcd}\quad
+\begin{tikzcd}
+M\ar[r,"\eta\times 1_M"]\ar[rd,"1_M"']&M\times M\ar[d,"\mu"]&M\ar[l,"1_M\times\eta"]\ar[ld,"1_M"]\\
+&M
+\end{tikzcd}
+\end{center}
+\end{definition}
+
+\(\mu\) defines a binary ``multiplication'' operation on \(M\). \(\eta\) identifies an element \(\eta\in M\)
+
+\begin{definition}[]
+A \textbf{diagram} in a category \(\bC\) is a functor \(F:\bJ\to\bC\) whose domain, the \textbf{indexing category}, is a
+small category
+\end{definition}
+
+\begin{lemma}[]
+Functors preserve commutative diagrams
+\end{lemma}
+
+\begin{lemma}[]
+Suppose \(f_1,\dots,f_n\) is a composable sequence - a ``path'' - of morphisms in a category. If the
+composite \(f_kf_{k-1}\dots f_{i+1}f_i\) equals \(g_m\cdots g_1\), for another composable sequence of
+morphisms \(g_1,\dots,g_m\), then \(f_n\cdots f_1=f_n\cdots f_{k+1}g_m\cdots g_1f_{i-1}\cdots f_1\)
+\end{lemma}
+
+\begin{lemma}[]
+For any commutative square \(\beta\alpha=\delta\gamma\) in which each of the morphisms is an isomorphism, then the
+inverses define a commutative square \(\alpha^{-1}\beta^{-1}=\gamma^{-1}\delta^{-1}\)
+\end{lemma}
+
+\begin{definition}[]
+An object \(i\in\bC\) is \textbf{initial} if for every \(c\in\bC\) there is a unique morphism \(i\to c\). Dually,
+an object \(t\in\bC\) is \textbf{terminal} if for every \(c\in\bC\) there is a unique morphism \(c\to t\)
+\end{definition}
+
+\begin{lemma}[]
+Let \(f_1,\dots,f_n\) and \(g_1,\dots,g_m\) be composable sequences of morphisms so that the domain
+of \(f_1\) equals the domain of \(g_1\) and the codomain of \(f_n\) equals the codomain
+of \(g_m\). If this common codomain is a terminal object, or if this common domain is an initial
+object, then \(f_n\cdots f_1=g_m\cdots g_1\)
+\end{lemma}
+
+\begin{definition}[]
+A \textbf{concrete category} is a category \(\bC\) equipped with a faithful functor \(U:\bC\to\Sets\)
+\end{definition}
+
+\begin{lemma}[]
+If \(U:\bC\to\bD\) is faithful, then any diagram in \(\bC\) whose image commutes in \(\bD\) also commutes
+in \(\bC\)
+\end{lemma}
+
+\begin{lemma}[]
+Consider morphisms with the induced sources and targets
+\begin{center}\begin{tikzcd}
+a\ar[r,"f"]\ar[d,"g"]&b\ar[r,"j"]\ar[d,"h"]&c\ar[d,"l"]\\
+a'\ar[r,"k"']&b'\ar[r,"m"']&c'
+\end{tikzcd}\end{center}
+and suppose that the outer rectangle commutes. This data defines a commutative rectangle if
+either
+\begin{enumerate}
+\item the right-hand square commutes and \(m\) is a monomorphism
+\item the left-hand square commutes and \(f\) is an epimorphism
+\end{enumerate}
+\end{lemma}
+\subsection{The 2-category of categories}
+\label{sec:org9f86850}
+For any fixed pair of categories \(\bC\) and \(\bD\), there is a \textbf{functor category} \(\sfD^{\sfC}\)
+whose objects are functors \(\sfC\to\sfD\) and whose morphisms are natural transformations.
+
+\begin{lemma}[vertical composition]
+\label{lemma1.7.1}
+Suppose \(\alpha:F\Rightarrow G\) and \(\beta:G\Rightarrow H\) are natural transformations between parallel
+functors \(F,G,H:\bC\to\bD\). Then there is a natural transformation \(\beta\cdot\alpha:F\Rightarrow H\) whose composites
+\begin{equation*}
+(\beta\cdot\alpha)_c:=\beta_c\cdot\alpha_c
+\end{equation*}
+are defined to be the composites of the components of \(\alpha\) and \(\beta\)
+\end{lemma}
+
+\begin{proof}
+\begin{center}\begin{tikzcd}
+Fc\ar[r,"\alpha_c"]\ar[d,"Ff"]&Gc\ar[r,"\beta_c"]\ar[d,"Gf"]&Hc\ar[d,"Hf"]\\
+Fc'\ar[r,"\alpha_{c'}"']&Gc'\ar[r,"\beta_{c'}"]&Hc'
+\end{tikzcd}\end{center}
+\end{proof}
+
+\begin{corollary}[]
+For any pair of categories \(\bC\) and \(\bD\), the functors from \(\bC\) to \(\bD\) and natural
+transformations between them define a category \(\bD^{\bC}\)
+\end{corollary}
+
+The composition operation defined in Lemma \ref{lemma1.7.1} is called \textbf{vertical composition}.
+Drawing the parallel functors horizontally, a composable pair of natural transformations in the
+category \(\bD^{\bC}\) fits into a \textbf{pasting diagram}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.5\textwidth]{../images/CategoryTheoryInContext/1.png}
+\label{}
+\end{figure}
+
+There is also a \textbf{horizontal composition} operation
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.5\textwidth]{../images/CategoryTheoryInContext/2.png}
+\label{}
+\end{figure}
+defined by the following lemma
+
+\begin{lemma}[horizontal composition]
+\label{1.7.4}
+Given a pair of natural transformations
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.4\textwidth]{../images/CategoryTheoryInContext/3.png}
+\label{}
+\end{figure}
+there is a natural transformation \(\beta*\alpha:HF\Rightarrow KG\) whose component at \(c\in C\) is defined as the
+composite of the following commutative square
+\begin{center}\begin{tikzcd}
+HFc\ar[r,"\beta_{F_c}"]\ar[rd,dashed,"(\beta*\alpha)_c" description]\ar[d,"H\alpha_c"']
+&KFc\ar[d,"K\alpha_c"]\\
+HGc\ar[r,"\beta_{G_c}"']&KGc
+\end{tikzcd}\end{center}
+\end{lemma}
+
+\begin{proof}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.5\textwidth]{../images/CategoryTheoryInContext/4.png}
+\label{}
+\end{figure}
+\end{proof}
+
+\begin{lemma}[middle four interchange]
+Given functors and natural transformations
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.3\textwidth]{../images/CategoryTheoryInContext/5.png}
+\label{}
+\end{figure}
+
+the natural transformation \(JF\Rightarrow LH\) defined by first composing vertically and then composing
+horizontally equals the natural transformation defined by first composing horizontally and then
+composing vertically
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.6\textwidth]{../images/CategoryTheoryInContext/6.png}
+\label{}
+\end{figure}
+\end{lemma}
+
+\begin{definition}[]
+A \textbf{2-category} is comprised of
+\begin{itemize}
+\item objects, e.g., the categories \(\bC\)
+\item 1-morphisms between pairs of objects, e.g., the functors \(\bC\xrightarrow{F}\bD\)
+\item 2-morphisms between parallel pairs of 1-morphisms, e.g., the natural transformations
+\end{itemize}
+
+so that
+\begin{itemize}
+\item the objects and 1-morphisms form a category, with identities \(1_{\bC}:\bC\to\bC\)
+\item For each fixed pair of objects \(\bC\)  and \(\bD\), the 1-morphisms \(F:\bC\to\bD\) and 2-morphisms
+between such form a category under an operation called vertical composition
+\item There is also a category whose objects are the objects in which a morphism from \(\bC\) to \(\bD\)
+is a 2-cell
+\begin{equation*}
+\nat{\bC}{\bD}{F}{G}{\alpha}
+\end{equation*}
+\end{itemize}
+\end{definition}
+
+
+
+
+
+\section{{\bfseries\sffamily TODO} CHECK}
+\label{sec:org0e660f3}
+\ref{1.7.4}
 \end{document}
