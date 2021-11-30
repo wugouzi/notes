@@ -11,6 +11,7 @@
 #+LATEX_HEADER: \def \Vect {\textbf{Vect}}
 #+LATEX_HEADER: \def \BG {\textsf{B}G}
 #+LATEX_HEADER: \def \sk {\text{sk}}
+#+LATEX_HEADER: \def \Mat {\text{Mat}}
 #+LATEX_HEADER: \makeindex
 
 * Categories, Functors, Natural Transformations
@@ -331,6 +332,19 @@
 
     An *isomorphism of categories* is given by a pair of inverse functors \(F:\calc\to\cald\) and \(G:\cald\to\calc\) s.t.
     the composites \(Gf\) and \(FG\), respectively, equal the identity functors on \(\calc\) and \(\cald\)
+
+    #+BEGIN_exercise
+    Given functors \(F:\bD\to\bC\) and \(G:\bE\to\bC\), show that there is a category, called the *comma
+    category* \(F\downarrow G\), which has
+    * as objects, triples \((d\in\bD,e\in\bE,f:Fd\to Ge\in\bC)\)
+    * as morphisms \((d,e,f)\to(d',e',f')\), a pair of morphisms \((h:d\to d',k:e\to e')\) so that the
+      square
+      \begin{center}\begin{tikzcd}
+      Fd\ar[r,"f"]\ar[d,"Fh"']&Ge\ar[d,"Gk"]\\
+      Fd'\ar[r,"f'"']&Ge'
+      \end{tikzcd}\end{center}
+      commutes in \(\bC\), i.e., so that \(f'\cdot Fh=Gk\cdot f\)
+    #+END_exercise
 ** Naturality
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -611,7 +625,7 @@
     #+BEGIN_proof
     \begin{center}\begin{tikzcd}
     Fc\ar[r,"\alpha_c"]\ar[d,"Ff"]&Gc\ar[r,"\beta_c"]\ar[d,"Gf"]&Hc\ar[d,"Hf"]\\
-    Fc'\ar[r,"\alpha_{c'}"']&Gc'\ar[r,"\beta_{c'}"]&Hc'
+    Fc'\ar[r,"\alpha_{c'}"']& Gc'\ar[r,"\beta_{c'}"]&Hc'
     \end{tikzcd}\end{center}
     #+END_proof
 
@@ -716,6 +730,21 @@
       \end{equation*}
     * law of middle four interchange holds
     #+END_definition
+
+    #+BEGIN_exercise
+    label:ex1.7.7
+    Prove that a bifunctor \(F:\bC\times\bD\to\bE\) determines and is uniquely determined by
+    1. A functor \(F(c,-):\bD\to\bE\) for each \(c\in \bC\)
+    2. A natural transformation \(F(f,-):F(c,-)\Rightarrow F(c',-)\) for each \(f:c\to c'\) in \(\bC\), defined
+       functorially in \(\bC\)
+
+
+    In other words, prove that there is a bijection between functors \(\bC\times\bD\to\bE\) and functors \(\bC\to\bE^{\bD}\).
+    #+END_exercise
+
+    #+BEGIN_proof
+    1.
+    #+END_proof
 * Universal Properties, Representability, and the Yoneda Lemma
 ** Representable Functors
     \begin{center}\begin{tikzcd}[column sep=tiny]
@@ -723,7 +752,7 @@
     x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(c,x)\ar[dd,"f_*"]\\
     {}&\ar[r,mapsto]&{}&{}\\
     y&\ar[r,mapsto]&{}&\Hom(c,y)
-    \end{tikzcd}\hspace{1cm}
+    \end{tikzcd}hspace{1cm}
     \begin{tikzcd}[column sep=tiny]
     \Cop\ar[rrr,"{\Hom(-,c)}"]&\quad&\quad&\Sets\\
     x\ar[dd,"f"']&\ar[r,mapsto]&{}&\Hom(x,c)\\
@@ -753,7 +782,7 @@
     #+END_definition
 
     #+ATTR_LATEX: :options []
-    1#+BEGIN_examplle
+    #+BEGIN_examplle
     1. The identity functor \(1_{\Set}:\Set\to\Set\) is represented by the singleton set \(1\). That
        is, for any set \(X\), there is a natural isomorphism \(\Set(1,X)\cong X\) that defines a
        bijection between elements \(x\in X\) and functions \(x:1\to X\) carrying the singleton element
@@ -767,6 +796,271 @@
        group \(G\), there is a natural isomorphism \(\Group(\Z,G)\cong UG\) that associates, to every
        element \(g\in UG\), the unique homomorphism \(\Z\to G\) that maps the integer 1 to \(g\).
     #+END_examplle
+** The Yoneda Lemma
+    Given a functor \(F:\bC\to\Set\), what data is needed to define a natural
+    transformation \(\bC(c,-)\cong F\)
+
+    #+ATTR_LATEX: :options [Yoneda lemma]
+    #+BEGIN_theorem
+    label:2.2.4
+    For any functor \(F:\bC\to\Set\), whose domain \(\bC\) is locally small and any object \(c\in\bC\), there
+    is a bijection
+    \begin{equation*}
+    \Hom(\bC(c,-),F)\cong Fc
+    \end{equation*}
+    that associates a natural transformation \(\alpha:\bC(c,-)\Rightarrow F\) to the element \(\alpha_c(1_c)\in Fc\).
+    Moreover, this correspondence is natural in both \(c\) and \(F\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    There is clearly a function \(\Phi:\Hom(\bC(c,-),F)\to Fc\) that maps a natural
+    transformation \(\alpha:\bC(c,-)\Rightarrow F\) to the image of \(1_c\) under the component
+    function \(\alpha_c:\bC(c,c)\to Fc\), i.e.,
+    \begin{equation*}
+    \Phi:\Hom(\bC(c,-),F)\to Fc\hspace{1cm}\Phi(\alpha):=\alpha_c(1_c)
+    \end{equation*}
+    Our first aim is to define an inverse function \(\Psi:Fc\to\Hom(\bC(c,-),F)\) that constructs a natural
+    transformation \(\Psi(x):\bC(c,-)\Rightarrow F\) from any \(x\in Fc\). To this end, we must define
+    components \(\Psi(x)_d:\bC(c,d)\to Fd\) so that natural squares, such as
+    \begin{center}\begin{tikzcd}
+    \bC(c,c)\ar[r,"\Psi(x)_c"]\ar[d,"f_*"']&Fc\ar[d,"Ff"]\\
+    \bC(c,d)\ar[r,"\Psi(x)_d"']&Fd
+    \end{tikzcd}\end{center}
+    commute. Note that
+    \begin{equation*}
+    \Psi(x)_df_*(1_c)=\Psi(x)_d(f)=Ff\Psi(x)_c(1_c)
+    \end{equation*}
+    For \Psi to define an inverse for \Phi, we must define \(\Psi(x)_c(1_c)=x\). Now naturality forces us to
+    define
+    \begin{equation*}
+    \Psi:Fc\to\Hom(\bC(c,-),F)\hspace{1cm}\Psi(x)_d(f):=Ff(x)
+    \end{equation*}
+
+    It remains to verify that \(\Psi(x)\) is natural. For any \(g:d\to e\) in \(\bC\), we need to show
+    \begin{center}\begin{tikzcd}
+    \bC(c,d)\ar[r,"\Psi(x)_d"]\ar[d,"g_*"']&Fd\ar[d,"Fg"]\\
+    \bC(c,e)\ar[r,"\Psi(x)_e"']&Fe
+    \end{tikzcd}\end{center}
+    commutes. For
+    any \(f\in\bC(c,d)\), \(\Psi(x)_e(g_*)(f)=\Psi(x)_e(gf)=F(gf(x))\). \(Fg(\Psi(x)_d(f))=Fg(Ff(x))=F(gf(x))\).
+    Thus \Psi is natural
+
+    By construction, \(\Phi\Psi(x)=\Psi(x)_c(1_c)=x\). We wish to show that \(\Psi\Phi(\alpha)=\alpha\). By definition,
+    \begin{equation*}
+    \Psi(\alpha_c(1_c))_d(f)=Ff(\alpha_c(1_c))
+    \end{equation*}
+    By naturality of \alpha, the square
+    \begin{center}\begin{tikzcd}
+    \bC(c,c)\ar[r,"\alpha_c"]\ar[d,"f_*"]&Fc\ar[d,"Ff"]\\
+    \bC(c,d)\ar[r,"\alpha_d"']&Fd
+    \end{tikzcd}\end{center}
+    commutes, from which we see that \(Ff(\alpha_c(1_c))=\alpha_d(f)\). Thus \(\Psi(\alpha_c(1_c))_d=\alpha_d\)
+
+    Now we prove the naturality. The naturality in the statement of the Yoneda lemma amounts to the
+    following pair of assertions. Naturality in the functor asserts that, given a natural
+    transformation \(\beta:F\Rightarrow G\), the element of \(Gc\) representing the composite natural
+    transformation \(\beta\alpha:\bC(c,-)\Rightarrow F\Rightarrow G\) is the image under \(\beta_c:Fc\to Gc\) of the element of \(Fc\)
+    representing \(\alpha:\bC(c,-)\Rightarrow F\), i.e. \(\Phi:\Hom(\bC(c,-),-)\Rightarrow(-)c\), the diagram
+    \begin{center}\begin{tikzcd}
+    \Hom(\bC(c,-),F)\ar[r,"\Phi_F","\cong"']\ar[d,"\beta_*"']&Fc\ar[d,"\beta_c"]\\
+    \Hom(\bC(c,-),G)\ar[r,"\Phi_G"',"\cong"]&Gc
+    \end{tikzcd}\end{center}
+    commutes in \(\Set\). By definition, \(\Phi_G(\beta\cdot\alpha)=(\beta\cdot\alpha)_c(1_c)\), which is \(\beta_c(\alpha_c(1_c))\) by
+    the definition of vertical composition of natural transformation given in Lemma ref:lemma1.7.1,
+    and this is \(\beta_c(\Phi_F(\alpha))\)
+
+    Naturality in the objects asserts that, given a morphism \(f:c\to d\) in \(\bC\),  the diagram
+    \begin{center}\begin{tikzcd}
+    \Hom(\bC(c,-),F)\ar[r,"\Phi_c"]\ar[r,"\cong"']\ar[d,"(f^*)^*"]&Fc\ar[d,"Ff"]\\
+    \Hom(\bC(d,-),F)\ar[r,"\Phi_d"']\ar[r,"\cong"]&Fd
+    \end{tikzcd}\end{center}
+    Here the image of \(\alpha\in\Hom(\bC(c,-),F)\) along the top-right composite is \(Ff(\alpha_c(1_c))\), and
+    the image along the left-bottom composite is \((\alpha\cdot f^*)_d(1_d)=\alpha_d(f)\)
+
+
+    #+END_proof
+
+    #+BEGIN_remark
+    Were it not for size issues, we could express Theorem ref:2.2.4 more precisely as saying that
+    the maps \Phi define the components of a natural isomorphism between two functors that we now
+    introduce. The pair \(c\) and \(F\) in the statement of the Yoneda lemma define an object in the
+    product category \(\bC\times\Set^{\bC}\). There is a bifunctor \(\ev:\bC\times\Set^{\bC}\to\Set\) that
+    maps \((c,F)\) to the set \(Fc\). This functor defines the codomain of the natural isomorphism
+    \Phi
+
+    The definition of the domain of \Phi makes use of a functor
+    \begin{center}\begin{tikzcd}
+    \bC^{\op}\ar[rrr,"y"]&&&\Set^{\bC}\\
+    c\ar[dd,"f"']&\ar[r,mapsto]&{}&\bC(c,-)\\
+    &\ar[r,\mapsto]&{}&\\
+    d&\ar[r,\mapsto]&{}&\bC(d,-)\ar[uu,"f^*"]
+    \end{tikzcd}\end{center}
+
+    #+END_remark
+
+    #+ATTR_LATEX: :options [Yoneda embedding]
+    #+BEGIN_definition
+    label:2.2.8
+    The functors
+    \begin{center}\begin{tikzcd}
+    \bC\ar[rrr,hook,"y"]&&&\Set^{\bC^{\op}}\\
+    c\ar[dd,"f"]&\ar[r,mapsto]&{}&\bC(-,c)\ar[dd,"f_*"]\\
+    &\ar[r,\mapsto]&{}&\\
+    d&\ar[r,\mapsto]&{}&\bC(-,d)
+    \end{tikzcd}
+    \begin{tikzcd}
+    \bC^{\op}\ar[rrr,hook,"y"]&&&\Set^{\bC}\\
+    c\ar[dd,"f"]&\ar[r,mapsto]&{}&\bC(c,-)\\
+    &\ar[r,\mapsto]&{}&\\
+    d&\ar[r,\mapsto]&{}&\bC(d,-)\ar[uu,"f^*"']
+    \end{tikzcd}\end{center}
+    define full and faithful embeddings
+    #+END_definition
+
+    via Exercise ref:ex1.7.7, the co- and contravariant Yoneda embeddings are really just two
+    different incarnations of a common bifunctor
+    \begin{equation*}
+    \bC(-,-):\bC^{\op}\times\bC\to\Set
+    \end{equation*}
+
+    #+BEGIN_proof
+    As \(\Hom(\bC(c,-),F)\cong Fc\) where \(F\in\Set^{\bC}\), consider \(F=\bC(d,-)\). Then
+    \begin{equation*}
+    \Hom(\bC(c,-),\bC(d,-))\cong \bC(d,c)=\bC^{\op}(c,d)
+    \end{equation*}
+
+    The functors \(y:\bC\hookrightarrow\Set^{\bC^{\op}}\) and \(y:\bC^{\op}\hookrightarrow\Set^{\bC}\) are fully faithful if they define
+    local bijections between hom-sets
+    \begin{equation*}
+    \bC(c,d)\xrightarrow{\cong}\Hom(\bC(-,c),\bC(-,d))\hspace{1cm}\bC(c,d)\xrightarrow{\cong}\Hom(\bC(d,-),\bC(c,-))
+    \end{equation*}
+    From the construction of the functors \(y\), it is easy to see that these maps are injections:
+    distinct morphisms \(c\rightrightarrows d\) induce distinct natural transformations. The Yoneda
+    lemma implies that every natural transformation between represented functors arises in this way.
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Every row operation on matrices with \(n\) rows is defined by left multiplication by
+    some \(n\times n\) matrix, namely obtained by performing the row operation on the identity matrix
+    #+END_corollary
+
+    #+BEGIN_proof
+    Recall that \(\Mat_R\) is the category whose objects are positive integers and in which a
+    morphism \(m\to n\) is an \(n\times m\) matrix, with \(n\) rows and \(m\) columns, whose entries are
+    elements of the unital ring \(R\). The elements in the image of the represented
+    functor \(\Hom(0,n)\) are matrices with \(n\) rows. The row operations of elementary linear
+    algebra - for instance, replacing the \(i\)th row with the sum of the \(i\)th and \(j\)th row -
+    define natural endomorphisms of \(\Hom(-,n)\); naturality follows from linearity of (right)
+    matrix multiplication. Thus, by Corollary ref:2.2.8, every row operation must be definable by
+    left multiplication by a suitable \(n\times n\) matrix. Moreover, Theorem ref:2.2.4 allows us to
+    identify this matrix: it is obtained by applying the row operation in question to the \(n\times n\)
+    identity matrix
+    #+END_proof
+
+    #+BEGIN_exercise
+    TFAE
+    1. \(f:x\to y\) is an isomorphism in \(\bC\)
+    2. \(f_*:\bC(-,x)\Rightarrow\bC(-,y)\) is a natural isomorphism
+    #+END_exercise
+
+    #+BEGIN_proof
+    corollary of ref:2.2.8?
+    #+END_proof
+
+** Universal properties and universal elements
+    In a locally small category \(\bC\), any pair of isomorphic objects \(x\cong y\) are *representably
+    isomorphic*, meaning that \(\bC(-,x)\cong\bC(-,y)\) and \(\bC(x,-)\cong\bC(y,-)\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Consider a pair of objects \(x\) and \(y\) in a locally small category \(\bC\)
+    1. If either the co- or contravariant functors represented by \(x\) and \(y\) are naturally
+       isomorphic, then \(x\) and \(y\) are isomorphic
+    2. If \(x\) and \(y\) represent the same functor, then \(x\) and \(y\) are isomorphic
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *universal property* of an object \(c\in\bC\) is expressed by a representable functor \(F\) together
+    with a *universal element* \(x\in Fc\) that defines a natural isomorphism \(\bC(c,-)\cong F\)
+    or \(\bC(-,c)\cong F\), as appropriate, via the Yoneda lemma
+    #+END_definition
+
+** The category of elements
+    The universal element is either initial or terminal in an appropriate category
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *category of elements* \(\int F\) of a covariant functor \(F:\bC\to\Set\) has
+    * as objects, pairs \((c,x)\) where \(c\in\bC\) and \(x\in Fc\)
+    * a morphism \((c,x)\to(c',x')\) is a morphism \(f:c\to c'\) in \(\bC\) so that \(Ff(x)=x'\)
+
+
+    The category has an evident forgetful function \(\Pi:\int F\to\bC\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *category of elements* \(\int F\) of a contravariant functor \(F:\bC^{\op}\to\Set\) has
+    * as objects, pairs \((c,x)\) where \(c\in\bC\) and \(x\in Fc\)
+    * a morphism \((c,x)\to (c',x')\) is a morphism \(f:c\to c'\) in \(\bC\) so that \(Ff(x')=x\)
+    #+END_definition
+
+    Objects in the category of elements of \(\bC(c,-)\) are morphisms \(f:c\to x\) in \(\bC\), i.e., the
+    objects of \(\int\bC(c,-)\) are morphisms in \(\bC\) with domain \(c\). A morphism from \(f:c\to x\)
+    to \(g:c\to y\) is a morphism \(h:x\to y\) so that \(g=hf\). This is the slice category \(c/\bC\)
+    under the object \(c\in\bC\)
+
+    The Yoneda lemma supplies an alternative definition of the category of elements of \(F\). In the
+    contravariant case, objects \((c,x)\in\int F\) are in bijection with natural
+    transformations \(\Psi(x):\bC(-,c)\Rightarrow F\) whose domain is a represented functor and whose codomain
+    is \(F\). A morphism form \(\Psi(x)\) to a second element \(\Psi(x'):\bC(-,c')\Rightarrow F\) is a natural
+    transformation \(\bC(-,c)\Rightarrow\bC(-,c')\)
+    i.e., by Corollary ref:2.2.8, is a morphism \(f:c\to c'\) - so that the triangle of
+    natural transformations
+    \begin{center}\begin{tikzcd}
+    \bC(-,c)\ar[r,"\Psi(x)",Rightarrow]\ar[d,"f_*",Rightarrow]&F\\
+    \bC(-,c')\ar[ur,"\Psi(x')"',Rightarrow]
+    \end{tikzcd}$\quad\leftrightsquigarrow\quad$
+    \begin{tikzcd}
+    x\in Fc\\
+    x'\in Fc'\ar[u,"Ff"]
+    \end{tikzcd}\end{center}
+
+
+
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    For \(F:\bC^{\op}\to\Set\), the category of elements is isomorphic to the comma category
+    \begin{equation*}
+    \int F\cong y\downarrow F
+    \end{equation*}
+    defined relative to the Yoneda embedding \(y:\bC\to\Set^{\bC^{\op}}\) and the object \(F:\bbone\to\Set^{\bC^{\op}}\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options [universal elements are universal elements]
+    #+BEGIN_proposition
+    A covariant set-valued functor is representable iff its category of elements has an initial
+    object. Dually, a contravariant set-valued functor is representable iff its category of elements
+    has a terminal object
+    #+END_proposition
+
+    1#+BEGIN_proof
+    A natural isomorphism \(\bC(c,-)\cong F\) induces an isomorphism of categories \(\int F\cong\int \bC(c,-)\cong c/\bC\)
+    and the latter has an initial object: the identity \(1_c\in c/\bC\).
+
+    Consider a functor \(F:\bC\to\Set\) and suppose \((c,x)\in\int F\) is initial. We will show that the
+    natural transformation \(\Psi(x):\bC(c,-)\Rightarrow F\) defined by the Yoneda lemma is a natural isomorphism.
+    For any \(y\in Fd\), initiality of \(x\in Fc\) says there exists a unique morphism \((c,x)\to(d,y)\),
+    i.e., a unique morphism \(f:c\to d\) in \(\bC\) so that \(Ff(x)=y\). As \(y\) runs through the
+    elements of the set \(Fd\), this says exactly that the component \(\Psi(x)_d:\bC(c,d)\to Fd\) is an isomorphism
+    #+END_proof
+
+
+
+
 
 * TODO CHECK
     ref:1.7.4
