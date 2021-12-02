@@ -1,0 +1,611 @@
+#+TITLE: Stability
+
+#+AUTHOR: Qi'ao Chen
+#+EXPORT_FILE_NAME: ../latex/Stability/Stability.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+
+* Preface
+    A combination of various notes from [[cite:&PillayNoteStability]] [[cite:&ChernNoteStability]] [[cite:&tent2012course]]
+
+    A monster model \(\fC\)
+* Preliminaries
+** Indiscernibles
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(I\) be a linear order and \(\fA\) an \(L\)-structure. A family \((a_i)_{i\in I}\) of elements
+    of \(A\) is called a *sequence of indiscernibles*  if for all \(L\)-formulas \(\varphi(x_1,\dots,x_n)\) and
+    all \(i_1<\dots<i_n\) and \(j_1<\dots<j_n\) from \(I\)
+    \begin{equation*}
+    \fA\vDash\varphi(a_{i_1},\dots,a_{i_n})\leftrightarrow\varphi(a_{j_1},\dots,a_{j_n})
+    \end{equation*}
+    or
+    \begin{equation*}
+    \tp(a_{i_1},\dots,a_{i_n})=\tp(a_{j_1},\dots,a_{j_n})
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Compactness let us "stretch" indiscernibles. Let \((a_i:i\in\omega)\) be indiscernibles in \(\fC\),
+    and \((I,<)\) an ordering. Then there exists an indiscernible \((b_i:i\in I)\) in \(\fC\)
+    s.t. \(\forall i_1<\dots<i_n\in I\)
+    \begin{equation*}
+    \tp(a_1,\dots,a_n)=\tp(b_{i_1},\dots,b_{i_n})
+    \end{equation*}
+    #+END_theorem
+
+    Indiscernible sequence are a fundamental tool of model theory, and there are many ways to obtain
+    them.
+
+    #+ATTR_LATEX: :options [Ramsey, extended]
+    #+BEGIN_theorem
+    Let \(n_1,\dots,n_r<\omega\). For each \(i=1,\dots,r\), let \(X_{i,1}\), \(X_{i,2}\) be a partition
+    of \([\omega]^{n_i}\). Then there is an infinite subset \(Y\subseteq\omega\) which is homogeneous,
+    i.e., \(\forall i=1,\dots,r\), either \([Y]^{n_i}\subseteq X_{i,1}\) or \([Y]^{n_i}\subseteq Y_{i,2}\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    For each \(n\in\omega\), let \(\Sigma_n(x_1,\dots,x_n)\) be a collection of \(L\)-formulas in
+    variables \(x_1,\dots,x_n\). Suppose that there are \(a_1,a_2,\dots\in\fC\) s.t.
+    \begin{equation*}
+    \vDash\Sigma_n(a_{i_1},\dots,a_{i_n}),\quad\forall i_1<\dots<i_n<\omega
+    \end{equation*}
+    Then there is an indiscernible \((b_i:i\in\omega)\) in \(\fC\) s.t.
+    \begin{equation*}
+    \vDash\Sigma_n(b_{i_1},\dots,b_{i_n}),\quad\forall i_1<\dots<i_n<\omega
+    \end{equation*}
+    #+END_proposition
+
+    #+LATEX: \wu{
+    we can expand \(\bigcup_{n\in\omega}\Sigma_n\) and obtain the Ehrenfeucht-Mostowski type \(\EM((a_i)_{i\in\omega})\).
+    This is just the Standard Lemma in Tent
+    #+LATEX: }
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(\Sigma_2=\{x_1\neq x_2\}\). Then the proposition yields the existence of infinite indiscernible sequences
+    #+END_examplle
+
+    #+BEGIN_proof
+    Consider
+    \begin{align*}
+    \Gamma(x_1,x_2,\dots)&=\{\varphi(x_{i_1},\dots,x_{i_n})\leftrightarrow\varphi(x_{j_1},\dots,x_{j_n}):\\
+    &\quad i_1<\dots<i_n,j_1<\dots<j_n\in\omega,\varphi\in L\}\\
+    &\cup\bigcup_n\Sigma(x_1,\dots,x_n)
+    \end{align*}
+    Let \(\Gamma'(x_1,\dots,x_n)\subseteq_f\Gamma\). Let \(\varphi_1,\dots,\varphi_r\) be the \(L\)-formulas appearing in \(\Gamma'\).
+    For \(i=1,\dots,r\), let
+    \begin{align*}
+    &X_{i,1}=\{(j_1,\dots,j_n):j_1<\dots<j_n\in\omega,\vDash\varphi_i(a_{j_1},\dots,a_{j_n})\}\\
+    &X_{i,2}=\{(j_1,\dots,j_n):j_1<\dots<j_n\in\omega,\vDash\neg\varphi_i(a_{j_1},\dots,a_{j_n})\}
+    \end{align*}
+    By Ramsey's theorem, there exists an infinite \(Y\subseteq\N\) s.t. \(\forall i=1,\dots,r\), \([Y]^{n_i}\) is either
+    contained in \(X_{i,1}\) or in \(X_{i,2}\). Write \(Y=\{k_1<k_2<\dots\}\). Interpret each \(x_i\)
+    as \(a_{k_i}\) to satisfy \(\Gamma'\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(M\prec N\prec\fC\) be models, and \(p(\barx)\in S_{\barx}(N)\). We say \(p\) is finitely satisfiable
+    in \(M\), or \(p(\barx)\) is a *coheir* of \(p\uhr M\in S_{\barx}(M)\), if
+    every \(\varphi(\barx)\in p(\barx)\) is satisfied by some \(\bara\in M\)
+    #+END_definition
+
+    #+BEGIN_remark
+    \(p(\barx)\in S_n(N)\) is finitely satisfiable (f.s.) in \(M\) iff \(p(\barx)\) is in the
+    topological closure of \(\{\tp(\bara/N):\bara\in M\}\subseteq S_n(N)\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:P2.8
+    Suppose \(p(\barx)\in S_{\barx}(M)\) and \(M\prec N\), then there is \(p'(\barx)\in S_{\barx}(N)\)
+    s.t. \(p\subseteq p'\) and \(p'\) is f.s. in \(M\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Consider \(\Gamma(\barx)=p(\barx)\cup\{\neg\varphi(\barx):\varphi(\barx)\in L_N\text{ and not realized in }M\}\). Let
+    \(\Gamma\supseteq_f\Gamma'=\{\Psi(\barx),\neg\varphi_1(\barx),\dots,\neg\varphi_r(\barx)\}\in p\). Then any solution \(\bara\) of \(\Psi\) in \(M\)
+    satisfies \(\Gamma'\) as \(M\vDash\forall\barx(\neg\varphi_i(\barx))\)
+    #+END_proof
+
+    #+BEGIN_remark
+    Let \(i_M:M^{\barx}\to S_{\barx}(M)\) s.t. \(m\mapsto\tp(m/M)\). Define \(i_N:M^{\barx}\to S_{\barx}(N)\)
+    similarly. Let \(r:S_{\barx}(N)\to S_{\barx}(M)\). Note that \(r\circ i_N=i_M\) and the set of types
+    in \(S_{\barx}(N)\) that are f.s. in \(M\) is exactly the closure of \(i_N(M^{\barx})\)
+    in \(S_{\barx}(N)\). Hence its image under \(r\) is closed. However the image must
+    contain \(i_M(M^{\barx})\) which is dense in \(S_{\barx}(M)\). Therefore it must be onto, which
+    proves the desired result
+
+    #+LATEX: \wu{
+    \(r\) is continuous and \(r(\bbar{i_N(M^n)})\supseteq i_M(M^n)\) is closed. \(\bbar{i_M(M^n)}=S_n(M)\).
+    Then \(r\) is onto? Then its preimage of \(p\) is what we want <<Problem2>>
+    #+LATEX: }
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(p(\barx)\in S_{\barx}(M)\), \(N\succ M\) be \(\abs{M}^+\)-saturated,
+    and \(p'(\barx)\in S_{\barx}(N)\) a coheir of \(p\). Let \(\bara_1,\bara_2,\dots\in N\) be defined as
+    follows
+    \begin{align*}
+    &\bara_1\text{ realises }p(\barx)\\
+    &\bara_2\text{ realises }p'(\barx)\uhr(M,\bara_1)\\
+    &\bara_3\text{ realises }p'(\barx)\uhr(M,\bara_1,\bara_2)\\
+    &\cdots
+    \end{align*}
+    Then \((\bara_i:i\in\omega)\) is indiscernible over \(M\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    We prove by induction on \(k\) that for any \(n\le k\) and \(i_1<\cdots<i_n\le k\) and \(j_1<\cdots<j_n\le k\), we
+    have
+    \begin{equation*}
+    \tp_M(\bara_{i_1},\dots,\bara_{i_n}/M)=\tp_M(\bara_{j_1},\dots,\bara_{j_n}/M)
+    \end{equation*}
+    Assume this is true for \(k\) and consider \(k+1\). Let \(i_1<\cdots<i_n\le k\), \(j_1<\cdots<j_n\le k\). We
+    need to show that
+    \begin{equation*}
+    \tp_M(\bara_{i_1},\dots,\bara_{i_n},\bara_{k+1}/M)=\tp_M(\bara_{j_1},\dots,\bara_{j_n},\bara_{k+1}/M)
+    \end{equation*}
+    Consider a formula \(\varphi(\barx_1,\dots,\barx_n,\barx_{n+1})\in L_M\). Assume by contradiction that
+    \begin{equation*}
+    M\vDash\varphi(\bara_{i_1},\cdots,\bara_{i_{n}},\bara_{k+1})\wedge\neg\varphi(\bara_{j_1},\cdots,\bara_{j_{n}},\bara_{k+1})
+    \end{equation*}
+    But \(\tp(\bara_{k+1}/M,\bara_1,\dots,\bara_k)\) is f.s. in \(M\), so there is \(\bara'\in M\) s.t.
+    \begin{equation*}
+    M\vDash\varphi(\bara_{i_1},\cdots,\bara_{i_{n}},\bara')\wedge\neg\varphi(\bara_{j_1},\cdots,\bara_{j_{n}},\bara')
+    \end{equation*}
+    contradicting IH
+    #+END_proof
+
+** Definability and Generalizations
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(X\subseteq\fC^n\) is *definable almost over* \(A\) if there is an \(A\)-definable equivalence
+    relation \(E\) on \(\fC^n\) with finitely many classes and \(X\) is a union of some \(E\)-classes
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:P2.11
+    Let \(\D\) be a definable class and \(A\) a set of parameters. T.F.A.E.
+    1. \(\D\) is definable over \(A\)
+    2. \(\D\) is invariant under all automorphisms of \(\fC\) which fix \(A\) pointwise
+    #+END_lemma
+
+    \(S\subseteq K^{\alg}\Rightarrow M\setminus S\subseteq K^{\alg}\)
+
+    #+BEGIN_proof
+    \(\Rightarrow\) is easy as for any \(F\in\Aut(\fC/A)\) and \(\D=\varphi(\fC,\bara)\), \(\fC\vDash\varphi(\bars,\bara)\)
+    iff \(\fC\vDash\varphi(F(\bars),\bara)\). [[https://math.stackexchange.com/questions/3361635/when-are-automorphism-invariant-subsets-definable][StackExchange]]
+
+    \(x\in\D\Leftrightarrow\vDash\varphi(x,\bara)\Leftrightarrow\varphi(F(x),F(\bara))\leftrightarrow\varphi(F(x),\bara)\Leftrightarrow F(x)\in\D\)
+
+    \(\Leftarrow\). Another proof from Chernikov. Assume that \(\D=\varphi(\fC,b)\) where \(b\in\fC\), and
+    let \(p(y)=\tp(b/A)\)
+
+    *Claim 1*. \(p(y)\vdash\forall x(\varphi(x,y)\leftrightarrow\varphi(x,b))\), which says that for any realisations \(b'\), \(\varphi(\fC,b)=\varphi(\fC,b')\)
+
+    Indeed, let \(b'\vDash p(y)\) be arbitrary. Then \(\tp(b/A)=\tp(b'/A)\) so there is
+    some \(\sigma\in\Aut(\fC/A)\) with \(\sigma(b)=b'\). Then \(\sigma(X)=\varphi(\fC,b')\) and by assumption \(\sigma(X)=X\),
+    thus \(\varphi(\fC,b)=X=\varphi(\fC,b')\).
+
+    There is some \(\psi(y)\in p\) (there is a finite subset of \(p(y)\) that does the job and we take
+    the conjunction) s.t.
+    \begin{equation*}
+    \psi(y)\vDash\forall x(\varphi(x,y)\leftrightarrow\varphi(x,b))
+    \end{equation*}
+    Let \(\theta(x)\) be the formula \(\exists y(\psi(y)\wedge\varphi(x,y))\). Note that \(\theta(x)\) is an \(L(A)\)-formula,
+    as \(\psi(y)\) is
+
+    *Claim 2*. \(X=\theta(\fC)\)
+
+    If \(a\in X\), then \(\vDash\varphi(a,b)\), and as \(\psi(y)\in\tp(b/A)\) we have \(\vDash\theta(a)\). Conversely,
+    if \(\vDash\theta(a)\), let \(b'\) be s.t. \(\vDash\psi(b')\wedge\varphi(a,b')\). But by the choice of \psi this implies that \(\vDash\varphi(a,b)\)
+
+    \(\Leftarrow\) Let \(\D\) be defined by \varphi, defined over \(B\supset A\). Consider the maps
+    \begin{equation*}
+    \fC\xrightarrow{\tau}S(B)\xrightarrow{\pi}S(A)
+    \end{equation*}
+    where \(\tau(c)=\tp(c/B)\) and \pi is the restriction map. Let \(Y\) be the image of \(\D\)
+    in \(S(A)\). Since \(Y=\pi[\varphi]\). \(Y\) is closed.
+    #+LATEX: \wu{
+    Note that \(\tau(\D)=[\varphi]\). \(\tau(\D)=\{\tp(c/B):\fC\vDash\varphi(c)\}\subseteq[\varphi]\). For any \(q(x)\in[\varphi]\), as \(\fC\) is
+    saturated, \(\fC\vDash q(d)\) and \(d\in\D\). Thus \(q\in\tau(\D)\). \pi is continuous
+    #+LATEX: }
+
+
+    Assume that \(\D\) is invariant under all automorphisms of \(\fC\) which fix \(A\) pointwise. Since
+    elements which have the same type over \(A\) are conjugate by an automorphism of \(\fC\), this
+    means that \(\D\)-membership depends only on the type over \(A\), i.e., \(\D=(\pi\tau)^{-1}(Y)\).
+    #+LATEX: \wu{
+    For any \(\tp(c/A)=\tp(d/A)\) and \(c\in\D\), as \(c\) and \(d\) are conjugate, \(d\in\D\).
+
+    For any \(c\notin\D\), \(\pi\tau(c)\in Y\) iff \(\tp(c/A)\in\pi[\varphi]\) iff there is \(d\in\D\)
+    s.t. \(\tp(c/A)=\tp(d/A)\) but then \(c\in\D\).
+    #+LATEX: }
+
+    This implies that \([\varphi]=\pi^{-1}(Y)\)
+    #+LATEX: \wu{
+    \(\tau(\D)=[\varphi]=\tau(\tau^{-1}\pi^{-1})(Y)=\pi^{-1}(Y)\)
+    #+LATEX: }
+    , or \(S(A)\setminus Y=\pi[\neg\varphi]\); hence \(S(A)\setminus Y\) is also closed and
+    we conclude that \(Y\) is clopen. By Lemma ref:lemma4.2.3 \(Y=[\psi]\) for some \(L(A)\)-formula \psi.
+    This \psi defines \(\D\).
+    #+LATEX: \wu{
+    For any \(d\in\fC\)
+    \begin{equation*}
+    \vDash\psi(d)\Leftrightarrow\tp(d/A)\Leftrightarrow d\in\D
+    \end{equation*}
+    #+LATEX: }
+    #+END_proof
+
+
+    A slight generalization of the previous lemma
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:P2.13
+    Let \(X\subseteq\fC^n\) be definable. TFAE
+    1. \(X\) is almost \(A\)-definable, i.e., there is an \(A\)-definable equivalence relation \(E\)
+       on \(\fC^n\) with finitely many classes, s.t. \(X\) is a union of \(E\)-classes
+    2. The set \(\{\sigma(X):\sigma\in\Aut(\fC/A)\}\) is finite
+    3. The set \(\{\sigma(X):\sigma\in\Aut(\fC/A)\}\) is small
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(1\to 2\). Let \(\varphi(x_1,x_2)\in L(A)\) be the \(A\)-definable equivalence relation \(E\), and
+    let \(b_1,\dots,b_n\in M\) be representatives in each equivalence class so that each class can be
+    written as \([b_i]=\varphi(\fC,b_i)\). Given \(\sigma\in\Aut(\fC/A)\), since \(\varphi(x_1,x_2)\leftrightarrow\varphi(\sigma(x_1),\sigma(x_2))\), the image
+    of each \([b_i]\) under \sigma will be
+    \begin{equation*}
+    \sigma([b_i])=\{\sigma(x):\varphi(x,b_i)\}=\{x':\varphi(x',\sigma(b_i))\}=\{x:\varphi(x,b_{j_i})\}=[b_{j_1}]
+    \end{equation*}
+    for some \(j_i\le n\). Now \(X\) is a disjoint union of some \([b_i]\)'s, so \(\sigma(X)\) is a disjoint
+    union of some \([b_j]\)'s. Since there are only finitely many equivalence classes, there can
+    only be finitely many possibilities for disjoint unions of these classes
+
+    \(2\to 1\). Let \(X=\varphi(\fC,b)\) and \(p(y)=\tp(b/A)\). Given \(\sigma\in\Aut(\fC/A)\), we
+    have \(\sigma(X)=\varphi(\fC,\sigma(b))\). Then from assumption, there must be distinct \(b_1,\dots,b_n\) s.t.
+    \begin{equation*}
+    \{\sigma(X):\sigma\in\Aut(\fC/A)\}=\{\varphi(\fC,b_i):i\le n\}
+    \end{equation*}
+    Now if \(\tp(b'/A)=\tp(b/A)\), then strong homogeneity yields some \(\sigma\in\Aut(\fC/A)\)
+    s.t. \(\sigma(b)=b'\). Then the above argument again shows that \(\varphi(x,b')\) defines \(\sigma(X)\) for
+    some \(\sigma\in\Aut(\fC/A)\). Thus \(\sigma(X)=\varphi(\fC,b')=\varphi(\fC,b_i)\) for some \(i\le k\). Therefore
+    \(p(y)\vdash\bigvee_{i\le k}\forall x(\phi(x,y)\leftrightarrow\phi(x,b_i))\). By compactness there is
+    some \(\psi(y)\in p\) s.t. \(\psi(y)\vdash\bigvee_{i\le k}\forall x(\phi(x,y)\leftrightarrow\phi(x,b_i))\). Now define \(E(x_1,x_2)\) as
+    \begin{equation*}
+    \forall y(\psi(y)\to(\phi(x_1,y)\leftrightarrow\phi(x_2,y)))
+    \end{equation*}
+    so it is \(A\)-definable. It is easy to check that \(E\) is an equivalence relation with
+    finitely many classes, and that \(X\) is a union of \(E\)-classes (\(a_1Ea_2\) iff they agree on
+    \(\phi(x,b_i)\) for all \(i\le k\), and so \(X=\phi(\fC,b_0)\) is given by the union of all possible
+    combinations intersected with it)
+
+    \(3\to 1\) Assume for contradiction that
+    \begin{equation*}
+    \abs{\{\sigma(X):\sigma\in\Aut(\fC/A)\}}=\lambda\ge\omega
+    \end{equation*}
+    we can find \lambda-many elements \((b_i:i<\lambda)\subset\fC\) to represent the distinct images under automorphisms.
+    Then the set
+    \begin{equation*}
+    q(y)=p(y)\cup\{\neg\forall x(\varphi(x,y)\leftrightarrow\varphi(x,b_i)):i<\lambda\}
+    \end{equation*}
+    will be finitely satisfiable. Thus \(q(y)\) is realised by some \(b'\). But such \(b'\) has the
+    same type as \(b\) over \(A\) and so strong homogeneity yields some \(\sigma\in\Aut(\fC/A)\)
+    s.t. \(\sigma(b)=b'\). Applying such \sigma on \(X\) gives the image \(\varphi(\fC,b')=\varphi(\fC,b_i)\) for some \(i<\lambda\),
+    a contradiction
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    We can identify definable sets with continuous functions in a certain settings
+    1. Formulas \(\varphi(\barx),\psi(\barx)\in L_A\) are equivalent iff \([\varphi(\barx)]=[\psi(\barx)]\)
+    2. The clopen subsets of \(S_{\barx}(A)\) are precisely the basic clopen sets
+    3. [@3] Clopen subsets \(X\) of \(S_{\barx}(A)\) correspond exactly to continuous
+       functions \(f:S_{\barx}(A)\to 2\) (with discrete topology) where \(f(p(\barx))=1\) if \(p(\barx)\in X\) and 0 otherwise
+    4. The definable subsets of \(\fC^c\) are in one-to-one correspondence with continuous functions
+       from \(S_{\barx}(A)\) to 2
+    #+END_proposition
+
+    #+BEGIN_proof
+    3. [@3] If \(X\) is clopen, then \(f^{-1}(2)=S_{\barx}(A)\), \(f^{-1}(0)=\emptyset\), \(f^{-1}(\{1\})=X\), \(f^{-1}(\{0\})=X^c\)
+    4. By 1, definable sets are in one-to-one correspondence with basic clopen subsets. By 2, basic
+       clopen sets are exactly all of the clopen subsets, so definable sets are in one-to-one
+       correspondence with clopen sets. By 3, clopen sets are in one-to-one correspondence with
+       continuous functions \(f:S_{\barx}(A)\to 2\)
+    #+END_proof
+
+
+** Imaginaries and @@latex:\texorpdfstring{\(T^{\eq}\)}{Teq}@@
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Assume \(A\subseteq\fC\) and \(\barb\in\fC\)
+    1. \(\barb\in\acl(A)\) iff \(\{f(\barb):f\in\Aut(\fC/A)\}\) is finite
+    2. \(\barb\in\dcl(A)\) iff \(f(\barb)=\barb\) for all \(f\in\Aut(\fC/A)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Suppose \(\barb\in\acl(A)\) with witness \(\exists^{\le k}\varphi(\barx)\). Then \(\varphi(\fC)\) is \(A\)-definable
+       and hence is \(\Aut(\fC/A)\)-invariant by Lemma ref:P2.11
+
+       Suppose the finiteness. Since the composition of automorphisms is an automorphism, this set
+       is \(\Aut(\fC/A)\)-invariant and therefore \(A\)-definable by some \(\varphi(\barx)\).
+
+    2. \(\{\barb\}\) is \(\Aut(\fC/A)\)-invariant
+    #+END_proof
+
+    The first motivation to develop \(T^{\eq}\) is dealing with quotient objects, without leaving
+    the context of first order logic. That is, if \(E\) is some definable equivalence relation on
+    some definable set \(X\), we want to view \(X/E\) as a definable set
+
+    We work in the setting of multi-sorted languages. Let \(L\) be a 1-sorted language and let \(T\)
+    be a (complete) \(L\)-theory. We shall build a many-sorted
+    language \(L^{\eq}\)-theory \(T^{\eq}\). We will ensure that in natural sense, \(L^{\eq}\)
+    contains \(L\) and \(T^{\eq}\) contains \(T\)
+
+    First we define \(L^{\eq}\). Consider the set \(L\)-formula \(\varphi(x,y)\), up to equivalence, such
+    that \(T\) models that \varphi is an equivalence relation. For each \varphi, define \(s_\varphi\) to be a new sort
+    in \(L^{\eq}\). Of particular importance is \(s_=\), the sort given by the formula "\(x=y\)".
+    #+LATEX: \wu{
+    = is an equivalence relation
+    #+LATEX: }
+    This sort \(s_=\) will yield, in each model of \(T^{\eq}\), a model of \(T\)
+
+    Also define \(f_\varphi\) to be a function symbol with domain sort \(s^n_=\) (where \varphi has \(n\) free
+    variables) and codomain sort \(s_\varphi\)
+
+    For each \(m\)-place relation symbol \(R\in L\), make \(R^{\eq}\) an \(m\)-place relation symbol
+    in \(L^{\eq}\) on \(s_=^m\). Likewise for all constant and function symbols in \(L\). Finally, for
+    the sake of formality, we put a unique equality symbol \(=_\varphi\) on each sort
+
+    #+BEGIN_remark
+    Let \(N\) be an \(L^{\eq}\) structure. Then \(N\) has interpretations \(s_\varphi(N)\) of each
+    sort \(s_\varphi\) and \(f_\varphi(N):s_=(N)^{n_{f_\varphi}}\to s_\varphi(N)\) of each function symbol \(f_\varphi\).
+    Additionally, \(N\) will contain an \(L\)-structure consisting of \(s_=\) and interpretations of
+    the symbols of \(L\) inside of \(s_=\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(T^{\eq}\) is the \(L^{\eq}\)-theory which is axiomatised by the following
+    1. \(T\), where the quantifiers in the formulas of \(T\) now range over the sort \(s_=\)
+    2. For each suitable \(L\)-formula \(\varphi(x,y)\), the axiom \(\forall_{s_=}\barx\forall_{s_=}\bary(\varphi(x,y)\leftrightarrow f_\varphi(\barx)=f_\varphi(\bary))\)
+    3. For each \(L\)-formula \varphi, the axiom \(\forall_{s_\varphi}y\exists_{s_=}\barx(f_\varphi(\barx)=y)\)
+    #+END_definition
+
+    Axioms 2 and 3 simply state that \(f_\varphi\) is the quotient function for the equivalence relation
+    given by \varphi
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(M\vDash T\). Then \(M^{\eq}\) is the \(L^{\eq}\) structure s.t. \(s_=(M^{\eq})=M\) and for each
+    suitable \(L\)-formula \(\varphi(x,y)\) of \(n\) variables, the sort \(s_\varphi(M^{\eq})\) is equal
+    to \(M^{n_{f_\varphi}}/E\) where \(E\) is the equivalence relation defined by \(\varphi(x,y)\) and \(f_\varphi(M^{\eq})(b)=b/E\)
+    #+END_definition
+
+    Now \(M^{\eq}\vDash T^{\eq}\). Moreover, passing from \(T\) to \(T^{\eq}\) is a canonical operation,
+    in the following sense
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. For any \(N\vDash T^{\eq}\), there is an \(M\vDash T\) s.t. \(N\cong M^{\eq}\)
+    2. Suppose \(M,N\vDash T\) are isomorphic, and let \(h:M\cong N\). Then \(h\) extends uniquely
+       to \(h^{\eq}:M^{\eq}\cong N^{\eq}\)
+    3. \(T^{\eq}\) is a complete \(L^{\eq}\)-theory
+    4. Suppose \(M,N\vDash T\) and let \(\bara\in M\), \(\barb\in N\) with \(\tp_M(\bara)=\tp_N(\barb)\).
+       Then \(\tp_{M^{\eq}}(\bara)=\tp_{N^{\eq}}(\barb)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Take \(M=s_=(N)\)
+    2. Let \(h^{\eq}:M^{\eq}\to N^{\eq}\) be defined
+       as \(h^{\eq}(f_\varphi(M^{\eq})(b))=f_\varphi(N^{\eq})(h(b))\) for each \(\varphi\in L\). This defines a function
+       on \(M^{\eq}\), because \(f_\varphi(M^{\eq})\) is surjective by the \(T^{\eq}\) axioms.
+       Moreover \(h^{\eq}\) is well-defined. Suppose \(f_\varphi(M^{\eq})(b)=f_\varphi(M^{\eq})(b')\),
+       then \(\varphi(b,b')\) and hence \(\varphi(h(b),h(b'))\),
+       therefore \(f_\varphi(N^{\eq})(h(b))=f_\varphi(N^{\eq})(h(b'))\). Injectivity is the same
+       since \(\varphi(b,b')\leftrightarrow\varphi(h(b),h(b'))\).
+       \begin{align*}
+       f_\varphi(N^{\eq})(h(b))=f_\varphi(N^{\eq})(h(b'))&\Leftrightarrow h(b)/E_\varphi=h(b')/E_\varphi\\
+       &\Leftrightarrow\varphi(h(b),h(b'))\\
+       &\Leftrightarrow\varphi(b,b')\\
+       &\Leftrightarrow f_\varphi(M^{\eq})(b)=f_\varphi(M^{\eq})(b')
+       \end{align*}
+    3. Let \(M,N\vDash T^{\eq}\), we want to show that they are elementary equivalent. Assume the
+       generalized continuum hypothesis. By GCH, there are \(M',N'\vDash T^{\eq}\) which are \lambda saturated
+       of size \lambda, for some large \lambda (strongly inaccessible), which \(M\preceq M'\) and \(N\preceq N'\). Since we
+       want to show elementary equivalence, we can replace \(M,N\) with \(M'\) and \(N'\). By 1, we
+       have \(M=M_0^{\eq}\), \(N=N_0^{\eq}\) for some \(M_0,N_0\vDash T\). Furthermore, \(M_0,N_0\)
+       are \lambda-saturated of size \lambda. By assumption, \(T\) is complete, so \(M_0\equiv N_0\), and
+       therefore \(M_0\cong N_0\). By 2, \(M\cong N\), and therefore \(M\equiv N\)
+
+       We could simply prove that there is a back and forth system between \(M\) and \(N\), using
+       such a system between \(M\supset M_0\vDash T\) and \(N\supset N_0\vDash T\)
+       <<Problem13>>
+       #+LATEX: \wu{
+       \(M_0\equiv N_0\) iff \(M_0\sim_\omega N_0\). We want to show that \(M\sim_\omega N\). For any \(p\in\omega\),
+       * given \(a\in s_=(M)\), choose according to \(M\)
+
+       * given \(a\in s_\varphi(M)\), then there is \(\barb\barc\in s_=(M)\)
+         s.t. \(f_\varphi(M^{\eq})(\barb\barc)=a\) and \(\varphi(\barb,\barc)\). If \(\barb\in s_=(M^{\eq})^n\),
+         then there is a local isomorphism \(\barb\mapsto\bard\) as \(M\sim_\omega N\). Take \(b=\bard/E_\varphi\).
+       #+LATEX: }
+    4. Let \(M,N\vDash T\), they are elementary submodels of \(\fC\). Since \(\tp_M(\bara)=\tp_N(\barb)\), there
+       exists an \(\sigma\in\Aut(\fC/A)\) with \(\sigma(\bara)=\barb\). By 2, this automorphism extends to \(\sigma^{\eq}:\fC^{\eq}\to\fC^{\eq}\)
+       with \(\sigma^{\eq}(a)=b\), hence \(\tp_{M^{\eq}}(a)=\tp_{\fC^{\eq}}(a)=\tp_{\fC^{\eq}}(b)=\tp_{N^{\eq}}(b)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Consider the Strong space \(S_{(s_=)^n}(T^{\eq})\). The forgetful
+    map \(\pi:S_{(s_=)^n}(T^{\eq})\to S_n(T)\) is a homeomorphism
+    #+END_corollary
+
+    #+BEGIN_proof
+    Observe that it is continuous and surjective. By 4 of the previous lemma it is injective. Any
+    continuous bijection from a compact space to a Hausdorff space is a homeomorphism
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(\varphi(x_1,\dots,x_k)\) be an \(L^{\eq}\) formula, where \(x_i\) is of sort \(S_{E_i}\). There is
+    an \(L\)-formula \(\psi(\bary_1,\dots,\bary_k)\) s.t.
+    \begin{equation*}
+    T^{\eq}\vDash\forall \bary_1,\dots,\bary_k(\psi(\bary_1,\dots,\bary_k)\leftrightarrow\varphi(f_{E_1}(\bary_1),\dots,f_{E_k}(\bary_k)))
+    \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(n\) be the length of \(\bary_1,\dots,\bary_k\). Consider the
+    set \(\pi[\varphi(f_{E_1}(\bary_1),\dots,f_{E_k}(\bary_k))]\), it is a clopen subset of \(S_n(T)\) by the
+    previous lemma, hence equal to \(\psi(\bary_1,\dots,\bary_k)\) for some formula \psi.
+
+    \([\varphi]=[\psi]\) iff \(\vDash\varphi\leftrightarrow\psi\)
+
+    For any \(\varphi(f_{E_1}(\bary_1),\dots,f_{E_k}(\bary_k))\in p(\bary_1,\dots,\bary_k)\in S_{(s_=)^n}(L^{\eq})\),
+
+    If \(T^{\eq}\vDash\psi(\bary_1,\dots,\bary_k)\)
+    #+LATEX: \wu{
+    need further consideration for homeomorphism between two space
+    #+LATEX: }
+    #+END_proof
+
+    #+LATEX: \wu{
+    This proposition also shows that \(T^{\eq}\) is complete since \(f_{E_i}\) is surjective
+    #+LATEX: }
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    1. Let \(M,N\vDash T\), and let \(h:M\to N\) be an elementary embedding.
+       Then \(h^{\eq}:M^{\eq}\to N^{\eq}\) is also an elementary embedding
+    2. \(\fC^{\eq}\) is also \kappa-saturated
+    #+END_corollary
+
+    #+BEGIN_remark
+    For \(M\vDash T\), a definable set \(X\subseteq M^n\) can be viewed as an element of \(M^{\eq}\).
+    Suppose \(X\) is defined in \(M\) by \(\varphi(\barx,\bara)\) where \(\bara\in M\). Consider the
+    equivalence relation \(E_\psi\) defined
+    by \(\psi(\bary_1,\bary_2)=\forall\barx(\varphi(\barx,\bary_1)\leftrightarrow\varphi(\barx,\bary_2))\), and
+    consider \(c=\bara/E_\psi=f_\psi(\bara)\in M^{\eq}\). Then \(X\) is defined in \(M^{\eq}\)
+    by \(\chi(\barx,c)=\exists\bary(\varphi(\barx,\bary)\wedge f_\psi(\bary)=c)\). Moreover, if \(c'\in S_\psi(M^{\eq})\)
+    and \(\forall\barx(\chi(\barx,c)\leftrightarrow\chi(\barx,c'))\), then \(c=c'\). To see this, let \(c'=f_{\psi}(\bara')\),
+    and let \(X'\) be defined in \(M\) by \(\varphi(\barx,\bara')\). Then \(X'\) is defined in \(M^{\eq}\)
+    by \(\chi(\barx,c')\), so we have that \(X=X'\) (in \(M^{\eq}\)). And then \(X=X'\) (in \(M\))
+    so \(c=f_{\psi}(\bara)=f_{\psi'}(\bara')=c'\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    With the above considerations in mind, given \(M\vDash T\) and a definable set \(X\subseteq M^n\), we call
+    such a \(c\in M^{\eq}\) a *code* for \(X\)
+    #+END_definition
+
+    #+BEGIN_remark
+    Any automorphism of \(\fC^{\eq}\) fixes a definable set \(X\) set-wise iff it fixes a code
+    for \(X\). However, the choice of a code for \(X\) will depend on the formula \varphi used to define
+    it
+    \begin{align*}
+    \sigma(X)=X&\Leftrightarrow\sigma(X)=\{\sigma(x):\varphi(x,b)\}=\{x:\varphi(x,\sigma(b))\}=\{x:\varphi(x,b)\}=X\\
+    &\Leftrightarrow\forall x(\varphi(x,b)\leftrightarrow\varphi(x,\sigma(b)))\\
+    &\Leftrightarrow\psi(b,\sigma(b))\Leftrightarrow f_\psi(b)=f_\psi(\sigma(b))
+    \end{align*}
+
+    We can think of \(\fC^{\eq}\) as adjoining codes for all definable equivalence relations
+    (as \(c/E'\) codes \(E'(x,c)\) for an arbitrary equivalence relation \(E\))
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(A\subseteq M\vDash T\). Then \(\acl^{\eq}(A)=\{c\in M^{\eq}:c\in\acl_{M^{\eq}}(A)\}\) and \(\dcl^{\eq}(A)\)
+    is defined similarly
+    #+END_definition
+
+    #+BEGIN_remark
+    Suppose \(A\subseteq M\prec N\), then \(\acl_{N^{\eq}}(A),\dcl_{N^{\eq}}(A)\subseteq M^{\eq}\), so this notation is unambiguous
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:P2.35
+    Let \(M\vDash T\), a definable subset \(X\) of \(M^n\), and \(A\subseteq M\). Then \(X\) is
+    almost \(A\)-definable iff \(X\) is definable in \(M^{\eq}\) by a formula with parameters in \(\acl^{\eq}(A)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    We can work in \(\fC\), since \(M\prec\fC\). Let \(c\) be a code for \(X\). From ref:P2.13 \(X\) is
+    almost \(A\)-definable iff \(\abs{\{\sigma(X):\sigma\in\Aut(\fC/A)\}}<\omega\) iff \(\abs{\{\sigma(c):\sigma\in\Aut(\fC/A)\}}<\omega\)
+    (note that \sigma extends uniquely in \(\fC^{\eq}\)),
+    that is, \(c\in\acl^{\eq}(A)\)
+
+    \begin{align*}
+    \sigma(b)/E=\sigma'(b)/E&\Leftrightarrow\forall x(\varphi(x,\sigma(b))\leftrightarrow\varphi(x,\sigma'(b)))\\
+    &\Leftrightarrow\sigma(X)=\sigma'(X)
+    \end{align*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(\bara,\barb\in\fC\) have length \(n\). Let \(\bara,\barb\) have the same strong type
+    over \(A\) (written as \(\stp_{\fC}(\bara/A)=\stp_{\fC}(\bara/A)\)) if \(E(\bara,\barb)\) for any
+    finite equivalence relation (finitely many classes) defined over \(A\)
+    #+END_definition
+
+    #+BEGIN_remark
+    If \(\varphi(\barx)\) is a formula over \(A\), then it defines an equivalence with two
+    classes \(E(\barx_1,\barx_2)\) iff \((\varphi(\barx_1)\wedge\varphi(\barx_2))\vee(\neg\varphi(\barx_1)\wedge\neg\varphi(\barx_2))\). Hence strong
+    types are a refinement of types
+
+    Hence for any formula if \(\stp(\bara/A)=\stp(\barb/B)\), at least we have \(\varphi(\bara)\leftrightarrow\varphi(\barb)\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(A=M\prec\fC\), then \(\tp_{\fC}(a/M)\vDash\stp_{\fC}(a/M)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Let \(E\) be an equivalence relation with finitely many classes, defined over \(M\),
+    and \(\barb\) another realization of \(\tp_{\fC}(\bara/M)\), we want to show \(E(a,b)\).
+    Since \(E\) has only finitely many classes, and \(M\) is a model, there are
+    representants \(e_1,\dots,e_n\) of each \(E\)-class in \(M\). Hence we must have \(E(a,e_i)\) for
+    some \(i\), and therefore \(E(b,e_i)\), which yields \(E(a,b)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(A\subseteq M\vDash T\), and let \(\bara,\barb\in M\). TFAE
+    1. \(\stp(\bara/A)=\stp(\barb/A)\)
+    2. \(\bara,\barb\) satisfy the same formulas almost \(A\)-definable
+    3. \(\tp_{\fC}(\bara/\acl^{\eq}(A))=\tp_{\fC}(\barb/\acl^{\eq}(A))\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(3\to 2\). ref:P2.35. Suppose \(X=\varphi(\fC,\bard)\) is almost \(A\)-definable,
+    then \(\bara,\barb\in\varphi(\fC,\bard)\) iff \(\bara,\barb\in\theta(\fC):=\exists\bary(\varphi(\fC,\bary)\wedge\bary/E_\psi=\barc)\)
+    where \(\barc=\bard/E_\psi\in\acl^{\eq}(A)\).
+
+    \(2\to 3\). For any \(\varphi(\barx,\bard)\in\tp_{\fC}(\bara/\acl^{\eq}(A))\)
+    #+END_proof
+
+* TODO Problems
+    |[[Problem1]]|[[Problem2]]|
+
+* Index
+
+This is a functional link that will open a buffer of clickable index entries:
+# This eliminates the duplicate Index section name
+@@latex:\renewcommand{\indexname}{}@@
+[[printindex:]]
+
+* References
+
+<<bibliographystyle link>>
+bibliographystyle:unsrtnat
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib
