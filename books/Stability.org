@@ -7,7 +7,8 @@
 #+LATEX_HEADER: \makeindex
 
 * Preface
-    A combination of various notes from [[cite:&PillayNoteStability]] [[cite:&ChernNoteStability]] [[cite:&tent2012course]]
+    A combination of various notes from [[cite:&PillayNoteStability]] [[cite:&ChernNoteStability]]
+    [[cite:&tent2012course]] [[cite:&DriesNoteStability]]
 
     A monster model \(\fC\)
 
@@ -325,6 +326,27 @@
 
 
 ** Imaginaries and @@latex:\texorpdfstring{\(T^{\eq}\)}{Teq}@@
+
+    A *multi-sorted* structure is a family of sets \((M_s)_{s\in S}\) equipped with relations
+    \begin{equation*}
+    R\subseteq M_{s_1}\times\cdots\times M_{s_m},\quad(s_1,\dots,s_m\in S)
+    \end{equation*}
+    A multi-sorted language \(L\) is a  triple \((S,L^r,L^f)\) and \(S\) are the sorts of \(L\)
+
+    \(M_s\) is the underlying set of sort \(s\). Elements of \(M_s\) are also called "elements
+    of \(\calm\)" of sort \(s\) Given any tuple \(\bars=(s_i)_{i\in I}\) of sorts in \(S\), we
+    let \(M_{\bars}=\prod_{i\in I}M_{s_i}\)
+
+    Given a variable \(x=(x_i)_{i\in I}\) of \(L\), with \(x_i\) of sorts \(s_i\) for \(i\in I\), we define
+    the *\(x\)-set of* \(\calm\) to be the product set
+    \begin{equation*}
+    M_x:=M_{\bars}=\prod_iM_{s_i},\quad \bars=(s_i)_{i\in I}
+    \end{equation*}
+    \(x=(x_i)_{i\in I}\) and \(y=(y_j)_{j\in J}\) is *disjoint* if \(x_i\neq y_j\) for all \(i\in I\)
+    and \(j\in J\), and in that case we put \(M_{x,y}=M_x\times M_y\). If in addition \(I=J\) and \(x_i\)
+    and \(y_i\) have the same sort for \(i\in I\) (so that \(M_x=M_y\)), we call \(x\) and \(y\)
+    *disjoint and similar*
+
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     The *definable closure* \(\dcl(A)\) of \(A\) is the set of elements \(c\) for which there is
@@ -814,7 +836,7 @@
     most typos i've ever seen in a proof
     #+LATEX: }
 
-    1#+BEGIN_proof
+    #+BEGIN_proof
     \(2\Leftrightarrow 3\). Since we concern only \(\emptyset\)-definable relations and functions, if it is true in some
     model, then it is true in any model
 
@@ -1001,6 +1023,7 @@
     #+END_proof
 
 * Stability
+** Historic remarks and motivations
     Thoughout this chapter we will fix a complete theory \(T\) in some language \(L\). Moreover, we
     will have no problem in working in \(T^{\eq}\) (that is to say, to assume \(T=T^{\eq}\))
 
@@ -1009,6 +1032,188 @@
     I(T,-):Card\to Card\\
     I(T,\lambda)=\#\text{ of models of \(T\) or cardinality $\lambda$ (up to isomorphism)}
     \end{gather*}
+    #+ATTR_LATEX: :options [Morley]
+    #+BEGIN_conjecture
+    Let \(T\) be countable, then function \(I_T(\kappa)\) is non-decreasing on uncountable cardinals
+    #+END_conjecture
+
+    One of such dividing lines is stability
+** Counting types and stability
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For a complete first order theory \(T\), let \(f_T:Card\to Card\) be defined
+    by \(f_T(\kappa)=\sup\{\abs{S_1(M)}:M\vDash T,\abs{M}=\kappa\}\), for \kappa an infinite cardinal
+    #+END_definition
+
+    #+BEGIN_exercise
+    Show that
+    \begin{equation*}
+    f_T(\kappa)=\sup\{\abs{S_n(M)}:M\vDash T,\abs{M}=\kappa,n\in\omega\}
+    \end{equation*}
+    gives an equivalent definition
+    #+END_exercise
+
+    It is easy to see that \(\kappa\le f_T(\kappa)\le 2^{\kappa+\abs{T}}\)
+
+    #+ATTR_LATEX: :options [Keisler, Shelah \cite{keisler1976six}]
+    #+BEGIN_fact
+    Let \(T\) be an arbitrary complete theory in a countable language. Then \(f_T(\kappa)\) is one of the
+    following functions (and all of these options occur for some \(T\)):
+    \begin{equation*}
+    \kappa,\kappa+2^{\aleph_0},\kappa^{\aleph_0},\ded\kappa,(\ded\kappa)^{\aleph_0},2^\kappa
+    \end{equation*}
+    Here, \(\ded\kappa=\sup\{\abs{I}:I\text{ is a linear order with a dense subset of size }\kappa\}\),
+    equivalently \(\sup\{\lambda:\text{ there is a linear order of size $\kappa$ with $\lambda$ cuts}\}\)
+    #+END_fact
+
+    \(\ded\) is called the *Dedekind function*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\kappa<\ded\kappa\le 2^\kappa\)
+    #+END_lemma
+
+    #+BEGIN_proof
+        Let \mu be minimal s.t. \(2^\mu>\kappa\), and consider the tree \(2^{<\mu}\). Take the lexicographic
+        ordering \(I\) on it, then \(\abs{I}\le\kappa\) by the minimality of \mu, but there are at
+        least \(2^\mu>\kappa\) cuts
+
+        Every cut is *uniquely* determined by the subset of elements in its lower half
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(M\vDash T\)
+    1. A formula \(\phi(x,y)\) with its variables partitioned into two groups \(x,y\), has the
+       *\(k\)-order property*, \(k\in\omega\), if there are some \(a_i\in M_x\), \(b_i\in M_y\) for \(i<k\)
+       s.t. \(M\vDash\phi(a_i,b_j)\Leftrightarrow i<j\)
+    2. \(\phi(x,y)\) has the *order property* if it has the \(k\)-order property for all \(k\in\omega\)
+    3. A formula \(\phi(x,y)\) is *stable* if there is some \(k\in\omega\) s.t. it does not have the \(k\)-order property
+    4. A theory is *stable* if it implies that all formulas are stable
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Assume that \(T\) is unstable, then \(f_T(\kappa)\ge\ded\kappa\) for all cardinals \(\kappa\ge\abs{T}\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Fix a cardinal \kappa
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Ramsey]
+    #+BEGIN_fact
+    \(\aleph_0\to(\aleph_0)^n_k\) holds for all \(n,k\in\omega\) (i.e., for any coloring of subsets of \(\N\) of size
+    \(n\) in \(k\) colors, there is some infinite subset \(I\) of \(\N\) s.t. all \(n\)-element
+    subsets of \(I\) have the same color)
+    #+END_fact
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(\phi(x,y)\), \(\psi(x,z)\) be stable formulas (where \(y,z\) are not necessarily disjoint tuples
+    of variables). Then
+    1. \(\neg\phi(x,y)\) is stable
+    2. Let \(\phi^*(y,x):=\phi(x,y)\), i.e., we switch the roles of the variables. Then \(\phi^*(y,x)\) is
+       stable
+    3. \(\theta(x,yz):=\phi(x,y)\wedge\psi(x,z)\) and \(\theta'(x,yz):=\phi(x,y)\vee\psi(x,z)\) are stable
+    4. If \(y=uv\) and \(c\in M_v\), then \(\theta(x,u):=\phi(x,uc)\) is stable
+    5. If \(T\) is stable, then every \(L^{\eq}\)-formula is stable as well
+    6. The formula \(\varphi(x,y)\) is stable for \(T\) iff there is \(n<\omega\) s.t. \(\varphi(x,y)\)
+       is \(n\)-stable: it is not the case that there are \(a_i,b_i\) (in \(\fC\), or in
+       some/any \(M\vDash T\)), \(i< n\), s.t. \(\vDash\varphi(a_i,b_i)\) iff \(i< j\) for all \(i,j< n\)
+    7. There are \(T\), \(M\vDash T\) and \(\varphi(x,y)\) s.t. \(\varphi(x,y)\) is stable in \(M\) but it is not
+       stable for \(T\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Suppose \(\neg\phi(x,y)\) is unstable, then there is \(I=(a_i,b_i)_{i\in\omega}\)
+       s.t. \(\vDash\neg\varphi(a_i,b_i)\Leftrightarrow i<j\), equivalently, \(\vDash\varphi(a_i,b_i)\Leftrightarrow i\ge j\).
+       Then add constants \((a_i,b_i)_{i\in\omega}\) and consider
+       \begin{equation*}
+       \Gamma=T\cup\{\varphi(a_i,b_i):i<j\}\cup\{\neg\varphi(a_i,b_i):i\ge j\}
+       \end{equation*}
+       For any finite subset \(\Gamma'\subset_f\Gamma\), we can reverse the order of \(I\): suppose \(n\) is the
+       maximum index and then let \(i'=n-i\), \(j'=n+1-j\). Then \(i'<j'\Leftrightarrow n-i<n+1-j\Leftrightarrow i\ge j\).
+       Hence \(I\) satisfies this, and hence \(\varphi(x,y)\) is unstable
+    2. Suppose \(\varphi^*(y,x)\) is not stable, then \(\neg\varphi^*(y,x)\) is also unstable. Let \(a_i,b_i\) be
+       witnesses in \(\fC\) of the latter. Then \(a'_i=b_i\) and \(b_i'=a_{i+1}\), \(i<\omega\), witness the
+       instability of \(\varphi(x,y)\) as \(j+1>i\)
+    3. Suppose that \(\theta'(x,yz)\) is unstable, i.e., there are \((a_i,b_ib_i':i\in\N)\)
+      s.t. \(\vDash\phi(a_i,b_j)\vee\psi(a_i,b_j')\Leftrightarrow i<j\) for all \(i,j\in\N\).
+      Let
+      \begin{equation*}
+      P:=\{(i,j)\in\N^2:i<j,\vDash\phi(a_i,b_j)\},Q:=\{(i,j)\in\N^2:i<j,\vDash\psi(a_i,b_j')\}
+      \end{equation*}
+      then \(P\cup Q=\{(i,j)\in\N^2:i<j\}\). By Ramsey there is an infinite \(I\subseteq\N\) s.t. either all
+      increasing pairs from \(I\) belong to \(P\), or all increasing pairs from \(I\) belong
+      to \(Q\)
+    4. [@7] Consider the graph \(G\), disjoint union of all finite graphs. Then the edge
+       relation \(E\) is stable in \(G\). Indeed, if it wasn't, we would have a vertex \(x_0\) and
+       infinitely many vertices \(\{y_i:i\in\N\}\) s.t. \(E(x_0,y_i)\) for all \(i\), which is impossible
+
+       But by 6, edge relation is not stable in \(\Th(G)\)
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Fix \(\varphi(x,y)\in L\). By a *complete \varphi-type over* \(M\), \(M\vDash T\), we mean a maximal consistent set
+    of instances of \varphi and \(\neg\varphi\) over \(M\), namely \(L_M\)-formulas of the
+    form \(\varphi(x,b)\), \(\neg\varphi(x,b)\) for \(b\in M\). We write \(S_\varphi(M)\) for the set of such complete
+    \varphi-types over \(M\)
+    #+END_definition
+
+
+    #+BEGIN_remark
+    1. By a *\varphi-formula over \(M\)* we mean a Boolean combination of instances (over \(M\)) of
+       \varphi and \(\neg\varphi\). For example, \((\varphi(x,c)\wedge\varphi(x,b))\vee\neg\varphi(x,d)\) is a \varphi-formula
+    2. Any type \(p(x)\in S_\varphi(M)\) decides any \varphi-formula \(\psi(x)\) over \(M\), that is to
+       say \(p(x)\vDash\psi(x)\) or \(p(x)\vDash\neg\psi(x)\), so in fact \(p(x)\) extends to a unique maximal
+       consistent set of \varphi-formulas over \(M\)
+    3. By defining the basic open sets of \(S_\varphi(M)\) to be \(\{p(x)\in S_\varphi(M):\psi(x)\in p\}\) for \psi a
+       \varphi-formula, \(S_\varphi(M)\) becomes a compact totally disconnected space, where in addition the
+       clopen sets are precisely given by \varphi-formulas, i.e., they are the basic clopen sets
+    4. Any \(p(x)\in S_\varphi(M)\) extends to some \(q(x)\in S_x(M)\) s.t. \(p=q\uhr\varphi\), where \(q\uhr\varphi\) is
+       the set of \varphi-formulas in \(q(x)\) (or instances of \varphi, \(\neg\varphi\) in \(q(x)\))
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. Let \(p(x)\in S_x(M)\) be a complete type over \(M\). We say that \(p(x)\) is *definable* if, for
+       each \(\varphi(x,y)\) in \(L\), there is an \(L_M\)-formula \(\psi(y)\) s.t. for all \(m\in M\), we
+       have \(M\vDash\psi(m)\) iff \(\varphi(x,m)\in p\) (note that such \(\psi(y)\) is unique up to equivalence). We
+       say the type \(p(x)\) is *definable over* \(A\subseteq M\) is each such \(\psi(y)\) is over \(A\)
+    2. Likewise, we speak of the \varphi-type \(p(x)\in S_\varphi(M)\) being *definable*
+       when \(\{b\in M:\varphi(x,b)\in p(x)\}\) is defined by a formula \(\psi(y)\) of \(L_M\) (Note that in this
+       case \(\psi(y)\) determines \(p(x)\))
+    #+END_definition
+
+    As we will see later, a theory \(T\) iff all types over *all* models of \(T\) are definable.
+
+    Note that there are unstable theories for which all the types over a certain models are
+    definable. For instance, in the case of dense linear orders, all types over \(\R\) are definable
+
+    Indeed, by quantifier elimination, any non-realised 1-type over any model of \(\DLO\)
+    corresponds to a cut in its order. But in the case of \(\R\), the order is complete, so for any
+    cut, there will in fact exist a real number \(r\) s.t. the cut is of the
+    form \((\{l\in\R,l<r\},\{d\in\R,d>r\})\). Using this real number \(r\), one can easily show definability
+    of 1-types over \(\R\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Fix a model \(M\vDash T\) and an \(L\)-formula \(\varphi(x,y)\). TFAE
+    1. \(\varphi(x,y)\) is stable in \(M\)
+    2. Whenever \(M^*\succ M\) is \(\abs{M}^+\)-saturated and \(\tp(a^*/M^*)\) is finitely satisfiable
+       in \(M\), then \(\tp_\varphi(a^*/M^*)\) is definable over \(M\) and, moreover, it is defined by
+       some \(\varphi^*\)-formula, i.e., a Boolean combination of \(\varphi(a,y)\)'s, \(a\in M\)
+    #+END_proposition
+
+    1#+BEGIN_proof
+    \(1\to 2\). Fix some \(p^*(x)=\tp_\varphi(a^*/M^*)\) finitely satisfiable in \(M\). We want to
+    prove \(\tp_\varphi(a^*/M^*)\) is definable over \(M\) by a \(\varphi^*\)-formula. Note first that,
+    as \(p^*\) is finitely satisfiable in \(M\), whether or not some \(\varphi(x,b)\), \(b\in M^*\), is
+    in \(p^*\) depends only on \(\tp(b/M)\); in fact, even only on \(\tp_{\varphi^*}(b/M)=q(y)\in S_{\varphi^*}(M)\)
+    #+END_proof
 
 ** Local Stability
     #+ATTR_LATEX: :options []
@@ -1016,6 +1221,7 @@
     1. Let \(M\vDash T\). We say \(\varphi(\barx,\bary)\) is *stable in \(M\)* if it is *not* the case that there
        are \(\bara_i,\barb_i\in M\), for \(i<\omega\), s.t. *either* for all \(i,j<\omega\), \(M\vDash\varphi(\bara_i,\barb_j)\)
        iff \(i\le j\), *or*, for all \(i,j<\omega\), \(M\vDash\neg\varphi(\bara_i,\barb_j)\) iff \(i\le j\)
+
     2. \(\varphi(\barx,\bary)\) is *stable* (for \(T\)) if it is stable in \(M\) for all \(M\vDash T\)
     3. \(T\) is *stable* if every \(L\)-formula \(\varphi(\barx,\bary)\) is stable (for \(T\))
     #+END_definition
@@ -1027,17 +1233,6 @@
 
     For simplicity, from now on we will write tuples simply as \(x\) and \(a\).
 
-    #+ATTR_LATEX: :options []
-    #+BEGIN_lemma
-    1. Suppose \(\varphi(x,y)\) and \(\psi(x,z)\) are stable for \(T\). Then \(\neg\varphi(x,y)\), \((\varphi\vee\psi)(x,yz)\)
-       and \((\varphi\wedge\psi)(x,yz)\) are also stable
-    #+END_lemma
-
-    #+BEGIN_proof
-    1. Enrich the language \(L\) with the tuples of constant symbols \(\barc_i,\bard_i\), \(i\in\omega\), and
-       consider \(\Sigma=T\cup\{\neg\varphi(\barc_i,\bard_j):i\le j\}\cup\{\varphi(\barc_i,\bard_j):i>j\}\) of formulas in the new
-       language. For \(\Sigma'\subset_f\Sigma\), let \(n\) be the largest index.
-    #+END_proof
 
 * TODO Problems
     |      | [[Problem2]] | [[Problem3]] |[[Problem4]]|
