@@ -2,11 +2,13 @@
 #+AUTHOR: 郝兆宽
 #+EXPORT_FILE_NAME: ../latex/SetTheoryHao/SetTheoryHao.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
-#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
 #+LATEX_HEADER: \usepackage[UTF8]{ctex}
 #+LATEX_HEADER: \def \btu {\bigtriangleup}
 #+LATEX_HEADER: \def \btd {\bigtriangledown}
+#+LATEX_HEADER: \DeclareMathOperator{\Pred}{Pred}
+#+LATEX_HEADER: \DeclareMathOperator{\ot}{ot}
 * Intro
     习题 40%
 
@@ -167,7 +169,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
-    对任意集合\alpha，如果\(\in\)是\alpha上的良序，就称\alpha是 *序数*
+    对任意集合\alpha，如果\(\in\)是\(\alpha\)上的良序，就称\(\alpha\)是 *序数*
     #+END_definition
 
     \(\{\omega,\omega+1,\omega+2,\dots\}\)是集合吗？这需要替换公理
@@ -780,6 +782,7 @@
 *** Measurable cardinal
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:3.4.7
     there is no \(\aleph_1\)-complete non-principal ultrafilter on \(2^\omega=\{f\mid f:\omega\to\{0,1\}\}\)
     #+END_lemma
 
@@ -827,7 +830,8 @@
        that is, \(X_Y=\bigcup_{\beta\in Y}X_\beta\). Let \(F=\{Y\subseteq\gamma\mid X_Y\in U\}\), we prove that \(F\) is
        an \(\aleph_1\)-complete non-principal ultrafilter on \gamma, contradicting the minimality of \kappa
 
-       Since
+       Since \(X_\beta\notin U\), thus \(Y=\{\beta\}\notin F\), thus \(F\) is non-principal. \(F\) is \(\aleph_1\)-complete
+       since \(U\) is \(\aleph_1\)-complete. \(\gamma\in F\Leftarrow X_\gamma\in U\Leftarrow\bigcup_{\beta\in\gamma}X_\beta\in U\)
 
     2. Let \((X_\beta)_{\beta<\gamma}\) be a sequence of subsets of \kappa, \(\gamma<\kappa\) and for
        any \(\beta<\gamma\), \(\abs{X_\beta}<\kappa\), now we prove \(\abs{\bigcup_{\beta<\gamma}X_\beta}\neq\kappa\)
@@ -835,6 +839,176 @@
        By 1, let \(U\) be a \kappa-complete non-principal ultrafilter on \kappa. For any \(\beta<\kappa\),
        since \(\abs{X_\beta}<\kappa\), \(X_\beta\notin U\). But \(U\) is \kappa-complete, so \(\bigcup_{\beta<\gamma}X_\beta\notin U\)
     #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+        uncountable regular cardinal \kappa, if there is a \kappa-complete non-principal ultrafilter on \kappa,
+        then \kappa is a *measurable cardinal*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \kappa is measurable, then it is inaccessible
+    #+END_proposition
+
+    #+BEGIN_proof
+    We only need to show \kappa is strongly limit
+
+    If there is \(\lambda<\kappa\) s.t. \(2^\lambda\ge\kappa\). Let \(g:\kappa\to 2^\lambda\) be a injection. If \(U\) is a \kappa-complete
+    non-principal ultrafilter on \kappa, then \(F=\{X\subseteq 2^\lambda\mid g^{-1}[X]\in U\}\) is a \kappa-complete non-principal
+    filter on \(2^\lambda\)
+
+    Now we prove there is no \kappa-complete non-principal ultrafilter on \(2^\lambda\) similar to ref:3.4.7.
+    Suppose there is such ultrafilter \(F\), define \(h:\lambda\to\{0,1\}\) s.t. for
+    any \(\beta<\kappa\), \(Y_\beta=\{f\in 2^\lambda\mid\forall\delta<\beta(f(\delta)=h(\delta))\}\in F\)
+
+    Suppose for any \(\delta<\beta\), \(f(\delta)\) is defined, let
+    \begin{align*}
+    &Y^L=\{f\in 2^\lambda\mid\forall\delta<\beta(f(\delta)=h(\delta))\wedge f(\beta=0)\}=\{f\in Y_\beta\mid f(\beta)=0\}\\
+    &Y^R=\{f\in 2^\lambda\mid\forall\delta<\beta(f(\delta)=h(\delta))\wedge f(\beta=1)\}=\{f\in Y_\beta\mid f(\beta)=1\}\\
+    \end{align*}
+    If \(Y^L\in F\), \(h(\beta)=0\), otherwise \(h(\beta)=1\), and let \(Y_{\beta+1}=\{f\in 2^\lambda\mid\forall\delta\le\beta(f(\delta)=h(\delta))\}\),
+    obviously \(Y_{\beta+1}\in F\)
+
+    For limit \(\eta<\lambda\), \(h(\eta)=\sup_{\delta<\eta}f(\delta)\) and \(Y_\eta=\bigcap_{\delta<\eta}Y_\delta\). Since \(F\) is
+    \kappa-complete, \(Y_\eta\in F\).
+
+    Then \(\{h\}=Y=\bigcap_{\beta<\lambda}Y_\beta\in F\), a contradiction
+    #+END_proof
+*** Mahlo cardinal
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For any limit ordinal \alpha, ordinal \delta, \(f:\delta\to\alpha\), if
+    1. \(\eta<\beta<\delta\Rightarrow f(\eta)<f(\beta)\)
+    2. \(\forall\xi<\delta\), \(f(\xi)=\bigcup\{f(\beta)\mid\beta<\xi\}\)
+
+
+    Then \(f\) is *continuous*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:3.4.12
+    For any limit ordinal \alpha, TFAE
+    1. \alpha is regular and \(\alpha>\omega\)
+    2. any continuous cofinal \(f:\delta\to\alpha\) has fixed point
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(\Rightarrow\). If \(f:\delta\to\alpha\) is continuous cofinal, then \(\delta=\alpha\). For
+    any \(\beta<\alpha\), \(\epsilon_0=f(\beta)\), \(\epsilon_{n+1}=f(\epsilon_n)\), \(\epsilon=\bigcup_{n\in\omega}\epsilon_n\). Since \(\alpha>\omega\) is
+    regular, \(\epsilon\in\alpha\). Since \(f\) is continuous, \(f(\epsilon)=\bigcup_{n\in\omega}f(\epsilon_{n+1})=\epsilon\)
+
+    \(\Leftarrow\). If \(\cf(\alpha)=\delta<\alpha\), cofinal \(f:\delta\to\alpha\). Let \(g:\delta\to\alpha\) be \(\beta\mapsto \delta+f(\beta)\). \(g\) is a
+    continuous cofinal function, for any \(\beta<\delta\), \(\beta<g(\beta)\), hence it doesn't have fixed point
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    limit ordinal \kappa
+    1. if any continuous cofinal function \(f:\kappa\to\kappa\) has a regular fixed point \epsilon, then \kappa is a *weakly
+       Mahlo cardinal*
+    2. if any continuous cofinal function \(f:\kappa\to\kappa\) has a inaccessible fixed point \epsilon, then \kappa is a
+       *Mahlo cardinal*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    For any \kappa, if \kappa is weakly Mahlo, then \kappa is weakly inaccessible; if \kappa is Mahlo, then it is inaccessible
+    #+END_lemma
+
+    #+BEGIN_proof
+    By ref:3.4.12, \kappa is regular
+    1. if \(\kappa=\lambda^+\), let \(f:\kappa\to\kappa\) be \(f(\alpha)=\lambda+\alpha\). This is continuous, if \(f(\epsilon)=\epsilon\),
+       then \(\epsilon=\lambda+\epsilon\), and thus \(\epsilon\) is not regular, since there is no cardinal between \lambda and \kappa
+    2. if \(\lambda<\kappa\) and \(2^\lambda\ge\kappa\), let \(f:\kappa\to\kappa\) be \(f(\alpha)=\lambda+\alpha\). If \(f(\epsilon)=\epsilon\), then \(\lambda<\epsilon<2^\lambda\),
+       thus is not strongly limit
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If there is a \kappa-complete regular non-principal ultrafilter \(U\) on \kappa, then \kappa is Mahlo
+    #+END_lemma
+
+    #+BEGIN_proof
+    \kappa is measurable, so it is inaccessible. We need to prove that the set of all inaccessible
+    cardinals that are less than \kappa is stationary, that is
+    1. strongly limit cardinals less than \kappa is a club
+    2. regular cardinal less than \kappa is stationary
+
+
+    For 1, \(f(\lambda)=2^\lambda\) is a continuous cofinal function on \kappa, its fixed point is a club in \kappa and is
+    strongly inaccessible
+
+    For 2, we only need to prove that all regular cardinals less than \kappa belong to \(U\).
+    Otherwise, \(\{\alpha<\kappa\mid\cf(\alpha)<\alpha\}\in U\). Since \(U\) is regular, there
+    is \(\lambda<\kappa\), \(E=\{\alpha<\kappa\mid\cf(\alpha)=\lambda\}\in U\). For any \(\alpha\in E\), define a increasing cofinal
+    sequence \(\{\alpha_\eta\mid\eta<\lambda\}\), for any \(\eta<\lambda\), there is \(\gamma_\eta\), \(X_\eta=\{\alpha\in E\mid\alpha_\eta=\gamma_\eta\}\in U\).
+    Hence \(X=\bigcap_{\eta<\lambda}X_\eta\in U\). But \(X=\sup\{\gamma_n\mid\eta<\lambda\}\) is a singleton, a contradiction
+    #+END_proof
+** Tree and weakly compact cardinal
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Poset \((T,<)\), if for any \(x\in T\), \(\Pred(x)=\{y\mid y<x\}\) is a well-ordering in \(<\),
+    then \(T\) is a *tree*
+    #+END_definition
+
+    root is the smallest
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    tree \((T,<)\)
+    1. \(\forall x\in T\), \(h_T(x)=\ot(\Pred(x))\), *height* of \(x\) in \(T\)
+    2. \(\tau=\bigcup\{h_T(x)+1\mid x\in T\}\) *height of the tree \(T\)*, denoted by \(h_T\)
+    3. \(\forall\beta<h_T\), \(\{x\in T\mid h_T(x)=\beta\}\) is the  \(\beta\)-th level of \(T\)
+    4. If every pair of elements of \(A\subseteq T\), then \(A\) is the *antichain* of \(T\)
+    5. any linear ordering subset of \(T\)  is a *chain* of \(T\)
+    6. If chain \(B\) of \(T\) is 向下封闭, that is, \(\forall x\in B(y<x\to y\in B)\), then \(B\) is a *branch*
+       of \(T\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Kőnig]
+    #+BEGIN_lemma
+    If \(T\) is a tree of height \omega, and every level of \(T\) is finite, then \(T\) has an infinite branch
+    #+END_lemma
+
+    #+BEGIN_proof
+    Take \(x_0\) of 0-th level, and \(\{y\in T\mid x_0<y\}\) is infinite. Such \(x_0\) exists since \(T\)'s
+    height is infinite. Suppose \(x_n\) is chosen of \(n\)-th level, take \(x_{n+1}\) of \(n+1\)-th
+    level s.t. \(x_n<x_{n+1}\) and \(\{y\in T\mid x_{n+1}<y\}\) is infinite.
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(T\) tree of height \kappa, if each level of \(T\) has cardinality less than \kappa, then \(T\) is a *\kappa-tree*
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Aronszajn]
+    #+BEGIN_theorem
+    There is a \(\omega_1\)-tree \(T\) with no branch of order type \(\omega_1\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Consider \(T=\{f\in\omega^{\omega_1}\mid f\text{ injective}\}\) (ordinal exponential), then \((T,\subset)\) is a tree of height \(\omega_1\).
+    #+END_proof
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For any cardinal \kappa, if any \kappa-tree has a branch with order type \kappa, then \kappa has *tree property*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    if an inaccessible cardinal \kappa has tree property, then \kappa is called *weakly compact cardinal*
+    #+END_definition
+
+
+
+
+
+
 
 * 复习
     没有良序集同构于真前段
