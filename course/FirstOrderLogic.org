@@ -1,0 +1,482 @@
+#+TITLE: First Order Logic
+#+EXPORT_FILE_NAME: ../latex/FirstOrderLogic/FirstOrderLogic.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \usepackage[UTF8]{ctex}
+#+LATEX_HEADER: \def \pred {\text{pred}}
+#+LATEX_HEADER: \def \quo {\text{quo}}
+#+LATEX_HEADER: \def \rem {\text{rem}}
+* 递归论基础
+** primitive recursive
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    初始函数
+    1. 零函数\(Z(x)=0\)
+    2. 后继函数\(S(x)=x+1\)
+    3. 投射函数\(\pi_i^n(x_1,\dots,x_i,\dots,x_n)=x_i\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    设\(g:\N^n\to\N\)与\(h:\N^{n+2}\to\N\)，称\(f:\N^{n+1}\to\N\)是从\(g\)和\(h\) *经原始递归得到的* ，如果
+    1. \(f(\barx,0)=g(\barx)\)
+    2. \(f(\barx,n+1)=h(\barx,f(\barx,n),n)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    全体原始递归函数的集合\(C\)是最小的满足以下条件的自然数上的函数集合
+    1. 初始函数\(\subseteq C\)
+    2. 复合封闭
+    3. 原始递归封闭
+
+
+    称\(C\)中的元素为原始递归函数
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    以下为原始递归函数
+    1. 加法
+    2. \(C_k^n(x_1,\dots,x_n)=k\)
+    3. \(x\cdot y\), \(x^y\),\(x!\)
+    4. 非零检测和零检测
+       \begin{equation*}
+       \sigma(x)=
+       \begin{cases}
+       0&x=0\\
+       1
+       \end{cases}\quad
+       \delta(x)=
+       \begin{cases}
+       1&x=0\\
+       0
+       \end{cases}
+       \end{equation*}
+    5. 前驱函数\(\pred(x)\)
+    6. 截断减法
+       \begin{equation*}
+       x\dot-y=
+       \begin{cases}
+       0&x<y\\
+       x-y&x\ge y
+       \end{cases}
+       \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(\sigma(0)=0\),\(\sigma(n+1)=C_1^2(n,\sigma(n))\)
+
+    \(\pred(0)=0\),\(\pred(n+1)=\pi_1^2(n,\pred(n))\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(f:\N^k\to\N\) p.r., \(g:\N^r\to\N\)
+    \begin{equation*}
+    g(x_1,\dots,x_r)=f(y_1,\dots,y_k)
+    \end{equation*}
+    \(y_j\) is either \(x_i\) or a constant, then \(g\) is p.r.
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(h_1,\dots,h_k:\N^r\to\N\)
+    * if \(y_j\) is \(x_i\), then \(h_j(x_1,\dots,x_r)=\pi_i^r(x_1,\dots,x_r)\)
+    * if \(y_j\) is a constant \(k\in\N\), then \(h_j(x_1,\dots,x_r)=C_k^r(x_1,\dots,x_r)\)
+
+
+    \begin{equation*}
+    g(x_1,\dots,x_r)=f(h_1(x_1,\dots,x_r),\dots,(h_k(x_1,\dots,x_r)))
+    \end{equation*}
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(A\subseteq\N^k\) is *primitive recursive* if its characteristic function is p.r.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. If \(A,B\subseteq\N^k\) is p.r., then \(\N^k\setminus A\), \(A\cup B\), \(A\cap B\) is p.r.
+    2. if \(P,Q\) is p.r. predicate, then \(\neg P\), \(P\vee Q\), \(P\wedge Q\) is p.r.
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(1\dot-\chi_A(x)\), \(\sigma(\chi_A(x)+\chi_B(x))\), \(\chi_A(x)\cdot\chi_B(x)\)
+    #+END_proof
+
+    if \(f:\N^k\to\N\) is p.r., then
+    \begin{align*}
+    &\{x\in\N^k\mid f(x)=0\}\\
+    &\{x\in\N^k\mid f(x)>0\}
+    \end{align*}
+    is p.r.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(f_1,f_2\) is \(k\)-ary p.r., \(P\) p.r. predicate, then
+    \begin{equation*}
+    f(\barx)=
+    \begin{cases}
+    f_1(\barx)&P(\barx)\\
+    f_2(\barx)
+    \end{cases}
+    \end{equation*}
+    is p.r.
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(f(x)=\chi_P(x)f_1(x)+(1\dot-\chi_P(x))f_2(x)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\quo(x,y)\) and \(\rem(x,y)\) are p.r.
+    #+END_lemma
+
+    #+BEGIN_proof
+    Intuition
+    \begin{align*}
+    &\rem(x,y+1)=
+    \begin{cases}
+    \rem(x,y)+1&\rem(x,y)+1<x\\
+    0
+    \end{cases}\\
+    &\quo(x,y+1)=
+    \begin{cases}
+    \quo(x,y)&\rem(x,y)+1<x\\
+    \quo(x,y)+1
+    \end{cases}
+    \end{align*}
+    solution
+    \begin{align*}
+    &\rem(x,0)=0\\
+    &\rem(x,y+1)=(\rem(x,y)+1)\sigma(x-\rem(x,y)-1)\\
+    &\quo(x,0)=0\\
+    &\quo(x,y+1)=\quo(x,y)\sigma(x-\rem(x,y)-1)+(\quo(x,y)+1)\delta(x-\rem(x,y)-1)
+    \end{align*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. \((\exists x<a)\phi(x):=\exists x(x<a\wedge\phi(x))\)
+    2. \((\forall x<a)\phi(x):=\forall x(x<a\to\phi(x))\)
+
+
+    *bounded quantifier*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(P(\barx,y)\) is a p.r. predicate
+    1. predicate
+       \begin{align*}
+       &E(\barx,y):=(\exists z\le y)P(\barx,z)\\
+       &A(\barx,y):=(\forall z\le y)P(\barx,z)
+       \end{align*}
+       are p.r.
+    2. function
+       \begin{equation*}
+       f(\barx,y):=(\mu z\le y)P(\barx,z)
+       \end{equation*}
+       is p.r.
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. predicate "\(x\) divides \(y\)" is p.r.
+    2. "\(x\) is not prime" "\(x\) is prime" are p.r.
+    3. \(p:\N\to\N\), \(n\mapsto n\text{th prime}\) is p.r.
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(p(0)=2\). \(p(n+1)=(\mu z\le y)(z>p(n)\wedge z\text{ prime}\wedge y=p(n)!+1)\)
+    #+END_proof
+
+    * \(\la a_0,\dots,a_n\ra:=p_0^{a_0+1}\dots p_n^{a_{n}+1}\)  is the Gödel number of \((a_0,\dots,a_n)\)
+    * \(\la\ra=1\)
+    * \(\lh:\N\to\N\) is \(\lh(a)=\mu k\le a(p_k\nmid a)\)
+    * \((a)_i:\N^2\to\N\) is \((a)_i=(\mu k\le a)(p_i^{k+2}\nmid a)\)
+    * for any \(a=\la a_0,\dots,a_n\ra\), \((a)_i=a_i\)
+    * concatenation function \(\tieconcat:\N^2\to\N\)
+      \begin{equation*}
+      a\tieconcat b=a\cdot\prod_{i<\lh(b)}p_{\lh(a)+i}^{(b)_i+1}
+      \end{equation*}
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      1. Set of Gödel numbers are p.r.
+      2. \(\lh(a)\) and \((a)_i\) is p.r.
+      3. \(a\tieconcat b\) is p.r. and
+         \begin{equation*}
+         \la a_0,\dots,a_n\ra\tieconcat\la b_0,\dots,b_m\ra=\la a_0,\dots,a_n,b_0,\dots,b_m\ra
+         \end{equation*}
+      #+END_lemma
+
+      #+BEGIN_proof
+      \begin{equation*}
+    \exists n\le x\left( \forall i\le n(p_i\mid x)\wedge\forall j\le x(j>n\to p_j\nmid x) \right)
+      \end{equation*}
+      #+END_proof
+
+      function \(f(\barx,y)\),
+      \begin{equation*}
+    F(\barx,n)=p_0^{f(\barx,0)+1}\dots p_n^{f(\barx,n)+1}
+      \end{equation*}
+
+      #+ATTR_LATEX: :options []
+      #+BEGIN_definition
+      function \(g(\barx)\) and \(h(\barx,y,z)\), \(f(\barx,y)\)是从\(g\)与\(h\)经 *强递归* 得到的如果
+      \begin{align*}
+    f(\barx,0)&=g(\barx)\\
+    f(\barx,n+1)&=h(\barx,n,F(\barx,n))
+      \end{align*}
+      #+END_definition
+
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      如果\(f(\barx,y)\)是从\(g\)与\(h\)经强递归得到，and  \(g,h\) p.r., then \(f\) is p.r.
+      #+END_lemma
+
+      #+BEGIN_proof
+      \begin{align*}
+    F(\barx,0)&=2^{f(\barx,0)+1}=2^{g(\barx)+1}\\
+    F(\barx,n+1)&=F(\barx,n)p_{n+1}^{f(\barx,n+1)+1}=F(\barx,n)p_{n+1}^{h(\barx,n,F(\barx,n))+1}
+      \end{align*}
+      Hence \(F(\barx,y)\) is p.r., so \(f(\barx,y)=(F(\barx,y))_y\) is p.r.
+      #+END_proof
+** recursive function
+    * 假设有一个程序可以枚举所有的原始递归函数
+    * 设\(g_0,g_1,g_2,\dots\)是所有原始递归函数的枚举
+    * 令\(F:\N\to\N\)为\(F(n)=g_n(n)+1\)
+    * 虽然\(F\)在直观上可计算，但不属于原始递归函数
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    total function \(f:\N^{n+1}\to\N\),\(g(\barx)\)是从\(f\)通过正则极小化或正则\(\mu\)-算子得到的如果
+    * \(\forall\barx\exists yf(\barx,y)=0\)
+    * \(g(\barx)\)是使得\(f(\barx,y)=0\)最小的\(y\)
+
+
+    记作\(g(\barx)=\mu y(f(\barx,y)=0)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. 全体递归函数的集合为最小的包含所有初始函数，并且对复合、原始递归、正则极小化封闭的函数集合
+    2. \(A\subseteq\N^k\)是递归集如果\(\chi_A\)是递归函数
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    partial function \(f\), \(g\)是从\(f\)通过极小化或者由\(\mu\)-算子得到的如果
+    \begin{equation*}
+    g(\barx)=\mu y(\forall z\le y(f(x,z)\downarrow)\wedge f(x,y)=0)
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    全体部分递归函数的集合为最小的包含所有初始函数、并且怼复合、原始递归、极小化封闭的函数集合
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Ackermann function is partial recursive
+    \begin{gather*}
+    A(0,y)=y+1,\quad A(x+1,0)=A(x,1)\\
+    A(x+1,y+1)=A(x,A(x+1,y))
+    \end{gather*}
+    #+END_lemma
+** Turing Machine
+    规定输入向量为\((x_1,\dots,x_n)\)时，初始格局为
+    \begin{equation*}
+    q_s1^{x_1+1}01^{x_2+1}0\dots 01^{x_k+1}
+    \end{equation*}
+
+    输出时，格局为\(q_h1^y\)，表示输出值为\(y\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    一个部分函数\(f:\N^k\to\N\)是被图灵机\(M\)所计算的，或者说图灵机\(M\)计算函数\(f\)，如果
+    \begin{equation*}
+    f(x)=
+    \begin{cases}
+    y&\text{如果$M$对输入\(x\)的输出为\(y\)}\\
+    \text{没有定义}&\text{如果计算过程无限或没有终止格局}
+    \end{cases}
+    \end{equation*}
+    称部分函数\(f\)为图灵可计算的，如果存在一个图灵机\(M\)计算它
+    #+END_definition
+** turing computability and partial recursive function
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    一个函数是图灵可计算的当且仅当它是部分递归的
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    每个初始函数都是图灵可计算的
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    任何一台标准图灵机都可以被一台单向无穷纸带图灵机模拟
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    任何图灵可计算函数\(h\)都可以被一台加了如下限制的图灵机计算
+    1. 在初始格局中，纸带中有一个不在字母表中的新字符$，可以在任何实现给定的位置，只要不混在输入字符
+       串中见
+    2. 计算完成后，$左边的内容不变
+    3. 输出字符串的位置起始于$右边一格
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    图灵可计算对复合封闭
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(T(e,x,z)\)表示\(z\)是图灵机\(e\)对输入\(x\)的计算过程（格局序列）的编码，称为Kleene谓词
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Kleene predicate is p.r.
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    存在原始递归函数\(U:\N\to\N\)和原始递归谓词\(T(e,x,z)\)使得对任意的部分递归函数\(f:\N\to\N\)都存在自然
+    数\(e\)使得\(f(x)=U(\mu zT(e,x,z))\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    一个函数是递归的当且仅当它是部分递归的全函数
+    #+END_corollary
+
+    #+BEGIN_proof
+    \(\Leftarrow\). 部分递归的全函数\(f(x)=U(\mu zT(e,x,z))\)满足正则性
+    #+END_proof
+
+    #+ATTR_LATEX: :options [通用函数定理]
+    #+BEGIN_theorem
+    存在一个通用的部分递归函数；即存在二元函数\(\Phi:\N^2\to\N\)使得对任何一元部分递归函数\(f:\N\to\N\)都存在一
+    个自然数\(e\)使得对所有\(x\)有\(f(x)=\Phi(e,x)\)
+    #+END_theorem
+
+    令\(e_0,e_1,\dots\)是图灵机的一个枚举，则\(\phi_0(x),\phi_1(x),\dots\)是对应的对全体部分递归函数的枚举，
+    即\(\phi_i(x)=\Phi(e_i,x)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    对递归函数来说，不存在通用函数，即不存在递归函数\(T:\N^2\to\N\)使得对任何一元递归函数\(f:\N\to\N\)都存在
+    一个自然数\(e\)使得对所有\(x\)有\(f(x)=T(e,x)\)
+    #+END_theorem
+
+    存在一个部分函数\(f\)使得对任何递归全函数\(g\)，都存在\(n\in\dom(f)\)使得\(f(n)\neq g(n)\)
+
+    \(f(n)=\Phi(n,n)+1\), \(g(x)=\Phi(m,x)\),\(f(m)=\Phi(m,m)+1\neq g(x)\)
+** 递归可枚举
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(A\subseteq\N\) is recursively enumerable (r.e.) if \(A=\emptyset\) or \(A=\im(f)\) for some recursive \(f\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(A\subseteq\N\), TFAE
+    1. \(A\) r.e.
+    2. \(A=\emptyset\) or \(A=\im(f)\) for some p.r. \(f\)
+    3. \(A=\emptyset\) or \(A=\im(f)\) for some partial recursive \(f\)
+    4. \(\chi_A\) is partial recursive
+    5. \(A=\dom(f)\) for some partial recursive \(f\)
+    6. there is a recursive/primitive recursive predicate \(R(x,y)\) s.t.
+       \begin{equation*}
+       A=\{x\mid\exists yR(x,y)\}
+       \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(1\to 2\). Suppose \(A=\im(f)\) where \(f=U(\mu zT(e,x,z))\), for any \(a_0\in A\)
+    \begin{equation*}
+    F(x,n)=
+    \begin{cases}
+    U(\mu\le nT(e,x,n))&\exists y\le nT(e,x,y)\\
+    a_0
+    \end{cases}
+    \end{equation*}
+    Then \(F(\N^2)=f(\N)\)
+
+    \(2\to 4\). \(A=f(\N)\)
+    \begin{equation*}
+    \chi_A(y)=C_1^1(\mu xf(x)=y)
+    \end{equation*}
+
+    \(5\to 6\). \(f(x)=U(\mu zT(e,x,z))\)
+    \begin{equation*}
+    \dom(f)=\{x\mid\exists zT(e,x,z)\}
+    \end{equation*}
+
+    \(6\to 1\).
+    \begin{equation*}
+    A=\{x\mid\exists yR(x,y)\},g(y)=x\cdot C_1^1(\mu xR(x,y))
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    一个自然数的集合\(A\)是递归的当且仅当\(A\)和它的补集\(\N\setminus A\)都是递归可枚举的
+    #+END_theorem
+
+    #+BEGIN_proof
+    设\(A\)是\(f_1:2\N\to\N\)的值域，\(\N\setminus A\)是\(f_2:2\N+1\to\N\)的值域
+
+    \(R_i(x,y)\Leftrightarrow y=f_i(x)\)
+    \begin{equation*}
+    h(y)=\mu x(R_1(x,y)\vee R_2(x,y))
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(A,B\subseteq\N^k\) r.e., then
+    1. \(A\cup B\),\(A\cap B\) r.e.
+    2. \(\{x\in\N^{k-1}\mid\exists y(x,y)\in A\}\) r.e.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(K=\{e\in\N\mid\phi(e,e)\downarrow\}\) is r.e., but not recursive
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(K=\dom(\Phi(x,x))\), thus is r.e.
+
+    If \(K\) is recursive, then \(\N\setminus K\) is recursive. Thus \(x\in K\) and \(x\notin K\) are recursive
+    predicates. Then function
+    \begin{equation*}
+    f(x)=
+    \begin{cases}
+    \Phi(x,x)+1&x\in K\\
+    0
+    \end{cases}
+    \end{equation*}
+    is recursive. Thus there is a natural number \(e\) s.t. \(f(x)=\Phi(e,x)\). If \(e\in K\),
+    then \(f(e)=\Phi(e,e)+1\), a contradiction. If \(e\notin K\), then \(\Phi(e,e)\uparrow\), but \(f(e)=0\), contradiction
+    #+END_proof
+* 自然数的模型
+
+
+* 作业
+    7.5.3 (2)/
+
+    7.5.5 \(h[A]\)递归吗
+
+    7.1 7.2 7.3
