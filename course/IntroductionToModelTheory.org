@@ -934,6 +934,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:34
     Suppose \(M\preceq N\vDash\ACF\) and \(K\) is a subfield of \(M\). Suppose \(c\in N\) is algebraic
     over \(K\). Then \(c\in M\)
     #+END_lemma
@@ -962,9 +963,372 @@
 
     A similar argument shows \(K^{\alg}\) is closed under the field operations, so \(K^{\alg}\) is a
     subfield of \(M\)
-
-
     #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Suppose \(M\vDash\ACF\) and \(K\) is a subfield. TFAE
+    1. \(K=K^{\alg}\)
+    2. \(K\vDash\ACF\)
+    3. \(K\preceq M\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(1\to 2\): suppose \(P(x)\in K[x]\) has degree \(>0\). Then there is \(c\in M\) s.t. \(P(c)=0\). By
+    definition, \(c\in K^{\alg}=K\)
+
+    \(2\to 3\): quantifier elimination
+
+    \(3\to 1\). ref:34
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(M\vDash\ACF\) and \(K\) is a subfield, then \(K^{\alg}\vDash\ACF\)
+    #+END_corollary
+
+    \(K^{\alg}\) is called the *algebraic closure* of \(K\). It is independent of \(M\):
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(M,N\) be two algebraically closed fields extending \(K\). Let \((K^{\alg})_M\)
+    and \((K^{\alg})_N\) be \(K^{\alg}\) in \(M\) and \(N\), respectively. Then \((K^{\alg})_M\cong(K^{\alg})_N\)
+    #+END_theorem
+
+
+* Saturated Models
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(S_0\subseteq S_1\subseteq\cdots\subseteq S_\alpha\subseteq\cdots\) be an increasing chain of sets indexed by \(\alpha<\kappa\) for some regular
+    cardinal \kappa. If \(A\subseteq\bigcup_{\alpha<\kappa}S_\alpha\) and \(\abs{A}<\kappa\), then \(A\subseteq S_\alpha\) for some \(\alpha<\kappa\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    define \(f:A\to\kappa\) by \(f(x)=\min\{\alpha:x\in S_\alpha\}\). Then \(\abs{f(A)}\le\abs{A}<\kappa\),
+    so \(\alpha:=\sup f(A)<\kappa\). For any \(x\in A\), we have \(f(x)\le\alpha\) and so \(x\in S_{f(x)}\subseteq S_\alpha\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(M\) is a structure and \kappa is a cardinal, there is a \kappa-saturated \(N\succeq M\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Build an elementary chain
+    \begin{equation*}
+    M_0\preceq M_1\preceq\cdots\preceq M_\alpha\preceq\cdots
+    \end{equation*}
+    of length \(\kappa^+\), where
+    1. \(M_0=M\)
+    2. \(M_{\alpha+1}\) is an elementary extension of \(M_\alpha\) realizing every type in \(S_1(M_\alpha)\)
+    3. If \alpha is a limit ordinal, then \(M_\alpha=\bigcup_{\beta<\alpha}M_\beta\)
+
+
+    Let \(N=\bigcup_{\alpha<\kappa^+}M_\alpha\). If \(A\subseteq N\) and \(\abs{A}<\kappa\), then \(A\subseteq M_\alpha\) for some \(\alpha<\kappa^+\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Suppose \(M\) is \kappa-saturated. If \(A\subseteq M\) and \(\abs{A}<\kappa\), then every \(p\in S_n(A)\) is
+    realized in \(M\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Take \(N\succeq M\) containing a realization \(\bara\) of \(p\). We can extend the partial elementary
+    map to\(\id_A:A\to A\) to \(f:A\cup\{a_1,\dots,a_n\}\to B\) where \(B\subseteq M\). Then
+    \(\tp^M(f(\bara)/A)=\tp^N(\bara/A)=p\), so \(f(\bara)\) realizes \(p\) in \(M\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    For any \(M\) there is an elementary extension \(N\succeq M\) with the following properties:
+    * Every type over \(M\) is realized in \(N\)
+    * If \(A,B\subseteq M\) and \(f:A\to B\) is a partial elementary map, then there is \(\sigma\in\Aut(N)\)
+      with \(\sigma\supseteq f\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Build an elementary chain
+    \begin{equation*}
+    M=M_0\preceq M_1\preceq\cdots
+    \end{equation*}
+    of length \omega, where \(M_{i+1}\) is \(\abs{M_i}^+\)-saturated. Every \(p\in S_n(M)\) is realized
+    in \(M_1\)
+
+    For the second point, let \(f:A\to B\) be given. Recursively build an increasing chain of partial
+    elementary maps \(f_n\) with \(\dom(f_n),\im(f_n)\subseteq M_n\) as follows:
+    * \(f_0=f\)
+    * If \(n>0\) is odd, then \(f_n\) is a partial elementary map extending \(f_{n-1}\)
+      with \(\dom(f_n)=M_{n-1}\) and \(\im(f_n)\subseteq M_n\)
+    * If \(n>0\) is even, then \(f_n\) is a partial elementary map extending \(f_{n-1}\)
+      with \(\dom(f_n)\subseteq M_n\) and \(\im(f_n)=M_{n-1}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(M\) is a structure and \kappa is a cardinal, there is a strongly \kappa-homogeneous
+    \kappa-saturated \(N\succeq M\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Build an elementary chain
+    \begin{equation*}
+    M_0\preceq M_1\preceq\cdots\preceq M_\alpha\preceq\cdots
+    \end{equation*}
+    of length \(\kappa^+\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(M\) be a \kappa-saturated \(L\)-structure. For \(L_0\subseteq L\), the reduct \(M\uhr L_0\) is \kappa-saturated
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:12.3
+    Let \(M\) be an \(L\)-structure and \kappa be a cardinal. There is an \(L\)-structure \(N\succeq M\) s.t.
+    for every \(L_0\subseteq L\), the reduct \(N\uhr L_0\) is \kappa-saturated and \kappa-strongly homogeneous
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(T\) be an \(L(R)\)-theory
+    1. \(R\) is *implicitly defined* in \(T\) if for every \(L\)-structure \(M\), there is at most
+       one \(R\subseteq M^n\) s.t. \((M,R)\vDash T\)
+    2. \(R\) is *explicitly defined* in \(T\) if there is an \(L\)-formula \(\phi(x_1,\dots,x_n)\) s.t. \(T\vdash\forall\barx(R(\barx)\leftrightarrow\phi(\barx))\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(R\) is not explicitly defined in \(T\). Then there are \(M,N\vDash T\)
+    and \(\bara\in M^n\), \(\barb\in N^n\) s.t.
+    * \(\tp^L(\bara)=\tp^L(\barb)\)
+    * \(M\vDash R(\bara)\) and \(N\vDash\neg R(\barb)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Suppose not. Let \(S=\{\tp^L(\bara):M\vDash T,\bara\in M^n\}\). For \(p\in S\), one of two things happends
+    1. Every realization of \(p\) satisfies \(R\)
+    2. Every realization of \(p\) satisfies \(\neg R\)
+
+
+    Otherwise we can find a realization \(\bara\) satisfying \(R\) and a realization \(\barb\)
+    satisfying \(\neg R\), as desired.
+
+    By compactness, for each \(p\in S\) there is an \(L\)-formula \(\phi_p(\barx)\in p(\barx)\)  s.t. one
+    of two things happens
+    1. \(T\cup\{\phi_p(\barx)\}\vdash R(\barx)\)
+    2. \(T\cup\{\phi_p(\barx)\}\vdash\neg R(\barx)\)
+
+
+    Let \(\Sigma(\barx)=T\cup\{\neg\phi_p(\barx):p\in S\}\). If \(\Sigma(\barx)\) is consistent, there is \(M\vDash T\)
+    and \(\bara\in M^n\) satisfying \(\Sigma(\barx)\). Let \(p=\tp^L(\bara)\), so it satisfies \(\phi_p\) but it
+    also satisfies \(\neg\phi_p\), a contradiction
+
+    Therefore \(\Sigma(\barx)\) is inconsistent. By compactness there are \(p_1,\dots,p_n,q_1,\dots,q_m\in S\) s.t.
+    \begin{gather*}
+    T\vdash\bigvee_{i=1}^n\phi_{p_i}(\barx)\vee\bigvee_{i=1}^m\phi_{q_i}(\barx)\\
+    T\cup\{\phi_{p_i}(\barx)\}\vdash R(\barx)\quad\text{ for }i=1,\dots,n\\
+    T\cup\{\phi_{q_i}(\barx)\}\vdash \neg R(\barx)\quad\text{ for }i=1,\dots,n\\
+    \end{gather*}
+    Then \(T\vdash\forall\barx(R(\barx)\leftrightarrow\bigvee_{i=1}^n\phi_{p_i}(\barx))\). The \(\leftarrow\) is by the choice of the \(\phi_{p_i}\).
+    The \(\to\) is because if none of the \(\phi_{p_i}\) hold, then one of the \(\phi_{q_i}\) holds, and
+    then \(\neg R\) must hold.
+
+    Finally \(\vee_{i=1}^n\phi_{p_i}(\barx)\) is an explicit definition of \(R\)
+
+    If \(m=0\), then \(T\vdash R(\barx)\), if \(n=0\), then \(T\vdash \neg R(\barx)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [beth]
+    #+BEGIN_theorem
+    If \(R\) is implicitly defined in \(T\), then \(R\) is explicitly defined in \(T\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    *Case 1*: \(T\) is complete.
+
+    If \(R\) is not explicitly defined, we obtain \(M,N\vDash T\) and \(\bara\in M^n\), \(\barb\in N^n\)
+    with \(\tp^L(\bara)=\tp^L(\barb)\) but \(M\vDash R(\bara)\) and \(N\vDash\neg R(\bara)\). Since \(T\) is
+    complete, we have \(M\equiv N\). By elementary amalgamation, we may find elementary
+    embeddings \(M\to N'\), \(N\to N'\). Replacing \(M\) and \(N\) by \(N'\) and \(N'\), we may
+    choose \(M=N\). By Lemma ref:12.3, we may replace \(M\) with an elementary extension and
+    assume \(M\) and \(M\uhr L\) are \(\aleph_0\)-saturated and \(\aleph_0\)-strongly homogeneous. The fact
+    that \(\tp^L(\bara)=\tp^L(\barb)\) implies that there is an automorphism \(\sigma\in\Aut(M\uhr L)\) with
+    \(\sigma(\bara)=\barb\). Let \(R'=\sigma(R)\). Let \(M'=(M\uhr L,R')\). Then \sigma is an isomorphism
+    from \(M\) to \(M'\), so \(M'\vDash T\). But \(M'\uhr L=M\uhr L\). Because \(R\) is implicitly
+    defined, \(R=R'\). But then
+    \begin{equation*}
+    \bara\in R\Leftrightarrow\sigma(\bara)\in\sigma(R)\Leftrightarrow\barb\in R'\Leftrightarrow\barb\in R
+    \end{equation*}
+    contradicting the fact that \(M\vDash R(\bara)\) and \(M\vDash\neg R(\barb)\)
+
+    *Case 2*: \(T\) is not complete. Any completion of \(T\) implicitly defines \(R\). By Case 1, any
+    completion of \(T\) explicitly defines \(R\). So in any model \(M\vDash T\), there is
+    an \(L\)-formula \(\phi_M\) s.t. \(M\vDash\forall\barx(R(\barx)\leftrightarrow\phi_M(\barx))\)
+
+    Assume \(R\) is not explicitly defined, there are \(M,N\vDash T\) and \(\bara\in M^n\), \(\barb\in N^n\),
+    with \(\tp^L(\bara)=\tp^L(\barb)\) and \(M\vDash R(\bara)\) and \(N\vDash\neg R(\bara)\). Let \(T'\) be the
+    \(L\)-theory obtained from \(T\) by replacing every \(R\) with \(\phi_M\). Then \(M\vDash T'\). The
+    type \(\tp^L(\bara)\) contains the following
+    * \(\phi_M(\barx)\)
+    * sentences in \(T'\)
+
+
+    So \(N\vDash\phi_M(\barb)\) and \(N\vDash T'\).
+
+    Let \(R'=\{\barc\in N^n:N\vDash\phi_M(\barc)\}\). Then \((N\uhr L,R')\vDash T\) because \(N\vDash T'\).
+    Therefore \(R'=R\) because \(R\) is implicitly defined. But \(N\vDash\phi_M(\barb)\)
+    and \(N\vDash\neg R(\barb)\), a contradiction
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(T\) be a complete theory. Then \(T\) has a countable \omega-saturated model iff \(T\) is small
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): trivial
+
+    \(\Leftarrow\): Suppose \(S_n(T)\) is countable for any \(n\). Take some \omega-saturated model \(M^+\). For
+    each finite set \(A\subseteq M^+\) and type \(p\in S_1(A)\), take some element \(c_{A,p}\in M\)
+    realizing \(p\). Define an increasing chain of countable subsets \(A_0\subseteq A_1\subseteq\cdots M^+\) as follows
+    * \(A_0=\emptyset\)
+    * \(A_{i+1}=A_i\cup\{c_{A,p}:A\subseteq_fA_i,p\in S_1(A)\}\)
+
+
+    each \(A_i\) is countable, and define \(M=\bigcup_{i=0}^\infty A_i\), which is countable
+
+    Now we only need to prove that \(M\) is \omega-saturated and \(M\preceq M^+\)
+    #+END_proof
+
+* Prime models
+
+** Omitting types theorem
+    #+ATTR_LATEX: :options [Baire Category Theorem for \(S_n(A)\)]
+    #+BEGIN_theorem
+    Let \(U_1,U_2,\dots\) be dense open sets. Then \(\bigcap_{i=1}^\infty U_i\) is dense
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:13.7
+    \(S_n(A)\) is finite iff all types in \(S_n(A)\) are isolated
+    #+END_lemma
+
+    #+BEGIN_proof
+    If each \(p\in S_n(A)\) is isolated. The family \(\{\{p\}:p\in S_n(A)\}\) covers \(S_n(A)\), so there is
+    a finite cover. This is impossible unless \(S_n(A)\) is finite
+    #+END_proof
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A set \(X\subseteq S_n(A)\) is *comeager* if \(X\supseteq\bigcap_{i=1}^\infty U_i\) for some dense open sets \(U_i\)
+    #+END_definition
+    Work in \(S_\omega(T)\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(X_1,X_2,\dots\) are comeager, then \(\bigcap_{i=1}^\infty X_i\) is comeager
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    For any formula \(\phi(x_0,\dots,x_n,y)\), there is a dense open set \(Z_\phi\) s.t. if \(M\vDash T\)
+    , \(\barc\in M^\omega\), \(\tp^M(\barc)\in Z_\phi\) and \(M\vDash\exists y\phi(c_0,\dots,c_n,y)\), then there is \(i<\omega\)
+    s.t. \(M\vDash\phi(c_0,\dots,c_n,c_i)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Take \(A=[\neg\exists y\phi(x_0,\dots,x_n,y)]\) and \(B_i=[\phi(x_0,\dots,x_n,x_i)]\) for \(i<\omega\).
+    Let \(Z_\phi=A\cup\bigcup_{i=0}^\infty B_i\), which is open. If \(p=\tp^M(\barc)\in Z_\phi\) and \(M\vDash\exists y\phi(c_0,\dots,c_n,y)\)
+    then \(p\notin A\), so there is \(i<\omega\) s.t. \(p\in B_i\) meaning \(M\vDash\phi(c_0,\dots,c_n,c_i)\)
+
+    It remains to show that \(Z_\phi\) is dense. Take non-empty \([\psi]\subseteq S_\omega(T)\); we claim \(Z_\phi\cap[\psi]\neq\emptyset\).
+    Take \(p=\tp^M(\bare)\in[\psi]\). We may assume \(p\notin Z_\phi\), or we are done. Then \(p\notin A\),
+    so \(M\vDash\exists y\phi(e_0,\dots,e_n,y)\). Take \(b\in M\) s.t. \(M\vDash\phi(e_0,\dots,e_n,b)\). Take \(i>n\) large enough
+    that \(x_i\) doesn't appear in \phi.
+    Let \(\barc=(e_0,\dots,e_{i-1},b,e_{i+1},e_{i+2},\dots)\). We have \(M\vDash\psi(\bare)\)
+    because \(\tp(\bare)\in[\psi]\) and therefore \(M\vDash\psi(\barc)\), so \(\tp(\barc)\in[\psi]\). Also \(M\vDash\phi(c_0,\dots,c_n,c_i)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    There is a comeager set \(W\subseteq S_\omega(T)\) s.t. if \(\tp^M(\barc)\in W\), then \(\{c_i:i<\omega\}\preceq M\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(W=\bigcap_\phi Z_\phi\). Suppose \(\tp^M(\barc)\in M\). Then for any \(\phi(x_0,\dots,x_n,y)\),
+    if \(M\vDash\exists y\phi(c_0,\dots,c_n,y)\), then there is \(i<\omega\) s.t. \(M\vDash\phi(c_0,\dots,c_n,c_i)\). By
+    Tarski-Vaught, \(\{c_i:i<\omega\}\preceq M\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(p\in S_n(T)\) be non-isolated. For any \((j_1,\dots,j_n)\in\N^n\), there is a dense open
+    set \(V_{p,\barj}\subseteq S_\omega(T)\) s.t. \(\tp^M(\barc)\in V_{p,\barj}\Leftrightarrow\tp^M(c_{j_1},\dots,c_{j_n})\neq p\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Let \(V_{p,\barj}=V=\bigcup_{\phi\in p}[\neg\phi(x_{j_1},\dots,x_{j_n})]\). If \(\tp^M(\barc)\in V\), then there is
+    some \(\phi\in p\) s.t. \(M\vDash\neg\phi(c_{j_1},\dots,c_{j_n})\), and so \(\tp^M(c_{j_1},\dots,c_{j_n})\neq p\). Conversely,
+    if \(\tp^M(c_{j_1},\dots,c_{j_n})\neq p\), there is \(\phi\in p\) s.t. \(M\vDash\neg\phi(c_{j_1},\dots,c_{j_n})\), and
+    then \(\tp^M(\barc)\in V\)
+
+    It remains to show that \(V\) is dense. Suppose \([\psi]\subseteq S_\omega(T)\) is non-empty.
+    Take \(q=\tp^M(\bare)\in[\psi]\). We may assume \(q\notin V\). By choice
+    of \(V\), \(\tp^M(e_{j_1},\dots,e_{j_n})=p\). Take \(m\) large enough so that  \(m\ge\max(j_1,\dots,j_n)\)  and \psi is a formula
+    in \(x_0,\dots,x_m\). Let \(\phi(y_1,\dots,y_n)\) be
+    \begin{equation*}
+    \exists x_0,\dots,x_m\;\psi(x_0,\dots,x_m)\wedge\bigwedge_{i=1}^n(y_i=x_{j_i})
+    \end{equation*}
+    Then \((e_{j_1},\dots,e_{j_n})\) satisfies \phi, and so \(\phi\in p\). As \(p\) is non isolated, there
+    is \(N\vDash\phi(d_1,\dots,d_n)\) with \(\tp^N(d_1,\dots,d_n)\neq p\). By definition of \phi there are \(c_0,\dots,c_m\in N\)
+    with \(N\vDash\psi(c_0,\dots,c_m)\) and \((d_1,\dots,d_n)=(c_{j_1},\dots,c_{j_n})\). Choose \(c_{m+1},c_{m+2},\dots\in N\)
+    arbitrarily. Then \(\barc=(c_i:i<\omega)\in N^\omega\) and \(\tp(\barc)\in[\psi]\),
+    and \(\tp(c_{j_1},\dots,c_{j_n})=\tp(d_1,\dots,d_n)\neq p\), so \(\tp(\barc)\in V\), showing \(V\cap[\psi]\neq\emptyset\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(p\in S_n(T)\) be non-isolated. There is a comeager set \(V_p\subseteq S_\omega(T)\) s.t.
+    if \(\tp^M(\barc)\in V_p\), then \(p\) is not realized by a tuple in \(\{c_i:i<\omega\}\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(V_p=\bigcap_{\barj\in\N^n}V_{p,\barj}\). If \(\tp^M(\barc)\in V_p\), then for any \(j_1,\dots,j_n\in\N\)
+    \begin{equation*}
+    \tp^M(c_{j_1},\dots,c_{j_n})\neq p
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Omitting types theorem]
+    #+BEGIN_theorem
+    label:13.19
+    Let \(\Pi\) be a countable set of pairs \((p,n)\), where \(n<\omega\) and \(p\) is a non-isolated type
+    in \(S_n(T)\). There is a countable model \(M\vDash T\) omitting \(p\) for every \((p,n)\in\Pi\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    The set \(Q=W\cap\bigcap_{(p,n)\in\Pi}V_p\) is comeager, hence non-empty. Take \(\tp^N(\barc)\in Q\).
+    Then \(M:=\{c_i:i<\omega\}\preceq N\) because \(\tp^N(\barc)\in W\). For \((p,n)\in\Pi\), \(M\) omits \(p\)
+    because \(\tp(\barc)\in V_p\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Ryll-Nardzewski]
+    #+BEGIN_theorem
+    Let \(T\) be a complete theory in a countable language. Then \(T\) is \omega-categorical
+    iff \(S_n(T)\) is finite for every \(n<\omega\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose \(S_n(T)\) is infinite for some \(n\). By ref:13.7 there is a
+    non-isolated \(p\in S_n(T)\). By ref:13.19 there is a countable model \(M_0\vDash T\) omitting \(p\).
+    Take an elementary  extension \(M_1\succeq M_0\) where \(p\) is realized by \(\bara\in M_1^n\). By
+    Löwenheim–Skolem Theorem we may assume \(M_1\) is countable. Then \(M_1\not\cong M_0\)
+    #+END_proof
+
+
 
 
 * Appendices                  :ignore:
