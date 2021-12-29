@@ -6,8 +6,8 @@
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
-(setq user-full-name "John Doe"
-      user-mail-address "john@doe.com")
+(setq user-full-name "wu"
+      user-mail-address "f_dogs@protonmail.com")
 
 ;; Doom exposes five (optional) variables for controlling fonts in Doom. Here
 ;; are the three important ones:
@@ -180,9 +180,10 @@ parent."
   data)
 
 (add-hook 'org-export-filter-parse-tree-functions 'org-export-ignore-headlines)
-
+(setq org-element-use-cache nil)
 (add-hook 'org-mode-hook '(lambda () (setq fill-column 100)))
 (add-hook 'org-mode-hook 'auto-fill-mode)
+(add-hook 'org-mode-hook 'valign-mode)
 ;;(setq org-highlight-latex-and-related '(native script entities))
 ;;very bad perfomance
 (setq org-highlight-latex-and-related '(entities))
@@ -244,14 +245,46 @@ parent."
 ;; ;;(setq company-dabbrev-ignore-case nil)
 ;; ;;(setq company-dabbrev-downcase nil)
 
-(use-package org-ref
+(use-package ivy-bibtex
   :init
-  (setq reftex-default-bibliography '("~/notes/references.bib"))
-  (setq org-ref-bibliography-notes "~/notes/references.bib"
-        org-ref-default-bibliography '("~/notes/references.bib")
-        org-ref-pdf-directory "~/Dropbox/bibliography/bibtex-pdfs/")
-  :config
-  )
+  (setq bibtex-completion-bibliography '("~/notes/references.bib")
+        bibtex-completion-library-path '("~/OneDrive - zju.edu.cn/bibtex-pdfs")
+        ;;bibtex-completion-notes-path "~/Dropbox/emacs/bibliography/notes/"
+        bibtex-completion-notes-template-multiple-files "* ${author-or-editor}, ${title}, ${journal}, (${year}) :${=type=}: \n\nSee [[cite:&${=key=}]]\n"
+
+        bibtex-completion-additional-search-fields '(keywords)
+        bibtex-completion-display-formats
+        '((article       . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${journal:40}")
+          (inbook        . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} Chapter ${chapter:32}")
+          (incollection  . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+          (inproceedings . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+          (t             . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*}"))
+        bibtex-completion-pdf-open-function
+        (lambda (fpath)
+          (call-process "open" nil 0 nil fpath))))
+
+(use-package org-ref
+  :ensure nil
+  :init
+  (require 'bibtex)
+  (setq bibtex-autokey-year-length 4
+        bibtex-autokey-name-year-separator "-"
+        bibtex-autokey-year-title-separator "-"
+        bibtex-autokey-titleword-separator "-"
+        bibtex-autokey-titlewords 2
+        bibtex-autokey-titlewords-stretch 1
+        bibtex-autokey-titleword-length 5
+        reftex-default-bibliography '("~/notes/references.bib"))
+  (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (define-key org-mode-map (kbd "s-[") 'org-ref-insert-link-hydra/body)
+  (require 'org-ref-ivy)
+  (require 'org-ref-arxiv)
+  (require 'org-ref-scopus)
+  (require 'org-ref-wos))
+
+
+
 
 (require 'org-ref)
 
@@ -366,3 +399,62 @@ parent."
 
 
 (global-prettify-symbols-mode +1)
+
+;;(require 'nano)
+(require 'svg-lib)
+
+(defvar svg-font-lock-keywords
+  `(("TODO"
+     (0 (list 'face nil 'display (svg-font-lock-todo))))
+    ("\\:\\([0-9a-zA-Z]+\\)\\:"
+     (0 (list 'face nil 'display (svg-font-lock-tag (match-string 1)))))
+    ("DONE"
+     (0 (list 'face nil 'display (svg-font-lock-done))))
+    ("\\[\\([0-9]\\{1,3\\}\\)%\\]"
+     (0 (list 'face nil 'display (svg-font-lock-progress_percent (match-string 1)))))
+    ("\\[\\([0-9]+/[0-9]+\\)\\]"
+     (0 (list 'face nil 'display (svg-font-lock-progress_count (match-string 1)))))))
+
+(defun svg-font-lock-tag (label)
+  (svg-lib-tag label nil :margin 0))
+
+(defun svg-font-lock-todo ()
+  (svg-lib-tag "TODO" nil :margin 0
+               :font-family "Roboto Mono" :font-weight 500
+               :foreground "#FFFFFF" :background "#673AB7"))
+
+(defun svg-font-lock-done ()
+  (svg-lib-tag "DONE" nil :margin 0
+               :font-family "Roboto Mono" :font-weight 400
+               :foreground "#B0BEC5" :background "white"))
+
+(defun svg-font-lock-progress_percent (value)
+  (svg-image (svg-lib-concat
+              (svg-lib-progress-bar (/ (string-to-number value) 100.0)
+                                nil :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
+              (svg-lib-tag (concat value "%")
+                           nil :stroke 0 :margin 0)) :ascent 'center))
+
+(defun svg-font-lock-progress_count (value)
+  (let* ((seq (mapcar #'string-to-number (split-string value "/")))
+         (count (float (car seq)))
+         (total (float (cadr seq))))
+  (svg-image (svg-lib-concat
+              (svg-lib-progress-bar (/ count total) nil
+                                :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
+              (svg-lib-tag value nil
+                           :stroke 0 :margin 0)) :ascent 'center)))
+
+;; Activate
+(push 'display font-lock-extra-managed-props)
+(font-lock-add-keywords nil svg-font-lock-keywords)
+(font-lock-flush (point-min) (point-max))
+
+;; Deactivate
+;; (font-lock-remove-keywords nil svg-font-lock-keywords)
+;; (font-lock-flush (point-min) (point-max))
+
+
+(use-package rime
+  :custom
+  (default-input-method "rime"))
