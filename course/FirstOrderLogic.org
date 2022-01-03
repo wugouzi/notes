@@ -7,6 +7,12 @@
 #+LATEX_HEADER: \def \pred {\text{pred}}
 #+LATEX_HEADER: \def \quo {\text{quo}}
 #+LATEX_HEADER: \def \rem {\text{rem}}
+#+LATEX_HEADER: \DeclareMathOperator{\Term}{\textsf{Term}}
+#+LATEX_HEADER: \DeclareMathOperator{\Var}{\textsf{Var}}
+#+LATEX_HEADER: \DeclareMathOperator{\Num}{\textsf{Num}}
+#+LATEX_HEADER: \DeclareMathOperator{\sfForm}{\textsf{Form}}
+#+LATEX_HEADER: \DeclareMathOperator{\bew}{\text{bew}}
+#+LATEX_HEADER: \DeclareMathOperator{\bwb}{\text{bwb}}
 * 递归论基础
 ** primitive recursive
     #+ATTR_LATEX: :options []
@@ -204,6 +210,9 @@
       \begin{equation*}
       a\tieconcat b=a\cdot\prod_{i<\lh(b)}p_{\lh(a)+i}^{(b)_i+1}
       \end{equation*}
+
+
+
       #+ATTR_LATEX: :options []
       #+BEGIN_lemma
       1. Set of Gödel numbers are p.r.
@@ -212,6 +221,7 @@
          \begin{equation*}
          \la a_0,\dots,a_n\ra\tieconcat\la b_0,\dots,b_m\ra=\la a_0,\dots,a_n,b_0,\dots,b_m\ra
          \end{equation*}
+
       #+END_lemma
 
       #+BEGIN_proof
@@ -619,13 +629,414 @@
     #+END_lemma
 
     #+BEGIN_proof
-    3. [@3] \(P\)是可表示的使得肯定能枚举出\(\rho(n_1,\dots,n_k)\)或者\(\neg\rho(n_1,\dots,n_k)\)
+    3. [@3] \(P\)是可表示的使得肯定能枚举出\(\rho(n_1,\dots,n_k)\)或者\(\neg\rho(n_1,\dots,n_k)\),
+
+       对于枚举函数\(f\),\(\#\rho\in\im(f)\)或者\(\#\neg\rho\in\im(f)\)，不管怎么说肯定存在一个自然数对应它们，并
+       且自然数是有限的
     #+END_proof
 
     #+ATTR_LATEX: :options []
     #+BEGIN_corollary
     \(P\)在\(Q\)中可表示，则\(P\)在\(\fN\)中可定义
     #+END_corollary
+
+    #+BEGIN_proof
+    \(\Th(\fN)\)是\(Q\)的一致扩张
+    #+END_proof
+
+    * 称一个\(L_{ar}\)公式是\(\Delta_0\)的，如果它只包含有界量词
+    * 如果一个公式\(\phi\)(\(Q\)下)等价于\(\exists x_1\dots\exists x_n\theta\)，其中\(\theta\)是\(\Delta_0\)的，则称\(\phi\)是\(\Sigma_1\)的公式
+    * 如果一个公式\(\phi\)等价于\(\forall x_1\dots\forall x_n\theta\)，其中\(\theta\)是\(\Delta_0\)的，则\(\phi\)是\(\Pi_1\)公式
+    * 如果一个公式既等价于\(\Sigma_1\)，又等价于\(\Pi_1\)，则它是\(\Delta_1\)的
+
+
+    #+ATTR_LATEX: :options [\(\Sigma_1\)-完备性]
+    #+BEGIN_theorem
+    对任何一个\(\Sigma_1\)-闭语句，我们有
+    \begin{equation*}
+    \fN\vDash\tau\Leftrightarrow Q\vdash\tau
+    \end{equation*}
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): 对任何\(\Delta_0\)-闭语句\(\sigma\)，对任何\(\fM\vDash Q\)，有
+    \begin{equation*}
+    \fM\vDash\sigma\Leftrightarrow\fN\vDash\sigma
+    \end{equation*}
+
+    设\(\sigma\)为\((\forall x\le t)\psi\)且\(\psi\)是一个\(\Delta_0\)公式，\(t\)是一个闭项，于是存在\(n\in\N\)使得\(Q\vdash t=n\)。
+    如果\(\fM\vDash(\forall x\le t)\psi(x,t)\)，则\(\fM\vDash(\forall x\le n)\psi(x,n)\)
+
+    若\(\sigma:=\exists\barx\psi(\barx)\)，\(\psi\)是\(\Delta_0\)公式，设\(\fN\vDash\sigma\)，则存在\(\barm\in\N^n\)使得\(\fN\vDash\psi(\barm)\)。
+    \(Q\vdash\psi(\barm)\Rightarrow Q\vdash\exists\barx\psi(\barx)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    称一个函数\(f:\N^k\to\N\)在\(T\)中可表示，如果存在\(L_{ar}\)公式\(\phi(x_1,\dots,x_k,y)\)使得对所
+    有\((n_1,\dots,n_k)\in\N^k\)有
+    \begin{equation*}
+    T\vdash\forall y\left( \phi(n_1,\dots,n_k,y)\leftrightarrow y=f(n_1,\dots,n_k) \right)
+    \end{equation*}
+    此时称\(\phi\)作为一个函数表示\(f\)
+    #+END_definition
+
+    表示函数图象的公式不能表示函数
+
+    设\(f\)是一个函数，\(G_f=\{(\barx,y)\mid y=f(\barx)\}\)，设\(\phi(\barx,y)\)表示\(G_f\)，于是对任
+    意\(\bara\in\N^k\),\(b\in\N\)，有
+    \begin{equation*}
+    f(a)=b\Rightarrow T\vdash\phi(\bara,b),\quad f(a)\neq b\Rightarrow T\vdash\neg\phi(\bara,b)
+    \end{equation*}
+    若\(\fM\vDash T\)，对于非标准\(y\in M\setminus\N\)，
+    \begin{equation*}
+    \fM\vDash y\neq f(\bara)\to\neg\phi(\bara,y)
+    \end{equation*}
+    不一定成立
+
+    例如\(Z(x)=0\)，于是\(\phi(x,y):=y+y=y\)表示\(G_Z\),\(Q\)不能证明\(y+y=y\to y=0\)，考虑\(\N\cup\{\infty\}\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    令\(t\)为\(L_{ar}\)的项，则\(t\)诱导出来的函数是可表示的
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    可表示函数类关于复合封闭
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    可表示函数类关于极小算子封闭
+    1. 设\(P\subseteq\N^{k+1}\)被\(\alpha(\barx,y)\)表示
+    2. 令\(\phi(\barx,y)\)味\(\alpha(\barx,y)\wedge(\forall z<y)\neg\alpha(\barx,z)\)
+    3. 则\(f:\bara\mapsto\mu b[P(\bara,b)]\)被\(\phi(\barx,y)\)表示
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    函数\(f\)可表示当且仅当\(G_f\)可表示
+    #+END_corollary
+
+    #+BEGIN_proof
+    \(a\mapsto\mu b[G_f(a,b)]\)是可表示函数，它是\(f\)自身
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    加定函数\(g(x,y)\)可表示，则函数
+    \begin{equation*}
+    f(x):=\mu y(g(x,y)=0)
+    \end{equation*}
+    也可表示
+    #+END_corollary
+
+    目标：可表示函数类关于原始递归封闭，
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    哥德尔函数\(\beta:\N^3\to\N^{<\omega}\)定义为：对任意\(u,v,w\),\(\beta(u,v,w)\)是一个长度为\(w\)的序
+    列\(a_0,\dots,a_{w-1}\)，其中
+    \begin{equation*}
+    u=d((i+1)v+1)+a_i
+    \end{equation*}
+    #+END_definition
+
+    定义\(\alpha(u,v,i)\)为\(\frac{u}{v(i+1)+1}\)的余数，即\(\beta\)函数的坐标分量函数，则\(\alpha(u,v,i)\)是可表
+    示的
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\beta\)是满射
+    #+END_theorem
+
+    #+ATTR_LATEX: :options [欧几里得引理]
+    #+BEGIN_lemma
+    设\(a,b\in\N\)互素，则存在\(x,y\in\Z\)使得\(ax+by=1\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    令\(X=\{ax+by\mid x,y\in\Z\}\cap\N\)，则\(X\)有最小元\(x_0\),若\(x_0\)不能整除\(a\)，则\(a=cx_0+r\)，因
+    此\(x_0\)是最小公倍数
+
+    consider \(a\N\) and \(b\N\), then \(a\N\cap b\N=c\N\) for some \(c\in\N\) since \(\N\) is a PID
+    #+END_proof
+
+    #+ATTR_LATEX: :options [中国剩余定理]
+    #+BEGIN_theorem
+    设\(d_0,\dots,d_n\)是两两互素的自然数，\(a_0,\dots,a_n\)为满足\(a_i<d_i\)的自然数，则存在\(c\in\N\)使
+    得\(c\equiv a_i\mod d_i\) for all \(i\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    对任意\(n\)，存在\(n+1\)个数两两互素
+    \begin{equation*}
+    1+n!,1+2\cdot n!,\dots,1+(n+1)\cdot n!
+    \end{equation*}
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\beta\)是满射
+    #+END_theorem
+
+    #+BEGIN_proof
+    设\(a_0,\dots,a_{w-1}\)是一个自然数的序列，令\(n=\max\{a_0,\dots,a_{w-1},w\}\)，令\(v=n!\),
+    则\(\{v(i+1)+1\mid i=0,\dots,w-1\}\)两两互素且\(a_i<v(i+1)+1\)，根据中国剩余定理，存在\(u\in\N\)使得
+    \(u\equiv_{v(i+1)+1}a_i\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\alpha(u,v,i)=\frac{u}{v(i+1)+1}\)的余数是可表示的
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(P(c,d,i,r,q):=(c=q(1+(i+1)d)+r)\)可表示
+
+    \(R(c,d,i,r):=\exists q\le c\;P(c,d,i,r,q)\)可表示：
+
+    \(\mu r(R(c,d,i,r))\)可表示
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    递归函数都是可表示的
+    #+END_theorem
+
+    #+BEGIN_proof
+    只需证明\(\fN\)中的可表示函数类包含初始函数，且对复合、极小化、原始递归封闭
+
+    可定义函数对原始递归封闭：
+    设\(f(x,0)=g(x)\), \(f(x,n+1)=h(x,n,f(x,n))\)，其中\(g,h\)可定义
+
+    令\(\psi(u,v,x):=\alpha(u,v,0)=g(x)\)
+
+    \(\phi(u,v,x):=\forall i<y(\alpha(u,v,i+1)=h(x,i,\alpha(u,v,i)))\)
+
+    则定义\(f(x,y)=z\)的公式为
+    \begin{equation*}
+    \exists u,v\left( \psi(u,v,x)\wedge\phi(u,v,x)\wedge z=\alpha(u,v,y) \right)
+    \end{equation*}
+    由于\(Q\)的\(\Sigma_1\)-完备性，\(f\)可表示
+
+    这里\(g(x)\),\(h(x,i,\alpha(u,v,i))\)是值
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    以上证明可知：原始递归函数都是\(\Sigma_1\)-可表示的，从而也是\(\Pi_1\)-可表示的
+
+    同理，递归可枚举集合都是\(\Sigma_1\)-可表示的，从而递归关系都是\(\Delta_1\)-可表示的
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    若\(R\subseteq\N^k\),\(Q\subseteq T\)递归且一致，TFAE
+    1. \(R\)在\(T\)中可表示
+    2. \(R\)是递归关系
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    若\(R\subseteq\N^k\),\(Q\subseteq T\)递归且一致，TFAE
+    1. \(R\)在\(T\)中可表示
+    2. \(R\)在\(T\)中被一个\(\Delta_1\)公式表示
+    #+END_corollary
+
+    #+BEGIN_proof
+    \(1\to 2\): \(R\)被一个\(\Sigma_1\)公式定义，\(\neg R\)被一个\(\Sigma_1\)公式定义，由\(Q\)的完备性可得
+    #+END_proof
+
+** 语法的算数化
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(V=\{\sharp\alpha\mid\alpha\text{是一个变元}\}\)是原始递归的
+    \begin{equation*}
+    \Var=\{n\in\N\mid\exists k<n(n=2k+21)\}
+    \end{equation*}
+    #+END_proposition
+
+
+    一般地，对逻辑对象\(O\),用\(\und{O}\)表示\(O\)的编码集
+    \begin{equation*}
+    \und{O}=\{\sharp\alpha\mid\alpha\in O\}
+    \end{equation*}
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(\Term=\{\alpha\mid\alpha\text{是一个\und{项}}\}\)原始递归
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(\sfForm=\{\alpha\mid\alpha\text{是一个\und{项}}\}\)原始递归
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    存在一个原始递归函数\(Sb\)使得对任意的项或公式\(\alpha\)，对任意的变元\(x\)和项\(t\)
+    \begin{equation*}
+    Sb(\sharp\alpha,\sharp x,\sharp t)=\sharp\alpha^x_t
+    \end{equation*}
+    原始递归
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    函数\(f(n)=\sharp(S^n0)\)是原始递归的，故
+    \begin{equation*}
+    \Num=\{m\mid m\text{是一个\und{数码}}\}=\{m\mid\exists n<m(m=f(n))\}
+    \end{equation*}
+    原始递归
+    #+END_proposition
+
+    设\(x\)是一个数，则\(\natural x\)表示\(x\)解码后得到的一阶语言对应物
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(Free(x,y)\)表示\(x\)是\(\und{变元}\),\(y\)是\(\und{项}\)或\(\und{变元}\)，且\(\natural x\)
+    在\(\natural y\)中自由出现，则\(Free(x,y)\)原始递归
+    \begin{equation*}
+    Free(x,a)\Leftrightarrow Sb(a,x,(0))\neq a
+    \end{equation*}
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    设\(T\)可公理化，则\(T\)被可判定集合\(X\)公理化，集\(\und{X}\)是递归集，则谓词
+    \begin{equation*}
+    b\text{是$T$上一个\und{证明序列}}
+    \end{equation*}
+    是递归的
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    设\(T\)同上，令\(\bew_T(b,a)\)表示
+    \begin{equation*}
+    b\text{是$T$上一个\und{证明序列}且}b_{\lh(b)-1}=a
+    \end{equation*}
+    则\(\bew_T(b,a)\)递归
+    #+END_corollary
+
+    设\(T\)同上，令\(\bwb_T(a)\)表示\(\exists b\bew_T(b,a)\)，它是递归可枚举的
+
+    注意：\(\bew,\bwb\)都是谓词
+
+** 不动点引理与递归定理
+    #+ATTR_LATEX: :options [不动点引理与递归定理]
+    #+BEGIN_lemma
+    设\(\beta(v_1)\)是一个算数公式，其中变元\(v_1\)自由出现，则存在闭语句\(\sigma\)使得
+    \begin{equation*}
+    Q\vdash\sigma\leftrightarrow\beta(\sharp\sigma)
+    \end{equation*}
+    其中\(\sharp\sigma:=S^{\sharp\sigma}0\)，是一个闭项
+    #+END_lemma
+
+    \(\sigma\)说\(\beta\)满足我的镜像，将\(S^{\sharp\sigma}\)记作\(\ucorner{\sigma}\)
+
+    #+BEGIN_proof
+    \((\sharp\alpha(x),n)\mapsto\sharp\alpha(n)\)是一个递归函数，用\(\theta(v_1,v_2,v_3)\)表示
+
+    则\(Q\vdash\forall v_3(\theta(\ucorner{\alpha},n,v_3)\leftrightarrow v_3=\ucorner{\alpha(n)})\)
+
+    令
+    \begin{equation*}
+    \tau(v_1):=\forall v_3\left( \theta(v_1,v_1,v_3)\to\beta(v_3) \right)
+    \end{equation*}
+    令\(q:=\sharp\tau\)
+
+    令
+    \begin{equation*}
+    \sigma:=\forall v_3(\theta(q,q,v_3)\to\beta(v_3))
+    \end{equation*}
+    下面验证\(Q\vdash\sigma\leftrightarrow\beta(\ucorner{\sigma})\)
+
+    显然\(Q\vdash\forall v_3(\theta(\ucorner{\tau(v_1)},q,v_3)\leftrightarrow v_3=\ucorner{\tau(q)}))\)
+
+    \(\ucorner{\tau(v_1)}=q\),\(\tau(q)=\sigma\)，故
+    \begin{equation*}
+    Q\vdash\forall v_3(\theta(q,q,v_3)\leftrightarrow v_3=\ucorner{\sigma}))
+    \end{equation*}
+    故
+    \begin{equation*}
+    \theta(q,q,v_3)\to\beta(v_3)\vdash_Qv_3=\ucorner{\sigma}\to\beta(v_3))
+    \end{equation*}
+    即
+    \begin{equation*}
+    \sigma\vdash_Q\beta(\ucorner{\sigma})
+    \end{equation*}
+
+    同时因为\(\theta(q,q,v_3)\leftrightarrow v_3=\ucorner{\sigma}\)
+    \begin{equation*}
+    \beta(\ucorner{\sigma})\vdash_Q\theta(q,q,v_3)\to\beta(v_3)
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Kleene]
+    #+BEGIN_theorem
+    设\(\phi_0,\phi_1,\dots\) 是所有部分递归函数的能兴枚举\(\phi_n=\Phi(n,x)\)。对任何部分递归函数\(f(x)\)都存在一个
+    自然数\(e\)使得\(\phi_{f(e)}=\phi(e)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    设\(\beta(u)\)是一个公式
+
+    设\(\phi_0(u),\phi_1(u),\dots\)是全部以\(u\)为自由变元的公式的枚举，显然\(h:n\to\sharp\phi_n(n)\)是一个递归函数，
+    则\(h\)在\(Q\)下可表示，即存在\(\theta(x,y)\)使得
+    \begin{equation*}
+    \forall n\in\N:Q\vdash\forall y(\theta(n,y)\leftrightarrow y=\ucorner{\phi_n(n)})
+    \end{equation*}
+    故
+    \begin{equation*}
+    \forall n\in\N:\Q\vdash\exists y(\theta(n,y)\wedge\beta(y))\leftrightarrow\beta(\ucorner{\phi_n(n)})
+    \end{equation*}
+    存在\(q\in\N\)使得\(\exists y(\theta(u,y)\wedge\beta(y))\)是\(\phi_q(u)\)，即
+    \(\forall n\in\N:Q\vdash\phi_q(n)\leftrightarrow\beta(\ucorner{\phi_n(n)})\)，特别的，
+    \(Q\vdash\phi_q(q)\leftrightarrow\beta(\ucorner{\phi_q(q)})\)
+    ，即\(\phi_q(q)\)是\(\beta\)的不动点
+    #+END_proof
+
+** 不可定义性、不完全性、不可判定性
+
+    #+ATTR_LATEX: :options [Tarski]
+    #+BEGIN_theorem
+    \(\sharp\Th(\fN)\)在\(\fN\)中不可定义
+    #+END_theorem
+
+    #+BEGIN_proof
+    设\(V(x)\)定义\(\sharp\Th(\fN)\)，即\(\fN\vDash V(n)\Leftrightarrow n\in\sharp\Th(\fN)\)
+
+    令\(A\)为含有一个变元\(x\)的公式的编码的集合，则\(A\)可定义，令\(f\)为部分函数\(A\times\N\to\N\)
+
+    \(f:(a,m)\mapsto\)"\(a\)中变元\(x\)替换为\(m\)所得到的闭语句的编码"
+
+    \(f\)可定义
+
+    令\(U(x,y)\)为\(V(f(x,y))\wedge A(x)\)
+
+    \(U(n,m)\)成立当且仅当存在\(\phi(x)\)使得\(n=\sharp\phi(x)\)并且\(\phi(m)\)成立
+
+    令\(n_0\)为\(\psi(x):=\neg U(x,x)\)的编码，则\(U(n_0,n_0)\Leftrightarrow\psi(n_0)\Leftrightarrow\neg U(n_0,n_0)\)，矛盾
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    \(\Th(\fN)\)不可判定，即\(\sharp\Th(\fN)\subseteq\N\)不是递归的
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    如果\(T\subseteq\Th(\fN)\)是可公理化的，则\(T\)是不完全的，特别的，\(\Th(\fN)\)不能公理化
+    #+END_theorem
+
+    #+BEGIN_proof
+    若\(T\)完全且可公理化，则\(T\)可判定
+    #+END_proof
 
 
 * 作业
