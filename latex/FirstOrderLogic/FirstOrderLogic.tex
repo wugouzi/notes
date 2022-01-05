@@ -1,0 +1,900 @@
+% Created 2021-12-31 Fri 14:47
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\makeindex
+\usepackage[UTF8]{ctex}
+\def \pred {\text{pred}}
+\def \quo {\text{quo}}
+\def \rem {\text{rem}}
+\author{wu}
+\date{\today}
+\title{First Order Logic}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={First Order Logic},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.90 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\section{递归论基础}
+\label{sec:org316feae}
+\subsection{primitive recursive}
+\label{sec:org1d6c484}
+\begin{definition}[]
+初始函数
+\begin{enumerate}
+\item 零函数\(Z(x)=0\)
+\item 后继函数\(S(x)=x+1\)
+\item 投射函数\(\pi_i^n(x_1,\dots,x_i,\dots,x_n)=x_i\)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[]
+设\(g:\N^n\to\N\)与\(h:\N^{n+2}\to\N\)，称\(f:\N^{n+1}\to\N\)是从\(g\)和\(h\) \textbf{经原始递归得到的} ，如果
+\begin{enumerate}
+\item \(f(\barx,0)=g(\barx)\)
+\item \(f(\barx,n+1)=h(\barx,f(\barx,n),n)\)
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[]
+全体原始递归函数的集合\(C\)是最小的满足以下条件的自然数上的函数集合
+\begin{enumerate}
+\item 初始函数\(\subseteq C\)
+\item 复合封闭
+\item 原始递归封闭
+\end{enumerate}
+
+
+称\(C\)中的元素为原始递归函数
+\end{definition}
+
+\begin{lemma}[]
+以下为原始递归函数
+\begin{enumerate}
+\item 加法
+\item \(C_k^n(x_1,\dots,x_n)=k\)
+\item \(x\cdot y\), \(x^y\),\(x!\)
+\item 非零检测和零检测
+\begin{equation*}
+\sigma(x)=
+\begin{cases}
+0&x=0\\
+1
+\end{cases}\quad
+\delta(x)=
+\begin{cases}
+1&x=0\\
+0
+\end{cases}
+\end{equation*}
+\item 前驱函数\(\pred(x)\)
+\item 截断减法
+\begin{equation*}
+x\dot-y=
+\begin{cases}
+0&x<y\\
+x-y&x\ge y
+\end{cases}
+\end{equation*}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\(\sigma(0)=0\),\(\sigma(n+1)=C_1^2(n,\sigma(n))\)
+
+\(\pred(0)=0\),\(\pred(n+1)=\pi_1^2(n,\pred(n))\)
+\end{proof}
+
+\begin{lemma}[]
+\(f:\N^k\to\N\) p.r., \(g:\N^r\to\N\)
+\begin{equation*}
+g(x_1,\dots,x_r)=f(y_1,\dots,y_k)
+\end{equation*}
+\(y_j\) is either \(x_i\) or a constant, then \(g\) is p.r.
+\end{lemma}
+
+\begin{proof}
+\(h_1,\dots,h_k:\N^r\to\N\)
+\begin{itemize}
+\item if \(y_j\) is \(x_i\), then \(h_j(x_1,\dots,x_r)=\pi_i^r(x_1,\dots,x_r)\)
+\item if \(y_j\) is a constant \(k\in\N\), then \(h_j(x_1,\dots,x_r)=C_k^r(x_1,\dots,x_r)\)
+\end{itemize}
+
+
+\begin{equation*}
+g(x_1,\dots,x_r)=f(h_1(x_1,\dots,x_r),\dots,(h_k(x_1,\dots,x_r)))
+\end{equation*}
+\end{proof}
+
+\begin{definition}[]
+\(A\subseteq\N^k\) is \textbf{primitive recursive} if its characteristic function is p.r.
+\end{definition}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item If \(A,B\subseteq\N^k\) is p.r., then \(\N^k\setminus A\), \(A\cup B\), \(A\cap B\) is p.r.
+\item if \(P,Q\) is p.r. predicate, then \(\neg P\), \(P\vee Q\), \(P\wedge Q\) is p.r.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\(1\dot-\chi_A(x)\), \(\sigma(\chi_A(x)+\chi_B(x))\), \(\chi_A(x)\cdot\chi_B(x)\)
+\end{proof}
+
+if \(f:\N^k\to\N\) is p.r., then
+\begin{align*}
+&\{x\in\N^k\mid f(x)=0\}\\
+&\{x\in\N^k\mid f(x)>0\}
+\end{align*}
+is p.r.
+
+\begin{lemma}[]
+If \(f_1,f_2\) is \(k\)-ary p.r., \(P\) p.r. predicate, then
+\begin{equation*}
+f(\barx)=
+\begin{cases}
+f_1(\barx)&P(\barx)\\
+f_2(\barx)
+\end{cases}
+\end{equation*}
+is p.r.
+\end{lemma}
+
+\begin{proof}
+\(f(x)=\chi_P(x)f_1(x)+(1\dot-\chi_P(x))f_2(x)\)
+\end{proof}
+
+\begin{lemma}[]
+\(\quo(x,y)\) and \(\rem(x,y)\) are p.r.
+\end{lemma}
+
+\begin{proof}
+Intuition
+\begin{align*}
+&\rem(x,y+1)=
+\begin{cases}
+\rem(x,y)+1&\rem(x,y)+1<x\\
+0
+\end{cases}\\
+&\quo(x,y+1)=
+\begin{cases}
+\quo(x,y)&\rem(x,y)+1<x\\
+\quo(x,y)+1
+\end{cases}
+\end{align*}
+solution
+\begin{align*}
+&\rem(x,0)=0\\
+&\rem(x,y+1)=(\rem(x,y)+1)\sigma(x-\rem(x,y)-1)\\
+&\quo(x,0)=0\\
+&\quo(x,y+1)=\quo(x,y)\sigma(x-\rem(x,y)-1)+(\quo(x,y)+1)\delta(x-\rem(x,y)-1)
+\end{align*}
+\end{proof}
+
+\begin{definition}[]
+\begin{enumerate}
+\item \((\exists x<a)\phi(x):=\exists x(x<a\wedge\phi(x))\)
+\item \((\forall x<a)\phi(x):=\forall x(x<a\to\phi(x))\)
+\end{enumerate}
+
+
+\textbf{bounded quantifier}
+\end{definition}
+
+\begin{lemma}[]
+If \(P(\barx,y)\) is a p.r. predicate
+\begin{enumerate}
+\item predicate
+\begin{align*}
+&E(\barx,y):=(\exists z\le y)P(\barx,z)\\
+&A(\barx,y):=(\forall z\le y)P(\barx,z)
+\end{align*}
+are p.r.
+\item function
+\begin{equation*}
+f(\barx,y):=(\mu z\le y)P(\barx,z)
+\end{equation*}
+is p.r.
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item predicate ``\(x\) divides \(y\)'' is p.r.
+\item ``\(x\) is not prime'' ``\(x\) is prime'' are p.r.
+\item \(p:\N\to\N\), \(n\mapsto n\text{th prime}\) is p.r.
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\(p(0)=2\). \(p(n+1)=(\mu z\le y)(z>p(n)\wedge z\text{ prime}\wedge y=p(n)!+1)\)
+\end{proof}
+
+\begin{itemize}
+\item \(\la a_0,\dots,a_n\ra:=p_0^{a_0+1}\dots p_n^{a_{n}+1}\)  is the Gödel number of \((a_0,\dots,a_n)\)
+\item \(\la\ra=1\)
+\item \(\lh:\N\to\N\) is \(\lh(a)=\mu k\le a(p_k\nmid a)\)
+\item \((a)_i:\N^2\to\N\) is \((a)_i=(\mu k\le a)(p_i^{k+2}\nmid a)\)
+\item for any \(a=\la a_0,\dots,a_n\ra\), \((a)_i=a_i\)
+\item concatenation function \(\tieconcat:\N^2\to\N\)
+\begin{equation*}
+a\tieconcat b=a\cdot\prod_{i<\lh(b)}p_{\lh(a)+i}^{(b)_i+1}
+\end{equation*}
+\end{itemize}
+
+
+
+\begin{lemma}[]
+\begin{enumerate}
+\item Set of Gödel numbers are p.r.
+\item \(\lh(a)\) and \((a)_i\) is p.r.
+\item \(a\tieconcat b\) is p.r. and
+\begin{equation*}
+\la a_0,\dots,a_n\ra\tieconcat\la b_0,\dots,b_m\ra=\la a_0,\dots,a_n,b_0,\dots,b_m\ra
+\end{equation*}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+  \begin{equation*}
+\exists n\le x\left( \forall i\le n(p_i\mid x)\wedge\forall j\le x(j>n\to p_j\nmid x) \right)
+  \end{equation*}
+\end{proof}
+
+function \(f(\barx,y)\),
+  \begin{equation*}
+F(\barx,n)=p_0^{f(\barx,0)+1}\dots p_n^{f(\barx,n)+1}
+  \end{equation*}
+
+\begin{definition}[]
+function \(g(\barx)\) and \(h(\barx,y,z)\), \(f(\barx,y)\)是从\(g\)与\(h\)经 \textbf{强递归} 得到的如果
+  \begin{align*}
+f(\barx,0)&=g(\barx)\\
+f(\barx,n+1)&=h(\barx,n,F(\barx,n))
+  \end{align*}
+\end{definition}
+
+\begin{lemma}[]
+如果\(f(\barx,y)\)是从\(g\)与\(h\)经强递归得到，and  \(g,h\) p.r., then \(f\) is p.r.
+\end{lemma}
+
+\begin{proof}
+  \begin{align*}
+F(\barx,0)&=2^{f(\barx,0)+1}=2^{g(\barx)+1}\\
+F(\barx,n+1)&=F(\barx,n)p_{n+1}^{f(\barx,n+1)+1}=F(\barx,n)p_{n+1}^{h(\barx,n,F(\barx,n))+1}
+  \end{align*}
+Hence \(F(\barx,y)\) is p.r., so \(f(\barx,y)=(F(\barx,y))_y\) is p.r.
+\end{proof}
+\subsection{recursive function}
+\label{sec:orge6e5fa9}
+\begin{itemize}
+\item 假设有一个程序可以枚举所有的原始递归函数
+\item 设\(g_0,g_1,g_2,\dots\)是所有原始递归函数的枚举
+\item 令\(F:\N\to\N\)为\(F(n)=g_n(n)+1\)
+\item 虽然\(F\)在直观上可计算，但不属于原始递归函数
+\end{itemize}
+
+
+\begin{definition}[]
+total function \(f:\N^{n+1}\to\N\),\(g(\barx)\)是从\(f\)通过正则极小化或正则\(\mu\)-算子得到的如果
+\begin{itemize}
+\item \(\forall\barx\exists yf(\barx,y)=0\)
+\item \(g(\barx)\)是使得\(f(\barx,y)=0\)最小的\(y\)
+\end{itemize}
+
+
+记作\(g(\barx)=\mu y(f(\barx,y)=0)\)
+\end{definition}
+
+\begin{definition}[]
+\begin{enumerate}
+\item 全体递归函数的集合为最小的包含所有初始函数，并且对复合、原始递归、正则极小化封闭的函数集合
+\item \(A\subseteq\N^k\)是递归集如果\(\chi_A\)是递归函数
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[]
+partial function \(f\), \(g\)是从\(f\)通过极小化或者由\(\mu\)-算子得到的如果
+\begin{equation*}
+g(\barx)=\mu y(\forall z\le y(f(x,z)\downarrow)\wedge f(x,y)=0)
+\end{equation*}
+\end{definition}
+
+\begin{definition}[]
+全体部分递归函数的集合为最小的包含所有初始函数、并且怼复合、原始递归、极小化封闭的函数集合
+\end{definition}
+
+\begin{lemma}[]
+Ackermann function is partial recursive
+\begin{gather*}
+A(0,y)=y+1,\quad A(x+1,0)=A(x,1)\\
+A(x+1,y+1)=A(x,A(x+1,y))
+\end{gather*}
+\end{lemma}
+\subsection{Turing Machine}
+\label{sec:org1697bab}
+规定输入向量为\((x_1,\dots,x_n)\)时，初始格局为
+\begin{equation*}
+q_s1^{x_1+1}01^{x_2+1}0\dots 01^{x_k+1}
+\end{equation*}
+
+输出时，格局为\(q_h1^y\)，表示输出值为\(y\)
+
+\begin{definition}[]
+一个部分函数\(f:\N^k\to\N\)是被图灵机\(M\)所计算的，或者说图灵机\(M\)计算函数\(f\)，如果
+\begin{equation*}
+f(x)=
+\begin{cases}
+y&\text{如果$M$对输入\(x\)的输出为\(y\)}\\
+\text{没有定义}&\text{如果计算过程无限或没有终止格局}
+\end{cases}
+\end{equation*}
+称部分函数\(f\)为图灵可计算的，如果存在一个图灵机\(M\)计算它
+\end{definition}
+\subsection{turing computability and partial recursive function}
+\label{sec:org3a10e46}
+\begin{theorem}[]
+一个函数是图灵可计算的当且仅当它是部分递归的
+\end{theorem}
+
+\begin{lemma}[]
+每个初始函数都是图灵可计算的
+\end{lemma}
+
+\begin{lemma}[]
+任何一台标准图灵机都可以被一台单向无穷纸带图灵机模拟
+\end{lemma}
+
+\begin{corollary}[]
+任何图灵可计算函数\(h\)都可以被一台加了如下限制的图灵机计算
+\begin{enumerate}
+\item 在初始格局中，纸带中有一个不在字母表中的新字符\$，可以在任何实现给定的位置，只要不混在输入字符
+串中见
+\item 计算完成后，\$左边的内容不变
+\item 输出字符串的位置起始于\$右边一格
+\end{enumerate}
+\end{corollary}
+
+\begin{lemma}[]
+图灵可计算对复合封闭
+\end{lemma}
+
+\begin{definition}[]
+\(T(e,x,z)\)表示\(z\)是图灵机\(e\)对输入\(x\)的计算过程（格局序列）的编码，称为Kleene谓词
+\end{definition}
+
+\begin{lemma}[]
+Kleene predicate is p.r.
+\end{lemma}
+
+\begin{theorem}[]
+存在原始递归函数\(U:\N\to\N\)和原始递归谓词\(T(e,x,z)\)使得对任意的部分递归函数\(f:\N\to\N\)都存在自然
+数\(e\)使得\(f(x)=U(\mu zT(e,x,z))\)
+\end{theorem}
+
+\begin{corollary}[]
+一个函数是递归的当且仅当它是部分递归的全函数
+\end{corollary}
+
+\begin{proof}
+\(\Leftarrow\). 部分递归的全函数\(f(x)=U(\mu zT(e,x,z))\)满足正则性
+\end{proof}
+
+\begin{theorem}[通用函数定理]
+存在一个通用的部分递归函数；即存在二元函数\(\Phi:\N^2\to\N\)使得对任何一元部分递归函数\(f:\N\to\N\)都存在一
+个自然数\(e\)使得对所有\(x\)有\(f(x)=\Phi(e,x)\)
+\end{theorem}
+
+令\(e_0,e_1,\dots\)是图灵机的一个枚举，则\(\phi_0(x),\phi_1(x),\dots\)是对应的对全体部分递归函数的枚举，
+即\(\phi_i(x)=\Phi(e_i,x)\)
+
+\begin{theorem}[]
+对递归函数来说，不存在通用函数，即不存在递归函数\(T:\N^2\to\N\)使得对任何一元递归函数\(f:\N\to\N\)都存在
+一个自然数\(e\)使得对所有\(x\)有\(f(x)=T(e,x)\)
+\end{theorem}
+
+存在一个部分函数\(f\)使得对任何递归全函数\(g\)，都存在\(n\in\dom(f)\)使得\(f(n)\neq g(n)\)
+
+\(f(n)=\Phi(n,n)+1\), \(g(x)=\Phi(m,x)\),\(f(m)=\Phi(m,m)+1\neq g(x)\)
+\subsection{递归可枚举}
+\label{sec:org943acbf}
+\begin{definition}[]
+\(A\subseteq\N\) is recursively enumerable (r.e.) if \(A=\emptyset\) or \(A=\im(f)\) for some recursive \(f\)
+\end{definition}
+
+\begin{lemma}[]
+\(A\subseteq\N\), TFAE
+\begin{enumerate}
+\item \(A\) r.e.
+\item \(A=\emptyset\) or \(A=\im(f)\) for some p.r. \(f\)
+\item \(A=\emptyset\) or \(A=\im(f)\) for some partial recursive \(f\)
+\item \(\chi_A\) is partial recursive
+\item \(A=\dom(f)\) for some partial recursive \(f\)
+\item there is a recursive/primitive recursive predicate \(R(x,y)\) s.t.
+\begin{equation*}
+A=\{x\mid\exists yR(x,y)\}
+\end{equation*}
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\(1\to 2\). Suppose \(A=\im(f)\) where \(f=U(\mu zT(e,x,z))\), for any \(a_0\in A\)
+\begin{equation*}
+F(x,n)=
+\begin{cases}
+U(\mu\le nT(e,x,n))&\exists y\le nT(e,x,y)\\
+a_0
+\end{cases}
+\end{equation*}
+Then \(F(\N^2)=f(\N)\)
+
+\(2\to 4\). \(A=f(\N)\)
+\begin{equation*}
+\chi_A(y)=C_1^1(\mu xf(x)=y)
+\end{equation*}
+
+\(5\to 6\). \(f(x)=U(\mu zT(e,x,z))\)
+\begin{equation*}
+\dom(f)=\{x\mid\exists zT(e,x,z)\}
+\end{equation*}
+
+\(6\to 1\).
+\begin{equation*}
+A=\{x\mid\exists yR(x,y)\},g(y)=x\cdot C_1^1(\mu xR(x,y))
+\end{equation*}
+\end{proof}
+
+\begin{theorem}[]
+一个自然数的集合\(A\)是递归的当且仅当\(A\)和它的补集\(\N\setminus A\)都是递归可枚举的
+\end{theorem}
+
+\begin{proof}
+设\(A\)是\(f_1:2\N\to\N\)的值域，\(\N\setminus A\)是\(f_2:2\N+1\to\N\)的值域
+
+\(R_i(x,y)\Leftrightarrow y=f_i(x)\)
+\begin{equation*}
+h(y)=\mu x(R_1(x,y)\vee R_2(x,y))
+\end{equation*}
+\end{proof}
+
+\begin{definition}[]
+\(A,B\subseteq\N^k\) r.e., then
+\begin{enumerate}
+\item \(A\cup B\),\(A\cap B\) r.e.
+\item \(\{x\in\N^{k-1}\mid\exists y(x,y)\in A\}\) r.e.
+\end{enumerate}
+\end{definition}
+
+\begin{theorem}[]
+\(K=\{e\in\N\mid\phi(e,e)\downarrow\}\) is r.e., but not recursive
+\end{theorem}
+
+\begin{proof}
+\(K=\dom(\Phi(x,x))\), thus is r.e.
+
+If \(K\) is recursive, then \(\N\setminus K\) is recursive. Thus \(x\in K\) and \(x\notin K\) are recursive
+predicates. Then function
+\begin{equation*}
+f(x)=
+\begin{cases}
+\Phi(x,x)+1&x\in K\\
+0
+\end{cases}
+\end{equation*}
+is recursive. Thus there is a natural number \(e\) s.t. \(f(x)=\Phi(e,x)\). If \(e\in K\),
+then \(f(e)=\Phi(e,e)+1\), a contradiction. If \(e\notin K\), then \(\Phi(e,e)\uparrow\), but \(f(e)=0\), contradiction
+\end{proof}
+\section{自然数的模型}
+\label{sec:org48014f3}
+\begin{definition}[皮亚诺公理系统]
+语言\(L_{ar}=\{0,S,+,\times\}\),则皮亚诺公理系统\(\PA\)由下列公式的全称概括组成
+\begin{enumerate}
+\item \(Sx\neq 0\)
+\item \(Sx=Sy\to x=y\)
+\item \(x+0=x\)
+\item \(x+Sy=S(x+y)\)
+\item \(x\times Sy=x\times y+x\)
+\item 对每个一阶公式\(\phi\),都有\(\phi\)的归纳公理
+\begin{equation*}
+(\phi(0)\wedge\forall(\phi(x)\to\phi(S(x))))\to\forall x\phi(x)
+\end{equation*}
+\end{enumerate}
+\end{definition}
+\subsection{可判定的理论}
+\label{sec:orgdf4f4ba}
+\begin{definition}[]
+理论\(T\)可公理化如果存在一个可判定的闭语句集\(\Sigma\)使得
+\begin{equation*}
+T=\{\sigma\mid\Sigma\vDash\sigma\}
+\end{equation*}
+如果\(\Sigma\)有穷，则称\(T\)是有穷公理化的
+\end{definition}
+
+\begin{definition}[]
+理论\(T\)是可判定的，如果存在一个算法，使得对任何闭语句\(\sigma\)，该算法都能告诉我们\(\sigma\)是否在\(T\)
+中
+\end{definition}
+
+\begin{proof}
+\(T\) is decidable iff
+\begin{equation*}
+\# T=\{\#\sigma\mid\sigma\in T\}
+\end{equation*}
+is a recursive set
+\end{proof}
+
+\begin{lemma}[]
+complete axiomatizable theory is decidable
+\end{lemma}
+
+\begin{proof}
+
+
+A set is recursive iff itself and its complement is r.e.. \(T=\{\sigma\mid\Sigma\vDash\sigma\}=\{\sigma\mid\Sigma\vdash\sigma\}\).
+
+\(\Sigma\) the axiom set. \(\Sigma\) is decidable, there is a recursive function \(f:\N\to\#T\), for any sentence
+\(\tau\), check whether \(\#\tau\) or \(\#\tau\) is in \(f(\N)\)
+
+\(\Sigma\)可判定，\(\chi_\Sigma\)递归
+\end{proof}
+
+\begin{theorem}[Łoś-Vaught test]
+\(T\) is a theory on countable language, if
+\begin{enumerate}
+\item \(T\) is \(\lambda\)-categorical for some cardinal \(\lambda\)
+\item \(T\) doesn't have finite model
+\end{enumerate}
+
+
+Then \(T\) is complete
+\end{theorem}
+
+\begin{proof}
+Suppose \(T\) is not complete, then there is \(\sigma\) s.t. \(T\cup\{\sigma\}\) and \(T\cup\{\neg\sigma\}\) is consistent.
+
+Let \(\fM_1\vDash T\cup\{\sigma\}\), \(\fM\vDash T\cup\{\not\sigma\}\). \(\fM_1\) and \(\fM_2\) are infinite
+
+By LST, since \(T\) is at most countable, there is \(\fM_1'\) and \(\fM_2'\) of cardinality \(\lambda\) s.t.
+\begin{equation*}
+\fM_1'\vDash T\cup\{\sigma\},\quad\fM_2'\vDash T\cup\{\neg\sigma\}
+\end{equation*}
+By categoricity, \(\fM_1'\cong\fM_2'\)
+\end{proof}
+\subsection{只含后继的自然数模型}
+\label{sec:org6252fea}
+\begin{definition}[]
+结构\(\fN_S=(\N,0,S)\)，语言\(L_S=\{0,S\}\)，公理集
+\begin{enumerate}
+\item \(0\neq Sx\)
+\item \(Sx=Sy\to x=y\)
+\item \(x\neq 0\to\exists y(x=s(y))\)
+\item \(\bigwedge_{i<n}(Sx_i=x_{i+1})\to x_0\neq x_n\)
+\end{enumerate}
+
+
+令\(T_S\)为以上公式的全称概括的逻辑后承的集合
+\end{definition}
+
+\begin{lemma}[]
+\(T_S\)是不可数范畴的理论，从而是完备的
+\end{lemma}
+
+\begin{theorem}[]
+\(\Th(\fN_S)\) has quantifier elimination
+\end{theorem}
+
+\section{哥德尔不完备性定理}
+\label{sec:org6b7dc5e}
+
+\subsection{鲁宾逊算数理论Q}
+\label{sec:orgdc2319d}
+设\(T\)是一个包含\(Q\)的理论
+\begin{definition}[]
+称一个自然数上的\(k\)-元关系\(P\)在\(T\)中 \textbf{数码逐点可表示的} (简称可表示的)，如果存在公式\(\rho(x)\)，
+称为\(P\)的一个表示公式，使得
+\begin{align*}
+&(n_1,\dots,n_k)\in P\Rightarrow T\vdash\rho(n_1,\dots,n_k)\\
+&(n_1,\dots,n_k)\notin P\Rightarrow T\vdash\neg\rho(n_1,\dots,n_k
+\end{align*}
+\end{definition}
+
+\begin{lemma}[]
+如果\(T\)可公理化，则\(T\)是递归可枚举的
+\end{lemma}
+
+\begin{proof}
+\(T\)可公理化\(\Leftrightarrow\)存在可判定的\(\Sigma\)使得
+\begin{equation*}
+T=\{\sigma\mid T\vdash\sigma\}
+\end{equation*}
+
+\(\Sigma\)可判定：\(\sharp\Sigma=\{\sharp\sigma\mid\sigma\in\Sigma\}\subseteq\N\)可判定（递归）集合
+
+\(\Sigma\)的证明集合\(P_\Sigma\)可判定（递归）：
+\begin{itemize}
+\item 公式序列\((\sharp\sigma_1,\dots,\sharp\sigma_n)\mapsto p\in\N\)
+\item \(p\in P_\Sigma\Leftrightarrow\forall i<\ln(p)\)
+\begin{itemize}
+\item \(p_i\in\Sigma\cup A\)或者
+\item \(\exists j,k<\ln(p)(\alpha_k:=\alpha_j\to\alpha_i)\),\(\sharp\alpha_{ijk}=p_{ijk}\)
+\end{itemize}
+\item \(P_\Sigma\)递归
+\item \(\sigma\in T\Leftrightarrow\exists p(p\in P_\Sigma\wedge\exists i<\ln(p)(p_i=\sharp\sigma))\)
+\item \(T\) (\(\sharp T\))是递归可枚举的
+\item \(\sharp T\)递归函数的值域
+\end{itemize}
+\end{proof}
+
+\begin{lemma}[]
+\begin{enumerate}
+\item 自然数上的等同关系\(\{(n,n)\mid n\in\N\}\)被公式\(x=x\)表示
+\item \(\le\)关系被\(x\le y\)表示
+\item 如果\(P\)是可表示的，则\(P\)是递归的
+\item 可表示的关系在布尔运算下封闭
+\item 如果\(P\)在\(Q\)中被\(\rho\)表示，则\(P\)在\(Q\)的任何一致扩张中都被\(\rho\)表示
+\item \(P\)在\(\Th(\fN)\)中被\(\rho\)表示当且仅当\(P\)在结构\(\fN\)中被\(\rho\)表示
+\end{enumerate}
+\end{lemma}
+
+\begin{proof}
+\begin{enumerate}
+\setcounter{enumi}{2}
+\item \(P\)是可表示的使得肯定能枚举出\(\rho(n_1,\dots,n_k)\)或者\(\neg\rho(n_1,\dots,n_k)\),
+
+对于枚举函数\(f\),\(\#\rho\in\im(f)\)或者\(\#\neg\rho\in\im(f)\)，不管怎么说肯定存在一个自然数对应它们，并
+且自然数是有限的
+\end{enumerate}
+\end{proof}
+
+\begin{corollary}[]
+\(P\)在\(Q\)中可表示，则\(P\)在\(\fN\)中可定义
+\end{corollary}
+
+\begin{proof}
+\(\Th(\fN)\)是\(Q\)的一致扩张
+\end{proof}
+
+\begin{itemize}
+\item 称一个\(L_{ar}\)公式是\(\Delta_0\)的，如果它只包含有界量词
+\item 如果一个公式\(\phi\)(\(Q\)下)等价于\(\exists x_1\dots\exists x_n\theta\)，其中\(\theta\)是\(\Delta_0\)的，则称\(\phi\)是\(\Sigma_1\)的公式
+\item 如果一个公式\(\phi\)等价于\(\forall x_1\dots\forall x_n\theta\)，其中\(\theta\)是\(\Delta_0\)的，则\(\phi\)是\(\Pi_1\)公式
+\item 如果一个公式既等价于\(\Sigma_1\)，又等价于\(\Pi_1\)，则它是\(\Delta_1\)的
+\end{itemize}
+
+
+\begin{theorem}[\(\Sigma_1\)-完备性]
+对任何一个\(\Sigma_1\)-闭语句，我们有
+\begin{equation*}
+\fN\vDash\tau\Leftrightarrow Q\vdash\tau
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+\(\Rightarrow\): 对任何\(\Delta_0\)-闭语句\(\sigma\)，对任何\(\fM\vDash Q\)，有
+\begin{equation*}
+\fM\vDash\sigma\Leftrightarrow\fN\vDash\sigma
+\end{equation*}
+
+设\(\sigma\)为\((\forall x\le t)\psi\)且\(\psi\)是一个\(\Delta_0\)公式，\(t\)是一个闭项，于是存在\(n\in\N\)使得\(Q\vdash t=n\)。
+如果\(\fM\vDash(\forall x\le t)\psi(x,t)\)，则\(\fM\vDash(\forall x\le n)\psi(x,n)\)
+
+若\(\sigma:=\exists\barx\psi(\barx)\)，\(\psi\)是\(\Delta_0\)公式，设\(\fN\vDash\sigma\)，则存在\(\barm\in\N^n\)使得\(\fN\vDash\psi(\barm)\)。
+\(Q\vdash\psi(\barm)\Rightarrow Q\vdash\exists\barx\psi(\barx)\)
+\end{proof}
+
+\begin{definition}[]
+称一个函数\(f:\N^k\to\N\)在\(T\)中可表示，如果存在\(L_{ar}\)公式\(\phi(x_1,\dots,x_k,y)\)使得对所
+有\((n_1,\dots,n_k)\in\N^k\)有
+\begin{equation*}
+T\vdash\forall y\left( \phi(n_1,\dots,n_k,y)\leftrightarrow y=f(n_1,\dots,n_k) \right)
+\end{equation*}
+此时称\(\phi\)作为一个函数表示\(f\)
+\end{definition}
+
+表示函数图象的公式不能表示函数
+
+设\(f\)是一个函数，\(G_f=\{(\barx,y)\mid y=f(\barx)\}\)，设\(\phi(\barx,y)\)表示\(G_f\)，于是对任
+意\(\bara\in\N^k\),\(b\in\N\)，有
+\begin{equation*}
+f(a)=b\Rightarrow T\vdash\phi(\bara,b),\quad f(a)\neq b\Rightarrow T\vdash\neg\phi(\bara,b)
+\end{equation*}
+若\(\fM\vDash T\)，对于非标准\(y\in M\setminus\N\)，
+\begin{equation*}
+\fM\vDash y\neq f(\bara)\to\neg\phi(\bara,y)
+\end{equation*}
+不一定成立
+
+例如\(Z(x)=0\)，于是\(\phi(x,y):=y+y=y\)表示\(G_Z\),\(Q\)不能证明\(y+y=y\to y=0\)，考虑\(\N\cup\{\infty\}\)
+
+\begin{lemma}[]
+令\(t\)为\(L_{ar}\)的项，则\(t\)诱导出来的函数是可表示的
+\end{lemma}
+
+\begin{theorem}[]
+可表示函数类关于复合封闭
+\end{theorem}
+
+\begin{lemma}[]
+可表示函数类关于极小算子封闭
+\begin{enumerate}
+\item 设\(P\subseteq\N^{k+1}\)被\(\alpha(\barx,y)\)表示
+\item 令\(\phi(\barx,y)\)味\(\alpha(\barx,y)\wedge(\forall z<y)\neg\alpha(\barx,z)\)
+\item 则\(f:\bara\mapsto\mu b[P(\bara,b)]\)被\(\phi(\barx,y)\)表示
+\end{enumerate}
+\end{lemma}
+
+\begin{corollary}[]
+函数\(f\)可表示当且仅当\(G_f\)可表示
+\end{corollary}
+
+\begin{proof}
+\(a\mapsto\mu b[G_f(a,b)]\)是可表示函数，它是\(f\)自身
+\end{proof}
+
+\begin{corollary}[]
+加定函数\(g(x,y)\)可表示，则函数
+\begin{equation*}
+f(x):=\mu y(g(x,y)=0)
+\end{equation*}
+也可表示
+\end{corollary}
+
+目标：可表示函数类关于原始递归封闭，
+
+
+\begin{definition}[]
+哥德尔函数\(\beta:\N^3\to\N^{<\omega}\)定义为：对任意\(u,v,w\),\(\beta(u,v,w)\)是一个长度为\(w\)的序
+列\(a_0,\dots,a_{w-1}\)，其中
+\begin{equation*}
+u=d((i+1)v+1)+a_i
+\end{equation*}
+\end{definition}
+
+定义\(\alpha(u,v,i)\)为\(\frac{u}{v(i+1)+1}\)的余数，即\(\beta\)函数的坐标分量函数，则\(\alpha(u,v,i)\)是可表
+示的
+
+\begin{theorem}[]
+\(\beta\)是满射
+\end{theorem}
+
+\begin{lemma}[欧几里得引理]
+设\(a,b\in\N\)互素，则存在\(x,y\in\Z\)使得\(ax+by=1\)
+\end{lemma}
+
+\begin{proof}
+令\(X=\{ax+by\mid x,y\in\Z\}\cap\N\)，则\(X\)有最小元\(x_0\),若\(x_0\)不能整除\(a\)，则\(a=cx_0+r\)，因
+此\(x_0\)是最小公倍数
+
+consider \(a\N\) and \(b\N\), then \(a\N\cap b\N=c\N\) for some \(c\in\N\) since \(\N\) is a PID
+\end{proof}
+
+\begin{theorem}[中国剩余定理]
+设\(d_0,\dots,d_n\)是两两互素的自然数，\(a_0,\dots,a_n\)为满足\(a_i<d_i\)的自然数，则存在\(c\in\N\)使
+得\(c\equiv a_i\mod d_i\) for all \(i\)
+\end{theorem}
+
+\begin{lemma}[]
+对任意\(n\)，存在\(n+1\)个数两两互素
+\begin{equation*}
+1+n!,1+2\cdot n!,\dots,1+(n+1)\cdot n!
+\end{equation*}
+\end{lemma}
+
+\begin{theorem}[]
+\(\beta\)是满射
+\end{theorem}
+
+\begin{proof}
+设\(a_0,\dots,a_{w-1}\)是一个自然数的序列，令\(n=\max\{a_0,\dots,a_{w-1},w\}\)，令\(v=n!\),
+则\(\{v(i+1)+1\mid i=0,\dots,w-1\}\)两两互素且\(a_i<v(i+1)+1\)，根据中国剩余定理，存在\(u\in\N\)使得
+\(u\equiv_{v(i+1)+1}a_i\)
+\end{proof}
+
+\begin{lemma}[]
+\(\alpha(u,v,i)=\frac{u}{v(i+1)+1}\)的余数是可表示的
+\end{lemma}
+
+\begin{proof}
+\(P(c,d,i,r,q):=(c=q(1+(i+1)d)+r)\)可表示
+
+\(R(c,d,i,r):=\exists q\le c\;P(c,d,i,r,q)\)可表示：
+
+\(\mu r(R(c,d,i,r))\)可表示
+\end{proof}
+
+\begin{theorem}[]
+递归函数都是可表示的
+\end{theorem}
+
+\begin{proof}
+只需证明\(\fN\)中的可表示函数类包含初始函数，且对复合、极小化、原始递归封闭
+\end{proof}
+
+
+
+\section{作业}
+\label{sec:org2020d74}
+7.5.3 (2)/
+
+7.5.5 \(h[A]\)递归吗
+
+7.1 7.2 7.3
+
+\begin{exercise}
+\label{ex8.1.1}
+令\(\Sigma_1\)和\(\Sigma_2\)两个语句集，并且没有模型能同时满足\(\Sigma_1\)和\(\Sigma_2\).证明存在一个语句\(\sigma\)使
+得\(\Mod\Sigma_1\subseteq\Mod\tau\)并且\(\Mod\Sigma_2\subseteq\Mod\neg\tau\)
+\end{exercise}
+
+\begin{proof}
+\(\Mod\Sigma_1\cap\Mod\Sigma_2=\emptyset\). \(\Mod\Sigma_1\subseteq\Mod\tau\Leftrightarrow\Sigma_1\vDash\tau\)
+
+suppose for all \(\tau\), \(\Sigma_1\not\vDash\tau\) or \(\Sigma_2\not\vDash\tau\)
+
+Then for all \(\tau\in\Sigma_1\), \(\Sigma_2\not\vDash\neg\tau\) and hence \(\Sigma_2\cup\{\tau\}\) is satisfiable. Thus \(\Sigma_1\cup\Sigma_2\) is
+satisfiable, a contradiction
+\end{proof}
+
+\begin{exercise}
+\label{8.1.2}
+\(\vdash_{\PA}x<y\leftrightarrow Sx\le y\) and \(\vdash_{\PA}x\le y\vee y\le x\)
+\end{exercise}
+
+\begin{proof}
+\(x<y\Leftrightarrow\exists z(\neg z\approx 0\wedge x+z=y)\).
+\(\neg z\approx 0\Leftrightarrow \exists m(z\approx S(m))\).
+\(x+S(m)\approx S(x+m)\approx S(x)+m\approx y\).
+\end{proof}
+
+\begin{exercise}
+\label{8.2.3}
+证明有端点的稠密线序理论\(\Th(\Q\cap[0,1),<)\),\(\Th(\Q\cap[0,1],<)\),\(\Th(\Q\cap(0,1],<)\)都分别
+是\(\aleph_0\)-categorical，因而是完全的。再验证它们和\(\Th(\Q,<)\)是稠密线序理论仅有的四个完全扩张
+\end{exercise}
+
+\begin{exercise}
+\label{8.2.4}
+\(\ACF_0\) is not finitely axiomatizable
+\end{exercise}
+
+\begin{proof}
+\href{https://math.stackexchange.com/questions/3453682/fields-with-characteristic-0-are-not-finitely-axiomatizable-in-fopc}{proof}
+\end{proof}
+
+\begin{exercise}
+\label{8.3.2}
+证明：理论\(T_S\)被下列公理公理化：(S1) (S2)加上对语言\(\call_S=\{0,S\}\)的归纳公理模式
+\begin{equation*}
+[\varphi(0)\wedge\forall x(\varphi(x)\to\varphi(Sx))]\to\forall x\varphi(x)
+\end{equation*}
+其中\(\varphi\)是任意的语言\(\call_S\)上的公式
+\end{exercise}
+
+\begin{exercise}
+\label{8.3.3}
+\(T_S\)不能被有穷公理化
+\end{exercise}
+
+\begin{proof}
+如果\(T_S\)能被有穷公理化
+\end{proof}
+\end{document}
