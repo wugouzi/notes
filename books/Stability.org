@@ -1075,7 +1075,7 @@
 
     #+BEGIN_proof
         Let \mu be minimal s.t. \(2^\mu>\kappa\), and consider the tree \(2^{<\mu}\). Take the lexicographic
-        ordering \(I\) on it, then \(\abs{I}\le\kappa\) by the minimality of \mu, but there are at
+        ordering \(I\) on it, then \(\abs{I}=2^{<\mu}\le\kappa\) by the minimality of \mu, but there are at
         least \(2^\mu>\kappa\) cuts
 
         Every cut is *uniquely* determined by the subset of elements in its lower half
@@ -1151,10 +1151,10 @@
 
     #+BEGIN_proof
     1. Suppose \(\neg\phi(x,y)\) is unstable, then there is \(I=(a_i,b_i)_{i\in\omega}\)
-       s.t. \(\vDash\neg\varphi(a_i,b_i)\Leftrightarrow i<j\), equivalently, \(\vDash\varphi(a_i,b_i)\Leftrightarrow i\ge j\).
+       s.t. \(\vDash\neg\varphi(a_i,b_j)\Leftrightarrow i<j\), equivalently, \(\vDash\varphi(a_i,b_j)\Leftrightarrow i\ge j\).
        Then add constants \((a_i,b_i)_{i\in\omega}\) and consider
        \begin{equation*}
-       \Gamma=T\cup\{\varphi(a_i,b_i):i<j\}\cup\{\neg\varphi(a_i,b_i):i\ge j\}
+       \Gamma=T\cup\{\varphi(a_i,b_j):i<j\}\cup\{\neg\varphi(a_i,b_j):i\ge j\}
        \end{equation*}
        For any finite subset \(\Gamma'\subset_f\Gamma\), we can reverse the order of \(I\): suppose \(n\) is the
        maximum index and then let \(i'=n-i\), \(j'=n+1-j\). Then \(i'<j'\Leftrightarrow n-i<n+1-j\Leftrightarrow i\ge j\).
@@ -1179,25 +1179,49 @@
 
     #+END_proof
 
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:y2.9
+    Let \(X\) be a set and \(Y_1,\dots,Y_n\) are subsets of \(X\). Define
+    \begin{equation*}
+    E(x,y):=\bigwedge_{i=1}^n(x\in X_i\Leftrightarrow y\in X_i)
+    \end{equation*}
+    Then \(E\) is an equivalence relation on \(X\) and \(Z\subseteq X\) is a boolean combination of \(X_i\)'s
+    iff
+    \begin{equation*}
+    E(x,y)\Rightarrow (x\in Z\Leftrightarrow y\in Z)
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(E\) is an equivalence relation is obvious
+
+    \(\Rightarrow\): obvious
+
+    \(\Leftarrow\): Let \(U\) be the set of all boolean combination of \(X_i\)'s. Let \(V\) be all the set \(Z\)
+    satisfying \(E(x,y)\Rightarrow(x\in Z\Leftrightarrow y\in Z)\). We want to show that \(U\subseteq V\). First each \(X_i\) satisfies
+    the condition.
+    #+END_proof
+
     #+ATTR_LATEX: :options [Erdős-Makkai]
     #+BEGIN_theorem
     Let \(B\) be an infinite set and \(\calf\subseteq\calp(B)\) a collection of subsets of \(B\)
     with \(\abs{B}<\abs{\calf}\). Then there are sequences \((b_i:i<\omega)\) of elements of \(B\)
     and \((S_i:i<\omega)\) of elements of \(\calf\) s.t. one of the following holds
-    1. \(b_i\in S_j\Leftrightarrow\forall i,j\in\omega(j<i)\)
-    2. \(b_i\in S_j\Leftrightarrow\forall i,j\in\omega(i<j)\)
+    1. \(b_i\in S_j\Leftrightarrow j<i(\forall i,j\in\omega)\)
+    2. \(b_i\in S_j\Leftrightarrow i<j(\forall i,j\in\omega)\)
     #+END_theorem
 
-    1#+BEGIN_proof
+    #+BEGIN_proof
     Choose \(\calf'\subseteq\calf\) with \(\abs{\calf'}=\abs{B}\), s.t. any two finite subsets \(B_0,B_1\) of \(B\),
-    if \(\exists S\in\calf\) with \(B_0\subseteq S\), \(B_1\subseteq B\setminus S\), then there is some \(S'\in\calf'\)
+    if n\(\exists S\in\calf\) with \(B_0\subseteq S\), \(B_1\subseteq B\setminus S\), then there is some \(S'\in\calf'\)
     with \(B_0\subseteq S'\), \(B_1\subseteq B\setminus S'\) (possible as there are at most \(\abs{B}\)-many pairs of finite
     subsets of \(B\))
 
     By assumption there is some \(S^*\in\calf\) which is not a Boolean combination of elements of \(\calf'\)
     (again there are at most \(\abs{B}\)-many different Boolean combinations of sets from \(\calf'\))
 
-    We choose by induction sequences \((b_i':i<\omega)\) in \(S^*\), \(b_i'':i<\omega\) in \(B\setminus S^*\)
+    We choose by induction sequences \((b_i':i<\omega)\) in \(S^*\), \((b_i'':i<\omega)\) in \(B\setminus S^*\)
     and \((S_i:i<\omega)\) in \(\calf'\) s.t.
     * \(\{b_0',\dots,b_n'\}\subseteq S_n\) and \(\{b_0'',\dots,b_n''\}\subseteq B\setminus S_n\)
     * \(\forall i<n(b_n'\in S_i\Leftrightarrow b_n''\in S_i)\)
@@ -1209,20 +1233,22 @@
     \begin{equation*}
     b_n'\in S_i\Leftrightarrow b_n''\in S_i
     \end{equation*}
-    #+LATEX: \wu{
-    1. \(S^*\subset\bigcup S_i\) or \(B\setminus S^*\subset\bigcup S_i\). If \(S_1,\dots,S_n,S^*\) is "Boolean combination independent",
-       then for any \(i\), \(S_i-S^*\cup\bigcup_{j\neq i}S_i\) and \(S^*\cap S_i-\bigcup_{j\neq i}S_i\) is both nonempty
-    2. \(b_n'\in S^*-\bigcup S_i\wedge b_n''\in B\setminus S^*-\bigcup S_i\neq\emptyset\)
-    #+LATEX: }
+    by Lemma ref:y2.9
 
     By the choice of \(\calf'\), there is some \(S_n\in\calf'\) with \(\{b_0',\dots,b_n'\}\subseteq S_n\)
     and \(\{b_0'',\dots,b_n''\}\subseteq B\setminus S_n\).
 
+
+
     Now by Ramsey theorem we may assume that either \(b_n'\in S_i\) for all \(i<n<\omega\) or \(b_n'\notin S_i\)
-    for all \(i<n<\omega\) (color the set of pairs \((i,n)\) for \(i<n\) with two colors according to
-    whether \(b_n'\in S_i\) or \(b_n'\notin S_i\))
-    Then there is an infinite set \(I\subseteq\N\times\N\) s.t. for all \((i,n)\in I\) s.t. \(i<n\), \(b_n'\in S_i\).
-    We can reorder the elements of \(I\) and ignore those outside of \(I\)
+    for all \(i<n<\omega\) (for \(\{x,y\}\subset[\N]^2\) and assume \(x<y\), color it according to
+    whether \(b_y'\in S_x\). Thus by Ramsey, there is an infinite \(I\subseteq\omega\) s.t.
+    - either \(\forall n>j\in I(b_n'\in S_j)\)\(\Rightarrow\)\(\forall i,j\in I(b_i''\in S_j\Leftrightarrow i>j)\)
+    - or \(\forall n>j\in I(b_n'\notin S_j)\)\(\Rightarrow\)\(\forall i,j\in I(a_i'\in S_j\Leftrightarrow i\le j)\)
+
+
+    Note that if \(b_i''\in S_j\) and \(i\le j\), then as \(\{b_0'',\dots,b_i''\}\subseteq B\setminus S_j\), \(b_i''\notin S_j\)
+
     In the first case we set \(b_i=b_i''\) and get 1, in the
     second case we set \(b_i=b_{i+1}'\) and get 2.
     #+END_proof
@@ -1243,11 +1269,12 @@
     #+END_proposition
 
     #+BEGIN_proof
-    For any \(a\in M_x\), \(\tp_\varphi(a/B)\) is given by \(S_a=\{b\in B:\vDash\varphi(a,b)\}\subseteq B\)
-
-    Applying the Erdős-Makkai theorem to \(B\) and \(\calf=\{S_a:a\in M_x\}\) we obtain a
-    sequence \((b_i:i<\omega)\) of elements of \(B\) and a sequence \((a_i:i<\omega)\) of elements of \(M_x\)
-    s.t. either \(b_i\in S_{a_j}\Leftrightarrow j<i\) or \(b_i\in S_{a_j}\Leftrightarrow i<j\) for all \(i,j\in\omega\).
+    For \(a\in\M_x\), \(\tp_\varphi(a/B)\) is determined by \(\varphi(a,B)=\{b\in B\mid\vDash\phi(a,b)\}\). Then
+    \(\abs{S_\varphi(B)}>\abs{B}\Rightarrow\abs\{\phi(a,B)\mid a\in\M_x\}>\abs{B}\). By Erdős-Makkai, there are
+    sequences \((a_i)_{i<\omega}\) and \((b_i)_{i<\omega}\) s.t.
+    \begin{equation*}
+    \text{either }\vDash\phi(a_i,b_j)\Leftrightarrow i<j,\text{ or }\vDash\phi(a_i,b_j)\Leftrightarrow j<i
+    \end{equation*}
     #+END_proof
 
     #+BEGIN_remark
@@ -1295,7 +1322,7 @@
 
     Conversely, suppose the rank is infinite, then we can find an infinite tree of
     parameters \(B=(B_\eta:\eta\in 2^{<\omega})\) s.t. for every \(\eta\in 2^\omega\) there set of
-    formulas \(\{\phi^{\eta(i)}(x,b_{\eta\mid i}):i<\omega\}\) is consistent (rank being \(\ge k\) guarantees that we can
+    formulas \(\{\phi^{\eta(i)}(x,b_{\eta\mid i}):i<\omega\}\) is consistent where \(\phi^1=\phi\) and \(\phi^0=\neg\phi\) (rank being \(\ge k\) guarantees that we can
     find such a tree of height \(k\), and then use compactness to find one of infinite height). This
     gives us that \(\abs{S_\phi(B)}>\abs{B}\), which by Proposition ref:C2.2.13 implies that \(\phi(x,y)\)
     is unstable
@@ -1310,6 +1337,11 @@
        \end{equation*}
     2. A type \(p\in S_x(A)\) is definable over \(B\) if \(p\mid\phi\) is definable over \(B\) for
        all \(\phi(x,y)\in L\)
+
+       \(\forall\phi(x,y)\in L,\;\exists\psi(y)\in L(B),\;\forall a\in A\) s.t.
+       \begin{equation*}
+       \phi(x,a)\in p\Leftrightarrow\vDash\;\psi(a)
+       \end{equation*}
     3. A type is *definable* if it is definable over its domain
     4. types in \(T\) are *uniformly definable* if for every \(\phi(x,y)\) there is some \(\psi(y,z)\) s.t.
        every type can be defined by an instance of \(\psi(y,z)\), i.e., for any \(A\) and \(p\in S_\phi(A)\)
@@ -1331,10 +1363,15 @@
     #+END_remark
 
     #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Consider \((\Q,<)\vDash\DLO\) and let \(p=\tp(\pi/\Q)\). Then \(x<y\in p(y)\Leftrightarrow x<\pi\). By QE, \(p\) is not definable
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
     #+BEGIN_lemma
     label:C2.3.7
-    1. The set \(\{e:R_\phi(\theta(x,e))\ge n\}\) is definable, for all \(n\in\omega\)
-    2. If \(R_\phi(\theta(x))=n\), then for any \(a\in M_y\), at most one of \(\theta(x)\wedge\phi(x,a)\), \(\theta(x)\wedge\neg\phi(x,a)\)
+    1. The set \(\{e\in\M^k:R_\phi(\theta(x,e))\ge n\}\) is definable, for all \(n\in\omega\)
+    2. If \(R_\phi(\theta(x))=n\), then for any \(a\in \M_y\), at most one of \(\theta(x)\wedge\phi(x,a)\), \(\theta(x)\wedge\neg\phi(x,a)\)
        has \(R_\phi\)-rank \(n\)
     #+END_lemma
 
@@ -1354,22 +1391,17 @@
     #+END_proposition
 
     #+BEGIN_proof
-    <<Problem1>>
-    Given \(p\in S_\phi(A)\), call a subtype \(p_i\subseteq p\) one-element minimal if \(R_\phi(q)=R_\phi(p_i)\) for
-    all \(p_i\subseteq q\subseteq p\) with \(\abs{\dom(q)\setminus\dom(p_i)}=1\).
-    #+LATEX: \wu{
-    Take \(a\in A\), \(p'=p\uhr A\setminus\{a\}\),
-    #+LATEX: }
+    Suppose that \(R_\phi(x=x)=n\in\omega\). Let \(p\in S_\phi(A)\). Then there is \(\chi(x)\in p\) s.t.
+    \(R_\phi(\chi(x))=\min\{R_\phi(\varphi(x))\mid\varphi\in p\}\). For each \(b\in A_y\) either \(\phi(x,b)\in p\) or \(\neg\phi(x,b)\in p\).
+    Either \(R_\phi(\chi(x)\wedge\phi(x,b))<n\) or \(R_\phi(\chi(x)\wedge\neg\phi(x,b))<n\).
 
-    *Claim* For any \(p\in S_\phi(A)\) there is a one-element minimal \(p_i\subseteq p\) with \(\abs{p_i}\le R_\phi(x=x)\)
-
-    Let \(p_0=\emptyset\), and given \(p_i\) let \(p_{i+1}\subseteq p\) be any one-element extension of \(p_i\) of
-    smaller \(R_\phi\)-rank, if one exists
+    \(R_\phi(\chi(x))\) is minimal \(\Rightarrow(\phi(x,b)\in p\Leftrightarrow R_\phi(\chi(x)\wedge\phi(x,b))=n)\)
     #+END_proof
 
     Summary
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:y3.8
     TFAE
     1. \(\phi(x,y)\) is stable
     2. \(R_\phi(x=x)<\omega\)
@@ -1387,15 +1419,51 @@
     \(6\to 1\) ref:C2.2.8
     #+END_proof
 
-    For complete theory, this translates to
+    Global case:
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
-    Let \(T\) be a complete first-order theory. TFAE
+    label:y3.9
+    Let \(T\) be a complete theory. TFAE:
     1. \(T\) is stable
-    2. There is no sequence of tuples \((a_i:i\in\omega)\) from
+    2. There is NO sequence of tuples \((c_i)_{i\in\omega}\) from \(\M\) and formula \(\phi(z_1,z_2)\in L(M)\) s.t.
+       \begin{equation*}
+       \vDash\phi(c_i,c_j)\Leftrightarrow i<j
+       \end{equation*}
+    3. \(f_T(\kappa)\le\kappa^{\abs{T}}\) for all infinite cardinals \kappa
+    4. There is some \kappa s.t. \(f_T(\kappa)\le\kappa\)
+    5. There is some \kappa s.t. \(f_T(\kappa)<\ded\kappa\)
+    6. All formulas of the form \(\phi(x,y)\) where \(x\) is a singleton variable are stable
+    7. All types over models are definable
     #+END_theorem
 
+    #+BEGIN_proof
+    \(1\to 2\): definition
 
+    \(2\to 1\): Let \(\psi(x,y)\) be a formula with order property witnessed by sequence
+    \begin{equation*}
+    \{(a_i,b_i)\mid i<\omega\}
+    \end{equation*}
+    Let \(\phi(x_1y_1,x_2y_2):=\psi(x_1,y_2)\) and \(c_i:a_ib_i\). Then \(\vDash\phi(c_ic_j)\Leftrightarrow i<j\)
+
+    \(1\to 3\): \(S_x(M)\to\prod_{\phi\in L}S_\phi(M)\) is injective
+
+    \(3\to 4\), \(4\to 5\): obvious
+
+    \(5\to 1\): ref:C2.2.8
+
+    \(6\leftrightarrow 1\): Fix some \kappa, then \(S_1(M)\le\kappa\) for all \(M\) with \(\abs{M}=\kappa\) iff \(S_n(M)\le\kappa\) for all \(M\)
+    with \(\abs{M}=\kappa\)
+
+    \(1\leftrightarrow 7\): ref:y3.8
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    * stability \(\Leftrightarrow\) all types over all models are definable
+    * some unstable theories have certain special models over which all types are definable
+    * \(\calm=(\R,+,\times,0,1)\), all types over \(\R\) are uniformly definable
+    #+END_examplle
 
     As we will see later, a theory \(T\) iff all types over *all* models of \(T\) are definable.
 
@@ -1487,24 +1555,6 @@
     model \(M'\) by Löwenheim–Skolem Theorem since there is only countable many parameters
     #+END_proof
 
-** Local Stability
-    #+ATTR_LATEX: :options []
-    #+BEGIN_definition
-    1. Let \(M\vDash T\). We say \(\varphi(\barx,\bary)\) is *stable in \(M\)* if it is *not* the case that there
-       are \(\bara_i,\barb_i\in M\), for \(i<\omega\), s.t. *either* for all \(i,j<\omega\), \(M\vDash\varphi(\bara_i,\barb_j)\)
-       iff \(i\le j\), *or*, for all \(i,j<\omega\), \(M\vDash\neg\varphi(\bara_i,\barb_j)\) iff \(i\le j\)
-
-    2. \(\varphi(\barx,\bary)\) is *stable* (for \(T\)) if it is stable in \(M\) for all \(M\vDash T\)
-    3. \(T\) is *stable* if every \(L\)-formula \(\varphi(\barx,\bary)\) is stable (for \(T\))
-    #+END_definition
-
-    #+BEGIN_remark
-    A formula \(\varphi(\barx,\bary)\) is stable for \(T\) iff it is not the case that there
-    are \(\bara_i,\barb_i\in\fC\), for \(i<\omega\), s.t. \(\fC\vDash\varphi(\bara_i,\barb_i)\) iff \(i\le j\) for all \(i,j<\omega\)
-    #+END_remark
-
-    For simplicity, from now on we will write tuples simply as \(x\) and \(a\).
-
 ** Indiscernible sequences and stability
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -1514,29 +1564,51 @@
     #+END_definition
 
     #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    1. A constant sequence is indiscernible over any set
+    2. A subsequence of a \(A\)-indiscernible sequence is \(A\)-indiscernible
+    3. In the theory of equality, any sequence of singletons is indiscernible
+    4. Any increasing sequence of singletons in a dense linear order is indiscernible
+    5. Any basis in a vector space is an indiscernible sequence
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
     #+BEGIN_definition
-    Let \(I\) be an infinite linear order and \(\cali=(a_i)_{i\in I}\) a sequence of \(k\)-tuples
-    in \(\fM\), \(A\subseteq M\). The *Ehrenfeucht-Mostowski type* \(\EM(\cali/A)\) of \(\cali\) over \(A\) is the set
-    of \(L(A)\)-formulas \(\varphi(x_1,\dots,x_n)\) with \(\fM\vDash\varphi(a_{i_1},\dots,a_{i_n})\) for all \(i_1<\dots<i_n\in I\), \(n<\omega\)
+    For any sequence \(\bara=(a_i\mid i\in I)\) and a set of parameters \(B\), we define \(\EM(\bara/B)\),
+    the Ehrenfeucht-Mostowski type of the sequence \(\bara\) over \(B\), as a partial type
+    over \(B\) in countably many variables indexed by \(\omega\) and given by the following collection of
+    formulas
+    \begin{equation*}
+    \{\phi(x_0,\dots,x_n)\in L(B)\mid\forall i_0<\dots<i_n,\vDash\phi(a_{i_0},\dots,a_{i_n}),n\in\omega\}
+    \end{equation*}
     #+END_definition
+
+    #+BEGIN_exercise
+    For any sequence \(\bara=(a_i\mid i\in I)\) and a set of parameters \(B\). If \(J\) is an infinite
+    linear order, then there is a sequence \(\barb=(b_i\mid i\in J)\) which realises \(\EM(\bara/A)\)
+    #+END_exercise
+
+    #+BEGIN_exercise
+    If \(\bara=(a_i\mid i\in I)\) is an \(A\)-indiscernible sequence. Then \(\EM(\bara/A)\) is a complete
+    \omega-type over \(A\)
+    #+END_exercise
+
+    Let \(\bara=(a_i\mid i\in I)\) and \(\barb=(b_j\mid j\in J)\) be \(A\)-indiscernible sequences. We
+    denote \(\bara\equiv_{\EM,A}\barb\) if \(\EM(\bara/A)=\EM(\barb/A)\in S_\omega(A)\)
 
     #+ATTR_LATEX: :options []
     #+BEGIN_proposition
     label:C2.4.4
+    label:y4.6
     Let \(\bara=(a_i:i\in J)\) be an arbitrary sequence in \(\fC\), where \(J\) is an arbitrary linear
-    order and \(A\) is a small set of parameters. Then for any small linear order \(I\) we can find
-    an \(A\)-indiscernible sequence \((b_i:i\in I)\) based on \(\bara\), i.e., s.t.:
-
-    for any \(i_0<\dots<i_n\) in \(I\) and a finite set of formulas \(\Delta\subseteq L(A)\) there are
-    some \(j_0<\dots<j_n\) in \omega s.t. \(\vDash\phi(b_{i_0},\dots,b_{i_n})\Leftrightarrow\;\vDash\phi(a_{j_0},\dots,a_{j_n})\) for all \(\phi\in\Delta\)
-
-    Thus \((b_i:i\in I)\) realises \(\EM(\bara/A)\)
+    order and \(A\) is a small set of parameters. Then for any small linear order \(I\) we can find (in \(\M\))
+    an \(A\)-indiscernible sequence \((b_i:i\in I)\) realize the EM-type of \(\bara\) over \(A\)
     #+END_proposition
 
     #+ATTR_LATEX: :options []
     #+BEGIN_corollary
     If \((a_i:i\in I)\) is an \(A\)-indiscernible sequence and \(J\supseteq I\) is an arbitrary linear order,
-    then there is an \(A\)-indiscernible sequence \((b_j:j\in J)\) s.t. \(b_j=a_j\) for all \(j\in I\)
+    then there is an \(A\)-indiscernible sequence \((b_j:j\in J)\) s.t. \(b_i=a_i\) for all \(i\in I\)
     (everything involved is small)
     #+END_corollary
 
@@ -1550,11 +1622,147 @@
     s.t. \(\sigma(b_j)=a_j\). Then define \(b_j'=\sigma(b_j)\) for all \(j\in J\)
     #+END_proof
 
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(\bara=(a_i\mid i\in I)\) is an infinite \(A\)-indiscernible sequence, then for all \(S\subseteq I\)
+    and \(i\in I\setminus S\), \(a_i\notin\acl(A,a_{j\in S})\)
+    #+END_lemma
+
     #+BEGIN_proof
-    First
+    \(a_i\in\acl(A,a_{j\in S})\Leftrightarrow\exists S_0\subseteq_f S(a_i\in\acl(A,a_{j\in S_0}))\). Let \((b_i\mid i\in\Q)\equiv_{\EM,A}(a_i\mid i\in I)\).
+    Then for any \(i_0<\dots<i_n\in I\) and \(j_0<\dots<j_n\in\Q\)
+    \begin{equation*}
+    a_{i_k}\in\acl(A,\{a_{i_s}\mid s\neq k,s\le n\})\Leftrightarrow b_{j_k}\in\acl(A,\{b_{j_s}\mid s\neq k,s\le n\})
+    \end{equation*}
+    WLOG, we assume that \(I=(\Q,<)\).
+
+    Suppose that
+    \begin{equation*}
+    a_{i_k}\in\acl(A,\{a_{i_s}\mid s\neq k,s\le n\})
+    \end{equation*}
+    and \(\phi(x_0,\dots,x_k,\dots,x_n)\in L(A)\) witness the property. Then for any \(q\in\Q\) realizing the same
+    cut of \(a_{i_k}\) over \(\{a_{i_s}\mid s\neq k,s\le n\}\) we have
+    \begin{equation*}
+    \vDash\phi(a_{i_0},\dots,a_q,\dots,a_{i_n})
+    \end{equation*}
+    So \(\phi(a_{i_0},\dots,\M,\dots,a_{i_n})\) is infinite, a contradiction
     #+END_proof
 
+    #+BEGIN_exercise
+    <<Problem1>>
+    Start with the sequence \(\bara=(1,2,3,\dots)\) in \((\C,+,\times,0,1)\vDash\ACF_0\). Give an explicit example of an
+    indiscernible sequence realizing \(\EM(\bara)\)
+    #+END_exercise
 
+    #+BEGIN_proof
+    \(x\in\R_{>0}\Leftrightarrow\exists y\; x=y^2\wedge x\neq 0\). And in \(\R_{>0}\) we can define an
+    order \(x>y\Leftrightarrow\exists z(x=y+z^2\wedge z\neq 0)\). Note that \(\EM_{\R_{>0}}(\bara)\subseteq\EM_{\C}(\bara)\).
+
+    Thus \(\barb\) should be an increasing sequence of reals greater than or equal to 1.
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A sequence \((a_i\mid i\in I)\) is *totally indiscernible over* \(A\)
+    if \(a_{i_0}\dots a_{i_n}\equiv_Aa_{j_0}\dots a_{j_n}\) for any \(i_0\neq\dots\neq i_n\), \(j_0\neq\dots\neq j_n\) from \(I\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(T\) is stable iff every indiscernible sequence is totally indiscernible
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): Suppose \(T\) is stable and \((a_i\mid i\in I)\) is indiscernible over \(A\).
+    If \((a_i\mid i\in I)\) is not totally indiscernible, then there are  \(i_0\neq\dots\neq i_n\), \(j_0\neq\dots\neq j_n\)
+    from \(I\) s.t. \(a_{i_0}\dots a_{i_n}\not\equiv_Aa_{j_0}\dots a_{j_n}\)which implies they are in different orders. WLOG, assume that \(I=(\Q,<)\)
+    and \(i_0=0,\dots,i_n=n\). Then there is \(\sigma\in S_{n+1}\) s.t.
+    \begin{equation*}
+    a_{\sigma(0)}\dots a_{\sigma(n)}\equiv_Aa_{j_0}\dots a_{j_n}
+    \end{equation*}
+    \(\sigma=\tau_m\dots\tau_1\), where \(\tau_1,\dots,\tau_m\) are transpositions. Then there is \(0<k<m\)
+    s.t. \(a_{\tau_k(0),\dots,a_{\tau_k(n)}}\not\equiv_A a_0\dots a_n\). Assume \(\tau_k=(s,s+1)\), then there is
+    an \(L(A)\)-formula \(\psi(x_0,\dots,x_n)\) s.t.
+    \begin{equation*}
+    \vDash\psi(a_0,\dots,a_s,a_{s+1},\dots,s_n)\wedge\neg\psi(a_0,\dots,a_{s+1},a_s,\dots,s_n)
+    \end{equation*}
+
+    Let \(\phi(x,y):=\psi(a_0,\dots,a_{s-1},x,y,a_{s+2},\dots,a_n)\). Then for
+    all \(s<q\), \(r<s+1\), \(\vDash\phi(a_q,q_r)\Leftrightarrow q<r\), contradicting ref:y3.9
+
+    \(\Leftarrow\): Assume \(T\) is unstable. Then suppose that \(\barc=(c_i\mid i\in\omega)\) witnesses the order
+    property of \(\phi(x,y)\). Let \(\bara=(a_i\mid i\in\omega)\) be an indiscernible sequence based on \(\barc\).
+    Then
+    \begin{equation*}
+    \vDash\phi(a_i,a_j)\Leftrightarrow i<j
+    \end{equation*}
+    so \(\bara\) is not totally indiscernible
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:y4.13
+    For any stable formula \(\phi(x,y)\), in an arbitrary theory, there is some \(k_\phi\in\omega\) depending just
+    on \phi s.t. for any indiscernible sequence \(I\subseteq\M_x\) and any \(b\in\M_y\),
+    either \(\abs{\phi(I,b)}\le k_\phi\) or \(\abs{\neg\phi(I,b)}\le k_\phi\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Suppose that \(\abs{\phi(I,b)}>k\) and \(\abs{\neg\phi(I,b)}>k\). By compactness, we assume
+    that \(I=\omega\). Then either \(\phi(I,b)\) or \(\neg\phi(I,b)\) is infinite. Assume that \(\neg\phi(I,b)\) is
+    infinite. Then there is a subsequence \(J=\{n_0<n_1<\dots\}\subseteq\omega\)  s.t.
+    \begin{equation*}
+    \vDash\phi(a_{n_i},b)\Leftrightarrow i\le k
+    \end{equation*}
+    by \(\vDash\neg\phi(a_{n_i},b)\Leftrightarrow i>k\).
+
+    Let \(c_i=a_{n_i}\) and \(b_k=b\) we have
+    \begin{equation*}
+    \vDash\bigwedge_{i\le k}\phi(c_i,b_k)\wedge\bigwedge_{i=k+1}^{2k}\neg\phi(c_i,b_k)
+    \end{equation*}
+    Since \((c_i)_{i<\omega}\) is indiscernible, we have
+    \begin{equation*}
+    \vDash\exists y\left(
+    \bigwedge_{i\le k}\phi(c_i,y)\wedge\bigwedge_{i=k+1}^{2k}\neg\phi(c_i,y) \right)\to\exists y
+    \left( \bigwedge_{i\le j}\phi(c_i,y)\wedge\bigwedge_{i=j+1}^k\neg\phi(c_i,y) \right)
+    \end{equation*}
+    for each \(j<k\) (pick \(k\) elements from \(2k\) and choose by indiscernibility)
+
+    Let
+    \begin{equation*}
+    b_j\vDash\bigwedge_{i\le j}\phi(c_i,y)\wedge\bigwedge_{i=j+1}^k\neg\phi(c_i,y)
+    \end{equation*}
+    Then \(\vDash\phi(c_i,b_j)\Leftrightarrow i\le j\), so \phi has \(k\)-order property. Since \phi is stable, \(k_\phi\) exists
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    In a stable theory, we can define the average type of an indiscernible
+    sequence \(\barb=(b_i)_{i\in I}\) over a set of parameters \(A\) as
+    \begin{equation*}
+    \Av(\barb/A)=\{\phi(x)\in L(A)\mid\;\vDash\phi(b_i)\text{ for all but finitely many }i\in I\}
+    \end{equation*}
+    By proposition ref:y4.13 it is a complete consistent type over \(A\)
+    #+END_corollary
+
+
+** Stable=NIP\texorpdfstring{\(\cap\)}{∩}NSOP and the classification picture
+    #+ATTR_LATEX: :options [NSOP]
+    #+BEGIN_definition
+    * A (partitioned) formula \(\phi(x,y)\in L\) has the strict order property, or SOP, if there is an
+      infinite sequence \((b_i)_{i\in\omega}\) s.t. \(\phi(\M,b_i)\subsetneq\phi(\M,b_j)\) for all \(i<j\in\omega\)
+    * A theory \(T\) has SOP if some formula does
+    * \(T\) is NSOP if it does not have the strict order property
+    #+END_definition
+
+    #+BEGIN_remark
+    * SOP implies order property by picking an element in each \(\phi(\M,b_{i+1})\setminus\phi(\M,b_i)\)
+    * If \(\phi(x,y)\) has SOP, then by ref:y4.6 we can choose an indiscernible sequence \((b_i)_{i\in\omega}\)
+      satisfying the condition above
+    * \(\DLO\) has SOP
+    * \(T\) is NSOP iff all formulas with parameters are NSOP iff all formulas \(\phi(x,y)\) with \(x\)
+      singleton are NSOP
+    #+END_remark
 
 * TODO Problems
     | [[Problem1]] | [[Problem2]] | [[Problem3]] | [[Problem4]] | [[Problem5]] |
