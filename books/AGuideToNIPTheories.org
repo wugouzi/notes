@@ -5,6 +5,7 @@
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\alt}{alt}
 * Introduction
 ** Preliminaries
     We work with a complete, usually one-sorted, theory \(T\) in language \(L\). We have a monster
@@ -26,7 +27,13 @@
     \calu\vDash\phi(a;b_I)\Leftrightarrow a\in I,\quad\forall a\in A
     \end{equation*}
     By compactness, this is equivalent to saying that every finite subset of \(A\) is shattered
-    by \(\phi(x;y)\)
+    by \(\phi(x;y)\).
+    #+LATEX: \wu{
+    To use compactness, consider
+    \begin{equation*}
+    \bigcup_{I\subseteq A}\{\phi(a;y):a\in I\}\cup\{\neg\phi(a;y):a\in A\setminus I\}
+    \end{equation*}
+    #+LATEX: }
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -34,11 +41,18 @@
     #+END_definition
 
     #+BEGIN_remark
-    If \(\phi(x;y)\) is NIP, then by compactness, there is some integer \(n\) s.t. no set of size \(n\)
-    is shattered by \(\phi(x;y)\)
+    1. If \varphi has IP, then for every set \(X\) there are \((a_i:i\in X)\), \((b_I:I\subseteq X)\)
+       s.t. \(\vDash\varphi(a_i,b_I)\Leftrightarrow i\in I\)
+    2. If for arbitrarily large \(n<\omega\) there are \((a_i:i<n)\) s.t. for all \(I\subseteq n\),
+       \begin{equation*}
+       \{\varphi(a_i,y):i\in I\}\cup\{\neg\varphi(a_i,y):i\in n\setminus I\}
+       \end{equation*}
+       is consistent, then \(\varphi(x;y)\) has IP
+    3. If \(\phi(x;y)\) is NIP, then by compactness, there is some integer \(n\) s.t. no set of size \(n\)
+        is shattered by \(\phi(x;y)\)
 
-    The maximal integer \(n\) for which there is some \(A\) of size \(n\) shattered by \(\phi(x;y)\) is
-    called the *VC-dimension* of \phi. If there is no such integer, then its VC-dimension is infinite
+        The maximal integer \(n\) for which there is some \(A\) of size \(n\) shattered by \(\phi(x;y)\) is
+        called the *VC-dimension* of \phi. If there is no such integer, then its VC-dimension is infinite
     #+END_remark
 
     #+ATTR_LATEX: :options []
@@ -84,6 +98,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:2.7
     The formula \(\phi(x;y)\) has IP iff there is an indiscernible sequence \((a_i:i<\omega)\) and a
     tuple \(b\) s.t.
     \begin{equation*}
@@ -92,7 +107,6 @@
     #+END_lemma
 
     #+BEGIN_proof
-    <<Problem1>>
     \(\Leftarrow\): Assume that there is a sequence \((a_i:i<\omega)\) and a tuple \(b\) as above. Let \(I\subseteq\omega\).
     We show that there is some \(b_I\) s.t. \(\phi(a_i;b_I)\Leftrightarrow i\in I\)
     We can find an increasing one-to-one map \(\tau:\omega\to\omega\) s.t. for all \(i\in\omega\), \(\tau(i)\) is even
@@ -101,12 +115,13 @@
 
     \(\Rightarrow\): Assume that \(\phi(x;y)\) has IP. Let \(A=(a_i:i<\omega)\) be a sequence of \(\abs{x}\)-tuples
     which is shattered by \(\phi(x;y)\). By Ramsey and compactness, we can find some indiscernible
-    sequence \(I=(c_i:i<\omega)\) of \(\abs{x}\)-tuples realizing the EM-type of \(A\). It follows that
+    sequence \(I=(c_i:i<\omega)\) of \(\abs{x}\)-tuples realizing the EM-type of \(A\).
+    #+LATEX: \wu{
+    Add \(\bigcup_{A_0\subset_fA}\{\phi(c;y):c\in A_0\}\cup\{\neg\phi(c;y):c\in A\setminus A_0\}\) to the EM-type
+    #+LATEX: }
+    It follows that
     for any two disjoint finite sets \(I_0\) and \(I_1\) of \(I\), the partial
     type \(\{\phi(c;y):c\in I_0\}\cup\{\neg\phi(c;y):c\in I_1\}\) is consistent.
-    #+LATEX: \wu{
-
-    #+LATEX: }
     Then by compactness \(I\) is shattered
     by \(\phi(x;y)\). In particular, there is \(b\) s.t. \(\phi(c_i;b)\) holds iff \(i\) is even
     #+END_proof
@@ -118,7 +133,236 @@
 
 
     Indeed, if we could not find such \Delta and \(n_{\phi,\Delta}\), then the partial type in
-    variables \((x_i:i<\omega)\verb!^! y\) stating that \((x_i:i<\omega)\) is an indiscernible sequence and
+    variables \((x_i:i<\omega)\verb!^! y\) stating that \((x_i:i<\omega)\) is an indiscernible sequence
+    and \(\neg(\phi(x_i;y)\leftrightarrow\phi(x_{i+1};y))\) holds for all \(i<\omega\) would be consistent, contradicting the
+    previous lemma
+
+    Let \(I=(a_i:i\in\calj)\)  be an indiscernible sequence and take an NIP formula \(\phi(x;y)\in L\) and a
+    tuple of parameters \(b\in\calu\). Then there is a maximal integer \(n\) s.t. we can
+    find \(i_0<\dots<_{\calj}i_n\) with \(\neg(\phi(a_{i_k};b)\leftrightarrow\phi(a_{i_{k+1}};b))\) for all \(k<n\). We call such
+    an \(n\) the number of alternations of \(\phi(x;b)\) on the sequence \(I\) and write it
+    as \(\alt(\phi(x;b),I)\). We let \(\alt(\phi(x;y))\) denote the maximum value of \(\alt(\phi(x;b),I)\)
+    for \(b\) ranging in \(\calu\) and \(I\) ranging over all indiscernible sequences. Note that this
+    maximum exists and is bounded by the number \(n_{\phi,\Delta}\) of the previous paragraph. We sometimes
+    call \(\alt(\phi(x;y))\) the *alternation rank* (or *number*) of \(\phi(x;y)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:2.8
+    The formula \(\phi(x;y)\) is NIP iff for any indiscernible sequence \((a_i:i\in\calj)\) and tuple \(b\),
+    there is some end segment \(\calj_0\subseteq\calj\) and \(\epsilon\in\{0,1\}\) s.t. \(\phi(a_i;b)^\epsilon\) holds for any \(i\in\calj_0\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    A Boolean combination of NIP formulas is NIP
+    #+END_lemma
+
+    #+BEGIN_proof
+    Negation is clear
+
+    Let \(\phi(x;y)\) and \(\psi(x;y)\) be two NIP formulas and we want to show
+    that \(\theta(x;y):=\phi(x;y)\wedge\psi(x;y)\) is NIP. We use criterion from Proposition ref:2.8.
+
+    #+END_proof
+*** NIP theories
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The theory \(T\) is NIP if all formulas \(\phi(x;y)\in L\)  are NIP
+    #+END_definition
+
+    Note that if \(T\) is NIP, then also all formulas \(\phi(x;y)\) with parameters are NIP, since
+    if \(\phi(x;y,d)\) has IP, then so does \(\phi(x;y)\verb!^!z\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Assume that all formulas \(\phi(x;y)\in L\) with \(\abs{y}=1\) are NIP, then \(T\) is NIP
+    #+END_proposition
+
+    #+BEGIN_proof
+    *Claim*: Let \((a_i:i<\abs{T}^+)\) be an indiscernible sequence of tuples, and
+    let \(b\in\calu\), \(\abs{b}=1\). Then there is some \(\alpha<\abs{T}^+\) s.t. the
+    sequence \((a_i:\alpha<i<\abs{T}^+)\) is indiscernible over \(b\)
+
+    If this does not hold, then for every \(\alpha<\abs{T}^+\), for some formula \(\delta_\alpha(x_1,\dots,x_{k(\alpha)};y)\),
+    we can find
+    \begin{equation*}
+    \alpha<i_1<\dots<i_{k(\alpha)}<\abs{T}^+\quad\text{ and }\quad\alpha<j_1<\dots<j_{k(\alpha)}<\abs{T}^+
+    \end{equation*}
+    s.t. \(\vDash\delta_\alpha(a_{i_1},\dots,a_{i_{k(\alpha)}};b)\wedge\neg\delta_\alpha(a_{j_1},\dots,a_{j_{k(\alpha)}};b)\). There is some
+    formula \(\delta(x_1,\dots,x_k;y)\) s.t. \(\delta_\alpha=\delta\) for cofinally many values of \alpha.
+    Then we can construct inductively a sequence \(I=(i_1^l \verb!^!\dots \verb!^!i_k^l:l<\omega)\)
+    s.t. \(i_1^l<\dots<i_k^l<i_1^{l+1}\) for all \(l<\omega\) and \(\delta(a_{i_1^l},\dots,a_{i_k^l},b)\) holds iff \(l\) is
+    even. As the sequence \((a_{i_1^l}\dots a_{i_k^l}:l<\omega)\) is indiscernible, this contradicts the
+    assumption that \(\delta(x_1,\dots,x_k;y)\) is NIP
+
+    Now let \(\phi(x;y)\) be any formula, where \(y=y_1 \verb!^!\dots \verb!^!y_n\) is an \(n\)-tuple.
+    Let \((a_i:i<\abs{T}^+)\) be any indiscernible sequence of \(\abs{x}\)-tuples and
+    let \(b=b_1 \verb!^!\dots \verb!^!b_n\) be an \(n\)-tuple. By the claim, there is
+    some \(\alpha_1<\abs{T}^+\) s.t. the sequence \((a_i:a_1<i<\abs{T}^+)\) is indiscernible over \(b_1\).
+    This implies that the sequence \((a_i \verb!^!b_1:\alpha_1<i<\abs{T}^+)\) is indiscernible. Iterating, we
+    find \(\alpha_n<\abs{T}^n\) s.t. \((a_i \verb!^!b_1\dots \verb!^!b_n:\alpha_n<i<\abs{T}^+)\) is indiscernible.
+    This implies that the truth value of \(\phi(a_i:b)\) is constant for \(i>\alpha_n\). By Proposition
+    ref:2.8 the formula \(\phi(x;y)\) is NIP
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    1. Any stable theory is NIP
+    2. Any o-minimal theory is NIP
+    #+END_examplle
+
+    #+ATTR_LATEX: :options [Baldwin-Saxl]
+    #+BEGIN_theorem
+    Let \(G\) be a group definable in an NIP theory \(T\). Let \(H_a\) be a uniformly definable
+    family of subgroups of \(G\). Then there is an integer \(N\) s.t. for any finite
+    intersection \(\bigcap_{a\in A}H_a\), there is a subset \(A_0\subseteq A\) of size \(N\)
+    with \(\bigcap_{a\in A}H_a=\bigcap_{a\in A_0}H_a\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    The fact that \(H_a\) is a uniformly definable family of subgroups means that there is a
+    formula \(\phi(x;y)\) s.t. each \(H_a\) is defined by \(\phi(x;a)\). WLOG, any instance \(\phi(x;a')\)
+    defines a subgroup of \(G\)
+
+    Take any integer \(N\) and assume that the conclusion of the theorem does not hold for \(N\).
+    Then we can find some set \(A=\{a_0,\dots,a_N\}\) of parameters s.t. for every \(k\le N\) we
+    have \(\bigcap_{a\in A\setminus\{a_k\}}H_a\neq\bigcap_{a\in A}H_a\). Let \(K_k=\bigcap_{a\in A\setminus\{a_k\}}H_a\) and \(K=\bigcap_{a\in A}H_a\). For
+    every \(k\le N\), pick a point \(c_k\in K_k\setminus K\). For \(B\subseteq N+1\), define \(c_B=\prod_{k\in B}c_k\), where
+    the product is in the sense of the group \(G\). Then we have
+    \begin{equation*}
+    c_B\in H_{a_k}\Leftrightarrow k\notin B
+    \end{equation*}
+    This shows that the formula \(\phi^{opp}(y;x):=\phi(x;y)\) has VC-dimension at least \(N\). Therefore
+    there is no maximal such \(N\).
+    #+END_proof
+** Invariant types
+    #+ATTR_LATEX: :options [Invariant type]
+    #+BEGIN_definition
+    Let \(A\subset\calu\) be a small subset and \(p\in S_x(\calu)\). We say that \(p\) is *\(A\)-invariant*
+    if \(\sigma p=p\) for any \(\sigma\in\Aut(\calu/A)\)
+
+    \(p\) is *invariant* if it is \(A\)-invariant for some small \(A\subset\calu\)
+    #+END_definition
+
+    Alternatively, \(p\) is \(A\)-invariant if for every formula \(\phi(x;y)\) and tuples \(b,b'\in\calu\),
+    if \(b\equiv_Ab'\), then
+    \begin{equation*}
+    p\vdash\phi(x;b)\Leftrightarrow p\vdash\phi(x;b')
+    \end{equation*}
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    A type \(p(x)\) over a set \(B\) is said to be *definable* if for every formula \(\phi(x;y)\) without
+    parameters, there is some formula \(d\phi(y)\in L(B)\) s.t. \(p\vdash\phi(x;b)\Leftrightarrow b\vDash d\phi(y)\) for all \(b\in B\).
+    We say that \(p\) is definable over \(A\subseteq B\) if the formula \(d\phi(y)\) can be taken to have
+    parameters in \(A\). If the type \(p\) is definable, then it is definable over some \(A\) of
+    size \(\le\abs{T}\)
+
+    Let \(p\in S_x(\calu)\) be definable. Then it is definable over some \(A\subset\calu\) of size \(\le\abs{T}\). In
+    particular, \(p\) is \(A\)-invariant
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    A type \(p(x)\) is said to be *finitely satisfiable* in a set \(A\) if for every
+    formula \(\phi(x;b)\in p\) there is \(a\in A\) s.t. \(\phi(a;b)\) holds.  If \(p\in S_x(\calu)\) is finitely
+    satisfiable in \(A\), then it is \(A\)-invariant. Indeed, if \(\phi(x;y)\) is a formula
+    and \(b\equiv_Ab'\) are two \(\abs{y}\)-tuples, then for any element \(a\in A\), \(a\vDash\phi(x;b)\leftrightarrow\phi(x;b')\).
+    Hence also \(p\vdash\phi(x;b)\leftrightarrow\phi(x;b')\)
+    #+END_examplle
+
+    We present two constructions to obtain such types
+    1. Let \(A\subset\calu\) be any small set and let \(\cald\) be an ultrafilter on \(A^{\abs{x}}\). We
+       define \(p_{\cald}\in S_x(\calu)\) by
+       \begin{equation*}
+       p_{\cald}\vdash\phi(x;b)\Leftrightarrow\phi(A;b)\in\cald
+       \end{equation*}
+       for every formula \(\phi(x;b)\in L(\calu)\). Then \(p_{\cald}\) is finitely satisfiable in \(A\).
+       Conversely, every global type finitely satisfiable in \(A\) is equal to \(p_{\cald}\) for some
+       (not necessarily unique) ultrafilter \(\cald\). In particular note that if we take \(\cald\) to be a
+       principal ultrafilter, then we obtain a realized type
+    2. Assume that \(T\) is NIP and let \(I=(a_i:i\in\calj)\) be an indiscernible sequence. Then by
+       Proposition ref:2.8, the sequence \((\tp(a_i/\calu):i\in\calj)\) converges in \(S(\calu)\) to some type,
+       called the *limit type* of the sequence \(I\) and denoted by \(\lim(I)\). This type is finitely
+       satisfiable in \(I\), and indeed in any cofinal sequence of \(I\)
+
+    If \(p_0\in S_x(M)\) is a type, then a *coheir* of \(p_0\) is a global extension of \(p_0\) which is
+    finitely satisfiable in \(M\). Such a coheir always exists: extend \(\{\phi(M;b):\phi(x;b)\in p_0\}\) into
+    an ultrafilter \(\cald\) on \(M^{\abs{x}}\) and consider \(p_{\cald}\). In fact, the same proof shows
+    that any type \(p\) finitely satisfiable in some set \(A\) extend to a global type finitely
+    satisfiable in \(A\)
+
+    Let \(p\) be a global \(A\)-invariant type. Then to every formula \(\phi(x;y)\in L\), \(y\) any
+    finite tuples of variables, we can associate the set \(D_p\phi\subseteq S_y(A)\) of types \(q\)
+    s.t. \(p\vdash\phi(x;b)\) for some (any) \(b\vDash q\). The family \((D_p\phi:\phi\in L)\) is called the (infinitary)
+    *defining schema* of \(p\). It completely determines the \(A\)-invariant type \(p\).
+    #+LATEX: \wu{
+    \(\tp(b/A)\in D_p\phi\Leftrightarrow\exists b'\vDash\tp(b/A)\) and \(p\vdash\phi(x;b')\). But
+    as \(\tp(b'/A)=\tp(b/A)\), \(p\vdash\phi(x;b)\leftrightarrow\phi(x;b')\). Thus
+    \(\tp(b/A)\in D_p\phi\Leftrightarrow p\vdash\phi(x;b)\).
+    #+LATEX: }
+    Notice that
+    the defining schema is an object of small cardinality. Indeed given any bigger set \(V\supseteq\calu\) of
+    parameters, we can define the extension \(p|V\) of \(p\) over \(V\) by setting \(p\vdash\phi(x;b)\)
+    iff \(\tp(b/A)\in D_p\phi\).
+
+    This procedure also work if we start with a type over a small model, as long as enough
+    saturation is present: Let \(A\subset M\), and assume that for all \(n\), any type in \(S_n(A)\) is
+    realized in \(M\). Let \(p\in S_x(M)\) be \(A\)-invariant in the following sense: if \(b\equiv_Ab'\) are
+    in \(M\) and \(\phi(x;y)\in L\), then \(p\vdash\phi(x;b)\Leftrightarrow p\vdash\phi(x;b')\). Then we can associate to \(p\) a
+    defining schema \((D_p\phi:\phi(x;y)\in L)\) of \(p\) as above. In turn this schema defines a global
+    type \(\tilp=\{\phi(x;b):\phi\in L,\tp(b/A)\in D_p\phi\}\). The fact that we have taken \(M\) to realize all
+    finitary types over \(A\) ensures consistency of \(\tilp\).
+    #+LATEX: \wu{
+    If \(\tilp\) is inconsistent, then there is \(b\in \calu\setminus M\) s.t. \(\phi(x;b),\neg\phi(x;b)\in\tilp\).
+    Since \(M\) is \(\abs{M}^+\)-saturated, there is \(b'\in M\) s.t. \(\tp(b/A)=\tp(b'/A)\).
+    Thus \(\tp(b'/A)\in D_p\phi\) and \(\tp(b'/A)\in D_p\neg\phi\), a contradiction.
+    #+LATEX: }
+    We see  that \(\tilp\) is the unique \(A\)-invariant global extension of \(p\)
+
+    In general, if \(p\in S(M)\) is \(A\)-invariant in the sense of the previous paragraph, but \(M\)
+    does not realize all types over \(A\), then \(p\) may have more than one global \(A\)-invariant
+    extension
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:2.18
+    Let \(p\in S(\calu)\) be an \(A\)-invariant type:
+    1. if \(p\) is definable, then it is \(A\)-definable
+    2. if \(p\) is finitely satisfiable in some small set, then it is finitely satisfiable in any
+       model \(M\supseteq A\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Assume that \(p\) is definable. Let \(\phi(x;y)\) be any formula and let \(d\phi(y)\in L(\calu)\) be s.t.
+    for any \(b\in\calu\), \(p\vdash\phi(x;b)\Leftrightarrow b\vDash d\phi(y)\). As \(p\) is \(A\)-invariant, the definable
+    set \(d\phi(y)\) is invariant under all automorphisms fixing \(A\) pointwise. It follows that it is
+    definable over \(A\) and therefore so is \(p\)
+
+    <<Problem1>>
+    Assume now that \(p\) is finitely satisfiable in some small model \(N\). Let \(M\) be any small
+    model containing \(A\). Let \(\phi(x;b)\) be any formula in \(p\) and let \(N_1\) realize a coheir
+    of \(\tp(N/M)\) over \(Mb\). Then by invariance, \(p\) is finitely satisfiable in \(N_1\) and in
+    particular \(\phi(N_1;b)\) is non-empty. By the coheir hypothesis, \(\phi(M;b)\) is non-empty.
+    Therefore \(p\) is finitely satisfiable in \(M\)
+    #+END_proof
+*** Products and Morley sequences
+    Let \(p(x),q(y)\in S(\calu)\) be two \(A\)-invariant types. Define \(p(x)\otimes q(y)\in S_{xy}(\calu)\)
+    as \(\tp(a,b/\calu)\) where \(b\vDash q\) and \(a\vDash p|\calu b\)
+
+    Here we use the canonical extension \(p|\calu\) of \(p\) to \(\calu b\)  as defined before Lemma
+    ref:2.18
+
+    If we wants to avoid realizing types over the monster, one can also give the following
+    equivalent definition: Given a formula \(\phi(x;y)\in  L(B)\), \(A\subseteq B\subset\calu\), we
+    set \(p(x)\otimes q(y)\vdash\phi(x;y)\) if \(p\vdash\phi(x;b)\) for some \(b\in\calu\) with \(b\vDash q|B\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(p\) and \(q\) are both \(A\)-invariant, then so is the product \(p(x)\otimes q(y)\)
+    #+END_proposition
 
 * Problems
     |[[Problem1]]|
