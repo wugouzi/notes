@@ -1417,8 +1417,152 @@
     \text{ for formulas }\varphi_1(\barx,\bary_1),\dots,\varphi_n(\barx,\bary_n)\\
     \forall\bary(d\varphi(\bary)\vee d\neg\varphi(\bary))\text{ for each formula }\varphi(\barx,\bary)
     \end{gather*}
+
+    Any model of such theory has an underlying \(p\)
     #+END_remark
 
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \((M,dp)\preceq(N,dq)\), then \(M\preceq N\) and \(p\sqsubseteq q\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    \((N,dq)\succeq(M,dp)\) implies \(N\succeq M\). Then:
+    * \(q\supseteq p\): if \(\varphi(\barx,\barb)\in p(\barx)\) (with \(\barb\in M\)), then \((M,dp)\vDash d\varphi(\barb)\),
+      so \((N,dq)\vDash d\varphi(\barb)\), and \(\varphi(\barx,\barb)\in q(\barx)\)
+    * \(q\sqsupseteq p\): suppose \(\varphi(\barx,\barb,\barc)\in q(\barx)\), with \(\barb\in M\) and \(\barc\in N\).
+      Then \((N,dq)\vDash d\varphi(\barb,\barc)\), and \((N,dq)\vDash\exists\barz\;d\varphi(\barb,\barz)\).
+      Then \((M,dp)\vDash\exists\barz\;d\varphi(\barb,\barz)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(p\in S_n(M)\), then there is \(M_0\preceq M\) with \(\abs{M_0}\le\abs{T}\), s.t. \(p\sqsupseteq(p\uhr M_0)\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    Apply downward Löwenheim–Skolem theorem to \((M,dp)\) to find \((M_0,dq)\preceq(M,dp)\)
+    with \(\abs{M_0}\le\abs{T}\). Then \(q=p\uhr M_0\) and \(p\sqsupseteq q\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(M\preceq N\) and \(p\in S_n(M)\) and \(q\in S_n(N)\), then \(q\) is a *strong heir* of \(p\) if \((N,dq)\succeq(M,dp)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Types have heirs]
+    #+BEGIN_proposition
+    Suppose \(M\preceq N\) and \(p\in S_n(M)\)
+    1. There is \(N'\succeq N\) and \(q'\in S_n(N')\) a strong heir of \(p\)
+    2. There is \(q\in S_n(N)\) an heir of \(p\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    1. Let \(\barc\) be an infinite tuple enumerating \(N\). Then \(\tp^L(\barc/M)\) is finitely
+       satisfiable in \(M\), hence finitely satisfiable in the expansion \((M,dp)\). Therefore it is
+       satisfied in some \((N',dq)\succeq(M,dp)\). So there is \(\bare\) in \(N'\)
+       with \(\tp^L(\bare/M)=\tp^L(\barc/M)\). Then the map \(f(c_i)=e_i\) is an \(L\)-elementary
+       embeddings of \(N\) into \(N\) extending \(\id_M:M\to M\). Moving \(N'\) by an isomorphism, we
+       may assume \(N'\succeq N\)
+    2. Take \(N'\succeq N\) and \(q'\in S_n(N')\) a strong heir of \(p\). Let \(q=q'\uhr N\).
+       Then \(q'\supseteq q\supseteq p\) and \(q'\sqsupseteq p\), so \(q\sqsupseteq p\).
+    #+END_proof
+** Heirs and definable types
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(p\in S_n(M)\) be definable and \(N\succeq M\)
+    1. \(p\) has a unique heir \(q\in S_n(N)\)
+    2. For \(\varphi(\barx,\bary)\) and \(\barb\in N\)
+       \begin{equation*}
+       \varphi(\barx,\barb)\in q(\barx)\Leftrightarrow N\vDash d_p\varphi(\barb)\tag{*}
+       \end{equation*}
+    3. In particular, \(q\) is definable with \(d_q\varphi=d_p\varphi\) for all \varphi
+    #+END_proposition
+
+    #+BEGIN_proof
+    *Claim*. If \(q\in S_n(N)\) and \(q\sqsupseteq p\), then \(q\) satisfies (*)
+
+    Take \(\bara\in N'\succeq N\) realizing \(q\). If (*​) fails then
+    \begin{gather*}
+    (\varphi(\barx,\barb))\in q(\barx)\not\Leftrightarrow N\vDash d_p\varphi(\barb)\\
+    N'\vDash\neg(\varphi(\bara,\barb)\leftrightarrow d_p\varphi(\barb))\\
+    \neg(\varphi(\barx,\barb)\leftrightarrow d_p\varphi(\barb))\in q(\barx)
+    \end{gather*}
+    As \(q\sqsupseteq p\), there is \(b'\in M\) s.t.
+    \begin{gather*}
+    \neg(\varphi(\barx,\barb')\leftrightarrow d_p\varphi(\barb'))\in p(\barx)\\
+    N'\vDash\neg(\varphi(\bara,\barb')\leftrightarrow d_p\varphi(\barb'))\\
+    \varphi(\barx,\barb')\in p(\barx)\not\Leftrightarrow M\vDash d_p\varphi(\barb')
+    \end{gather*}
+    a contradiction
+
+    There is at least one heir, and at most one heir satisfying (*)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(T\) is strongly minimal and \(M\preceq N\) are models of \(T\). Let \(p\) and \(q\) be the
+    transcendental 1-types over \(M\) and \(N\). For any \(\varphi(x,\bary)\)
+    \begin{equation*}
+    d_p\varphi(\bary)\equiv(\exists^\infty x\;\varphi(x,\bary))\equiv d_q\varphi(\bary)
+    \end{equation*}
+    so \(q\) is the unique heir of \(p\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    TFAE for \(p\in S_n(M)\)
+    1. \(p\) is definable
+    2. For every \(N\succeq M\), \(p\) has a unique heir over \(N\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Suppose \(p\) has unique heirs. Then for any \(N\succeq M\), \(p\) has at most one strong heir
+    over \(N\). Therefore there is at most one way to expand \(N\) to an elementary extension
+    of \((M,dp)\). Then the elementary diagram \((M,dp)\) implicityly defines the relations \(d\varphi\).
+    By Beth's implicit definability theorem, \((M,dp)\) is a expansion of \(M\) by definable
+    relations, meaning \(p\) is definable
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Suppose \(M_1\preceq M_2\preceq M_3\) and \(p_i\in S_n(M_i)\) for \(i=1,2,3\) with \(p_1\subseteq p_2\subseteq p_3\). Suppose \(p_1\)
+    is definable. Then \(p_1\sqsubseteq p_2\sqsubseteq p_3\) iff \(p_1\sqsubseteq p_3\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    We only need to show the implication \(p_1\sqsubseteq p_3\Rightarrow p_2\sqsubseteq p_3\). Suppose \(p_1\sqsubseteq p_3\).
+    Take \(p_2'\sqsupseteq p_1\) and \(p_3'\sqsupseteq p_2'\). By the uniqueness of heirs of definable types, \(p_2'=p_2\)
+    and \(p_2\) is definable. Then \(p_3'=p_3\)
+    #+END_proof
+** Types in ACF
+    A *positive quantifier free formula* is a quantifier-free formula that doesn't use \(\neg\)
+
+    Fix a model \(M\vDash\ACF\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A set \(V\subseteq M^n\) is an *algebraic set* if
+    \begin{equation*}
+    V=\varphi(M^n;\barb)=\{\bara\in M^n:M\vDash\varphi(\bara,\barb)\}
+    \end{equation*}
+    where \varphi is positive quantifier free.
+    #+END_definition
+
+    #+BEGIN_remark
+    \(V\) is an algebraic set iff \(V\) is defined by finitely many polynomial equations
+    \begin{equation*}
+    V=\{\bara\in M^n:P_1(\bara)=\dots=P_m(\bara)=0\}
+    \end{equation*}
+
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. \(M^n\) and \(\emptyset\) are algebraic sets
+    2. If \(V,W\subseteq M^n\) are algebraic sets, then \(V\cap W\) and \(V\cup W\) are algebraic sets
+    3. Any finite subset of \(M^n\) is an algebraic set
+    #+END_lemma
 
 
 * Appendices                  :ignore:
