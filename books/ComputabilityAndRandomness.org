@@ -1,0 +1,221 @@
+#+TITLE: Computability and Randomness
+#+AUTHOR: Andre Nies
+
+#+EXPORT_FILE_NAME: ../latex/ComputabilityAndRandomness/ComputabilityAndRandomness.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+
+* The complexity of sets
+** The basic concepts
+    Given expression \alpha, \beta,
+    \begin{equation*}
+    \alpha\simeq\beta
+    \end{equation*}
+    means that either both expressions are undefined, or they are defined with the same value
+
+    The function \(\Xi(e,x)\simeq\Phi_e(x)\). A Turing program computing \Xi is called a *universal Turing program*
+
+    #+ATTR_LATEX: :options [Parameter Theorem]
+    #+BEGIN_theorem
+    For each partial computable function \Theta in two variables there is a computable strictly
+    increasing function \(q\) s.t.
+    \begin{equation*}
+    \forall e\forall x\Phi_{q(e)}(x)\simeq\Theta(e,x)
+    \end{equation*}
+    An index for \(q\) can be obtained effectively from an index for \Theta
+    #+END_theorem
+
+    #+ATTR_LATEX: :options [Padding Lemma]
+    #+BEGIN_lemma
+    For each \(e\) and each \(m\), one may effectively obtain \(e'>m\) s.t. the Turing
+    program \(P_{e'}\) behaves exactly like \(P_e\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options [Recursion Theorem]
+    #+BEGIN_theorem
+    label:1.1.5
+    Let \(g:\N\to\N\) be computable. Then there is an \(e\) s.t. \(\Phi_{g(e)}=\Phi_e\). We say that \(e\) is a
+    *fixed point* for \(g\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    There is \(q\) s.t. \(\Phi_{q(e)}(x)\simeq\Phi_{g(\Phi_e(e))}(x)\) for all \(e,x\). Choose an \(i\)
+    s.t. \(q=\Phi_i\), then
+    \begin{equation*}
+    \Phi_{q(i)}=\Phi_{\Phi_i(i)}=\Phi_{g(\Phi_i(i))}
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Recursion Theorem with Parameters]
+    #+BEGIN_theorem
+    label:1.1.6
+    Let \(g:\N^2\to\N\) be computable. Then there is a computable function \(f\), which can be obtained
+    effectively from \(g\), s.t. \(\Phi_{g(f(n),n)}=\Phi_{f(n)}\) for each \(n\)
+    #+END_theorem
+
+    #+BEGIN_exercise
+    label:1.1.7
+    Extend the Recursion Theorem by showing that computable function \(g\) has infinitely many fixed
+    points. Conclude that the function \(f\) in Theorem ref:1.1.6 can be chosen one-one
+    #+END_exercise
+
+    #+BEGIN_proof
+    There is infinite many \(i\) s.t. \(q=\Phi_i\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(A\subseteq\N\) is *computably enumerable* (*c.e.*) if \(A\) is the domain of some partial computable function
+    #+END_definition
+
+    Let
+    \begin{equation*}
+    W_e=\dom(\Phi_e)
+    \end{equation*}
+    Then \((W_e)_{e\in\N}\) is an effective listing of all c.e. sets. A sequence of sets \((S_e)_{e\in\N}\)
+    s.t. \(\{\la e,x\ra:x\in S_e\}\) is c.e. is called *uniformly computably enumerable*
+
+    \(A\) is called *computable* if its characteristic function is computable; otherwise \(A\) is
+    called *incomputable*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(A\) is computable \(\Leftrightarrow\) \(A\) and \(\N-A\) are c.e.
+    #+END_proposition
+
+    We may obtain a c.e. incomputable set denoted \(\emptyset'\) by a direct diagonalization. We
+    define \(\emptyset'\) in such a way that \(\N-\emptyset'\) differs from \(W_e\) at \(e\): let
+    \begin{equation*}
+    \emptyset'=\{e:e\in W_e\}
+    \end{equation*}
+    The set \(\emptyset'\) is called the *halting problem*, since \(e\in\emptyset'\) iff program \(P_e^1\) halts on input \(e\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    The set \(\emptyset'\) is c.e. but not computable
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\emptyset'\) is c.e. since \(\emptyset'=\dom(J)\), where \(J\) is the partial computable function given
+    by \(J(e)\simeq\Phi_e(e)\). If \(\emptyset'\) is computable then there is \(e\) s.t. \(\N-\emptyset'=W_e\).
+    Then \(e\in\emptyset'\leftrightarrow e\in W_e\leftrightarrow e\in\emptyset'\), a contradiction
+    #+END_proof
+
+    The sequence \((W_e)_{e\in\N}\) is universal for uniformly c.e. sequences
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    For each uniformly c.e. sequence \((A_e)_{e\in\N}\) there is a computable function \(q\)
+    s.t. \(A_e=W_{q(e)}\) for each \(e\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    Define the partial computable function \Theta by \(\Theta(e,x)\simeq 0\) iff \(x\in A_e\), and \(\Theta(e,x)\) is
+    undefined otherwise. Then the function \(q\) obtained by the Parameter Theorem is as required.
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    We write
+    \begin{equation*}
+    \Phi_{e,s}(x)=y
+    \end{equation*}
+    if \(e,x,y<s\) and the computation of program \(P_e\) on input \(x\) yields \(y\) in at
+    most \(s\) computation steps. Let \(W_{e,s}=\dom(\Phi_{e,s})\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(D_0=\emptyset\). If \(n>0\) has the form \(2^{x_1}+\dots+2^{x_r}\), where \(x_1<\dots<x_r\), then
+    let \(D_n=\{x_1,\dots,x_r\}\). We say that \(n\) is a *strong index* for \(D_n\). For instance, \(D_5=\{0,2\}\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *computable enumeration* of a set \(A\) is an effective sequence \((A_s)_{s\in\N}\) of (strong
+    indices for) finite sets s.t. \(A_s\subseteq A_{s+1}\) for each \(s\) and \(A=\bigcup_sA_s\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    For each computable function \Phi, \(\ran(\Phi)\) is c.e.
+    #+END_proposition
+
+    #+BEGIN_proof
+    Suppose \(\Phi=\Phi_e\) and we enumerate \(A=\ran(\Phi)\).
+    #+END_proof
+** Relative computational complexity of sets
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(X\) is *many-one reducible* to \(Y\), denoted \(X\le_mY\), if there is a computable function \(f\)
+    s.t. \(n\in X\leftrightarrow f(n)\in Y\) for all \(n\)
+    #+END_definition
+
+    If \(X\) is computable, \(Y\neq\emptyset\), and \(Y\neq\N\), then \(X\le_mY\): choose \(y_0\in Y\) and \(y_1\notin Y\).
+    Let \(f(n)=y_0\) if \(n\in X\) and \(f(n)=y_1\) otherwise. Then \(X\le_mY\) via \(f\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(A\) is c.e. \(\Leftrightarrow\) \(A\le_m\emptyset'\)
+
+    An index for the many-one reduction as a computable function can be obtained effectively from a
+    c.e. index for \(A\), and conversely
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\Rightarrow\): We claim that there is a computable function \(g\) s.t.
+    \begin{equation*}
+    W_{g(e,n)}=
+    \begin{cases}
+    \{e\}&n\in A\\
+    \emptyset
+    \end{cases}
+    \end{equation*}
+    For let \(\Theta(e,n,x)\) converge if \(x=e\) and \(n\in A\). Then there is a computable function \(g\)
+    s.t. \(\forall e,n,x[\Theta(e,n,x)\simeq\Phi_{g(e,n)}(x)]\). By Theorem ref:1.1.6, there is a computable
+    function \(h\) s.t. \(W_{g(h(n),n)}=W_{h(n)}\) for each \(n\). Then
+    \begin{align*}
+    &n\in A\Rightarrow W_{h(n)}=\{h(n)\}\Rightarrow h(n)\in\emptyset'\\
+    &n\notin A\Rightarrow W_{h(n)}=\emptyset\Rightarrow h(n)\notin\emptyset
+    \end{align*}
+    \(\Leftarrow\): If \(A\le_m\emptyset'\) via \(h\), then \(A=\dom(\Psi)\) where \(\Psi(x)\simeq J(h(x))\) (recall
+    that \(J(e)\simeq\Phi_e(e)\))
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A c.e. set \(C\) is called *\(r\)-complete* if \(A\le_rC\) for each c.e. set \(A\)
+    #+END_definition
+
+    Our intuitive understanding of "\(Y\) is at least as complex as \(X\)" is: \(X\) can be computed
+    with the help of \(Y\). To formalize more general ways of relative computation, we extend the
+    machine model by a one-way infinite "oracle" tape which holds all the answers to oracle
+    questions of the form "is \(k\) in \(Y\)".
+
+    We write \(\Phi_e^Y(n)\downarrow\) if the program \(P_e\) halts when the oracle is \(Y\) and the input
+    is \(n\); we write \(\Phi_e(Y;n)\) or \(\Phi_e^Y(n)\) for this output. The \(\Phi_e\) are called *Turing
+    functionals*. And we let \(W_e^Y=\dom(\Phi_e^Y)\). \(W_e\) is a *c.e. operator*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A total function \(f:\N\to\N\) is called *Turing reducible* to \(Y\), or *computable relative to* \(Y\),
+    or *computable in* \(Y\), if there is an \(e\) s.t. \(f=\Phi_e^Y\). We denote this by \(f\le_TY\). We
+    also say that \(Y\) *computes* \(f\). For a set \(A\), we write \(A\le_TY\) if the characteristic
+    function of \(A\) is Turing reducible to \(Y\)
+    #+END_definition
+
+    A set \(A\) is *c.e. relative to* \(Y\) if \(A=W_e^Y\) for some \(e\). We view \(\Phi_e\)as \(\Phi_e^{\emptyset}\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(A\) is computable in \(Y\) \(\Leftrightarrow\) \(A\) and \(\N-A\) are c.e. in \(Y\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    We write \(J^Y(e)\simeq\Phi_e^Y(e)\). The set \(Y'=\dom(J^Y)\) is the *Turing jump* of \(Y\). The
+    map \(Y\to Y'\) is called the *jump operator*
+    #+END_definition

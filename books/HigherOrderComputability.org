@@ -6,10 +6,11 @@
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
 
-* Introduction and Motivations
+* COMMENT Introduction and Motivations
 
-* Historical Survey
-* Lecture 1 - Introduction to recursion theory
+* COMMENT Historical Survey
+* COMMENT Lecture 2
+* COMMENT Lecture 1 - Introduction to recursion theory
     computability / complexity / definability aspects modulo relatively computability
 
     #+ATTR_LATEX: :options [Encoding/decoding pairs]
@@ -74,3 +75,154 @@
     \end{equation*}
     Moreover an index of \(f\) can be computed from an index of \(q\)
     #+END_theorem
+* Theory of Computability Models
+    * \(e\downarrow\) 'the value of \(e\) is defined'
+    * \(e\uparrow\) 'the value of \(e\) is undefined'
+    * \(e=e'\) 'the values of both \(e\) and \(e'\) are defined and they are equal'
+    * \(e\simeq e'\) 'if either \(e\) or \(e'\) is defined then so is the other and they are equal'
+    * \(e\succeq e'\) 'if \(e'\) is defined then so it \(e\) and they are equal'
+
+
+    if \(e\) is a mathematical expression possibly involving the variable \(x\), we write \(\Lambda x.e\)
+    to mean the ordinary (possibly partial) function \(f\) defined by \(f(x)\simeq e\)
+
+    Finite sequences of length \(n\) starts from index 0.
+** Higher-Order Computability Models
+*** Computability Models
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *computability model* \(\bC\)  over a set \(\sfT\) of *type names* consists of
+    * an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the *datatypes* of \(\bC\)
+    * for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
+      *operations* of \(\bC\)
+    #+END_definition
+
+    We shall use uppercase letters \(A,B,C,\dots\) to denote *occurrences* of sets within \(\abs{\bC}\):
+    that is, sets \(\bC(\tau)\) implicitly tagged with a type name \tau. We shall write \(\bC[A,B]\)
+    for \(\bC[\sigma,\tau]\) if \(A=\bC(\sigma)\) and \(B=\bC(\tau)\)
+
+    In typical cases of interest, the operations of \(\bC\) will be ‘computable’ maps of some kind between datatypes
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A computability model \(\bC\) is *total* if every operation \(f\in\bC[A,B]\) is a total
+    function \(f:A\to B\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A computability model \(\bC\) has *weak (binary cartesian) products* if there is an operation
+    assigning to each \(A,B\in\abs{\bC}\) a datatype \(A\bowtie B\in\abs{\bC}\) along with
+    operations \(\pi_A\in\bC[A\bowtie B,A]\) and \(\pi_B\in\bC[A\bowtie B,B]\) (known as *projections*) s.t. for
+    any \(f\in\bC[C,A]\) and \(g\in\bC[C,B]\) there exists \(\la f,g\ra\in\bC[C,A\bowtie B]\) satisfying the following for
+    all \(c\in C\)
+    1. \(\la f,g\ra(c)\downarrow\) iff \(f(c)\downarrow\) and \(g(c)\downarrow\)
+    2. \(\pi_A(\la f,g\ra(c))=f(c)\) and \(\pi_B(\la f,g\ra(c))=g(c)\)
+
+
+    We say that \(d\in A\bowtie B\) *represents* the pair \((a,b)\) if \(\pi_A(d)=a\) and \(\pi_B(d)=b\)
+    #+END_definition
+
+    In contrast to the usual definition of categorical products, the operation \(\la f,g\ra\) need not be
+    unique, since many elements of \(A\bowtie B\) may represent the same pair \((a,b)\). We do not formally
+    require that every \((a,b)\) is represented in \(A\bowtie B\), though in all cases of interest this will be
+    so. The reader is also warned that \(\pi_A\circ\la f,g\ra\) will not in general coincide with \(f\) .
+
+    TODO: examples
+    different bijections from \(\N\times\N\to\N\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *weak terminal* in a computability model \(\bC\) consists of a datatype \(I\in\abs{\bC}\) and an
+    element \(i\in I\) s.t. for any \(A\in\abs{\bC}\) the constant function \(\Lambda a.i\) is in \(\bC[A,I]\)
+    #+END_definition
+
+    If \(\bC\) has weak products and a weak terminal \((I,i)\), then for any \(A\in\abs{\bC}\) there is an
+    operation \(t_A\in\bC[A,I\bowtie A]\) s.t. \(\pi_A\circ t_A=\id_A\)
+*** Examples of Computability Models
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Model with single datatype \(\N\) and whose operations \(\N\rightharpoonup\N\) are precisely the
+    Turing-computable partial functions. The model has standard products, since the well-known
+    computable pairing operation
+    \begin{equation*}
+    \la m,n\ra=(m+n)(m+n+1)/2+m
+    \end{equation*}
+    defines a bijection \(\N\times\N\to\N\). Any element \(i\in\N\) may serve as a weak terminal,
+    since \(\Lambda n.i\) is computable
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    untyped \lambda-calculus
+
+    We write \(M[x\mapsto N]\) for the result of substituting \(N\) for all free occurrences of \(x\)
+    within \(M\)
+
+    We define \Lambda  to be the set of untyped \lambda-terms modulo \alpha-equivalence.
+
+    Let \(\sim\) be any equivalence relation on \Lambda with the following properties:
+    \begin{equation*}
+    (\lambda x.M)N\sim M[x\mapsto N],\quad M\sim N\Rightarrow PM\sim PN
+    \end{equation*}
+    1. \((\lambda x.x)M\sim M\)
+    2. If \(M\sim N\), then \((\lambda x.N)M\sim(\lambda x.M)N\) and hence \(N\sim M\).
+    3. If \(M\sim N\) and \(N\sim O\), then
+
+    Then we have \(M\sim N\Rightarrow MP\sim NP\) since \((\lambda y.yP)M\sim(\lambda y.yP)N\Rightarrow MP\sim NP\).
+
+    As a example, we may define \(=_\beta\) to be the smallest equivalence relation \(\sim\) satisfying the
+    above properties and also
+    \begin{equation*}
+    M\sim N\Rightarrow \lambda x.M\sim\lambda x.N
+    \end{equation*}
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Let \(B\) be any family of *base sets*, and let \(\la B\ra\) denote the family of sets generated
+    from \(B\) by adding the singleton set \(1=\{()\}\) and closing under binary products \(X\times Y\) and
+    set-theoretic function spaces \(Y^X\). We shall consider some computability models whose family
+    of datatypes is \(\la B\ra\)
+
+    First we may define a computability model \(\sfS(B)\) with \(\abs{\sfS(B)}=\la B\ra\) (often called
+    the *full set-theoretic model over* \(B\)) by letting \(\sfS(B)[X,Y]\) consist of all
+    set-theoretic functions \(X\to Y\) for \(X,Y\in\la B\ra\); that is, we consider all functions to be
+    computable. However this model is of limited interest since it does not represent an interesting
+    concept of computability
+
+    To do better we may start by noting that whatever the 'computable' functions between these sets
+    are supposed to be, it is reasonable to expect that they will enjoy the following closure
+    properties
+    1. For any \(X\in\la B\ra\), the unique function \(X\to 1\) is computable
+    2. For any \(X,Y\in\la B\ra\), the projections \(X\times Y\to X\), \(X\times Y\to Y\) is computable
+    3. For any \(X,Y\in\la B\ra\), the application function \(Y^X\times X\to Y\) is computable
+    4. If \(f:Z\to X\) and \(g:Z\to Y\) is computable, so is their pairing \((f,g):Z\to X\times Y\)
+    5. If \(f:X\to Y\) and \(g:Y\to Z\) are computable, so is their composition \(g\circ f:X\to Z\)
+    6. If \(f:Z\times X\to Y\) is computable, so is its transpose \(\hatf:Z\to Y^X\)
+
+
+    One possible approach is therefore to start by specifying some set \(C\) of functions between
+    out datatypes that we wish to regard as "basic computable operations", and define a
+    computability model \(\sfK(B;C)\) over \(\la B\ra\) whose operations are exactly the functions
+    generated from \(C\) under the above closure conditions
+
+    Take \(B=\{\N\}\); we shall often denote \(\sfS(\{\N\})\) by \(\sfS\). Let \(C\) consist of the
+    following basic operations: the zero function \(\Lambda x.0:\N\to 1\), the successor function \(suc:\N\to\N\);
+    and for each \(X\in\la B\ra\), the primitive recursion operator \(rec_X:(X\times X^{X\times\N}\times\N)\to X\) defined by
+    \begin{align*}
+    &rec_X(x,f,0)=0\\
+    &rec_X(x,f,n+1)=f(rec_X(x,f,n),n)
+    \end{align*}
+    #+END_examplle
+*** Weakly Cartesian Closed Models
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Suppose \(\bC\) has weak products and a weak terminal. We say \(\bC\) is *weakly cartesian closed* if
+    it is endowed with the following for each \(A,B\in\abs{\bC}\):
+    * a choice of datatype \(A\Rightarrow B\in\abs{\bC}\)
+    *  a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\), external to the structure of \(\bC\)
+
+
+    s.t. for any partial function \(f:C\times A\rhu B\) the following are equivalent
+    #+END_definition

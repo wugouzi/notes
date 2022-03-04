@@ -1,0 +1,239 @@
+#+TITLE: Cook Theorem
+#+AUTHOR: Qi'ao Chen@@latex:\\@@21210160025@m.fudan.edu.cn
+#+startup: beamer
+#+LaTeX_CLASS: beamer
+#+OPTIONS: H:2
+#+BEAMER_FRAME_LEVEL: 2
+#+EMAIL: 21210160025@m.fudan.edu.cn
+
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \def \TIME {\text{TIME}}
+#+LATEX_HEADER: \def \EXP {\textbf{EXP}}
+#+LATEX_HEADER: \def \SPACE {\textbf{SPACE}}
+#+LATEX_HEADER: \def \PSPACE {\textbf{PSPACE}}
+#+LATEX_HEADER: \def \NPSPACE {\textbf{NPSPACE}}
+#+LATEX_HEADER: \def \NSPACE {\textbf{NSPACE}}
+#+LATEX_HEADER: \def \coNSPACE {\textbf{coNSPACE}}
+#+LATEX_HEADER: \def \NTIME {\textbf{NTIME}}
+#+LATEX_HEADER: \def \NP {\textbf{NP}}
+#+LATEX_HEADER: \def \coNP {\textbf{coNP}}
+#+LATEX_HEADER: \def \NEXP {\textbf{NEXP}}
+#+LATEX_HEADER: \def \NE {\textbf{NE}}
+#+LATEX_HEADER: \def \NL {\textbf{NL}}
+#+LATEX_HEADER: \def \coNL {\textbf{coNL}}
+#+LATEX_HEADER: \def \Pspoly {\textbf{P}/poly}
+#+LATEX_HEADER: \def \AC {\text{AC}}
+#+LATEX_HEADER: \def \BPP {\textbf{BPP}}
+#+LATEX_HEADER: \def \start {\text{start}}
+#+LATEX_HEADER: \def \tend {\text{end}}
+#+LATEX_HEADER: \def \halt {\text{halt}}
+#+LATEX_HEADER: \def \pad {\text{pad}}
+#+LATEX_HEADER: \def \HALT {\text{HALT}}
+#+LATEX_HEADER: \def \DTIME {\textbf{DTIME}}
+#+LATEX_HEADER: \def \NP {\textbf{NP}}
+#+LATEX_HEADER: \def \INDSET {\texttt{INDSET}}
+#+LATEX_HEADER: \def \accept {\text{accept}}
+#+LATEX_HEADER: \def \TMSAT {\texttt{TMSAT}}
+#+LATEX_HEADER: \def \SAT {\texttt{SAT}}
+#+LATEX_HEADER: \def \TSAT {\texttt{3SAT}}
+#+LATEX_HEADER: \def \ZOIPROG {\texttt{1/0 IPROG}}
+#+LATEX_HEADER: \def \dHAMPATH {\texttt{dHAMPATH}}
+#+LATEX_HEADER: \def \TAUTOLOGY {\texttt{TAUTOLOGY}}
+#+LATEX_HEADER: \def \PATH {\texttt{PATH}}
+#+LATEX_HEADER: \def \TQBF {\texttt{TQBF}}
+* Goal
+** ​wef
+    #+ATTR_LATEX: :options [Cook-Levin Theorem]
+    #+BEGIN_theorem
+    1. \(\SAT\) is \(\NP\)-complete
+    2. \(\TSAT\) is \(\NP\)-complete
+    #+END_theorem
+
+* Intro
+** Turing machine
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A TM \(M\) is described by a tuple \((\Gamma,Q,\delta)\) containing
+    * A finite set \Gamma of the symbols that \(M\)'s tapes can contain. We assume that \Gamma contains a
+      designated "blank" symbol, denoted \(\Box\); a designated "start" symbol, denoted \(\rhd\);
+      and the numbers 0 and 1. We call \Gamma the *alphabet* of \(M\)
+    * A finite set \(Q\) of possible states \(M\)' register can be in. We assume that \(Q\) contains
+      a designated start state, denoted \(q_{\start}\), and a designated halting state, denoted \(q_{\halt}\)
+    * A function \(\delta:Q\times\Gamma^k\to Q\times\Gamma^{k-1}\times\{\text{L,S,R}\}^k\),
+      where \(k\ge2\), describing the rules \(M\) use in performing each step. This function is
+      called the *transition function* of \(M\)
+    #+END_definition
+** Turing machine
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[./6.png]]
+** Efficiency and running time
+    #+ATTR_LATEX: :options [Computing a function and running time]
+    #+BEGIN_definition
+    Let \(f:\{0,1\}^*\to\{0,1\}^*\) and let \(T:\N\to\N\) be some functions, and let \(M\) be a Turing
+    machine. We say that \(M\) *computes* \(f\) if for every \(x\in\{0,1\}^*\) whenever \(M\) is
+    initialized to the start configuration on input \(x\), then it halts with \(f(x)\) written on
+    its output tape. We say \(M\) *computes* \(f\) in *\(T(n)\)-time* if its computation on every
+    input \(x\) requires at most \(T(\abs{x})\) steps
+    #+END_definition
+** The class \texorpdfstring{\(\bP\)}{P}
+    A *complexity class* is a set of functions that can be computed within given resource bounds. We
+    say that a machine *decides* a language \(L\subseteq\{0,1\}^*\) if it computes the
+    function \(f_L:\{0,1\}^*\to\{0,1\}\) where \(f_L(x)=1\Leftrightarrow x\in L\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(T:\N\to\N\) be some function. A language \(L\) is in \(\DTIME(T(n))\) iff there is a
+    deterministic Turing machine that runs in time \(c\cdot T(n)\) for some constant \(c>0\) and decides \(L\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\bP=\bigcup_{c\ge 1}\DTIME(n^c)\)
+    #+END_definition
+** The class \texorpdfstring{\(\NP\)}{NP}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists a polynomial \(p:\N\to\N\) and a
+    polynomial-time TM \(M\) (called the *verifier* for \(L\)) such that for every \(x\in\{0,1\}^*\),
+    \begin{equation*}
+    x\in L\Leftrightarrow\exists u\in\{0,1\}^{p(\abs{x})} \text{ s.t. } M(x,u)=1
+    \end{equation*}
+    If \(x\in L\) and \(u\in\{0,1\}^{p(\abs{x})}\) satisfy \(M(x,u)=1\), then we call \(u\) a *certificate*
+    for \(x\) w.r.t. \(L\) and \(M\)
+    #+END_definition
+
+** The class \texorpdfstring{\(\NP\)}{NP}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    For every function \(T:\N\to\N\) and \(L\subseteq\{0,1\}^*\), we say that \(L\in\NTIME(T(n))\) if there is a
+    constant \(c>0\) and a \(c\cdot T(n)\)-time NDTM \(M\) s.t. for
+    every \(x\in\{0,1\}^*\), \(x\in L\Leftrightarrow M(x)=1\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\NP=\bigcup_{c\in\N}\NTIME(n^c)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    The main idea is that the sequence of nondeterministic choices made by an accepting computation
+    of an NDTM  can be viewed as a certificate that the input is in the language, and vice versa
+    #+END_proof
+** The class \texorpdfstring{\(\NP\)}{NP}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\NP=\bigcup_{c\in\N}\NTIME(n^c)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose \(p:\N\to\N\) is a polynomial and \(L\) is decided by a NDTM \(N\) that runs in
+    time \(p(n)\). For every \(x\in L\), there is a sequence of nondeterministic choices that
+    makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a *certificate* for \(x\).
+    #+END_proof
+** Reducibility
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     A language \(L\subseteq\{0,1\}^*\) is *polynomial-time Karp reducible to a
+     language* \(L'\subseteq\{0,1\}^*\) (sometimes shortened to just "polynomial-time reducible"), denoted
+     by \(L\le_p L'\) if there is a polynomial-time
+     computable function \(f:\{0,1\}^*\to\{0,1\}^*\) s.t. for every \(x\in\{0,1\}^*\),
+     \(x\in L\) iff \(f(x)\in L'\)
+
+     We say that \(L'\) is *\(\NP\)-hard* if \(L\le_pL'\) for every \(L\in\NP\). We say that \(L'\)
+     is *\(\NP\)-complete* if \(L'\) is \(\NP\)-hard and \(L'\in\NP\)
+     #+END_definition
+* Cook-Levin Theorem
+** Goal
+     #+ATTR_LATEX: :options [Cook-Levin Theorem]
+     #+BEGIN_theorem
+     1. \(\SAT\) is \(\NP\)-complete
+     2. \(\TSAT\) is \(\NP\)-complete
+     #+END_theorem
+
+** Oblivious Turing machine
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Define a TM \(M\) to be *oblivious* if its head movements do not depend on the input but only on
+    the input length. That is, \(M\) is oblivious if for every input \(x\in\{0,1\}^*\) and \(i\in\N\), the
+    location of each of \(M\)'s heads at the \(i\)th step of execution on input \(x\) is only a
+    function of \(\abs{x}\) and \(i\).
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    For any Turing machine \(M\) that decides a language in time \(T(n)\), there exists an oblivious
+    Turing machine that decides the same language in \(T(n)^2\)
+    #+END_theorem
+** A lemma
+     #+ATTR_LATEX: :options []
+     #+BEGIN_lemma
+     For every Boolean function \(f:\{0,1\}^l\to\{0,1\}\), there is an \(l\)-variable CNF formula \varphi
+     of size \(l2^l\) s.t. \(\varphi(u)=f(u)\) for every \(u\in\{0,1\}^l\), where the size of a CNF
+     formula is defined to be the number of \(\wedge/\vee\) symbols it contains
+     #+END_lemma
+
+     #+BEGIN_proof
+     For every \(v\in\{0,1\}^l\), there exists a clause \(C_v(z_1,\dots,z_l)\) s.t. \(C_v(v)=0\)
+     and \(C_v(u)=1\) for every \(u\neq v\).
+
+     We let \varphi be the AND of all the clauses \(C_v\) for \(v\) s.t. \(f(v)=0\)
+     \begin{equation*}
+\varphi=\bigwedge_{v:f(v)=0}C_v(z_1,\dots,z_l)
+     \end{equation*}
+     Note that \varphi has size at most \(l2^l\).
+     #+END_proof
+** Main lemma
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+      \(\SAT\) is \(\NP\)-hard
+    #+END_lemma
+
+    #+BEGIN_proof
+     Let \(L\) be an \(\NP\) language. By definition, there is a polynomial time TM \(M\) s.t. for
+     every \(x\in\{0,1\}^*\), \(x\in L\Leftrightarrow M(x,u)=1\) for
+     some \(u\in\{0,1\}^{p(\abs{x})}\), where \(p:\N\to\N\) is some polynomial. We show \(L\) is
+     polynomial-time Karp reducible to \(\SAT\) by describing a polynomial-time
+     transformation \(x\to\varphi_x\) from strings to CNF formulae s.t. \(x\in L\) iff \(\varphi_x\)
+     is satisfiable. Equivalently
+     \begin{equation*}
+\varphi_x\in\SAT \quad\text{ iff }\quad\exists u\in\{0,1\}^{p(\abs{x})}
+\text{ s.t. }M(x\circ u)=1
+     \end{equation*}
+     where \(\circ\) denotes concatenation
+    #+END_proof
+** Assumption
+     Assume
+     1. \(M\) only has two tapes - an input tape and a work/output tape
+     2. \(M\) is an oblivious TM in the sense that its head movement does not depend on the contents
+        of its tapes. That is, \(M\)'s computation takes the same time for all inputs of size \(n\),
+        and for every \(i\) the location of \(M\)'s head at the \(i\)th step depends only on \(i\)
+        and the length of the input
+** Proof
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[./2.png]]
+** Proof
+    The previous discussion shows this latter condition occurs iff
+     there exists a string \(y\in\{0,1\}^{n+p(n)}\) and a sequence of strings
+     \(z_1,\dots,z_{T(n)}\in\{0,1\}^c\) (where \(T(n)\) is the number of steps \(M\) takes on inputs
+     of length \(n+p(n)\)) satisfying the following four conditions
+     1. The first \(n\) bits of \(y\) are equal to \(x\)
+     2. The string \(z_1\) encodes the initial snapshot of \(M\). That is, \(z_1\) encodes the
+        triple \(\la\rhd,\Box,q_{\start}\ra\).
+     3. For every \(i\in\{2,\dots,T(n)\}\), \(z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})\).
+     4. The last string \(z_{T(n)}\) encodes a snapshot where the machine halts and outputs 1
+
+** The web of reductions
+    #+ATTR_LATEX: :width .8\textwidth :angle 90
+    #+NAME:
+    #+CAPTION:
+    [[./3.pdf]]
+
+* TODO Total
+
+    nondeterministic turing machines
+
+    Maybe some examples
