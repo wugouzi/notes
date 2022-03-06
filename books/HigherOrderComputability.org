@@ -95,13 +95,19 @@
     * an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the *datatypes* of \(\bC\)
     * for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
       *operations* of \(\bC\)
+
+
+    s.t.
+    1. for each \(\tau\in\sfT\), the identity function \(\id:\bC(\tau)\to\bC(\tau)\) is in \(\bC(\tau,\tau)\)
+    2. for any \(f\in\bC[\rho,\sigma]\) and \(g\in\bC[\sigma,\tau]\) we have \(g\circ f\in\bC[\rho,\tau]\) where \(\circ\) denotes ordinary
+       composition of partial functions
     #+END_definition
 
     We shall use uppercase letters \(A,B,C,\dots\) to denote *occurrences* of sets within \(\abs{\bC}\):
     that is, sets \(\bC(\tau)\) implicitly tagged with a type name \tau. We shall write \(\bC[A,B]\)
     for \(\bC[\sigma,\tau]\) if \(A=\bC(\sigma)\) and \(B=\bC(\tau)\)
 
-    In typical cases of interest, the operations of \(\bC\) will be ‘computable’ maps of some kind between datatypes
+    In typical cases of interest, the operations of \(\bC\) will be 'computable' maps of some kind between datatypes
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -142,6 +148,7 @@
 *** Examples of Computability Models
     #+ATTR_LATEX: :options []
     #+BEGIN_examplle
+    label:3.1.5
     Model with single datatype \(\N\) and whose operations \(\N\rightharpoonup\N\) are precisely the
     Turing-computable partial functions. The model has standard products, since the well-known
     computable pairing operation
@@ -154,7 +161,15 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_examplle
+    label:3.1.6
     untyped \lambda-calculus
+
+    Terms \(M\) of the \lambda-calculus are generated from a set of variable symbols \(x\) by means of the following
+    grammar:
+    \begin{equation*}
+    M::=x\mid MM'\mid\lambda x.M
+    \end{equation*}
+    Writing \(\sfL\) for the quotient set \(\Lambda/=_\beta\)
 
     We write \(M[x\mapsto N]\) for the result of substituting \(N\) for all free occurrences of \(x\)
     within \(M\)
@@ -176,10 +191,23 @@
     \begin{equation*}
     M\sim N\Rightarrow \lambda x.M\sim\lambda x.N
     \end{equation*}
+
+    Writing \([M]\) for the \(\sim\)-equivalence class of \(M\), any term \(P\in A\) induces a
+    well-defined mapping \([M]\mapsto[PM]\) on \(\Lambda/\sim\). The mappings induced by some \(P\) in this way are
+    called *\lambda-definable*
+
+    We may regard \(\Lambda/\sim\) as a total computability model: the sole datatype is \(\Lambda/\sim\) itself, and
+    the operations on it are exactly the \lambda-definable mappings. It also has weak products: a
+    pair \((M,N)\) may be represented by the term \(pair\;M\;N\) where \(pair=\lambda xyz.zxy\)
+    the terms \(fst=\lambda p.p(\lambda xy.x)\) and \(snd=\lambda p.p(\lambda xy.y)\). We can check that
+    \(fst(pair\; M\;N)\sim M\) and \(snd(pair\;M\;N)\sim N\)
+
+    We can also obtain a submodel \(\Lambda^0/\sim\) consisting of the equivalence classes of closed terms \(M\)
     #+END_examplle
 
     #+ATTR_LATEX: :options []
     #+BEGIN_examplle
+    label:3.1.7
     Let \(B\) be any family of *base sets*, and let \(\la B\ra\) denote the family of sets generated
     from \(B\) by adding the singleton set \(1=\{()\}\) and closing under binary products \(X\times Y\) and
     set-theoretic function spaces \(Y^X\). We shall consider some computability models whose family
@@ -218,11 +246,306 @@
 *** Weakly Cartesian Closed Models
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
+    label:3.1.8
     Suppose \(\bC\) has weak products and a weak terminal. We say \(\bC\) is *weakly cartesian closed* if
     it is endowed with the following for each \(A,B\in\abs{\bC}\):
     * a choice of datatype \(A\Rightarrow B\in\abs{\bC}\)
-    *  a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\), external to the structure of \(\bC\)
+    * a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\), external to the structure of \(\bC\)
 
 
     s.t. for any partial function \(f:C\times A\rhu B\) the following are equivalent
+    1. \(f\) is represented by some \(\barf:\C[C\bowtie A,B]\), in the sense that if \(d\)
+       represents \((c,a)\) then \(\barf(d)\simeq f(c,a)\)
+    2. \(f\) is represented by some total operation \(\hatf:\bC[C,A\Rightarrow B]\), in the sense that
+       \begin{equation*}
+       \forall c\in C,a\in A\quad\hatf(c)\cdot_{AB}a\simeq f(c,a)
+       \end{equation*}
     #+END_definition
+
+    \(\cdot_{AB}\) is represented by an operation \(app_{AB}\in\C[(A\Rightarrow B)\bowtie A,B]\)
+
+    Crucially, and in contrast to the definition of cartesian closed category, there is no
+    requirement that \(f\) is unique. This highlights an important feature of our framework: in many
+    models of interest, elements of \(A\Rightarrow B\) will be *intensional* objects (programs or algorithms),
+    and there may be many intensional objects giving rise to the same partial function \(A\to B\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Consider again the model of Example ref:3.1.5, comprising the partial Turing-computable
+    functions \(\N\rhu\N\). Here \(\N\Rightarrow\N\) can only be \(\N\), so we must provide a suitable
+    operation \(\cdot:\N\times\N\to\N\). This is done using the concept of a *universal Turing machine*.
+    Let \(T_0, T_1,\dots\)  be some sensibly chosen enumeration of all Turing machines for computing
+    partial functions \(\N\rhu\N\). Then there is a Turing machine that accepts two inputs \(e,a\) and
+    returns the result of applying the machine \(T_e\) to the single input \(a\). We may therefore
+    take \(\cdot\) to be the partial function computed by \(U\)
+
+    Clearly the partial functions \(f:\N\times\N\rhu\N\)  representable within the model via the pairing
+    operation from Example ref:3.1.5 are just the partial computable ones. We may also see that
+    these coincide exactly with those represented by some total computable \(\barf:\N\to\N\), in the
+    sense that \(f(c,a)\simeq\tilf(c)\cdot a\).
+
+    \(\Leftarrow\): Given a computable \(\tilf\) the operation \(\Lambda(c,a).\tilf(c)\cdot a\) is clearly computable
+
+    \(\Rightarrow\): \(s\)-\(m\)-\(n\) theorem
+
+    When endowed with this weakly cartisian closed structure, this computability model is known as
+    *Kleene's first model* of \(K_1\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    label:3.1.10
+    Now consider the model \(\Lambda/\sim\) ; we shall write \(\sfL\) for the set \(\Lambda/\sim\) considered as the
+    sole datatype in this model. Set \(\sfL\Rightarrow\sfL=\sfL\bowtie\sfL=\sfL\). We may obtain a weakly cartesian
+    closed structure by letting \(\cdot\) be given by application. If \(M\in\Lambda\) induces an operation
+    in \([\sfL\bowtie \sfL,\sfL]\) representing some \(f:\sfL\times\sfL\to\sfL\), then \(\lambda x.\lambda y.M(pair\;x\;y)\)
+    induces the corresponding operation in \([\sfL,\sfL\Rightarrow\sfL]\); conversely if \(N\) induces an
+    operation in \([\sfL,\sfL\Rightarrow\sfL]\) then \(\lambda z.N(fst\;z)(snd\;z)\) induces the corresponding one
+    in \([\sfL\bowtie\sfL,\sfL]\)
+    #+END_examplle
+    TODO
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+
+    #+END_examplle
+*** Higher-Order Models
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *higher-order structure* is a computability model \(\bC\) possessing a weak terminal \((I,i)\) and
+    endowed with the following for each \(A,B\in\abs{\bC}\)
+    * a choice of datatype \(A\Rightarrow B\in\abs{\bC}\)
+    * a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\)
+    #+END_definition
+
+    We treat \(\Rightarrow\) as right-associative and \(\cdot\) as left-associative
+
+    The significance of the weak terminal \((I,i)\) here is that it allows us to pick out a
+    subset \(A^\sharp\) of each \(A\in\abs{\bC}\), namely the set of elements of the form \(f(i)\)
+    where \(f\in\bC[I,A]\) and \(f(i)\downarrow\).
+
+    This is independent of the choice of \((I,i)\): if \(a=f(i)\) and \((J,j)\) is another weak
+    terminal, then composing \(f\) with \(\Lambda x.i\in\bC[J,I]\) gives \(f'\in\bC[J,A]\) with \(f'(j)=a\).
+
+    Intuitively, we think of \(A^\sharp\) as playing the role of the 'computable' elements of \(A\), and \(i\) as
+    some generic computable element.
+    On the one hand, if \(a\in A\) were computable, we would expect each
+    \(\Lambda x.a\) to be computable so that \(a\in A^\sharp\); on the other hand, the image of a computable element
+    under a computable operation should be computable, so that every element of \(A^\sharp\) is
+    computable.
+
+    Any weakly cartesian closed model \(\bC\) is a higher-structure.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    label:3.1.13
+    A *higher-order (computability) model* is a higher-order structure \(\bC\) satisfying the following
+    conditions for some (or equivalently any) weak terminal \((I,i)\)
+    1. A partial function \(f:A\rhu B\) is present in \(\bC[A,B]\) iff there
+       exists \(\hatf\in\bC[I,A\Rightarrow B]\) s.t.
+       \begin{equation*}
+       \hatf(i)\downarrow,\quad\forall a\in A.\hatf(i)\cdot a\simeq f(a)
+       \end{equation*}
+    2. For any \(A,B\in\abs{\bC}\), there exists \(k_{AB}\in(A\Rightarrow B\Rightarrow A)^\sharp\) s.t.
+       \begin{equation*}
+       \forall a.k_{AB}\cdot a\downarrow,\quad \forall a,b.k_{AB}\cdot a\cdot b=a
+       \end{equation*}
+    3. For any \(A,B,C\in\abs{\bC}\) there exits
+       \begin{equation*}
+       s_{ABC}\in((A\Rightarrow B\Rightarrow C)\Rightarrow(A\Rightarrow B)\Rightarrow(A\Rightarrow C))^\sharp
+       \end{equation*}
+       s.t.
+       \begin{equation*}
+       \forall f,g.s_{ABC}\cdot f\cdot g\downarrow,\quad\forall f,g,a.s_{ABC}\cdot f\cdot g\cdot a\simeq(f\cdot a)\cdot(g\cdot a)
+       \end{equation*}
+    #+END_definition
+
+    The elements \(k\) and \(s\) correspond to combinators from combinatory logic.
+
+    \(k\) allows us to construct *constant* maps in a computable way
+
+    A possible intuition for \(s\) is that it somehow does duty for an application
+    operation \((B\Rightarrow C)\times B\rhu C\)
+    within \(\bC\) itself, where the application may be performed uniformly in a parameter of type A.p
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:3.1.14
+    Suppose \(\bC\) is a higher-order model
+    1. for any \(j<m\), there exists \(\pi_j^m\in(A_0\Rightarrow\cdots\Rightarrow A_{m-1}\Rightarrow A_j)^\sharp\) s.t.
+       \begin{equation*}
+       \forall a_0,\dots,a_{m-1}.\pi_j^m\cdot a_0\cdot\dots\cdot a_{m-1}=a_j
+       \end{equation*}
+    2. Suppose \(m,n>0\). Given
+       \begin{gather*}
+       f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp,\quad(j=0,\dots,n-1),\\
+       g\in(B_0\Rightarrow\dots\Rightarrow B_{n-1}\Rightarrow C)^\sharp
+       \end{gather*}
+       there exists \(h\in (A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow C)^\sharp\) s.t.
+       \begin{equation*}
+       \forall a_0,\dots,a_{m-1}.h\cdot a_0\cdot\dots\cdot a_{m-1}\simeq g\cdot(f_0\cdot a_0\cdot\dots\cdot a_{m-1})\cdot\dots\cdot(f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
+       \end{equation*}
+    3. Suppose \(m>0\). For any element \(f\in (A_0\Rightarrow\cdots\Rightarrow A_{m-1}\Rightarrow B)^\sharp\), there
+       exists \(f^\dagger\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B)^\sharp\) s.t.
+       \begin{gather*}
+       \forall a_0,\dots,a_{m-1}.f^\dagger\cdot a_0\cdot\dots\cdot a_{m-1}\simeq f\cdot a_0\cdot\dots\cdot a_{m-1}\\
+       \forall k<m.\forall a_0,\dots,a_{k-1}.f^\dagger\cdot a_0\cdot\dots\cdot a_{k-1}\downarrow
+       \end{gather*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    1. consider
+       \begin{align*}
+       &T[x]\Rightarrow x\\
+       &T[(E_1\;E_2)]\Rightarrow(T[E_1]\;T[E_2])\text{if $x$ does not occur free in $E$}\\
+       &T[\lambda x.E]\Rightarrow(\bK\;T[E])\\
+       &T[\lambda x.x]\Rightarrow\bI\\
+       &T[\lambda x.\lambda y.E]\Rightarrow T[\lambda x.T[\lambda y.E]]\text{if $x$ occurs free in $E$}\\
+       &T[\lambda x.(E_1\;E_2)]\Rightarrow(\bS\;T[\lambda x.E_1]\;T[\lambda x.E_2])\text{if $x$ occurs free in $E_1$ or $E_2$}
+       \end{align*}
+       so \(A\Rightarrow B\Rightarrow B\to\lambda x^Ay^B.y^B\to \bK_{B\Rightarrow B,A}\cdot I_B\)
+    #+END_proof
+
+    If \(\bC,\bD\) are higher-order structures, we say \(\bC\) is a *full substructure* of \(\bD\) if
+    * \(\abs{\bC}\subseteq\abs{\bD}\)
+    * \(\bC[A,B]=\bD[A,B]\) for all \(A,B\in\abs{\bC}\)
+    * some (or equivalently any) weak terminal in \(\bC\) is also a weak terminal in \(\bD\)
+    * the meaning of \(A\Rightarrow B\) and \(\cdot_{AB}\) in \(\bC\) and \(\bD\) coincide
+
+
+    Note that if \((I,i)\) and \((J,j)\) are weak terminals in \(\bC\) then \(\Lambda x.j\in\bC[I,J]\), so
+    if \((I,i)\) is a weak terminal in \(\bD\) then so is \((J,j)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    A higher-order structure is a higher-order model iff it is a full substructure of a weakly
+    cartesian closed model
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(\bC\) be a higher-order structure.
+
+    \(\Leftarrow\): suppose \(\bD\) is weakly cartesian closed and \(\bC\) is a
+    full substructure of \(\bD\) with a weak terminal \((I,i)\)
+    1. For any \(f\in\bC[A,B]=\bD[A,B]\) we have that \(f\circ\pi_A\in\bD[I\bowtie A,B]\) represents \(\Lambda(x,a).f(a)\),
+       which by definition ref:3.1.8 is in turn represented by some total \(\hatf\in\bD[I,A\Rightarrow B]\).
+
+       Conversely, given \(f:A\rhu B\) and \(\hatf\in\bC[I,A\Rightarrow B]\) with \(\hatf(i)\downarrow\)
+       and \(\hatf(i)\cdot a\simeq f(a)\) for all \(a\), take \(\hatg=\hatf\circ(\Lambda x.i)\in\bC[I,A\Rightarrow B]=\bD[I,A\Rightarrow B]\) so
+       that \(\hatg\) is total and represents \(g=\Lambda(x,a).f(a):I\times A\rhu B\). Now
+       let \(\barg\in\bD[I\bowtie A,B]\) also represents \(g\). Then \(\barg\circ\la\Lambda a.i,\id_A\ra\in\bD[A,B]=\bC[A,B]\) and
+       it is routine to check that \(\barg\circ\la\Lambda a.i,\id_A\ra=f\)
+
+    2. Suppose \(A,B\in\abs{\bC}\). Let \(k'\in\bD[A,B\Rightarrow A]\) correspond to \(\pi_A\in\bD[A\bowtie B,A]\) as in
+       definition ref:3.1.8, then \(k'(a)\cdot b\simeq\pi_A(d)\). Let \(\hatk'\in\bD[I,A\Rightarrow(B\Rightarrow A)]\) correspond
+       to \(k'\circ\pi_A'\in\bD[I\bowtie A,B\Rightarrow A]\) where \(\pi_A'\in\bD[I\bowtie A,A]\) and take \(k=\hatk'(i)\)
+       \(k\cdot a\cdot b=\hatk'(i)\cdot a\cdot b=(k'\circ\pi_A'(i,a))\cdot b=k'(a)\cdot b=a\)
+
+    3.
+
+    \(\Rightarrow\): Suppose \(\bC\) is a higher-order model, with \((I,i)\) a weak terminal. We build a weakly
+    cartesian closed model \(\bC^\times\) into which \(\bC\) embeds fully as follows:
+    * Datatypes of \(\bC^\times\) are sets \(A_0\times\dots\times A_{m-1}\), where \(m>0\) and \(A_0,\dots,A_{m-1}\in\abs{\bC}\)
+    * If \(D=A_0\times\dots\times A_{m-1}\) and \(E=B_0\times\dots\times B_{n-1}\) where \(m,n>0\) the operations
+      in \(\bC^\times[D,E]\) are those partial functions \(f:D\rhu E\) of the form
+      \begin{equation*}
+      f=\Lambda(a_0,\dots,a_{m-1}).(f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
+      \end{equation*}
+      where \(f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp\) for each \(j\); we say that \(f_0,\dots,f_{n-1}\) *witness*
+      the operation \(f\). Note that for \((f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})\) to be
+      defined, it is necessary that all its components be defined
+
+
+    It remains to check the relevant properties of \(\bC^\times\). That \(\bC^\times\) is a computability model is
+    straightforward: the existence of identities follows from part 1 of Proposition ref:3.1.14
+    and composition from part 2. \(\bC^\times\) has standard products and that \((I,i)\) is a weak terminal
+    in \(\bC^\times\).
+
+    Now let's show that \(\bC^\times\) is weakly cartesian closed. Given \(D=A_0\times\dots\times A_{m-1}\)
+    and \(E=B_0\times\dots\times B_{n-1}\) with \(m,n>0\), take \(C_j=A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j\) for each \(j\), and
+    let \(D\Rightarrow E\) be the set of tuples \((f_0,\dots,f_{n-1})\in C_0\times\dots\times C_{n-1}\) witnessing operations
+    in \(\bC^\times[D,E]\). The application \(\cdot_{DE}\) is then given by
+    \begin{equation*}
+    (f_0,\dots,f_{n-1})\cdot_{DE}(a_0,\dots,a_{m-1})\simeq(f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
+    \end{equation*}
+
+    Next, given an operation \(g\in\bC^\times[G\times D,E]\) witnessed by operations \(g_0,\dots,g_{n-1}\) in \(\bC\),
+    take \(g_0^\dagger,\dots,g_{n-1}^\dagger\) as in Proposition ref:3.1.14 (3); then \(g_0^\dagger,\dots,g_{n-1}^\dagger\) witness
+    the corresponding total operation \(\hatg\in\bC^\times[G,D\Rightarrow E]\). Conversely, the witnesses for any such
+    total \(\hatg\) also witness the corresponding \(g\)
+    #+END_proof
+*** Typed Partial Combinatory Algebras
+    The following definition captures roughly what is left of a higher-order model once the
+    operations are discarded
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. A *partial applicative structure* \(\bA\) consists of
+       * an inhabited family \(\abs{\bA}\) of datatypes \(A,B,\dots\) (indexed by some set \(T\))
+       * a (right-associative) binary operation \(\Rightarrow\) on \(\abs{\bA}\)
+       * for each \(A,B\in\abs{\bA}\), a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\)
+    2. A *typed partial combinatory algebra* (TPCA) is a partial applicative structure \(\bA\)
+       satisfying the following conditions
+       1. For any \(A,B\in\abs{\bA}\), there exists \(k_{AB}\in A\Rightarrow B\Rightarrow A\) s.t.
+          \begin{equation*}
+          \forall a.k\cdot a\downarrow,\quad\forall a,b.k\cdot a\cdot b=a
+          \end{equation*}
+       2. For any \(A,B,C\in\abs{\bA}\), there exists \(s_{ABC}\in(A\Rightarrow B\Rightarrow C)\Rightarrow(A\Rightarrow B)\Rightarrow(A\Rightarrow C)\) s.t.
+          \begin{equation*}
+          \forall f,g. s\cdot f\cdot g\downarrow,\quad\forall f,g,a.s\cdot f\cdot g\cdot a\simeq(f\cdot a)\cdot(g\cdot a)
+          \end{equation*}
+
+
+       A TPCA is *total* if all the application operations \(\cdot_{AB}\) are total
+    #+END_definition
+
+    Any higher-order model yields an underlying TPCA. However, in passing to this TPCA we lose the
+    information that says which element of \(A\Rightarrow B\) are supposed to represent operations.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. If \(\bA^\circ\) denotes a partial applicative structure, a *partial applicative
+       substructure* \(\bA^\sharp\) of \(\bA^\circ\) consists of a subset \(A^\sharp\subseteq A\) for each \(A\in\abs{\bA^\circ}\) s.t.
+       * if \(f\in(A\Rightarrow B)^\sharp\), \(a\in A^\sharp\) and \(f\cdot a\downarrow\) in \(\bA^\circ\), then \(f\cdot a\in B^\sharp\)
+
+       such a pair \((\bA^\circ;\bA^\sharp)\) is called a *relative partial applicative structure*
+
+    2. A *relative TPCA* is a relative partial applicative structure \((\bA^\circ,\bA^\sharp)\) s.t. there exist
+       elements \(k_{AB}, s_{ABC}\) in \(\bA^\sharp\) witnessing that \(\bA^\circ\) is a TPCA
+    #+END_definition
+
+    A relative TPCA \((\bA^\circ,\bA^\sharp)\) is *full* if \(\bA^\sharp=\bA^\circ\). We will use \(\bA\) to range over both
+    ordinary TPCAs and relative ones (writing \(\bA^\circ\), \(\bA^\sharp\) for the two components of \(\bA\) in
+    the latter case), so that in effect we identify an ordinary TPCA \(\bA\) with the relative
+    TPCA \((\bA;\bA)\). Indeed, we may sometimes refer to ordinary TPCAs as 'full TPCAs' . Clearly the
+    models \(K_1\) and \(\Lambda/\sim\) are full, while in general \(\sfK(B;C)\) is not: rather, it is a
+    relative TPCA \(\bA\) in which \(\bA^\circ\) is a full set-theoretic type structure whilst \(\bA^\sharp\)
+    consists of only the \(C\)-computable elements TODO
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There is a canonical bijection between highor-order models and relative TPCAs
+    #+END_theorem
+
+*** Type worlds
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. A *type world* is simply a set \(\sfT\) of *type names* \sigma, optionally endowed with any or
+       all of the following:
+       1. a *fixing map*, assigning a set \(\sfT[\sigma]\) to certain type names \(\sigma\in\sfT\)
+       2. a *product structure*, consisting of a total binary operation \((\sigma,\tau)\mapsto\sigma\times\tau\)
+       3. an *arrow structure*, consisting of a total binary operation \((\sigma,\tau)\mapsto\sigma\to\tau\)
+    2. A *computability model over* a type world \(\sfT\) is a computability model \(\bC\) with index
+       set \(\sfT\) (so that \(\abs{\bC}=\{\bC(\sigma)\mid\sigma\in\sfT\}\)) subject to the following conventions
+       1. If \(\sfT\) has a fixing map, then \(\bC(\sigma)=T[\sigma]\) whenever \(\sfT(\sigma)\) is defined
+       2. If \(\sfT\) has a product structure, then \(\bC\) has weak products and for any \(\sigma,\tau\in\sfT\)
+          we have \(\bC(\sigma\times\tau)=\bC(\sigma)\bowtie\bC(\tau)\)
+       3. If \(\sfT\) has an arrow structure, then \(\bC\) is a higher-order model and for
+          any \(\sigma,\tau\in\sfT\) we have \(\bC(\sigma\to\tau)=\bC(\sigma)\Rightarrow\bC(\tau)\)
+       4. If \(\sfT\) has both a product and an arrow structure, then \(\bC\) is weakly cartesian closed
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    The one-element type world \(\sfO=\{*\}\) with just the arrow structure \(*\to*=*\). TPCAs over this
+    type world are precisely (untyped) PCAs; both \(K_1\) and \(\Lambda/\sim\) are examples
+    #+END_examplle
