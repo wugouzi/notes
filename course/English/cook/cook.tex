@@ -1,4 +1,4 @@
-% Created 2022-03-04 Fri 16:45
+% Created 2022-03-06 Sun 20:46
 % Intended LaTeX compiler: pdflatex
 \documentclass[presentation]{beamer}
 \usepackage[utf8]{inputenc}
@@ -12,6 +12,7 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
+\mode<beamer>{\usetheme{Madrid}}
 \input{preamble.tex}
 \def \TIME {\text{TIME}}
 \def \EXP {\textbf{EXP}}
@@ -50,10 +51,10 @@
 \usetheme{default}
 \author{Qi'ao Chen\\21210160025@m.fudan.edu.cn}
 \date{\today}
-\title{Cook Theorem}
+\title{Cook-Levin Theorem}
 \hypersetup{
  pdfauthor={Qi'ao Chen\\21210160025@m.fudan.edu.cn},
- pdftitle={Cook Theorem},
+ pdftitle={Cook-Levin Theorem},
  pdfkeywords={},
  pdfsubject={},
  pdfcreator={Emacs 28.0.90 (Org mode 9.6)}, 
@@ -66,8 +67,8 @@
 \end{frame}
 
 \section{Goal}
-\label{sec:org4906bd9}
-\begin{frame}[label={sec:org4c5dd34}]{​wef}
+\label{sec:orgbaeb2d6}
+\begin{frame}[label={sec:orgbbf2329}]{​​}
 \begin{theorem}[Cook-Levin Theorem]
 \begin{enumerate}
 \item \(\SAT\) is \(\NP\)-complete
@@ -76,9 +77,19 @@
 \end{theorem}
 \end{frame}
 
+
+\begin{frame}[label={sec:org93a9723}]{The web of reductions}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.8\textwidth]{./3.pdf}
+\label{}
+\end{figure}
+\end{frame}
+
+
 \section{Intro}
-\label{sec:org2f2ca75}
-\begin{frame}[label={sec:org028dd8d}]{Turing machine}
+\label{sec:org98a1e2c}
+\begin{frame}[label={sec:org74053a4}]{Turing machine}
 \begin{definition}[]
 A TM \(M\) is described by a tuple \((\Gamma,Q,\delta)\) containing
 \begin{itemize}
@@ -93,23 +104,23 @@ called the \alert{transition function} of \(M\)
 \end{itemize}
 \end{definition}
 \end{frame}
-\begin{frame}[label={sec:org91ab064}]{Turing machine}
+\begin{frame}[label={sec:orgffb7e8b}]{Turing machine}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.7\textwidth]{./6.png}
 \label{}
 \end{figure}
 \end{frame}
-\begin{frame}[label={sec:org0b8d190}]{Efficiency and running time}
+\begin{frame}[label={sec:org61184e8}]{Efficiency and running time}
 \begin{definition}[Computing a function and running time]
 Let \(f:\{0,1\}^*\to\{0,1\}^*\) and let \(T:\N\to\N\) be some functions, and let \(M\) be a Turing
 machine. We say that \(M\) \alert{computes} \(f\) if for every \(x\in\{0,1\}^*\) whenever \(M\) is
 initialized to the start configuration on input \(x\), then it halts with \(f(x)\) written on
-its output tape. We say \(M\) \alert{computes} \(f\) in \alert{\(T(n)\)-time} if its computation on every
+its output tape. We say \(M\) \alert{computes} \(f\) in \alert{\(T(\abs{x})\)-time} if its computation on every
 input \(x\) requires at most \(T(\abs{x})\) steps
 \end{definition}
 \end{frame}
-\begin{frame}[label={sec:org7a1fb76}]{The class \texorpdfstring{\(\bP\)}{P}}
+\begin{frame}[label={sec:org68ce855}]{The class \texorpdfstring{\(\bP\)}{P}}
 A \alert{complexity class} is a set of functions that can be computed within given resource bounds. We
 say that a machine \alert{decides} a language \(L\subseteq\{0,1\}^*\) if it computes the
 function \(f_L:\{0,1\}^*\to\{0,1\}\) where \(f_L(x)=1\Leftrightarrow x\in L\)
@@ -123,9 +134,9 @@ deterministic Turing machine that runs in time \(c\cdot T(n)\) for some constant
 \(\bP=\bigcup_{c\ge 1}\DTIME(n^c)\)
 \end{definition}
 \end{frame}
-\begin{frame}[label={sec:org67ccad3}]{The class \texorpdfstring{\(\NP\)}{NP}}
+\begin{frame}[label={sec:org444081b}]{The class \texorpdfstring{\(\NP\)}{NP}}
 \begin{definition}[]
-A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists a polynomial \(p:\N\to\N\) and a
+A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists a polynomial function \(p:\N\to\N\) and a
 polynomial-time TM \(M\) (called the \alert{verifier} for \(L\)) such that for every \(x\in\{0,1\}^*\),
 \begin{equation*}
 x\in L\Leftrightarrow\exists u\in\{0,1\}^{p(\abs{x})} \text{ s.t. } M(x,u)=1
@@ -134,8 +145,19 @@ If \(x\in L\) and \(u\in\{0,1\}^{p(\abs{x})}\) satisfy \(M(x,u)=1\), then we cal
 for \(x\) w.r.t. \(L\) and \(M\)
 \end{definition}
 \end{frame}
+\begin{frame}[label={sec:org3c4e33f}]{Non-deterministic Turing machine}
+\begin{definition}[]
+\alert{Non-deterministic Turing machine} has \alert{two} transition function \(\delta_0\) and \(\delta_1\), and a special state denoted
+by \(q_{\accept}\). When an NDTM \(M\) computes a function, we envision that at each
+computational step \(M\) makes an arbitrary choice at to which of its two transition functions
+to apply. For every input \(x\), we say that \(M(x)=1\) if there \alert{exists} some sequence of this
+choices that would make \(M\) reach \(q_{\accept}\) on input \(x\). We say that \(M\) runs
+in \(T(n)\) time if for every input \(x\in\{0,1\}^*\) and every sequence of nondeterministic
+choices, \(M\) reaches the halting state or \(q_{\accept}\) within \(T(\abs{x})\) steps
+\end{definition}
+\end{frame}
 
-\begin{frame}[label={sec:orgfb53dfc}]{The class \texorpdfstring{\(\NP\)}{NP}}
+\begin{frame}[label={sec:org92c5dea}]{The class \texorpdfstring{\(\NP\)}{NP}}
 \begin{definition}[]
 For every function \(T:\N\to\N\) and \(L\subseteq\{0,1\}^*\), we say that \(L\in\NTIME(T(n))\) if there is a
 constant \(c>0\) and a \(c\cdot T(n)\)-time NDTM \(M\) s.t. for
@@ -151,7 +173,7 @@ The main idea is that the sequence of nondeterministic choices made by an accept
 of an NDTM  can be viewed as a certificate that the input is in the language, and vice versa
 \end{proof}
 \end{frame}
-\begin{frame}[label={sec:org1b9fd93}]{The class \texorpdfstring{\(\NP\)}{NP}}
+\begin{frame}[label={sec:org765f43c}]{The class \texorpdfstring{\(\NP\)}{NP}}
 \begin{theorem}[]
 \(\NP=\bigcup_{c\in\N}\NTIME(n^c)\)
 \end{theorem}
@@ -159,10 +181,16 @@ of an NDTM  can be viewed as a certificate that the input is in the language, an
 \begin{proof}
 Suppose \(p:\N\to\N\) is a polynomial and \(L\) is decided by a NDTM \(N\) that runs in
 time \(p(n)\). For every \(x\in L\), there is a sequence of nondeterministic choices that
-makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a \alert{certificate} for \(x\).
+makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a \alert{certificate}
+for \(x\).
+
+Conversely, if \(L\in\NP\), then we describe a polynomial time NDTM \(N\) that decides \(L\).
+On input \(x\), it uses the ability to make nondeterministic choices to write down a
+string \(u\) of length \(p(\abs{x})\). (Having transition \(\delta_0\) correspond to writing a
+0 and \(\delta_1\) to 1). Then it runs the deterministic verifier
 \end{proof}
 \end{frame}
-\begin{frame}[label={sec:orga5eebe4}]{Reducibility}
+\begin{frame}[label={sec:orga630af9}]{Reducibility}
 \begin{definition}[]
 A language \(L\subseteq\{0,1\}^*\) is \alert{polynomial-time Karp reducible to a
 language} \(L'\subseteq\{0,1\}^*\) (sometimes shortened to just ``polynomial-time reducible''), denoted
@@ -175,8 +203,11 @@ is \alert{\(\NP\)-complete} if \(L'\) is \(\NP\)-hard and \(L'\in\NP\)
 \end{definition}
 \end{frame}
 \section{Cook-Levin Theorem}
-\label{sec:org62f336d}
-\begin{frame}[label={sec:orga0d8092}]{Goal}
+\label{sec:orgfbb95fb}
+\begin{frame}[label={sec:org5bfd38b}]{Goal}
+We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(\TSAT\) the
+language of all satisfiable 3CNF formulae
+
 \begin{theorem}[Cook-Levin Theorem]
 \begin{enumerate}
 \item \(\SAT\) is \(\NP\)-complete
@@ -185,7 +216,7 @@ is \alert{\(\NP\)-complete} if \(L'\) is \(\NP\)-hard and \(L'\in\NP\)
 \end{theorem}
 \end{frame}
 
-\begin{frame}[label={sec:org77e22b1}]{Oblivious Turing machine}
+\begin{frame}[label={sec:orgcbb53be}]{Oblivious Turing machine}
 \begin{definition}[]
 Define a TM \(M\) to be \alert{oblivious} if its head movements do not depend on the input but only on
 the input length. That is, \(M\) is oblivious if for every input \(x\in\{0,1\}^*\) and \(i\in\N\), the
@@ -198,7 +229,7 @@ For any Turing machine \(M\) that decides a language in time \(T(n)\), there exi
 Turing machine that decides the same language in \(T(n)^2\)
 \end{theorem}
 \end{frame}
-\begin{frame}[label={sec:org7870f5b}]{A lemma}
+\begin{frame}[label={sec:org640ff4a}]{A lemma}
 \begin{lemma}[]
 For every Boolean function \(f:\{0,1\}^l\to\{0,1\}\), there is an \(l\)-variable CNF formula \(\varphi\)
 of size \(l2^l\) s.t. \(\varphi(u)=f(u)\) for every \(u\in\{0,1\}^l\), where the size of a CNF
@@ -216,7 +247,8 @@ We let \(\varphi\) be the AND of all the clauses \(C_v\) for \(v\) s.t. \(f(v)=0
 Note that \(\varphi\) has size at most \(l2^l\).
 \end{proof}
 \end{frame}
-\begin{frame}[label={sec:orge7aa587}]{Main lemma}
+
+\begin{frame}[label={sec:orgfa6aff3}]{Main lemma}
 \begin{lemma}[]
 \(\SAT\) is \(\NP\)-hard
 \end{lemma}
@@ -235,7 +267,7 @@ is satisfiable. Equivalently
 where \(\circ\) denotes concatenation
 \end{proof}
 \end{frame}
-\begin{frame}[label={sec:org5b5a03f}]{Assumption}
+\begin{frame}[label={sec:orgc3c963c}]{Assumption}
 Assume
 \begin{enumerate}
 \item \(M\) only has two tapes - an input tape and a work/output tape
@@ -245,14 +277,14 @@ and for every \(i\) the location of \(M\)'s head at the \(i\)th step depends onl
 and the length of the input
 \end{enumerate}
 \end{frame}
-\begin{frame}[label={sec:orgb62f04f}]{Proof}
+\begin{frame}[label={sec:org1a82783}]{Proof}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.8\textwidth]{./2.png}
 \label{}
 \end{figure}
 \end{frame}
-\begin{frame}[label={sec:org35515a5}]{Proof}
+\begin{frame}[label={sec:org5d09d05}]{Proof}
 The previous discussion shows this latter condition occurs iff
  there exists a string \(y\in\{0,1\}^{n+p(n)}\) and a sequence of strings
  \(z_1,\dots,z_{T(n)}\in\{0,1\}^c\) (where \(T(n)\) is the number of steps \(M\) takes on inputs
@@ -265,17 +297,26 @@ triple \(\la\rhd,\Box,q_{\start}\ra\).
 \item The last string \(z_{T(n)}\) encodes a snapshot where the machine halts and outputs 1
 \end{enumerate}
 \end{frame}
+\begin{frame}[label={sec:org7961583}]{3SAT}
+\begin{lemma}[]
+\(\SAT\le_p\TSAT\)
+\end{lemma}
 
-\begin{frame}[label={sec:org928477b}]{The web of reductions}
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=.8\textwidth]{./3.pdf}
-\label{}
-\end{figure}
+\begin{proof}
+Suppose \(\varphi\) is a 4CNF. Let \(C\) be a clause of \(\varphi\), say \(C=u_1\vee\baru_2\vee\baru_3\vee u_4\).
+We add a new variable \(z\) to the \(\varphi\) and replace \(C\) with the pair
+\(C_1=u_1\vee\baru_2\vee z\) and \(C_2=\baru_3\vee u_4\vee\barz\). If \(C\) is true, then there
+is an assignment to \(z\) that satisfies both \(C_1\) and \(C_2\). If \(C\) is false, then no
+matter what value we assign to \(z\) either \(C_1\) or \(C_2\) will be false.
+
+For every clause \(C\) of size \(k>3\), we change it into an equivalent pair of clauses \(C_1\)
+of size \(k-1\) and \(C_2\) of size 3.
+\end{proof}
 \end{frame}
 
+
 \section{{\bfseries\sffamily TODO} Total}
-\label{sec:orge0a657f}
+\label{sec:org1e716c3}
 
 nondeterministic turing machines
 

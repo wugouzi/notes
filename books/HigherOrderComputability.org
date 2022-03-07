@@ -4,6 +4,8 @@
 #+EXPORT_FILE_NAME: ../latex/HigherOrderComputability/HigherOrderComputability.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \newcommand{\ssmile}[1]{\mathord{\stackrel{\smallsmile}{#1}}}
+#+LATEX_HEADER: \DeclareMathOperator{\lv}{lv}
 #+LATEX_HEADER: \makeindex
 
 * COMMENT Introduction and Motivations
@@ -80,7 +82,7 @@
     * \(e\uparrow\) 'the value of \(e\) is undefined'
     * \(e=e'\) 'the values of both \(e\) and \(e'\) are defined and they are equal'
     * \(e\simeq e'\) 'if either \(e\) or \(e'\) is defined then so is the other and they are equal'
-    * \(e\succeq e'\) 'if \(e'\) is defined then so it \(e\) and they are equal'
+    * \(e\succeq e'\) 'if \(e'\) is defined then so is \(e\) and they are equal'
 
 
     if \(e\) is a mathematical expression possibly involving the variable \(x\), we write \(\Lambda x.e\)
@@ -91,6 +93,7 @@
 *** Computability Models
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
+    label:3.1.1
     A *computability model* \(\bC\)  over a set \(\sfT\) of *type names* consists of
     * an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the *datatypes* of \(\bC\)
     * for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
@@ -133,9 +136,6 @@
     unique, since many elements of \(A\bowtie B\) may represent the same pair \((a,b)\). We do not formally
     require that every \((a,b)\) is represented in \(A\bowtie B\), though in all cases of interest this will be
     so. The reader is also warned that \(\pi_A\circ\la f,g\ra\) will not in general coincide with \(f\) .
-
-    TODO: examples
-    different bijections from \(\N\times\N\to\N\)
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -242,6 +242,8 @@
     &rec_X(x,f,0)=0\\
     &rec_X(x,f,n+1)=f(rec_X(x,f,n),n)
     \end{align*}
+    the resulting model \(\sfK(B;C)\) consists of exactly those operations of \(\sfS\) definable in
+    Gödel's *System T*
     #+END_examplle
 *** Weakly Cartesian Closed Models
     #+ATTR_LATEX: :options []
@@ -303,10 +305,17 @@
     operation in \([\sfL,\sfL\Rightarrow\sfL]\) then \(\lambda z.N(fst\;z)(snd\;z)\) induces the corresponding one
     in \([\sfL\bowtie\sfL,\sfL]\)
     #+END_examplle
-    TODO
+
     #+ATTR_LATEX: :options []
     #+BEGIN_examplle
+    For models of the form \(\sfK(B;C)\), we naturally define \(X\Rightarrow Y=Y^X\) and take \(\cdot_{XY}\) to be
+    ordinary function application. These models are endowed with binary products, and it is
+    immediate from closure condition 6 in Example ref:3.1.7 that they are weakly cartesian closed
 
+    Such models show that not every element of \(X\Rightarrow Y\) need represent an operation in \(\bC[X,Y]\),
+    or equivalently one in \(\bC[1,X\Rightarrow Y]\). This accords with the idea that our models consist of
+    'computable' operations acting on potentially 'non-computable' data: operations in \(\bC[X,Y]\)
+    are computable, whereas elements of \(X\) need not be
     #+END_examplle
 *** Higher-Order Models
     #+ATTR_LATEX: :options []
@@ -391,6 +400,8 @@
        \forall k<m.\forall a_0,\dots,a_{k-1}.f^\dagger\cdot a_0\cdot\dots\cdot a_{k-1}\downarrow
        \end{gather*}
     #+END_proposition
+
+    \(i_A=s_{A(A\Rightarrow A)A}\cdot k_{A\Rightarrow A}\cdot k_{AA}\in(A\Rightarrow A)^\sharp\)
 
     #+BEGIN_proof
     1. consider
@@ -479,6 +490,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
+    label:3.1.16
     1. A *partial applicative structure* \(\bA\) consists of
        * an inhabited family \(\abs{\bA}\) of datatypes \(A,B,\dots\) (indexed by some set \(T\))
        * a (right-associative) binary operation \(\Rightarrow\) on \(\abs{\bA}\)
@@ -503,6 +515,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
+
     1. If \(\bA^\circ\) denotes a partial applicative structure, a *partial applicative
        substructure* \(\bA^\sharp\) of \(\bA^\circ\) consists of a subset \(A^\sharp\subseteq A\) for each \(A\in\abs{\bA^\circ}\) s.t.
        * if \(f\in(A\Rightarrow B)^\sharp\), \(a\in A^\sharp\) and \(f\cdot a\downarrow\) in \(\bA^\circ\), then \(f\cdot a\in B^\sharp\)
@@ -519,12 +532,125 @@
     TPCA \((\bA;\bA)\). Indeed, we may sometimes refer to ordinary TPCAs as 'full TPCAs' . Clearly the
     models \(K_1\) and \(\Lambda/\sim\) are full, while in general \(\sfK(B;C)\) is not: rather, it is a
     relative TPCA \(\bA\) in which \(\bA^\circ\) is a full set-theoretic type structure whilst \(\bA^\sharp\)
-    consists of only the \(C\)-computable elements TODO
+    consists of only the \(C\)-computable elements
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
-    There is a canonical bijection between highor-order models and relative TPCAs
+    There is a canonical bijection between higher-order models and relative TPCAs
     #+END_theorem
+
+    #+BEGIN_proof
+    First suppose \(\bC\) is a higher-order model, and let \(\bA^\circ\) be its underlying partial
+    applicative structure. Take \((I,i)\) a weak terminal in \(\bC\), and for any \(A\in\abs{\bC}\),
+    define \(A^\sharp=\{g(i)\mid g\in\bC[I,A],g(i)\downarrow\}\). As noted there, this is independent of the choice
+    of \((I,i)\); in fact, it is easy to see that \(a\in A^\sharp\) iff \((A,a)\) is a weak terminal. To
+    see that the \(A^\sharp\) form an applicative substructure, suppose \(f\in(A\Rightarrow B)^\sharp\) is witnessed
+    by \(f'\in\bC[I,A\Rightarrow B]\) and \(a\in A^\sharp\) is witnessed by \(a'\in\bC[I,A]\), and suppose further
+    that \(f\cdot a=b\). Take \(\check{f'}\in\bC[A\Rightarrow B]\) corresponding to \(f'\); then \(\check{f'}(a)=b\)
+    and so \(\check{f'}\circ a'\) witnesses \(b\in B^\sharp\)
+
+    Let \(\bA^\sharp\) denote the substructure formed by the sets \(A^\sharp\). It is directly build into
+    Definition ref:def3.1.13 that there are elements \(k_{AB}, s_{ABC}\) in \(\bA^\sharp\) with the
+    properties required by Definition ref:3.1.16; thus \((\bA^\circ;\bA^\sharp)\) is a relative TPCA
+
+    For the converse, suppose \(\bA\) is a relative TPCA. Take \(\abs{\bC}=\abs{\bA^\circ}\) and
+    for \(A,B\in\abs{\bC}\), let \(\bC[A,B]\) consist of all partial functions \(\Lambda a.f\cdot a\)
+    for \(f\in(A\Rightarrow B)^\sharp\). To see that \(\bC\) has identities, for any \(A\in\abs{\bC}\), we have
+    \begin{equation*}
+    i_A=s_{A(A\Rightarrow A)A}\cdot k_{A(A\Rightarrow A)}\cdot k_{AA}\in(A\Rightarrow A)^\sharp
+    \end{equation*}
+    and clearly \(i_A\) induces \(\id_A\in\bC[A,A]\).  For composition, given
+    operations \(f\in\bC[A,B]\), \(g\in\bC[B,C]\) induced by \(f'\in(A\Rightarrow B)^\sharp\), \(g'\in(B\Rightarrow C)^\sharp\), we have
+    that \(g\circ f\in\bC[A,C]\) is induced by \(s_{ABC}\cdot(k_{(B\Rightarrow C)}\cdot g)\cdot f\). Thus \(\bC\) is a computability
+    mode
+
+    For a weak terminal, take any \(U\in\abs{\bC}\) and let \(I=U\Rightarrow U\) and \(i=i_U\) as defined above.
+    Then for any \(A\) we have that \(k_{IA}\cdot i\in(A\Rightarrow U\Rightarrow U)^\sharp\) induces \(\Lambda a.i\in\bC[A,I]\)
+
+    To turn \(\bC\) into a higher-order structure, we take \(\Rightarrow\) and \(\cdot\) as in \(\bA^\circ\). We may now
+    verify that for any \(A\) we have
+    \begin{equation*}
+    A^\sharp=\{g(i)\mid g\in\bC[I,A],g(i)\downarrow\}
+    \end{equation*}
+    so that the present meaning of \(A^\sharp\) coincides with its meaning in Section ref:3.1.4. For
+    given \(g\in A^\sharp\) we have \(k_{IA}\cdot a\in(I\Rightarrow A)^\sharp\) inducing an operation \(g\) with \(g(i)=a\).
+    Conversely, given \(g\in\bC[I,A]\) with \(g(i)\downarrow\) we have that \(g(i)=g'\cdot i\) for
+    some \(g'\in(I\Rightarrow A)^\sharp\)?; but \(i\in I^\sharp\) so \(g(i)\in A^\sharp\)
+
+    By applying the above equation to the type \(A\Rightarrow B\), we see that conditions 1 and 2 of
+    Definition ref:3.1.13 are satisfied, and conditions 3 and 4 are immediate from the \(k,s\)
+    conditions in Definition ref:3.1.16. Thus \(\bC\) is a higher-order model
+    #+END_proof
+
+    In the setting of a relative TPCA \(\bA\), we have a natural *degree structure* on the elements
+    of \(\bA^\circ\). Specifically, if \(a\in A\) and \(b\in B\) where \(A,B\in\abs{\bA^\circ}\), let us
+    write \(a\gg b\) if there exists \(f\in\bA^\sharp(A\Rightarrow B)\) with \(f\cdot a=b\)
+
+    If \(\abs{\bA}\) consists of just a single datatype, then TPCA is just a single set \(A\) equipped
+    with a partial 'application' operation \(\cdot:A\times A\rhu A\) s.t. for some \(k,s\in A\) we have
+    \begin{equation*}
+    \forall x,y.k\cdot x\cdot y=x,\quad\forall x,y.s\cdot x\cdot y\downarrow,\quad\forall x,y,z.s\cdot x\cdot y\cdot z\simeq(x\cdot z)\cdot(y\cdot z)
+    \end{equation*}
+    We call such a structure an *partial combinatory algebra* (or PCA)
+*** Lax Models
+    For simplicity, we have worked so far with a simple definition of computability model in which
+    operations are required to be closed under ordinary composition of partial functions. It turns
+    out, however, that with a few refinements, practically all the general theory presented in this
+    chapter goes through under a somewhat milder assumption.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *lax computability model* \(\bC\)  over a set \(\sfT\) of *type names* consists of
+    * an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the *datatypes* of \(\bC\)
+    * for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
+      *operations* of \(\bC\)
+
+
+    s.t.
+    1. for each \(\tau\in\sfT\), the identity function \(\id:\bC(\tau)\to\bC(\tau)\) is in \(\bC(\tau,\tau)\)
+    2. for any \(f\in\bC[\rho,\sigma]\) and \(g\in\bC[\sigma,\tau]\), there exists \(h\in\bC[\rho,\tau]\) with \(h(a)\succeq g(f(a))\) for
+       all \(a\in\bC(\rho)\)
+
+
+    We may refer to \(h\) here as a *supercomposition* of \(f\) and \(g\).
+    #+END_definition
+
+    We sometimes refer to our standard computability models as *strict* when we wish to emphasize the
+    contrast with lax models. Of course, for total computability models, the distinction
+    evaporates completely.
+
+    One possible motivation for the concept of lax model is that it is often natural to think of an
+    application \(f(a)\) in terms of some computational agent \(F\) representing \(f\) being placed ‘alongside’
+    a representation \(A\) of a to yield a composite system \(F\mid A\), which may then evolve in certain ways
+    via interactions between \(F\) and \(A\). If an agent \(G\) representing \(g\) is then placed alongside this to
+    yield a system \(G\mid F\mid A\), there is the possibility that \(G\) may interact ‘directly’ with \(F\) rather
+    than just with the result obtained from \(F\mid A\); thus, \(G\mid F\) might admit other behaviours not
+    accounted for by \(g\circ f\) . (For a precise example of this in process algebra, see Longley
+    [183].)
+
+    The notion of a *(relative) lax TPCA* is given by replacing the axioms for \(s_{ABC}\) in
+    Definition ref:3.1.16 with
+    \begin{equation*}
+    \forall f,g.s\cdot f\cdot g\downarrow,\quad\forall f,g,a.s\cdot f\cdot g\cdot a\succeq (f\cdot a)\cdot(g\cdot a)
+    \end{equation*}
+
+    The definitions of weak products and weak terminal may be carried over unchanged to the
+    setting of lax computability models; note that \(\la f,g\ra\) is still required to be a pairing in the
+    ‘strict’ sense that its domain coincides precisely with \(\dom f\cap\dom g\). The definition of weakly
+    cartesian closed model is likewise unchanged, although one should note that in the lax
+    setting, whether a given model is weakly cartesian closed may be sensitive to the choice of the
+    type operator \(\bowtie\).
+
+    For the definition of a lax higher-order model, we simply replace '\(\simeq\)' by '\(\succeq\)' in
+    condition 4(?) of Definition ref:3.1.13
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    1. Any lax higher-order model is a full substructure of a lax weakly cartesian closed model
+    2. If \(\bD\) is a lax weakly cartesian closed model in which some weak terminal \((I,i)\) is a
+       weak unit, any full substructure of \(\bD\) containing \(I\) is a lax higher-order model
+    #+END_theorem
+
 
 *** Type worlds
     #+ATTR_LATEX: :options []
@@ -549,3 +675,77 @@
     The one-element type world \(\sfO=\{*\}\) with just the arrow structure \(*\to*=*\). TPCAs over this
     type world are precisely (untyped) PCAs; both \(K_1\) and \(\Lambda/\sim\) are examples
     #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    If \(\beta_0,\dots,\beta_{n-1}\) are distinct *basic type names* and \(B_0,\dots,B_{n-1}\) are sets, we may define
+    the type word \(\sfT^{\to}(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) to consist of formal type expressions
+    freely constructed from \(\beta_0,\dots,\beta_{n-1}\) via \(\to\), fixing the interpretation of each \(\beta_i\)
+    at \(B_i\). This type world has a fixing map and an arrow structure, but no product. We may write
+    just \(\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\) if we do not wish to constrain the interpretation of the \(\beta_i\)
+
+    A typical example is the type world \(\sfT^\to(\ttN=\N)\). Models over this type would correspond
+    to *finite type structures* over \(\N\); the models \(\sfK(B;C)\) are examples
+
+    Type world \(\sfT^{\to}(\ttN=\N_\bot)\) where \(\N_\bot\) is the set of natural numbers together with an
+    additional element \(\bot\) representing 'non-termination'. Whereas \(\N\) may be used to model
+    actual *results* of computation, we may think of \(\N_\bot\) as representing some computational
+    *process* which may or may not return a natural number.
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Similarly, we define \(\sfT^{\to\times}=(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) to be the type world consisting
+    of type expressions freely constructed form \(\beta_0,\dots,\beta_{n-1}\) via \(\to\) and \(\times\), fixing the
+    interpretation of each \(\beta_i\) at \(B_i\). If no fixing map is required, we write
+    just \(\sfT^{\to\times}(\beta_0,\dots,\beta_{n-1})\)
+
+    Type worlds featuring a *unit type* (denoted by \(\texttt{1}\)) are also useful. We shall
+    write \(\sfT^{\to\times\texttt{1}}(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) for the type world
+    \begin{equation*}
+    \sfT^{\to\times}(\texttt{1}=\{()\},\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})
+    \end{equation*}
+    We will often refer to the type names in a type world simply as *types*, and use \rho, \sigma, \tau to range
+    over them. When dealing with formal type expressions, we adopt the usual convention that \(\to\)
+    is right-associative, so that \(\rho\to\sigma\to\tau\) means \(\rho\to(\sigma\to\tau)\). For definiteness, we may also declare
+    that \(\times\) is right-associative, although in practice we shall not always bother to distinguish
+    between \((\rho\times\sigma)\times\tau\) and \(\rho\times(\sigma\times\tau)\). We consider \(\times\) as binding more tightly than \(\to\)
+
+    We shall use the notation \(\sigma_0,\dots,\sigma_{r-1}\to\tau\) as an abbreviation for \(\sigma_0\to\sigma_1\to\dots\to\sigma_{r-1}\to\tau\)
+    (allowing this to mean \tau in the sense \(r=0\)). This allows us to express our intention
+    regarding which objects are to be thought of as 'arguments' to a given operation: for instance,
+    the types \(\ttN,\ttN,\ttN\to\ttN\) and \(\ttN,\ttN\to(\ttN\to\ttN)\) are formally the same, but in
+    the first case we are thinking of a three-argument operation returning a natural number, while
+    in the second we are thinking of a two-argument operation returning a function \(\N\to\N\). We also
+    write \(\sigma^{(r)}\to\tau\) for the type \(\sigma,\dots,\sigma\to\tau\) with \(r\) arguments. The notation \(\sigma^r\) is
+    reserved for the \(r\)-fold product type \(\sigma\times\dots\times\sigma\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Any type \(\sigma\in\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\) may be uniquely written in the form \(\sigma_0,\dots,\sigma_{r-1}\to\beta_i\)
+    #+END_proposition
+
+    We shall call this the *argument form* of \sigma. The importance of this is that it provides a useful
+    induction principle for types: if a property holds for \(\sigma_0,\dots,\sigma_{r-1}\to\beta_i\) whenever it holds
+    for each of \(\sigma_0,\dots,\sigma_{r-1}\), then it holds for all \(\sigma\in\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\). We shall
+    refer to this as *argument induction*; it is often preferable as an alternative to the usual
+    *structural induction* on types
+
+    Closely associated with argument form is the notion of the *level* of a type \sigma: informally, the
+    stage at which \sigma appears in the generation of \(\sfT^\to(\beta_0,\dots,\beta_{n-1})\) via argument induction:
+    \begin{align*}
+    \lv(\beta_i)&=0\\
+    \lv(\sigma_0,\dots,\sigma_{r-1}\to\beta_i)&=1+\max_{i<r}\lv(\sigma_i)\quad(r\ge 1)
+    \end{align*}
+    When working with \(\sfT^{\to\times}(\beta_0,\dots,\beta_{n-1})\), it is natural to augment this definition with
+    \begin{equation*}
+    \lv(\sigma\times\tau)=\max(\lv(\sigma),\lv(\tau))
+    \end{equation*}
+    We may define the *pure type of level \(k\) over \sigma*, written \(\bark[\sigma]\):
+    \begin{equation*}
+    \bbar{0}[\sigma]=\sigma,\quad\ove{k+1}[\sigma]=\bark[\sigma]\to\sigma
+    \end{equation*}
+    For type worlds generated by a single base type \beta, we may write simply \(\bark\)
+    for \(\bark[\beta]\). For instance, in the type word \(\sfT^{\to}(\N)\) we write \(\bbar{2}\) for the
+    type \((\ttN\to\ttN)\to\ttN\).

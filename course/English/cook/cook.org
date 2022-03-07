@@ -1,11 +1,11 @@
-#+TITLE: Cook Theorem
+#+TITLE: Cook-Levin Theorem
 #+AUTHOR: Qi'ao Chen@@latex:\\@@21210160025@m.fudan.edu.cn
 #+startup: beamer
 #+LaTeX_CLASS: beamer
 #+OPTIONS: H:2
 #+BEAMER_FRAME_LEVEL: 2
 #+EMAIL: 21210160025@m.fudan.edu.cn
-
+#+LATEX_HEADER: \mode<beamer>{\usetheme{Madrid}}
 #+LATEX_HEADER: \input{preamble.tex}
 #+LATEX_HEADER: \def \TIME {\text{TIME}}
 #+LATEX_HEADER: \def \EXP {\textbf{EXP}}
@@ -42,12 +42,20 @@
 #+LATEX_HEADER: \def \PATH {\texttt{PATH}}
 #+LATEX_HEADER: \def \TQBF {\texttt{TQBF}}
 * Goal
-** ​wef
+** ​​
     #+ATTR_LATEX: :options [Cook-Levin Theorem]
     #+BEGIN_theorem
     1. \(\SAT\) is \(\NP\)-complete
     2. \(\TSAT\) is \(\NP\)-complete
     #+END_theorem
+
+
+** The web of reductions
+    #+ATTR_LATEX: :width .8\textwidth :angle 90
+    #+NAME:
+    #+CAPTION:
+    [[./3.pdf]]
+
 
 * Intro
 ** Turing machine
@@ -74,7 +82,7 @@
     Let \(f:\{0,1\}^*\to\{0,1\}^*\) and let \(T:\N\to\N\) be some functions, and let \(M\) be a Turing
     machine. We say that \(M\) *computes* \(f\) if for every \(x\in\{0,1\}^*\) whenever \(M\) is
     initialized to the start configuration on input \(x\), then it halts with \(f(x)\) written on
-    its output tape. We say \(M\) *computes* \(f\) in *\(T(n)\)-time* if its computation on every
+    its output tape. We say \(M\) *computes* \(f\) in *\(T(\abs{x})\)-time* if its computation on every
     input \(x\) requires at most \(T(\abs{x})\) steps
     #+END_definition
 ** The class \texorpdfstring{\(\bP\)}{P}
@@ -95,13 +103,24 @@
 ** The class \texorpdfstring{\(\NP\)}{NP}
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
-    A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists a polynomial \(p:\N\to\N\) and a
+    A language \(L\subseteq\{0,1\}^*\) is in \(\NP\) if there exists a polynomial function \(p:\N\to\N\) and a
     polynomial-time TM \(M\) (called the *verifier* for \(L\)) such that for every \(x\in\{0,1\}^*\),
     \begin{equation*}
     x\in L\Leftrightarrow\exists u\in\{0,1\}^{p(\abs{x})} \text{ s.t. } M(x,u)=1
     \end{equation*}
     If \(x\in L\) and \(u\in\{0,1\}^{p(\abs{x})}\) satisfy \(M(x,u)=1\), then we call \(u\) a *certificate*
     for \(x\) w.r.t. \(L\) and \(M\)
+    #+END_definition
+** Non-deterministic Turing machine
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+     *Non-deterministic Turing machine* has *two* transition function \(\delta_0\) and \(\delta_1\), and a special state denoted
+     by \(q_{\accept}\). When an NDTM \(M\) computes a function, we envision that at each
+     computational step \(M\) makes an arbitrary choice at to which of its two transition functions
+     to apply. For every input \(x\), we say that \(M(x)=1\) if there *exists* some sequence of this
+     choices that would make \(M\) reach \(q_{\accept}\) on input \(x\). We say that \(M\) runs
+     in \(T(n)\) time if for every input \(x\in\{0,1\}^*\) and every sequence of nondeterministic
+     choices, \(M\) reaches the halting state or \(q_{\accept}\) within \(T(\abs{x})\) steps
     #+END_definition
 
 ** The class \texorpdfstring{\(\NP\)}{NP}
@@ -130,7 +149,13 @@
     #+BEGIN_proof
     Suppose \(p:\N\to\N\) is a polynomial and \(L\) is decided by a NDTM \(N\) that runs in
     time \(p(n)\). For every \(x\in L\), there is a sequence of nondeterministic choices that
-    makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a *certificate* for \(x\).
+    makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a *certificate*
+    for \(x\).
+
+    Conversely, if \(L\in\NP\), then we describe a polynomial time NDTM \(N\) that decides \(L\).
+    On input \(x\), it uses the ability to make nondeterministic choices to write down a
+    string \(u\) of length \(p(\abs{x})\). (Having transition \(\delta_0\) correspond to writing a
+    0 and \(\delta_1\) to 1). Then it runs the deterministic verifier
     #+END_proof
 ** Reducibility
      #+ATTR_LATEX: :options []
@@ -146,6 +171,9 @@
      #+END_definition
 * Cook-Levin Theorem
 ** Goal
+     We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(\TSAT\) the
+     language of all satisfiable 3CNF formulae
+
      #+ATTR_LATEX: :options [Cook-Levin Theorem]
      #+BEGIN_theorem
      1. \(\SAT\) is \(\NP\)-complete
@@ -184,6 +212,7 @@
      \end{equation*}
      Note that \varphi has size at most \(l2^l\).
      #+END_proof
+
 ** Main lemma
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
@@ -225,12 +254,23 @@
         triple \(\la\rhd,\Box,q_{\start}\ra\).
      3. For every \(i\in\{2,\dots,T(n)\}\), \(z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})\).
      4. The last string \(z_{T(n)}\) encodes a snapshot where the machine halts and outputs 1
+** 3SAT
+     #+ATTR_LATEX: :options []
+     #+BEGIN_lemma
+     \(\SAT\le_p\TSAT\)
+     #+END_lemma
 
-** The web of reductions
-    #+ATTR_LATEX: :width .8\textwidth :angle 90
-    #+NAME:
-    #+CAPTION:
-    [[./3.pdf]]
+     #+BEGIN_proof
+     Suppose \varphi is a 4CNF. Let \(C\) be a clause of \varphi, say \(C=u_1\vee\baru_2\vee\baru_3\vee u_4\).
+     We add a new variable \(z\) to the \varphi and replace \(C\) with the pair
+     \(C_1=u_1\vee\baru_2\vee z\) and \(C_2=\baru_3\vee u_4\vee\barz\). If \(C\) is true, then there
+     is an assignment to \(z\) that satisfies both \(C_1\) and \(C_2\). If \(C\) is false, then no
+     matter what value we assign to \(z\) either \(C_1\) or \(C_2\) will be false.
+
+     For every clause \(C\) of size \(k>3\), we change it into an equivalent pair of clauses \(C_1\)
+     of size \(k-1\) and \(C_2\) of size 3.
+     #+END_proof
+
 
 * TODO Total
 
