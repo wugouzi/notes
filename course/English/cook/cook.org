@@ -140,23 +140,7 @@
     The main idea is that the sequence of nondeterministic choices made by an accepting computation
     of an NDTM  can be viewed as a certificate that the input is in the language, and vice versa
     #+END_proof
-** The class \texorpdfstring{\(\NP\)}{NP}
-    #+ATTR_LATEX: :options []
-    #+BEGIN_theorem
-    \(\NP=\bigcup_{c\in\N}\NTIME(n^c)\)
-    #+END_theorem
 
-    #+BEGIN_proof
-    Suppose \(p:\N\to\N\) is a polynomial and \(L\) is decided by a NDTM \(N\) that runs in
-    time \(p(n)\). For every \(x\in L\), there is a sequence of nondeterministic choices that
-    makes \(N\) reach \(q_{\accept}\) on input \(x\). We can use this sequence as a *certificate*
-    for \(x\).
-
-    Conversely, if \(L\in\NP\), then we describe a polynomial time NDTM \(N\) that decides \(L\).
-    On input \(x\), it uses the ability to make nondeterministic choices to write down a
-    string \(u\) of length \(p(\abs{x})\). (Having transition \(\delta_0\) correspond to writing a
-    0 and \(\delta_1\) to 1). Then it runs the deterministic verifier
-    #+END_proof
 ** Reducibility
      #+ATTR_LATEX: :options []
      #+BEGIN_definition
@@ -171,7 +155,7 @@
      #+END_definition
 * Cook-Levin Theorem
 ** Goal
-     We denote by \(\SAT\) the language of all satisfiable CNF formulae and by \(\TSAT\) the
+     We denote by \(\SAT\) the language of all satisfiable CNF (conjunction normal form) formulae and by \(\TSAT\) the
      language of all satisfiable 3CNF formulae
 
      #+ATTR_LATEX: :options [Cook-Levin Theorem]
@@ -223,8 +207,8 @@
      Let \(L\) be an \(\NP\) language. By definition, there is a polynomial time TM \(M\) s.t. for
      every \(x\in\{0,1\}^*\), \(x\in L\Leftrightarrow M(x,u)=1\) for
      some \(u\in\{0,1\}^{p(\abs{x})}\), where \(p:\N\to\N\) is some polynomial. We show \(L\) is
-     polynomial-time Karp reducible to \(\SAT\) by describing a polynomial-time
-     transformation \(x\to\varphi_x\) from strings to CNF formulae s.t. \(x\in L\) iff \(\varphi_x\)
+     polynomial-time Karp reducible to \(\SAT\) by describing a *polynomial-time
+     transformation* \(x\to\varphi_x\) from strings to CNF formulae s.t. \(x\in L\) iff \(\varphi_x\)
      is satisfiable. Equivalently
      \begin{equation*}
 \varphi_x\in\SAT \quad\text{ iff }\quad\exists u\in\{0,1\}^{p(\abs{x})}
@@ -240,20 +224,68 @@
         and for every \(i\) the location of \(M\)'s head at the \(i\)th step depends only on \(i\)
         and the length of the input
 ** Proof
+     Denote by \(Q\) the set of \(M\)'s possible states and by \Gamma its alphabet. The *snapshot*
+     of \(M\)'s execution on some input \(y\) at a particular step \(i\) is the triple
+     \(\la a,b,q\ra\in\Gamma\times\Gamma\times Q\) s.t. \(a,b\) are the symbols read by \(M\)'s
+     heads from the two tapes and \(q\) is the state \(M\) is in at the \(i\)th step. Clearly the
+     snapshot can be encoded as a binary string. Let \(c\) denote the length of this string, which
+     is some constant depending upon \(\abs{Q}\) and \(\abs{\Gamma}\)
+
+** Proof
+     For every \(y\in\{0,1\}^*\), the snapshot of \(M\)'s execution on input \(y\) at the \(i\)th
+     step depends on its state in the \((i-1)\)st step and the contents of the current cells of its
+     input and work tapes.
+
+     And it suffices to check that for each \(i\le T(n)\), the snapshot \(z_i\) is correct
+     given the snapshot for the previous \(i-1\) steps.
+** Proof
+    However, since the TM can only read/modify
+     one bit at a time, to check the correctness of \(z_i\) it suffices to look at only /two/ of the
+     previous snapshots. Specifically, to check \(z_i\) we need to only look at the following:
+     \(z_{i-1}\), \(y_{\text{inputpos}(i)}\), \(z_{\text{prev}(i)}\).
+
+     Here \(y\) is a shorthand
+     for \(x\circ u\). \(\text{inputpos}(i)\) denotes the location of \(M\)'s input tape head at
+     the \(i\)th step. \(\text{prev}(i)\) is the last step before \(i\) when \(M\)'s head was in the
+     same cell on its work tape that it is during step \(i\).
+** Proof
+     Since \(M\) is a deterministic TM, for every triple of values
+     to \(z_{i-1},y_{\text{inputpos}(i)}\), \(z_{\text{prev}(i)}\), there is at most one value
+     of \(z_i\) that is correct. Thus there is some function \(F\) that maps \(\{0,1\}^{2c+1}\)
+     to \(\{0,1\}^c\) s.t. a correct \(z_i\) satisfies
+     \begin{equation*}
+z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})
+     \end{equation*}
+
+     Because \(M\) is oblivious, the values \(\text{inputpos}(i)\) and \(\text{prev}(i)\) do not
+     depend on the particular input \(i\). These indices can be computed in polynomial-time by
+     simulating \(M\) on a trivial input.
+** Proof
     #+ATTR_LATEX: :width .8\textwidth
     #+NAME:
     #+CAPTION:
     [[./2.png]]
 ** Proof
-    The previous discussion shows this latter condition occurs iff
+    Now \(M(x\circ u)=1\) for some \(u\in\{0,1\}^{p(n)}\) iff
      there exists a string \(y\in\{0,1\}^{n+p(n)}\) and a sequence of strings
      \(z_1,\dots,z_{T(n)}\in\{0,1\}^c\) (where \(T(n)\) is the number of steps \(M\) takes on inputs
-     of length \(n+p(n)\)) satisfying the following four conditions
+     of length \(n+p(n)\)) satisfying the following conditions
      1. The first \(n\) bits of \(y\) are equal to \(x\)
      2. The string \(z_1\) encodes the initial snapshot of \(M\). That is, \(z_1\) encodes the
         triple \(\la\rhd,\Box,q_{\start}\ra\).
      3. For every \(i\in\{2,\dots,T(n)\}\), \(z_i=F(z_{i-1},z_{\text{prev}(i)},y_{\text{inputpos}(i)})\).
      4. The last string \(z_{T(n)}\) encodes a snapshot where the machine halts and outputs 1
+** Analysis
+    * The formula \(\varphi_x\) will take variables \(y\in\{0,1\}^{n+p(n)}\)
+      and \(z\in\{0,1\}^{cT(n)}\).
+
+    * Condition 1 can be expressed as a CNF formula of size \(4n\)
+    * Conditions 2 and 4 each depend on \(c\) variables and hence can be expressed by CNF formulae of
+        size \(c2^c\)
+    * Condition 3, which is an AND of \(T(n)\) conditions each  depending on at most \(3c+1\)
+     variables, can be expressed as a CNF formula of size at most \(T(n)(3c+1)2^{3c+1}\).
+    * ALL these conditions can be expressed as a CNF formula of size \(d(n+T(n))\) where d is some constant
+    * this CNF formula can be computed in time polynomial in the running time of \(M\).
 ** 3SAT
      #+ATTR_LATEX: :options []
      #+BEGIN_lemma
@@ -267,13 +299,12 @@
      is an assignment to \(z\) that satisfies both \(C_1\) and \(C_2\). If \(C\) is false, then no
      matter what value we assign to \(z\) either \(C_1\) or \(C_2\) will be false.
 
+
      For every clause \(C\) of size \(k>3\), we change it into an equivalent pair of clauses \(C_1\)
      of size \(k-1\) and \(C_2\) of size 3.
      #+END_proof
-
-
-* TODO Total
-
-    nondeterministic turing machines
-
-    Maybe some examples
+** The web of reductions
+    #+ATTR_LATEX: :width .8\textwidth :angle 90
+    #+NAME:
+    #+CAPTION:
+    [[./3.pdf]]
