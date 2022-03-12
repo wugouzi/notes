@@ -408,8 +408,134 @@
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     for any theory \(T\), any class \(M\), \(M\) is a *model* of \(T\), \(M\vDash T\), iff for any axiom
-    \varphi of \(T\), \(\varphi^M\) holds
+    \varphi of \(T\), \(\varphi^M\) holds, i.e., \(V\vDash\varphi^M\)
     #+END_definition
+
+    \(V\)中定义出语义
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(V\vDash\ZFm\Rightarrow\WF\vDash\ZF\)
+
+    \(\ZFm\vdash(\ZF)^{\WF}\)
+    #+END_theorem
+
+    * *存在公理* ：\(\exists x\in M(x=x)\)
+    * *外延公理* ：\(\Ext^M\)
+      \begin{equation*}
+      \forall x\in M\forall y\in M\forall u\in M((u\in X\leftrightarrow u\in Y)\to X=Y)
+      \end{equation*}
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      If \(M\) is transitive, then \(\Ext^M\) holds
+      #+END_lemma
+
+      #+BEGIN_proof
+      suppose \(X,Y\in M\), if \(X\neq Y\), then there is \(u\in X\triangle Y\) (by \(\Ext\) in \(V\)), by
+      transitivity, \(u\in M\)
+      #+END_proof
+    * 分离公理模式：for any \(M\), any formula \varphi, \(S(\varphi)^M\)
+      \begin{equation*}
+      \forall x\in M\exists Y\in M\forall u\in M(u\in Y\leftrightarrow u\in X\wedge\varphi^M(u))
+      \end{equation*}
+      Therefore, if for any \(X\in M\), \(\{u\in X\mid\varphi^M(x)\}\in M\), then 分离公理模式在\(M\)中为真
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      If \(M\) satisfies \(x\in M\Leftrightarrow x\subset M\), then \(S(\varphi)^M\) holds for any \(M\)
+      #+END_lemma
+
+      #+BEGIN_proof
+      Suppose \(X\in M\), suffices to find corresponding \(Y\in M\) s.t. \(\forall u\in M(u\in Y\leftrightarrow u\in X\wedge\varphi^M(u))\)
+
+      根据\(V\)中的分离公理, \(Y=\{x\in X\mid\varphi^M(u)\}\in V\) and \(Y\subseteq X\subset M\), thus \(Y\in M\) and
+      \(\forall u(u\in Y\leftrightarrow u\in X\wedge\varphi^M(u))\). But \(x\in Y\Rightarrow x\in M\), thus this is equivalent to
+      \(\forall u\in M(u\in Y\leftrightarrow u\in X\wedge\varphi^M(u))\)
+      #+END_proof
+    * *axiom of pairing* Pair
+      \begin{equation*}
+      \forall x\in M\forall y\in M\exists z\in M\forall u\in M(u\in z\leftrightarrow u= x\vee u=y)
+      \end{equation*}
+      只要\(M\)对对集函数\(x,y\mapsto\{x,y\}\)封闭，则\(Pair^M\)成立
+    * 幂集公理 \(Pow\)
+      \begin{equation*}
+      \forall X\in M\exists Y\in M\forall u\in M(u\in Y\leftrightarrow\forall a\in M(a\in u\to a\in X))
+      \end{equation*}
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      If \(M\) satisfies \(x\in M\Leftrightarrow x\subset M\), then \(Pow^M\) holds
+      #+END_lemma
+
+      #+BEGIN_proof
+      for any \(X\in M\), \(\calp(X)\in M\). and we prove \(\calp(X)\) is the \(Y\), for any \(u\in M\)
+      #+END_proof
+    * *axiom of infinity* \(Inf\)
+      \begin{equation*}
+      \exists X\in M(\emptyset\in X\wedge\forall y\in M(y\in X\to y^+\in X))
+      \end{equation*}
+      \(\emptyset:\psi(x):=\forall u(u\in x\to u\neq u)\), \(x=\emptyset\Leftrightarrow\psi(x)\)
+
+      \(y^+:\varphi(y,z):\forall u\in z(u=y\vee u\in y)\wedge y\subseteq z\wedge y\in z\)
+      函数相对化后不一定是函数，所以放到下一节
+    * *axiom of foundation* Fod
+      \begin{equation*}
+      \forall x\in M(\exists u\in M(u\in x)\to\exists y\in M(y\in x\wedge\neg\exists u\in M(u\in x\wedge u\in y)))
+      \end{equation*}
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      If \(M\) is transitive and elements of \(M\) is well-founded under \(\in\), then \(Fod^M\) holds
+      #+END_lemma
+
+      #+BEGIN_proof
+      suppose \(x_0\in M\) and there is
+
+      \(\psi:=\exists u(u\in x)\) and \(\varphi\) is the latter part
+
+      \(\psi^M(x_0)\leftrightarrow\exists u(u\in x_0)\) since \(M\) is transitive, \(\varphi^M(x_0)\leftrightarrow\exists y(y\in x_0\wedge\neg\exists u\in M(u\in x\wedge u\in y))\)
+
+      在\(V\)中,\(x_0\neq\emptyset\)，由条件可知\((x_0,\in)\)是良基的，于是\(\varphi\)在\(V\)中对，那么当然在\(M\)中对
+      #+END_proof
+    * *替换公理模式* \(Rep(\varphi)\)
+      \begin{equation*}
+      \forall A\in M\forall x\in A\cap M\exists !y\in M\varphi^M(x,y)\to\exists B\in M\forall x\in A\exists y\in B\varphi^M(x,y)
+      \end{equation*}
+      \(\exists!y\theta(y):\exists y(\theta(y)\wedge\forall y'(\theta(y')\to y=y'))\)
+      #+ATTR_LATEX: :options []
+      #+BEGIN_lemma
+      if \(M\) satisfied \(x\in M\Leftrightarrow x\subset M\), then \(Rep(\varphi)^M\) holds for any \varphi
+      #+END_lemma
+
+      #+BEGIN_proof
+      for any \(A_0\in M\), then \(A_0\cap M=A_0\), thus we have
+      \(\forall x\in A_0\exists!y(\varphi^M(x,y)\wedge M(y))\).
+
+      by \(Rep(\varphi^M(x,y)\wedge M(y))\),
+      \(\exists B'\forall x\in A_0\exists y\in B'\varphi^M(x,y)\wedge M(y)\)
+
+      Let \(B=B'\cap M\), which is what we want
+      #+END_proof
+
+      Thus in \(\ZFm\), we can prove \(\WF\vDash\ZF-\inf\)
+** 绝对性
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    公式\(\psi(\barx)\)，对任意类\(M\subseteq N\)，如果
+    \begin{equation*}
+    \forall\barx\in M(\psi^M(\barx)\leftrightarrow\psi^N(\barx))
+    \end{equation*}
+    就称\(\psi(\barx)\)对于\(M,N\)是 *绝对的* ，如果\(N=V\)，则称\(\psi(\barx)\)对于\(M\)是 *绝对的*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    suppose \(M\subseteq N\), \(\varphi,\psi\) formula
+    1. 如果\(\varphi,\psi\)相对于\(M,N\)绝对， so are \(\neg\varphi,\varphi\to\psi\)
+    2. if \varphi is q.f., then \(\varphi\)对任意\(M\)绝对
+    3. if \(M,N\) are transitive, and \(\varphi\)相对于它们绝对， so is \(\forall x\in y\varphi\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(\forall x\in y\varphi:=\forall x(x\in y\to\varphi^M)\)
+    #+END_proof
 
 ** Exercise
     #+BEGIN_exercise

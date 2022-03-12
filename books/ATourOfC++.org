@@ -1,0 +1,344 @@
+#+TITLE: A Tour Of C++
+#+AUTHOR: Bjarne Stroustrup
+#+EXPORT_FILE_NAME: ../latex/ATourOfC++/ATourOfC++.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \makeindex
+* The Basics
+** Introduction
+    The operator ~<<~ ("put to") writes its second argument onto its first
+
+    A function declaration gives the name of the function, the type of the value returned (if any),
+    and the number and types of the arguments that must be supplied in a call
+
+    If two functions are defined with the same name, but with different argument types, the compiler
+    will choose the most appropriate function to invoke for each call.
+
+    Defining multiple functions with the same name is known as function *overloading* and is one of the
+    essential parts of generic programming
+** Types, Variables and Arithemtic
+    A *declaration* is a statement that introduces an entity into the program. It specifies a type for
+    the entity:
+    * A *type* defines a set of possible values and a set of operations (for an object)
+    * An *object* is some memory that holds a value of some type.
+    * A *value* is a set of bits interpreted according to a type.
+    * A *variable* is a named object.
+
+
+    Unfortunately, conversions that lose information, *narrowing conversions*, such as ~double~ to ~int~
+    and ~int~ to ~char~, are allowed and implicitly applied when you use ~=~ (but not when you use ~{}~)
+
+    When defining a variable, you don’t need to state its type explicitly when it can be deduced
+    from the initializer:
+    #+begin_src c++
+    auto b = true;    // a bool
+    auto ch = 'x';    // a char
+    auto i = 123;     // an int
+    auto d = 1.2;     // a double
+    auto z = sqrt(y); // z has the type of whatever
+                      // sqrt(y) returns 
+    auto bb {true};   //bbisabool
+    #+end_src
+
+    With ~auto~, we tend to use the ~=~ because there is no potentially troublesome type conversion
+    involved, but if you prefer to use ~{}~ initialization consistently, you can do that instead.
+** Scope and Lifetime
+    * *Local scope*: A name declared in a function or lambda is called a local name.
+      Its scope extends from its point of declaration to the end of the block in which its
+      declaration occurs. A *block* is delimited by a ~{ }~ pair. Function argument names are
+      considered local names.
+    * *Class scope*: A name is called a *member name* (or a *class member name*) if it is defined in a
+      class , outside any function , lambda, or enum class. Its scope extends from the opening ~{~ of
+      its enclosing declaration to the end of that declaration.
+    * *Namespace scope*: A name is called a *namespace member name* if it is defined in a namespace
+      outside any function, lambda, class, or enum class. Its scope extends from the point of
+      declaration to the end of its namespace.
+
+      #+begin_src c++
+vector<int> vec; // vec is global 
+struct Record {  
+    string name; // name is a member of Record 
+// ...
+};
+void fct(int arg) { // fct is global (a global function)
+                    // arg is local (an integer argument)
+    string motto {"Who dares wins"}; // motto is local
+    auto p = new Record{"Hume"};
+    // p points to an unnamed Record (created by new)
+    // ...
+}
+      #+end_src
+** Constants
+      C++ supports two notions of immutability:
+      * ~const~: meaning roughly "I promise not to change this value." This is used primarily to
+        specify interfaces so that data can be passed to functions using pointers and references without
+        fear of it being modified. The compiler enforces the promise made by ~const~. The value of a ~const~ can
+        be calculated at run time.
+      * ~constexpr~: meaning roughly "to be evaluated at compile time." This is used primarily to
+        specify constants, to allow placement of data in read-only memory (where it is unlikely to
+        be corrupted), and for performance. The value of a ~constexpr~ must be calculated by the
+        compiler.
+
+
+    For example
+    #+begin_src c++
+constexpr int dmv = 17;           // dmv is a named constant
+int var = 17;                     // var is not a constant
+const double sqv = sqrt(var);     // sqv is a named constant,
+                                  // possibly computed at run time
+double sum(const vector<double>&);// sum will not modify
+                                  // its argument
+vector<double> v {1.2, 3.4, 4.5}; // v is not a constant
+const double s1 = sum(v);         // OK: sum(v) is evaluated at
+                                  // run time
+constexpr double s2 = sum(v);     // error: sum(v) is not a
+                                  // constant expression
+    #+end_src
+
+    For a function to be usable in a *constant expression*, that is, in an expression that will be
+    evaluated by the compiler, it must be defined ~constexpr~. For example:
+    #+begin_src c++
+constexpr double square(double x) { return x∗x; }
+constexpr double max1 = 1.4∗square(17);
+// OK 1.4*square(17) is a constant expression
+constexpr double max2 = 1.4∗square(var);
+// error: var is not a constant expression 
+const double max3 = 1.4∗square(var);
+// OK, may be evaluated at run time
+    #+end_src
+
+    A ~constexpr~ function can be used for non-constant arguments, but when that is done the result is
+    not a constant expression. We allow a ~constexpr~ function to be called with
+    non-constant-expression arguments in contexts that do not require constant expressions. That
+    way, we don’t have to define essentially the same function twice: once for constant expressions
+    and once for variables.
+
+    To be ~constexpr~, a function must be rather simple and cannot have side effects and can only use
+    information passed to it as arguments. In particular, it cannot modify non-local variables, but
+    it can have loops and use its own local variables. For example:
+    #+begin_src c++
+constexpr double nth(double x, int n) // assume 0<=n {
+{
+    double res = 1;
+    int i = 0;
+    while (i<n) {
+        res*=x;
+        ++i;
+    }
+    return res;
+}
+    #+end_src
+** Pointers, Arrays, and References
+    #+begin_src c++
+char* p = &v[3];
+char x = *p;
+    #+end_src
+    in an expression, prefix unary ~*~ means "contents of" and prefix unary ~&~ means "address of"
+
+    If we didn’t want to copy the values from ~v~ into the variable ~x~, but rather just have ~x~ refer to
+    an element, we could write:
+    #+begin_src c++
+void increment() {
+    int v[] = {0,1,2,3,4,5,6,7,8,9};
+    for (auto& x : v) // add 1 to each x in v
+        ++x;
+    // ...
+}
+    #+end_src
+
+    In a declaration, the unary suffix ~&~ means "reference to." A reference is similar to a
+    pointer, except that you don't need to use a prefix ~*~ to access the value referred to by the
+    reference. Also, a reference cannot be made to refer to a different object after its
+    initialization.
+
+    References are particularly useful for specifying function arguments. For example:
+    #+begin_src c++
+void sort(vector<double>& v); // sort v
+                              // v is a vector of doubles
+    #+end_src
+    By using a reference, we ensure that for a call ~sort(vec)~, we do not copy ~vec~ and that it really
+    is ~vec~ that is sorted and not a copy of it.
+
+    When used in declarations, operators (such as ~&~, ~*~, and ~[]~) are called declarator operators:
+    #+begin_src c++
+T a[n] // T[n]: a is an array of n Ts
+T∗ p   // T*: p is a pointer to T
+T& r   // T&: r is a reference to T
+T f(A) // T(A): f is a function taking an argument of type A
+       // returning a result of type T
+    #+end_src
+
+    We try to ensure that a pointer always points to an object so that dereferencing it is valid.
+    When we don't have an object to point to or if we need to represent the notion of "no object
+    available" (e.g., for an end of a list), we give the pointer the value ~nullptr~ ("the null
+    pointer"). There is only one ~nullptr~ shared by all pointer types:
+    #+begin_src c++
+double∗ pd = nullptr;
+Link<Record>∗ lst = nullptr; // pointer to a Link to a Record
+int x = nullptr; // error: nullptr is a pointer not an integer
+    #+end_src
+** Tests
+** Mapping to Hardware
+    An assignment of a built-in type is a simple machine copy operation.
+
+    A reference and a pointer both refer/point to an object and both are represented in memory as a
+    machine address. However, the language rules for using them differ. Assignment to a reference
+    does not change what the reference refers to but assigns to the referenced object:
+    #+begin_src c++
+int x = 2;
+int y = 3;
+int& r = x; // r refers to x
+int& r2 = y; // now r2 refers to y
+r = r2; // read through r2, write through r: x becomes 3
+    #+end_src
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ATourOfC++/1.png]]
+* User-Defined Types
+** Introduction
+    Types built out of other types using C++’s abstraction mechanisms are called *user-defined types*.
+    They are referred to as *classes* and *enumerations*.
+** Structures
+    The ~new~ operator allocates memory from an area called the *free store* (also known as *dynamic
+    memory* and *heap*). Objects allocated on the free store are independent of the scope from which
+    they are created and "live" until they are destroyed using the ~delete~ operator
+** Classes
+    The language mechanism for that is called a *class*. A class has a set of *members*, which can be
+    data, function, or type members. The interface is defined by the ~public~ members of a class, and
+    ~private~ members are accessible only through that interface.
+    #+begin_src c++
+class Vector {
+    public:
+        Vector(int s) :elem{new double[s]}, sz{s} { }
+        double& operator[](int i) { return elem[i]; }
+        int size() { return sz; }
+    private:
+        double* elem; // pointer to the elements
+        int sz; // the number of elements
+};
+    #+end_src
+
+    ~Vector(int)~ defines how objects of type ~Vector~ are constructed. The constructor initializes the
+    ~Vector~ members using a member initializer list:
+    #+begin_src c++
+:elem{new double[s]}, sz{s}
+    #+end_src
+    That is, we first initialize ~elem~ with a pointer to ~s~ elements of type ~double~ obtained from the
+    free store. Then, we initialize ~sz~ to ~s~
+
+    Access to elements is provided by a subscript function, called ~operator[]~. It returns a
+    reference to the appropriate element (a ~double&~ allowing both reading and writing)
+
+    There is no _fundamental_ difference between a ~struct~ and a ~class~; a ~struct~ is simply a class with
+    members ~public~ by default.
+** Unions
+    A ~union~ is a ~struct~ in which all members are allocated at the same address so that the ~union~
+    occupies only as much space as its largest member. Naturally, a ~union~ can hold a value for
+    only one member at a time.
+    #+begin_src c++
+union Value {
+    Node* p;
+    int i;
+};
+    #+end_src
+    The language doesn’t keep track of which kind of value is held by a union, so the programmer
+    must do that:
+    #+begin_src c++
+enum Type { ptr, num }; // a Type can hold values ptr and num
+
+struct Entry {
+    string name;
+    Type t;
+    Value v; // use v.p if t==ptr; use v.i if t==num
+};
+
+void f(Entry* pe) {
+    if (pe->t == num)
+        cout << pe->v.i;
+    // ...
+}
+    #+end_src
+    Maintaining the correspondence between a *type field* (here, ~t~) and the type held in a ~union~ is
+    error-prone.
+
+    The standard library type, ~variant~, can be used to eliminate most direct uses of unions. A
+    ~variant~ stores a value of one of a set of alternative types.
+    #+begin_src c++
+struct Entry {
+    string name;
+    variant<Node∗,int> v;
+};
+
+void f(Entry∗ pe) {
+if (holds_alternative<int>(pe−>v))
+    // does *pe hold an int?
+    cout << get<int>(pe−>v);
+    // get the int
+    // ...
+} 
+    #+end_src
+
+    For many uses, a ~variant~ is simpler and safer to use than a ~union~
+** Enumerations
+    #+begin_src c++
+enum class Color { red, blue, green };
+enum class Traffic_light { green, yellow, red };
+Color col = Color::red;
+Traffic_light light = Traffic_light::red;
+    #+end_src
+
+    Note that enumerators (e.g., ~red~) are in the scope of their ~enum class~, so that they can be used
+    repeatedly in different ~enum classes~ without confusion. For example, ~Color::red~ is ~Color~ ’s ~red~
+    which is different from ~Traffic_light::red~.
+
+    Enumerations are used to represent small sets of integer values. They are used to make code more
+    readable and less error-prone than it would have been had the symbolic (and mnemonic) enumerator
+    names not  been used.
+
+    The ~class~ after the ~enum~ specifies that an enumeration is strongly typed and that its
+    enumerators are scoped.
+    #+begin_src c++
+Color x = red; // error : which red?
+Color y = Traffic_light::red;
+// error: that red is not a Color
+Color z = Color::red; // OK
+    #+end_src
+
+    Similarly, we cannot implicitly mix ~Color~ and integer values:
+    #+begin_src c++
+int i = Color::red; // error: Color::red is not an int
+Color c = 2; // initialization error: 2 is not a Color
+    #+end_src
+
+    By default, an ~enum class~ has only assignment, initialization, and comparisons. However, an
+    enumeration is a user-defined type, so we can define operators for it:
+    #+begin_src c++
+Traffic_light& operator++(Traffic_light& t)
+{ // prefix increment: ++ 
+        switch (t) {
+            case Traffic_light::green:
+                return t=Traffic_light::yellow;
+            case Traffic_light::yellow:
+                return t=Traffic_light::red;
+            case Traffic_light::red:
+                return t=Traffic_light::green;
+}
+}
+Traffic_light next = ++light;
+// next becomes Traffic_light::green
+    #+end_src
+
+    If you don’t want to explicitly qualify enumerator names and want enumerator values to be ints
+    (without the need for an explicit conversion), you can remove the ~class~ from ~enum class~ to get a
+    "plain" ~enum~. The enumerators from a "plain" ~enum~ are entered into the same scope as the
+    name of their enum and implicitly converts to their integer value
+
+    #+begin_src c++
+enum Color { red, green, blue };
+int col = green;
+    #+end_src
+    Here ~col~ gets the value 1. By default, the integer values of enumerators start with ~0~ and
+    increase by one for each additional enumerator.
+* Modularity
