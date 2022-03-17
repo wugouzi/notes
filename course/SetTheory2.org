@@ -415,9 +415,11 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
-    \(V\vDash\ZFm\Rightarrow\WF\vDash\ZF\)
+    \(V\vDash\ZFm\Rightarrow\WF\vDash\ZF-\Inf\)，
 
-    \(\ZFm\vdash(\ZF)^{\WF}\)
+    \(V\vDash(\ZF-\Inf)^{\WF}\)
+    等价的
+    \(\ZFm\vdash(\ZF-\Inf)^{\WF}\)
     #+END_theorem
 
     * *存在公理* ：\(\exists x\in M(x=x)\)
@@ -516,6 +518,10 @@
 
       Thus in \(\ZFm\), we can prove \(\WF\vDash\ZF-\inf\)
 ** 绝对性
+    \((V,\in)\supseteq(M,\in)\)
+
+    对于哪些\(\varphi\)，有\(V\vDash\varphi\Leftrightarrow M\vDash\varphi\)
+
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     公式\(\psi(\barx)\)，对任意类\(M\subseteq N\)，如果
@@ -525,17 +531,214 @@
     就称\(\psi(\barx)\)对于\(M,N\)是 *绝对的* ，如果\(N=V\)，则称\(\psi(\barx)\)对于\(M\)是 *绝对的*
     #+END_definition
 
+    \(\bara\in M\), \((M,\in)\vDash\psi(\bara)\Leftrightarrow V\vDash\psi^M(\bara)\)
+
+    \(\psi\)相对于\(M,N\)绝对：\(\forall\bara\in M\),有\(M\vDash\psi(\bara)\Leftrightarrow N\vDash\psi(\bara)\)
+
+    if \(\forall\varphi(\barx)\in L\)，均有\(\varphi\)相对于\(M,N\)绝对的，则\(M\preceq N\)
+
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
     suppose \(M\subseteq N\), \(\varphi,\psi\) formula
     1. 如果\(\varphi,\psi\)相对于\(M,N\)绝对， so are \(\neg\varphi,\varphi\to\psi\)
     2. if \varphi is q.f., then \(\varphi\)对任意\(M\)绝对
-    3. if \(M,N\) are transitive, and \(\varphi\)相对于它们绝对， so is \(\forall x\in y\varphi\)
+    3. if \(M\) are transitive, and \(\varphi\)相对于它们绝对， so is \(\forall x\in y\varphi\)
     #+END_lemma
 
     #+BEGIN_proof
-    \(\forall x\in y\varphi:=\forall x(x\in y\to\varphi^M)\)
+    3. [@3] \(\forall x\in y\varphi:=\forall x(x\in y\to\varphi(x,y,\barz))\)，故\((\forall x\in y\varphi)^M=\forall x\in M(x\in y\to\varphi^M(x,y,\barz))\)，任取
+       \(y_0,\barz_0\in M\),则由\(M\)的传递性，都有\(x\in y_0\Rightarrow x\in M\)
+
+       目标：\(\forall x\in M(x\in y_0\to\varphi^M(x,y_0,\barz_0))\)当且仅当\(\forall x\in N(x\in y_0\to\varphi^N(x,y_0,\barz_0))\)
+
+       由\(\varphi\)的绝对性，对每个\(x_0\in M\)，有
+       \begin{equation*}
+       \varphi^M(x_0,y_0,\barz_0)\leftrightarrow\varphi^N(x_0,y_0,\barz_0)
+       \end{equation*}
+       故\(V\vDash\forall x\in M(x\in y_0\to\varphi^M(x,y_0,\barz_0))\)，当且仅当
+       \(V\vDash\forall x(x\in y_0\to\varphi^M(x,y_0,\barz_0))\)当且仅当
+       \(V\vDash\forall x\in N(x\in y_0\to\varphi^M(x,y_0,\barz_0))\)
     #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    令\(M\subseteq N\)且\(M\)传递，\(\psi(\barx)\)是一个公式，则
+    1. 如果\(\psi\)是\(\Delta_0\)公式，则他它对\(M,N\)是绝对的
+    2. 如果\(\psi\)是\(\Sigma_1\)公式，则
+       \begin{equation*}
+       \forall\barx\in M(\psi^M(\barx)\to\psi^N(\barx))
+       \end{equation*}
+    3. 如果\(\psi\)是\(\Pi_1\)公式，则
+       \begin{equation*}
+       \forall\barx\in M^n(\psi^N(\barx)\to\psi^M(\barx))
+       \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. 对公式的长度进行归纳证明
+    2. 例子：令\(M=\On\),\(N=\WF\)，令\(\psi(y):=\forall x\in y\forall u,v\in x(u\in v\vee v\in u\vee u=v)\)，则\(\psi\)是\(\Delta_0\)的，
+       则
+       \begin{align*}
+       &\psi^M(y)=\forall x\in M(x\in y\to\forall u,v\in M(u,v\in x\to(u\in v\vee v\in u\vee u=v)))\\
+       &\psi^N(y)=\forall x\in N(x\in y\to\forall u,v\in N(u,v\in x\to(u\in v\vee v\in u\vee u=v)))
+       \end{align*}
+       任取\(x_0\in\WF\setminus\On\)使得\((x_0,\in)\)不是线序，令\(y_0=\{x_0\}\)，则\(\psi^M(y_0)\)的前件假，
+       \(\psi^M(y_0)\)是真的，\(\psi^N(y_0)\)为假，因此
+       \begin{equation*}
+       \forall\barx(\psi^M(\barx)\to\psi^N(\barx))
+       \end{equation*}
+       错误
+
+       令\(x=\barx,y=\bary\)
+
+       设\(\psi:=\exists\varphi(x,y)\)，\(\varphi(x,y)\in\Delta_0\), \(\psi^M:=\exists y\in M(\varphi^M(x,y))\), \(\psi^N:=\exists y\in N(\varphi^N(x,y))\)，任取
+       \(a\in M^m\)，目标\(\psi^M(a)\to\psi^N(a)\)
+
+       若\(\psi^M(a)\)成立，则有\(b\in M^n\)使得\(\psi^M(a,b)\)，由\(\Delta_0\)的绝对性，\(\psi^N(a,b)\)，因此\(\exists y\psi^N(a,y)\)
+    3. 设\(\psi:=\forall y\varphi(x,y)\)其中\(\varphi\in\Delta_0\)，则\(\psi^M:=\forall y\in M\varphi^M(x,y)\)，\(\psi^N:=\forall y\in N\varphi^N(x,y)\)，设\(a\in M\)使
+       得\(\psi^N(a)\)成立，目标\(\psi^M(a)\)成立。
+
+       \(\psi^N(a)\Rightarrow\)对所有的\(b\in N\)均有\(\varphi^N(a,b)\)成立，故对一切\(b\in M\)有\(\varphi^N(a,b)\)成立，由\(\varphi\)的绝
+       对性，\(\forall y\in M\varphi^M(a,y)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    设\(M\subseteq N\)，均是句子集\(\Sigma\)的模型，而\(\Sigma\vdash\forall\barx(\varphi(\barx)\leftrightarrow\psi(\barx))\)，则\(\varphi\)对\(M\)与\(N\)绝对
+    当且仅当\(\psi\)也是
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(M,N\vDash\forall\barx(\varphi(\barx)\leftrightarrow\psi(\barx))\)
+
+    \(\forall\barx\in M^n(\varphi^M(\barx)\leftrightarrow\psi^M(\barx))\)，\(\forall\barx\in N^n(\varphi^N(\barx)\leftrightarrow\psi^N(\barx))\)
+
+    若\(\varphi\)是绝对的,\(\forall\barx\in M^n(\varphi^M(\barx)\leftrightarrow\varphi^N(\barx))\)
+
+    因此\(\forall\barx\in M^n(\psi^M(\barx)\leftrightarrow\psi^N(\barx))\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    假设\(M\subseteq N\)，\(f(x_1,\dots,x_n)\)是函数，设\(f(x_1,\dots,x_n)\)被公式\(\varphi(x_1,\dots,x_n,y)\)定义，称\(f\)相对
+    于\(M,N\)是绝对的，是指
+    1. \(\varphi(x_1,\dots,x_n,y)\)相对于\(M,N\)绝对
+    2. \(\forall\barx\in M^n\exists!y\in M(\varphi^N(\barx,y))\)
+    #+END_definition
+
+    由上一引理，\(f\)的绝对性与定义\(f\)的公式无关
+
+    \(f^M=\{(x_1,\dots,x_n,y)\in M^{n+1}\mid\varphi^M(\barx,y)\}\),\(f\uhr M=\{(x_1,\dots,x_n,y)\in M^{n+1}\mid\varphi(\barx,y)\}\)
+
+    \(f\)是绝对的当且仅当\(\forall\barx M\forall y\in M(\varphi(\barx,y)\leftrightarrow\varphi^M(\barx,y))\)当且仅当\(\varphi(M^n,M)=\varphi^M(M^n,M)\)，
+    即\(f\uhr M=f^M\)
+
+    即对任意\(\bara\in M^n\)，有\(f\uhr M(\bara)=f^M(\bara)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    以下关系和函数可以在\(\ZFm-\Pow-\Inf\)中用公式定义，且在\(\ZFm-\Pow-\Inf\)下等价于一
+    个\(\Delta_0\)-formula
+    1. \(x\in y\)
+    2. \(x=y\)
+    3. \(x\subset y\)
+    4. \(\{x,y\}\)
+    5. \(\{x\}\)
+    6. \((x,y)\)
+    7. \(\emptyset\)
+    8. \(x\cup y\)
+    9. \(x\cap y\)
+    10. \(x-y\)
+    11. \(x^+=x\cup\{x\}\)
+    12. \(x\)传递
+    13. \(\bigcup x\)
+    14. \(\bigcap x\)，且\(\bigcap\emptyset=\emptyset\)
+
+    #+END_theorem
+
+    #+BEGIN_proof
+    4. [@4] 函数\(z=\{x,y\}\)被公式\(\forall u\in z(u=x\vee u=y)\wedge(x\in z\wedge y\in z)\)
+    5. \(y=\{x\}\)被公式\(\forall u\in y(u=x)\wedge (x\in y)\)
+    6. 函数\(z=(x,y)\)被公式\(\forall u\in z(u=x\vee x=\{x,y\})\wedge x\in z\wedge \exists  u\in z(u=\{x,y\})\)
+    7. \(\forall y\in x(y\neq y)\)
+    8. 函数\(z=x\cup y\)被公式\(\forall x\subset z\wedge y\subset z\wedge\forall u\in z(u\in x\vee u\in y)\)
+    9. 函数\(z=x\cap y\)被公式\(z\subset x\wedge z\subset y\wedge\forall u\in x(u\in y\to u\in z)\)
+    10. 函数\(z=x-y\) \(\forall u\in z(u\in x\wedge u\notin y)\wedge \forall u\in x(u\notin y\to u\in z)\)
+    11. 函数\(z=x^+\) \(\forall u\in z(u\in x\vee u=x)\wedge x\in z\wedge x\subset z\)
+    12. \(\forall y\in x(y\subset x)\)
+    13. 函数\(z=\bigcup x\), \(\forall u\in z\exists y\in x(u\in y)\wedge\forall u\in x(u\subset z)\)
+    14. 函数\(z=\bigcap x\), \(x=\emptyset\to z=\emptyset\wedge\forall u\in z\forall y\in x(u\in y)\wedge\exists y\in x\forall u\in z(\forall w\in x(u\in w)\to u\in z)\)
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    如果\(M\)是一个传递类，\(f\)是一个被\(\Delta_0\)公式定义的函数，如果\(f\)在\(M\)上封闭，
+    即\(f(M^n)\subseteq M\),则\(f\)相对于\(M\)绝对
+    #+END_lemma
+
+    #+BEGIN_proof
+    设\(f\)被\(\varphi(\barx,y)\)定义，\(\forall\barx,y\in M(\varphi(\barx,y)\leftrightarrow\varphi^M(\barx,y))\),\(\forall\barx\in M\exists!y\in M(\varphi(\barx,y))\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    之前的函数均在\(\ZFm-\Pow-\Inf\)的传递模型\(M\)中绝对的
+
+    \(\ZFm-\Pow-\Inf\)能够保证函数封闭，传递性保证定义它们的公式的绝对性
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    绝对性对复合运算封闭，即假设\(M\subseteq N\),公式\(\varphi(x_1,\dots,x_n)\)函
+    数\(f(x_1,\dots,x_n)\), \(g_i(y_1,\dots,y_m)\),\(1\le i\le n\)都相对于\(M,N\)绝对，则
+    \(\varphi(g_1(y_1,\dots,y_m),\dots,g_n(y_1,\dots,y_m))\)与\(f(g_1(y_1,\dots,y_m),\dots,g_n(y_1,\dots,y_m))\)也相对于\(M,N\)绝对
+    #+END_lemma
+
+    #+BEGIN_proof
+    不妨设\(m=n=1\)
+
+    设\(g(y)=z\)被\(\theta(y,z)\)定义，\(\varphi(g(y)):=\exists z(\theta(y,z)\wedge\varphi(z))\)
+
+    \(\varphi^M(g(y)):=\exists z\in M(\theta^M(y,z)\wedge\varphi^M(z))\),\(\varphi^N(g(y)):=\exists z\in N(\theta^M(y,z)\wedge\varphi^M(z))\)
+
+    由绝对性
+    \(\forall z\in M\forall y\in M(\theta^M(y,z)\wedge\varphi^M(z)\leftrightarrow\theta^N(y,z)\wedge\varphi^N(z))\)
+
+    任取\(y_0\in M\)，设\(\exists z\in N(\theta^N(y_0,z)\wedge\varphi^N(z))\)，由函数\(g(y)=z\)的绝对性，
+    \(\forall y\in M\exists! z\in M(\theta^N(y,z))\)，存在唯一的\(z_0\in M\)使得
+    \(\theta^N(y_0,z_0)\wedge\varphi^N(z_0)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    以下关系和函数对任意\(\ZFm-\Pow\Inf\)的传递模型\(M\)都是绝对的
+    1. \(z\)是有序对
+    2. \(A\times B\)
+    3. \(R\)是关系
+    4. \(\dom(R)\)
+    5. \(\ran(R)\)
+    6. \(f\)是函数
+    7. \(f(x)\)
+    8. \(f\)是一一函数
+    #+END_theorem
+
+    #+BEGIN_proof
+    1. "\(z\)是有序对"：\(\exists u,v(z=(u,v))\)，但是这不是\(\Delta_0\)，因此考虑
+       \(\exists u\in\bigcup z\exists v\in\bigcup z(z=(u,v))\)，注意这里不是平常的受囿量词，但是
+       令\(g_1(z)=\bigcup z\), \(g_2(z)=\bigcup z\), \(g_3(z)=z\), \(\varphi(x_1,x_2,x_3):=\exists u\in x_1\exists v\in x_2(x_3=(u,v))\)，则
+       \(g_1,g_2,g_3,\varphi\)绝对，故\(\varphi(g_1(z),g_2(z),g_3(z))\)绝对
+    2. 函数\(z=x\times y\): \(\forall u\in z\exists s\in x\exists t\in y(u=(s,t))\wedge\forall s\in x\forall t\in y\exists u\in z(u=(s,t))\)
+    3. \(R\)是关系\(\Leftrightarrow\)\(\forall u\in R(u\text{是有序对})\)
+    4. 函数，\(D=\dom(R)\): \(\forall x\in D\exists z\in R\exists u\in z\exists y\in u(z=(x,y))\)且
+       \(\forall z\in R\forall u\in z\forall x\in u\forall y\in u(z=(x,y)\to x\in D)\)
+    5. 同理
+    6. \(f\text{是关系}\wedge\forall x\in\dom(f)\exists!y\in\ran(f)\exists u\in f(u=(x,y))\)
+    7. \(\varphi(f(x))\)表示\(f\)是函数且\(x\in\dom(f)\),则"\(y=f(x)\)"定义为
+       \(\varphi(f,x)\to\exists u\in f(u=x,y)\vee(\neg\varphi(f,x)\to y\neq\emptyset)\)
+    8. "\(f\)是函数"且\(\forall s\in\dom(f)\forall t\in\dom(f)(f(s)=f(t)\to s=t)\)
+    #+END_proof
+
 
 ** Exercise
     #+BEGIN_exercise

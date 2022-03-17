@@ -1334,6 +1334,16 @@
 
 ** Definable types
     #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(p(\barx)\) is a *definable type* if for every formula \(\varphi(\barx;\bary)\) the set
+    \begin{equation*}
+    \{\barb\in M:\varphi(\barx,\barb)\in p(\barx)\}
+    \end{equation*}
+    is definable, defined by some \(L(M)\)-formula \(d\varphi(\bary)\)
+    #+END_definition
+
+
+    #+ATTR_LATEX: :options []
     #+BEGIN_proposition
     If \(T\) is strongly minimal and \(M\vDash T\), there is a 1-type \(p(x)\in S_1(M)\) s.t.
     \begin{equation*}
@@ -1702,7 +1712,20 @@
     #+END_theorem
 
     #+BEGIN_proof
-    Let \(q\in S_n(N)\) be an heir of \(p_V\). Let \varphi be an \(L(M)\)
+    Let \(q\in S_n(N)\) be an heir of \(p_V\). Let \varphi be an \(L(M)\)-formula defining \(V\)
+    and \(V_N\). Then \(\varphi(\barx)\in p_V(\barx)\subseteq q(\barx)\), so \(q(\barx)\vdash\barx\in V_N\).
+    Suppose \(q(\barx)\not\vdash\barx\notin W\) for some algebraic \(W\subsetneq V_N\), \(q(\barx)\vdash\barx\in W\).
+    Let \(\psi(\barx,\barb)\) be a positive quantifier-free formula defining \(W\). Let \(\theta(\barb)\) be
+    the \(L(M)\)-formula
+    \begin{equation*}
+    \forall\barx(\psi(\barx,\barb)\to\varphi(\barx))\wedge\exists\barx(\varphi(\barx)\wedge\neg\psi(\barx,\barb))
+    \end{equation*}
+    which says \(\psi(M^n,\barb)\subsetneq\varphi(M^n)\). \(N\vDash\theta(\barb)\) since \(W\subsetneq V\).
+    Then \(q(\barx)\vdash\psi(\barx,\barb)\wedge\theta(\barb)\). Because \(q\sqsupseteq p_V\), there is \(\barb'\in M\) s.t.
+    \begin{equation*}
+    p_V(\barx)\vdash\psi(\barx,\barb')\wedge\theta(\barb')
+    \end{equation*}
+    Thus we find an algebraic proper subset of \(V\)
     #+END_proof
 
 
@@ -1965,8 +1988,7 @@
     #+ATTR_LATEX: :options []
     #+BEGIN_examplle
     If \(M\preceq N\) strongly minimal, \(q(x)\in S_1(N)\), \(p(x)\in S_1(M)\) is the transcendental
-    1-type, \(p\subseteq q\),
-    then \(q\) is a coheir of \(p\),
+    1-type, \(p\subseteq q\), then \(q\) is a coheir of \(p\),
 
     If \(\varphi(x)\in q(x)\), then \(\varphi(N)\) is cofinite and \(M\) is infinite, so \(\varphi(N)\cap M\neq\emptyset\)
     #+END_examplle
@@ -1997,6 +2019,170 @@
     Suppose \(M_1\preceq M_2\preceq M_3\), \(p_1\in S_n(M_1)\), \(p_2\in S_n(M_2)\), \(p_2\) is a coheir of \(p_1\).
     Then \(\exists p_3\in S_n(M_3)\), \(p_3\) is a coheir of \(p_1\)and \(p_2\)
     #+END_theorem
+** Coheir Independence
+*** Coheir independence
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(M\) be a small model, \(\bara,\barb\) small tuples (possibly infinite). Then \(\bara\)is
+    *coheir independent* from \(\barb\) over \(M\), written
+    \begin{equation*}
+    \bara\ind_M^u\barb
+    \end{equation*}
+    if \(\tp(\bara/M\barb)\) is finitely satisfiable in \(M\)
+    #+END_definition
+
+    #+BEGIN_remark
+    The relation \(A\ind_M^uB\) is finitary w.r.t. the arguments \(A\) and \(B\), in the following
+    sense. \(A\ind_M^uB\) holds iff the following does:
+
+    For any finite tuple \(\bara\in A\) and any finite tuple \(\barb\in B\), we
+    have \(\bara\ind_M^u\barb\)
+
+    Since a formula \(\varphi(\barx,\bary)\) can only refer to finitely many variables
+    #+END_remark
+
+    #+BEGIN_remark
+    The relation \(\ind^u\) can be used to define heirs and coheirs, as follows. Suppose \(M,N\) are
+    small models with \(M\preceq N\). Suppose \(p\in S_n(M)\) and \(q\in S_n(N)\) with \(q\supseteq p\).
+    Take \(\bara\in\M^n\) realizing \(q\)
+    1. \(q=\tp(\bara/N)\) is a coheir of \(p=\tp(\bara/M)\) iff \(\bara\ind_M^uN\)
+    2. \(q=\tp(\bara/N)\) is an heir of \(p=\tp(\bara/M)\) iff \(N\ind_M^u\bara\)
+    #+END_remark
+*** Existence
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(M\) be a small model and \(\bara,\barb\) be tuples, possibly infinite
+    1. There is \(\sigma\in\Aut(\M/M)\) s.t. \(\sigma(\bara)\ind_M^u\barb\)
+    2. There is \(\sigma\in\Aut(\M/M)\) s.t. \(\bara\ind_M^u\sigma(\barb)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Let \alpha be the length of \(\bara\) and \(\barx\) be an \alpha-tuple of variables. Let
+       \begin{equation*}
+       \Psi(\barx)=\{\psi(\barx)\in L(M\barb):\psi(\barx)\text{ is satisfied by every }\bara'\in M^\alpha\}
+       \end{equation*}
+       If \(\varphi(\barx)\in\tp(\bara/M)\), then there is \(\bara'\in M^\alpha\) satisfying \(\varphi(\barx)\)
+       because \(\tp(\bara/M)\) is finitely satisfiable in \(M\). Then \(\bara'\)
+       satisfies \(\{\varphi(\barx)\}\cup\Psi(\barx)\). This shows \(\tp(\bara/M)\cup\Psi(\barx)\) is finitely
+       satisfiable, hence realized by some \(\bara'\in\M^\alpha\)
+
+       Then \(\bara'\) realizes \(\tp(\bara/M)\), so \(\tp(\bara'/M)=\tp(\bara/M)\), and there
+       is \(\sigma\in\Aut(\M/M)\) s.t. \(\sigma(\bara)=\bara'\). Finally \(\bara'\ind_M^u\barb\) by choice
+       of \(\Psi(\barx)\): if \(\varphi(\barx)\in\tp(\bara'/M\barb)\) and \(\varphi(\barx)\) isn't satisfiable
+       in \(M\), then \(\neg\varphi(\barx)\in\Psi(\barx)\) and \(\bara\) doesn't satisfy \(\varphi(\barx)\), a contradiction
+
+    2. By 1, there is \(\tau\in\Aut(\M/M)\) s.t. \(\tau(\bara)\ind_M^u\barb\). Let \(\sigma=\tau^{-1}\).
+       Then \(\sigma(\tau(\bara))\ind_{\sigma(M)}^u\sigma(\barb)\), or equivalently, \(\bara\ind_M^u\sigma(\barb)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Suppose \(p\in S_n(M)\) and \(N\succeq M\)
+    1. There is \(q\in S_n(M)\) s.t. \(q\) is a coheir of \(p\)
+    2. There is \(q\in S_n(M)\) s.t. \(q\) is an heir of \(p\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    1. Take \(\bara\in\M^n\) realizing \(p\). Let \(\barb\) enumerate \(N\). By Lemma, there
+       is \(\sigma\in\Aut(\M/M)\) s.t. \(\sigma(\bara)\ind_M^u\barb\), i.e., \(\sigma(\bara)\ind_M^uN\).
+       Thus \(\tp(\sigma(\bara)/N)\) is a coheir of \(\tp(\sigma(\bara)/M)=\tp(\bara/M)=p\)
+    2. Similarly we have \(N\ind_M^u\sigma(\bara)\), and thus \(\tp(\sigma(\bara)/N)\) is an heir of \(\tp(\sigma(\bara)/M)=\tp(\bara/M)\)
+    #+END_proof
+*** "u" for "ultrafilter"
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:co6
+    Let \(\bara\) be an \alpha-tuple in \(\M\). Let \(M\) be a small model and \(B\) a small set. TFAE
+    1. \(\bara\ind_M^uB\)
+    2. There is an ultrafilter \(\calu\) on the set \(M^\alpha\) s.t. for any \(L(MB)\)-formula \(\varphi(\barx)\)
+       \begin{equation*}
+       \varphi(\barx)\in\tp(\bara/MB)\Leftrightarrow\{\bara'\in M^\alpha:\M\vDash\varphi(\bara')\}\in\calu
+       \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\Rightarrow\): For \(\varphi(\barx)\in\tp(\bara/MB)\),  let \(I=M^\alpha\) and \(\calf=\{\varphi(M^\alpha):\varphi(\barx)\in\tp(\bara/MB)\}\).
+    We claim that \(\calf\) has FIP. Let \(\calu\) be an ultrafilter on \(M^\alpha\) extending \(\calf\). Then for
+    any \(L(MB)\)-formula
+    \begin{equation*}
+    \varphi(\barx)\in\tp(\bara/MB)\Rightarrow\varphi(M^\alpha)\in\calf\Rightarrow\varphi(M^\alpha)\in\calu\Leftrightarrow\{\bara'\in M:\M\vDash\varphi(\bara')\}\in\calu
+    \end{equation*}
+    Then
+    \begin{equation*}
+    \varphi(\barx)\notin\tp(\bara/MB)\Rightarrow\neg\varphi(\barx)\in\tp(\bara/MB)\Rightarrow\varphi(M^\alpha)\notin\calu
+    \end{equation*}
+
+    \(\Leftarrow\):
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:co8
+    Suppose \(p\in S_n(M)\) and \(N\succeq M\)
+    1. If \(q\in S_n(N)\) is a coheir of \(p\), then there is an ultrafilter \(\calu\) on \(M^n\) s.t.
+       \begin{equation*}
+       q(\barx)=\{\varphi(\barx)\in L(N):\varphi(M^n)\in\calu\}\tag{\star}
+       \end{equation*}
+    2. Conversely, if \(\calu\) is an ultrafilter on \(M^n\) and we define \(q(\barx)\) according to
+       (\(\star\)), then \(q(\barx)\in S_n(N)\) and \(q\) is a coheir of \(p\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    1. Take \(\bara\) realizing \(q\) and \(p\), then \(\bara\ind_M^uN\). Apply proposition ref:co6
+    2. It suffices to show that \(q\) is finitely satisfiable in \(M\) and complete
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Coheirs extend]
+    #+BEGIN_corollary
+    label:co9
+    Suppose \(M\preceq N\preceq N'\) and \(p\in S_n(M)\) and \(q\in S_n(N)\) is a coheir of \(p\), then
+    is \(q'\in S_n(N')\) with \(q'\supseteq q\) and \(q'\) is a coheir of \(p\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    By proposition ref:co8 there is an ultrafilter \(\calu\) on \(M^n\) s.t.
+    \begin{equation*}
+    q(\barx)=\{\varphi(\barx)\in L(N):\varphi(M^n)\in\calu\}
+    \end{equation*}
+    Take \(q'(\barx)=\{\varphi(\barx)\in L(N'):\varphi(M^n)\in\calu\}\)
+    #+END_proof
+
+    #+BEGIN_remark
+    Suppose \(q\in S_n(N)\) is an heir of \(p\in S_n(M)\). Then \(N\ind_M^u\bara\) for a
+    realization \(\bara\). Proposition ref:co6 gives an ultrafilter \(\calu\) and tells us something.,
+    ultimate conclusion is
+
+    There is an ultrapower \(M^{\calu}\succeq N\) s.t. \(p^{\calu}\supseteq q\)
+    #+END_remark
+*** Symmetry
+    Suppose \(q\in S_n(N)\) is an extension of \(p\in S_n(M)\).
+
+    In stable theory, coheir and heir are the same thing, so for any \(q\in S_n(N)\)
+    and \(p\in S_n(M)\), \(M\preceq N\)
+    \begin{equation*}
+    \bara\ind_M^uN\Leftrightarrow N\ind_M^u\bara
+    \end{equation*}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(T\) is stable, then
+    \begin{equation*}
+    \bara\ind_M^u\barb\Leftrightarrow\barb\ind_M^u\bara
+    \end{equation*}
+    #+END_theorem
+
+    #+BEGIN_proof
+    It suffices to prove \(\Rightarrow\). Let \alpha be the length of \(\bara\). Take a small model \(N\)
+    containing \(M\) and \(\barb\). By the method of ref:co9, one can find a type \(q\in S_\alpha(N)\)
+    extending \(\tp(\bara/M\barb)\) finitely satisfiable in \(M\). Take \(\bara'\) realizing \(q\).
+    Then \(\bara'\ind_M^uN\). Also \(\tp(\bara'/M\barb)=q\uhr(M\barb)=\tp(\bara/M\barb)\), so there
+    is \(\sigma\in\Aut(\M/M\barb)\) s.t. \(\sigma(\bara')=\bara\). Then
+    \begin{equation*}
+    \bara'\ind_M^uN\Rightarrow\sigma(\bara')\ind_{\sigma(M)}^u\sigma(N)\Leftrightarrow\bara\ind_M^u\sigma(N)
+    \end{equation*}
+    Replacing \(N\) with \(\sigma(N)\), we may assume \(\bara\ind_M^uN\).  Therefore we
+    have \(N\ind_M^u\bara\). As \(\barb\in N\), this implies \(\barb\ind_M^u\bara\)
+    #+END_proof
+
 ** Invariant types
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
@@ -2245,6 +2431,164 @@
 
     \(p_V\otimes p_W=p_{V\times W}=p_W\otimes p_V\)
     #+END_examplle
+
+    If \(p\) is a definable type and \(\varphi(\barx,\bary)\) is a formula,
+    then \((d_p\barx)\varphi(\barx,\bary)\) means \(d\varphi(\bary)\), the formula
+    defining \(\{\barb\in\M:\varphi(\barx,\barb)\in p(\barx)\}\)
+
+    \(d_p\barx\) works like quantifier, free variables in \((d_p\barx)\varphi(\barx,\bary)\) are \(\bary\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(\M\vDash T\) strongly minimal, let \(p=\) transcendental 1-type, \(\varphi()\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(p,q\) are \(A\)-definable global types, then \(p\otimes q\) is \(A\)-definable
+    and \((d_{p\otimes q}(\barx,\bary))\varphi(\barx,\bary,\barz)\equiv(d_p\barx)(d_q\bary)\varphi(\barx,\bary,\barz)\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Fix \(\barc\in\M\), take \(M\preceq\M\) s.t. \(\barc\in M\) and \(M\supseteq A\), so \(p,q\) are \(M\)-definable.
+    Take \(\bara\vDash p\uhr M\) and \(\barb\vDash q\uhr M\bara\), so \((\bara,\barb)\vDash(p\otimes q)\uhr M\). So
+    \begin{align*}
+    \varphi(\barx,\bary,\barc)\in p\otimes q&\Leftrightarrow \varphi(\barx,\bary,\barc)\in p\otimes q\uhr M\\
+    &\Leftrightarrow\M\vDash\varphi(\bara,\barb,\barc)\\&\Leftrightarrow\varphi(\bara,\bary,\barc)\in q(\bary)\uhr M\bara\\
+    &\Leftrightarrow\varphi(\bara,\bary,\barc)\in q(\bary)\\
+    &\Leftrightarrow\M\vDash(d_q\bary)\varphi(\bara,\bary,\barc)\\
+    &\Leftrightarrow(d_q\bary)\varphi(\barx,\bary,\barc)\in p(\barx)\\
+    &\Leftrightarrow(d_p\barx)(d_q\bary)\varphi(\barx,\bary,\barc)
+    \end{align*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    in a strongly minimal theory, if \(p\in S_1(\M)\) is transcendental and \(q=p\otimes p\)
+    then \((d_q(x,y))\varphi(x,y,\barz)\) is \(\exists^\infty x\exists^\infty y\varphi(x,y,\barz)\)
+    #+END_examplle
+
+    Two definable types \(p,q\) commute
+    iff \((d_p\barx)(d_q\bary)\varphi(\barx,\bary,\barz)\equiv(d_q\bary)(d_p\barx)\varphi(\barx,\bary,\barz)\)
+
+    Let \(A\)-invariant \(p\in S_n(\M)\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *Morley sequence* of \(p\) over \(A\) is a sequence \(\barb_1,\barb_2,\barb_3,\dots\in\M^n\) s.t.
+    \begin{equation*}
+    \barb_1\vDash p\uhr A,\barb_2\vDash p\uhr A\barb_1,\dots,\barb_i\vDash p\uhr A\barb_1\dots\barb_{i-1}\dots
+    \end{equation*}
+    #+END_definition
+
+    So \((\barb_1,\dots,\barb_n)\vDash \underbrace{p\otimes\dots\otimes p}_{n\text{ times}}\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    If \(T\) is strongly minimal, \(p\) is transcendental 1-type, a Morley sequence over \(A\)
+    is \(b_1,b_2,\dots\) s.t. \(b_1\notin\acl(A)\), \(b_2\notin\acl(Ab_1)\),\(\dots\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    In \(\DLO\), in \((\R,\le)\), \(1,2,3,4,\dots\) is indiscernible
+
+    An increasing sequence is indiscernible in \(\DLO\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(p\in S_n(\M)\) \(A\)-invariant and \((\barb_i:i<\omega)\) is a Morley sequence of \(p\) over \(A\),
+    then it is \(A\)-indiscernible
+    #+END_theorem
+** Order Property
+    #+BEGIN_remark
+    If \varphi has O.P., then \(\neg\varphi\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    For any infinite \(\lambda\ge\aleph_0\) there is a linear order \((I,\le)\) and \(S\subseteq I\)
+    s.t. \(\abs{I}>\lambda\), \(\abs{S}\le\lambda\), \(S\) is dense in \(I\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    there is \mu s.t. \(\abs{2^\mu}>\lambda\) and \(\abs{2^{<\mu}}\le\lambda\).
+
+    Let \(I=2^\mu\cup 2^{<\mu}\) and \(S=2^{<\mu}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(\varphi(\barx,\bary)\) has O.P., then \(T\) is not \lambda-stable for any \lambda
+    #+END_theorem
+
+    #+BEGIN_proof
+    Take \(I\supseteq S\) s.t. \(S\) dense in \(I\), \(\abs{S}\le\lambda\), \(\abs{I}>\lambda\)
+
+    \(\bara_i,\barb_j\), \(i,j\in\Z\), \(\varphi(\bara_i,\barb_j)\Leftrightarrow i<j\). By compactness, we can take any
+    linear order. There is \(\bara_i,\barb_j\) for \(i,j\in I\)
+    s.t. \(\M\vDash\varphi(\bara_i,\barb_j)\Leftrightarrow i<j\)
+
+    Let \(C=\{\barb_j:j\in S\}\), \(\abs{C}\le\lambda\).
+
+    *Claim* \(I\setminus S\to S_n(C)\) , \(i\mapsto\tp(\bara_i/C)\) is an injection
+
+    If \(i_1<i_2\), then there is \(j\in S\), \(i_1<j<i_2\)
+    then \(\varphi(\bara_i,\barb_j)\wedge\neg\varphi(\bara_{i_2},\barb_j)\), \(\barb_j\in C\),
+    so \(\bara_{i_1}\not\equiv_C\bara_{i_2}\)
+
+    \(\abs{S_n(C)}\ge\abs{I\setminus S}>\lambda\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(\varphi(\barx,\bary)\) doesn't have O.P. Let \(n_\varphi\) be from Lemma 9.
+    Let \(\barb_1,\barb_2,\dots\) be indiscernible (over \(\emptyset\)). Then there is no \(\bara\)
+    s.t. \(\M\vDash\varphi(\bara,\barb_i)\) for \(0\le i<n_\varphi\) s.t.
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(n=n_\varphi\). Suppose \(\bara\) exists, for \(0\le \)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(\varphi(x_1,\dots,x_n;\bary)\) doesn't have O.P.. Take \(N>\max(n_\varphi,n_{\neg\varphi})\). let \(p\) be
+    an \(A\)-invariant type over \(\M\). Let \(a_1,a_2,\dots\) be a Morley sequence of \(p\) over \(A\)
+    1. If \(\varphi(\barx,\barb)\in p(\barx)\), then \(\M\vDash\varphi(\bara_i,\barb)\) for most of \(i<2N\)
+    2. If \(\varphi(\barx,\barb)\notin p(\barx)\), then \(\M\vDash\neg\varphi(\bara_i,\barb)\) for most of \(i<2N\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    If \(T\) is strongly minimal then \(T\) is stable if \(\varphi(x,\bary)\) has the O.P., then there
+    is \(a_i,\barb_i\in\M\) \(\M\vDash\varphi(a_i,\barb_j)\Leftrightarrow i<j\) for \(i,j\in\Z\)
+
+    So \(\varphi(\M,\barb_0)\) is neither finite or cofinite
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(T\) is stable and \(p\) and \(q\) are global types (all types are definable and hence
+    invariant for some \(A\)), then \((p\otimes q)(\barx,\bary)=(q\otimes p)(\bary,\barx)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose not.
+    Take
+    \(\varphi(\barx,\bary)\in L(\M)\).
+    \(\varphi(\barx,\bary)\in(p\otimes q)(\barx,\bary)\), \(\varphi(\barx,\bary)\notin(q\otimes p)(\bary,\barx)\) .
+
+    Take \(A\) s.t. \(p,q\) are \(A\)-definable and \(\varphi(\barx,\bary)\in L(A)\)
+
+    Take \(p\otimes q\otimes p\otimes q\otimes\cdots\)
+
+    \(((b_i,c_i):i\in\omega)\) a Morley sequence of \(p\otimes q\) over \(A\)
+
+    If \(i\le j\), \((b_i,c_j)\vDash p\otimes q\uhr A\), \(\M\vDash\varphi(b_i,c_j)\)
+
+    If \(i>j\), \((c_j,b_i)\vDash q\otimes p\uhr A\) \(\M\vDash\neg\varphi(b_i,c_j)\)
+    #+END_proof
 
 
 * Appendices                  :ignore:

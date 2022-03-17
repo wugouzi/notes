@@ -1,4 +1,4 @@
-% Created 2022-03-12 Sat 10:22
+% Created 2022-03-16 Wed 18:57
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -12,7 +12,6 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
-\usepackage{minted}
 \graphicspath{{../../books/}}
 \input{../preamble.tex}
 \usepackage{minted}
@@ -33,9 +32,9 @@
 \tableofcontents
 
 \section{The Basics}
-\label{sec:org4c8b103}
+\label{sec:orga6bb268}
 \subsection{Introduction}
-\label{sec:orgff95d27}
+\label{sec:org55c6422}
 The operator \texttt{<<} (``put to'') writes its second argument onto its first
 
 A function declaration gives the name of the function, the type of the value returned (if any),
@@ -47,7 +46,7 @@ will choose the most appropriate function to invoke for each call.
 Defining multiple functions with the same name is known as function \textbf{overloading} and is one of the
 essential parts of generic programming
 \subsection{Types, Variables and Arithemtic}
-\label{sec:orga438208}
+\label{sec:orgd2941b6}
 A \textbf{declaration} is a statement that introduces an entity into the program. It specifies a type for
 the entity:
 \begin{itemize}
@@ -76,7 +75,7 @@ from the initializer:
 With \texttt{auto}, we tend to use the \texttt{=} because there is no potentially troublesome type conversion
 involved, but if you prefer to use \texttt{\{\}} initialization consistently, you can do that instead.
 \subsection{Scope and Lifetime}
-\label{sec:orgc46f4a9}
+\label{sec:orgb2ceae0}
 \begin{itemize}
 \item \textbf{Local scope}: A name declared in a function or lambda is called a local name.
 Its scope extends from its point of declaration to the end of the block in which its
@@ -105,7 +104,7 @@ void fct(int arg) { // fct is global (a global function)
 \end{minted}
 \end{itemize}
 \subsection{Constants}
-\label{sec:orgf9348e7}
+\label{sec:org51c698b}
 C++ supports two notions of immutability:
 \begin{itemize}
 \item \texttt{const}: meaning roughly ``I promise not to change this value.'' This is used primarily to
@@ -168,7 +167,7 @@ constexpr double nth(double x, int n) // assume 0<=n {
 }
 \end{minted}
 \subsection{Pointers, Arrays, and References}
-\label{sec:orgd7ecdad}
+\label{sec:orgaa19c34}
 \begin{minted}[]{c++}
 char* p = &v[3];
 char x = *p;
@@ -218,9 +217,9 @@ Link<Record>∗ lst = nullptr; // pointer to a Link to a Record
 int x = nullptr; // error: nullptr is a pointer not an integer
 \end{minted}
 \subsection{Tests}
-\label{sec:org6576a11}
+\label{sec:org2698683}
 \subsection{Mapping to Hardware}
-\label{sec:org022729b}
+\label{sec:org6260fc3}
 An assignment of a built-in type is a simple machine copy operation.
 
 A reference and a pointer both refer/point to an object and both are represented in memory as a
@@ -239,14 +238,437 @@ r = r2; // read through r2, write through r: x becomes 3
 \label{}
 \end{figure}
 \section{User-Defined Types}
-\label{sec:org2d1de45}
+\label{sec:org2f4a342}
 \subsection{Introduction}
-\label{sec:org603a9c1}
+\label{sec:org8c3ce33}
 Types built out of other types using C++’s abstraction mechanisms are called \textbf{user-defined types}.
 They are referred to as \textbf{classes} and \textbf{enumerations}.
 \subsection{Structures}
-\label{sec:org370d6b0}
+\label{sec:org599db0d}
 The \texttt{new} operator allocates memory from an area called the \textbf{free store} (also known as \textbf{dynamic
 memory} and \textbf{heap}). Objects allocated on the free store are independent of the scope from which
 they are created and ``live'' until they are destroyed using the \texttt{delete} operator
+\subsection{Classes}
+\label{sec:org04ef978}
+The language mechanism for that is called a \textbf{class}. A class has a set of \textbf{members}, which can be
+data, function, or type members. The interface is defined by the \texttt{public} members of a class, and
+\texttt{private} members are accessible only through that interface.
+\begin{minted}[]{c++}
+class Vector {
+    public:
+        Vector(int s) :elem{new double[s]}, sz{s} { }
+        double& operator[](int i) { return elem[i]; }
+        int size() { return sz; }
+    private:
+        double* elem; // pointer to the elements
+        int sz; // the number of elements
+};
+\end{minted}
+
+\texttt{Vector(int)} defines how objects of type \texttt{Vector} are constructed. The constructor initializes the
+\texttt{Vector} members using a member initializer list:
+\begin{minted}[]{c++}
+:elem{new double[s]}, sz{s}
+\end{minted}
+That is, we first initialize \texttt{elem} with a pointer to \texttt{s} elements of type \texttt{double} obtained from the
+free store. Then, we initialize \texttt{sz} to \texttt{s}
+
+Access to elements is provided by a subscript function, called \texttt{operator[]}. It returns a
+reference to the appropriate element (a \texttt{double\&} allowing both reading and writing)
+
+There is no \uline{fundamental} difference between a \texttt{struct} and a \texttt{class}; a \texttt{struct} is simply a class with
+members \texttt{public} by default.
+\subsection{Unions}
+\label{sec:orga494e0e}
+A \texttt{union} is a \texttt{struct} in which all members are allocated at the same address so that the \texttt{union}
+occupies only as much space as its largest member. Naturally, a \texttt{union} can hold a value for
+only one member at a time.
+\begin{minted}[]{c++}
+union Value {
+    Node* p;
+    int i;
+};
+\end{minted}
+The language doesn’t keep track of which kind of value is held by a union, so the programmer
+must do that:
+\begin{minted}[]{c++}
+enum Type { ptr, num }; // a Type can hold values ptr and num
+
+struct Entry {
+    string name;
+    Type t;
+    Value v; // use v.p if t==ptr; use v.i if t==num
+};
+
+void f(Entry* pe) {
+    if (pe->t == num)
+        cout << pe->v.i;
+    // ...
+}
+\end{minted}
+Maintaining the correspondence between a \textbf{type field} (here, \texttt{t}) and the type held in a \texttt{union} is
+error-prone.
+
+The standard library type, \texttt{variant}, can be used to eliminate most direct uses of unions. A
+\texttt{variant} stores a value of one of a set of alternative types.
+\begin{minted}[]{c++}
+struct Entry {
+    string name;
+    variant<Node∗,int> v;
+};
+
+void f(Entry∗ pe) {
+if (holds_alternative<int>(pe−>v))
+    // does *pe hold an int?
+    cout << get<int>(pe−>v);
+    // get the int
+    // ...
+} 
+\end{minted}
+
+For many uses, a \texttt{variant} is simpler and safer to use than a \texttt{union}
+\subsection{Enumerations}
+\label{sec:org916124c}
+\begin{minted}[]{c++}
+enum class Color { red, blue, green };
+enum class Traffic_light { green, yellow, red };
+Color col = Color::red;
+Traffic_light light = Traffic_light::red;
+\end{minted}
+
+Note that enumerators (e.g., \texttt{red}) are in the scope of their \texttt{enum class}, so that they can be used
+repeatedly in different \texttt{enum classes} without confusion. For example, \texttt{Color::red} is \texttt{Color} ’s \texttt{red}
+which is different from \texttt{Traffic\_light::red}.
+
+Enumerations are used to represent small sets of integer values. They are used to make code more
+readable and less error-prone than it would have been had the symbolic (and mnemonic) enumerator
+names not  been used.
+
+The \texttt{class} after the \texttt{enum} specifies that an enumeration is strongly typed and that its
+enumerators are scoped.
+\begin{minted}[]{c++}
+Color x = red; // error : which red?
+Color y = Traffic_light::red;
+// error: that red is not a Color
+Color z = Color::red; // OK
+\end{minted}
+
+Similarly, we cannot implicitly mix \texttt{Color} and integer values:
+\begin{minted}[]{c++}
+int i = Color::red; // error: Color::red is not an int
+Color c = 2; // initialization error: 2 is not a Color
+\end{minted}
+
+By default, an \texttt{enum class} has only assignment, initialization, and comparisons. However, an
+enumeration is a user-defined type, so we can define operators for it:
+\begin{minted}[]{c++}
+Traffic_light& operator++(Traffic_light& t)
+{ // prefix increment: ++ 
+        switch (t) {
+            case Traffic_light::green:
+                return t=Traffic_light::yellow;
+            case Traffic_light::yellow:
+                return t=Traffic_light::red;
+            case Traffic_light::red:
+                return t=Traffic_light::green;
+}
+}
+Traffic_light next = ++light;
+// next becomes Traffic_light::green
+\end{minted}
+
+If you don’t want to explicitly qualify enumerator names and want enumerator values to be ints
+(without the need for an explicit conversion), you can remove the \texttt{class} from \texttt{enum class} to get a
+``plain'' \texttt{enum}. The enumerators from a ``plain'' \texttt{enum} are entered into the same scope as the
+name of their enum and implicitly converts to their integer value
+
+\begin{minted}[]{c++}
+enum Color { red, green, blue };
+int col = green;
+\end{minted}
+Here \texttt{col} gets the value 1. By default, the integer values of enumerators start with \texttt{0} and
+increase by one for each additional enumerator.
+\section{Modularity}
+\label{sec:orga8437f7}
+\subsection{Introduction}
+\label{sec:org350ee67}
+A \textbf{declaration} specifies all that’s needed to use a function or a type. For example:
+\begin{minted}[]{c++}
+double sqrt(double);
+// the square root function takes a double and returns a double
+class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem; // elem points to an array of
+                      // sz doubles int sz;
+};        
+\end{minted}
+
+The key point here is that the function bodies, the function \textbf{definitions}, are ``elsewhere''
+
+The definition of \texttt{sqrt()} will look like this:
+\begin{minted}[]{c++}
+double sqrt(double d) // definition of sqrt()
+{
+    // ... algorithm as found in math textbook ...
+}
+\end{minted}
+
+For \texttt{vector}, we need to define
+\begin{minted}[]{c++}
+Vector::Vector(int s) // definition of the constructor
+    :elem{new double[s]}, sz{s}
+     // initialize members
+{
+}
+double& Vector::operator[](int i) {
+    // definition of subscripting
+    return elem[i];
+}
+int Vector::size() {
+    // definition of size()
+    return sz;
+}
+\end{minted}
+\subsection{Separate Compilation}
+\label{sec:org1b60913}
+C++ supports a notion of separate compilation where user code sees only declarations of the
+types and functions used. The definitions of those types and functions are in separate source
+files and are compiled separately.
+
+This can be used to organize a program into a set of semi-independent code fragments. Such
+separation can be used to minimize compilation times and to strictly enforce sepa- ration of
+logically distinct parts of a program (thus minimizing the chance of errors). A library is often
+a collection of separately compiled code fragments (e.g., functions).
+
+Typically, we place the declarations that specify the interface to a module in a file with a
+name indicating its intended use. Example:
+\begin{minted}[]{c++}
+// Vector.h:
+class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem;
+        int sz;
+};
+\end{minted}
+
+This declaration would be placed in a file \texttt{Vector.h}. Users then \textbf{include} that file, called a
+\textbf{header file}, to access that interface. For example:
+\begin{minted}[]{c++}
+// user.cpp:
+#include "Vector.h" // get Vector’s interface
+#include <cmath> // get the standard-library
+                 // math function interface including sqrt()
+double sqrt_sum(Vector& v)
+{
+    double sum = 0;
+    for (int i=0; i!=v.size(); ++i)
+        sum+=std::sqrt(v[i]);
+    return sum;
+}
+\end{minted}
+
+To help the compiler ensure consistency, the \texttt{.cpp} file providing the implementation of \texttt{Vector}
+will also include the .h file providing its interface:
+\begin{minted}[]{c++}
+// Vector.cpp:
+#include "Vector.h" // get Vector’s interface
+                
+Vector::Vector(int s)
+    :elem{new double[s]}, sz{s}
+{    
+}
+double& Vector::operator[](int i)
+{
+    return elem[i];
+}
+int Vector::size()
+{
+    return sz;
+}
+\end{minted}
+
+The code in \texttt{user.cpp} and \texttt{Vector.cpp} shares the \texttt{Vector} interface information presented in
+\texttt{Vector.h}, but the two files are otherwise independent and can be separately compiled.
+
+A \texttt{.cpp} file that is compiled by itself (including the h files it \texttt{\#includes}) is called a
+\textbf{translation unit}. A program can consist of many thousand translation units.
+\subsection{Modules (C++20)}
+\label{sec:org1273861}
+The use of \texttt{\#includes} is a very old, error-prone, and rather expensive way of composing programs
+out of parts. If you \texttt{\#include header.h} in 101 translation units, the text of \texttt{header.h} will be
+processed by the compiler 101 times. If you \texttt{\#include header1.h} before \texttt{header2.h} the declarations
+and macros in \texttt{header1.h} might affect the meaning of the code in \texttt{header2.h}. If instead you
+\texttt{\#include header2.h} before \texttt{header1.h}, it is \texttt{header2.h} that might affect the code in \texttt{header1.h}.
+Obviously, this is not ideal, and in fact it has been a major source of cost and bugs since 1972
+when this mechanism was first introduced into C.
+
+Consider how to express the \texttt{Vector} and \texttt{sqrt\_sum()} example from §3.2 using \texttt{modules}:
+\begin{minted}[]{c++}
+// file Vector.cpp:
+module; // this compilation will define a module
+// ... here we put stuff that Vector might
+// need for its implementation ...
+export module Vector; // defining the module called "Vector"
+
+export class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem; // elem points to an array of sz doubles
+        int sz;
+};
+
+Vector::Vector(int s)
+:elem{new double[s]}, sz{s}
+{
+}
+
+double& Vector::operator[](int i)
+{
+return elem[i];
+}
+
+int Vector::size()
+{
+return sz;
+}
+
+export int size(const Vector& v) { return v.size(); }
+\end{minted}
+This defines a module called \texttt{Vector}, which exports the class Vector, all its member functions,
+and the non-member function \texttt{size()}
+
+The way we use this module is to \texttt{import} it where we need it. For example:.
+\begin{minted}[]{c++}
+// file user.cpp:
+// 
+import Vector; // get Vector’s interface
+#include <cmath>
+
+double sqrt_sum(Vector& v)
+{
+    double sum = 0;
+    for (int i=0; i!=v.size(); ++i)
+        sum+=std::sqrt(v[i]);
+    return sum;
+}
+\end{minted}
+
+The differences between headers and modules are not just syntactic.
+• A module is compiled once only (rather than in each translation unit in which it is used).
+• Two modules can be \texttt{imported} in either order without changing their meaning.
+• If you import something into a module, users of your module do not implicitly gain access
+   to (and are not bothered by) what you imported: \texttt{import} is not transitive.
+\subsection{Namespaces}
+\label{sec:org5cffa51}
+C++ offers \textbf{namespaces} as a mechanism for expressing that some declarations belong together and
+that their names shouldn’t clash with other names
+
+\begin{minted}[]{c++}
+namespace My_code {
+    class complex {
+        // ...
+    };
+    complex sqrt(complex);
+    // ...
+    int main();
+}
+
+int My_code::main()
+{
+    complex z {1,2};
+    auto z2 = sqrt(z);
+    std::cout << '{' << z2.real() << ',' << z2.imag() << "}\n";
+    // ...
+}
+
+int main()
+{
+    return My_code::main();
+}
+\end{minted}
+By putting my code into the namespace \texttt{My\_code}, I make sure that my names do not conflict
+with the standard-library names in namespace \texttt{std}
+
+If repeatedly qualifying a name becomes tedious or distracting, we can bring the name into a
+scope with a \texttt{using}-declaration:
+\begin{minted}[]{c++}
+void my_code(vector<int>& x, vector<int>& y)
+{
+    using std::swap; // ...
+    swap(x,y);
+    other::swap(x,y); // ...
+}
+\end{minted}
+
+To gain access to all names in the standard-library namespace, we can use a \texttt{using}-directive:
+\begin{minted}[]{c++}
+using namespace std;
+\end{minted}
+\subsection{Error Handling}
+\label{sec:orgfd9f0a1}
+\subsubsection{Exceptions}
+\label{sec:org808ced1}
+Consider again the \texttt{Vector} example.
+
+Assuming that out-of-range access is a kind of error that we want to recover from, the solution
+is for the \texttt{Vector} implementer to detect the attempted out-of-range access and tell the user
+about it. The user can then take appropriate action. For example, \texttt{Vector::operator[]()} can
+detect an attempted out-of-range access and throw an \texttt{out\_of\_range} exception:
+\begin{minted}[]{c++}
+double& Vector::operator[](int i)
+{
+    if (i<0 || size()<=i)
+        throw out_of_range{"Vector::operator[]"};
+    return elem[i];
+}
+\end{minted}
+The \texttt{throw} transfers control to a handler for exceptions of type \texttt{out\_of\_range} in some function that
+directly or indirectly called \texttt{Vector::operator[]()}. To do that, the implementation will \textbf{unwind}
+the function call stack as needed to get back the context of that caller. That is, the exception
+handling mechanism will exit scopes and functions as needed to get back to a caller that has
+expressed interest in handling that kind of exception, invoking destructors (§4.2.2) along the
+way as needed. For example:
+
+\begin{minted}[]{c++}
+void f(Vector& v) {
+// ...
+    try { // exceptions here are handled by
+          // the handler defined below
+        v[v.size()] = 7; // try to access beyond the end of v
+    }
+    catch (out_of_range& err) {
+    // ... handle range error ...
+        cerr << err.what() << '\n';
+    }
+    // ...
+}
+\end{minted}
+
+We put code for which we are interested in handling exceptions into a \texttt{try}-block. The attempted
+assignment to \texttt{v[v.size()]} will fail. Therefore, the \texttt{catch}-clause providing a handler for
+exceptions of type \texttt{out\_of\_range} will be entered. The \texttt{out\_of\_range} type is defined in the standard
+library (in \texttt{<stdexcept>}) and is in fact used by some standard-library container access
+functions.
+
+The main technique for making error handling simple and systematic (called \textbf{Resource Acquisition
+Is Initialization}; RAII) is explained in §4.2.2. The basic idea behind RAII is for a constructor
+to acquire all resources necessary for a class to operate and have the destructor release all
+resources, thus making resource release guaranteed and implicit.
+
+A function that should never throw an exception can be declared \texttt{noexcept}. For example:
+\begin{minted}[]{c++}
+void user(int sz) noexcept {
+    Vector v(sz);
+    iota(&v[0],&v[sz],1); // fill v with 1,2,3,4...
+    // ...
+}
+\end{minted}
 \end{document}

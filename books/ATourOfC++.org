@@ -342,3 +342,366 @@ int col = green;
     Here ~col~ gets the value 1. By default, the integer values of enumerators start with ~0~ and
     increase by one for each additional enumerator.
 * Modularity
+** Introduction
+    A *declaration* specifies all that’s needed to use a function or a type. For example:
+    #+begin_src c++
+double sqrt(double);
+// the square root function takes a double and returns a double
+class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem; // elem points to an array of
+                      // sz doubles int sz;
+};        
+    #+end_src
+
+    The key point here is that the function bodies, the function *definitions*, are "elsewhere"
+
+    The definition of ~sqrt()~ will look like this:
+    #+begin_src c++
+double sqrt(double d) // definition of sqrt()
+{
+    // ... algorithm as found in math textbook ...
+}
+    #+end_src
+
+    For ~vector~, we need to define
+    #+begin_src c++
+Vector::Vector(int s) // definition of the constructor
+    :elem{new double[s]}, sz{s}
+     // initialize members
+{
+}
+double& Vector::operator[](int i) {
+    // definition of subscripting
+    return elem[i];
+}
+int Vector::size() {
+    // definition of size()
+    return sz;
+}
+    #+end_src
+** Separate Compilation
+    C++ supports a notion of separate compilation where user code sees only declarations of the
+    types and functions used. The definitions of those types and functions are in separate source
+    files and are compiled separately.
+
+    This can be used to organize a program into a set of semi-independent code fragments. Such
+    separation can be used to minimize compilation times and to strictly enforce sepa- ration of
+    logically distinct parts of a program (thus minimizing the chance of errors). A library is often
+    a collection of separately compiled code fragments (e.g., functions).
+
+    Typically, we place the declarations that specify the interface to a module in a file with a
+    name indicating its intended use. Example:
+    #+begin_src c++
+// Vector.h:
+class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem;
+        int sz;
+};
+    #+end_src
+
+    This declaration would be placed in a file ~Vector.h~. Users then *include* that file, called a
+    *header file*, to access that interface. For example:
+    #+begin_src c++
+// user.cpp:
+#include "Vector.h" // get Vector’s interface
+#include <cmath> // get the standard-library
+                 // math function interface including sqrt()
+double sqrt_sum(Vector& v)
+{
+    double sum = 0;
+    for (int i=0; i!=v.size(); ++i)
+        sum+=std::sqrt(v[i]);
+    return sum;
+}
+    #+end_src
+
+    To help the compiler ensure consistency, the ~.cpp~ file providing the implementation of ~Vector~
+    will also include the .h file providing its interface:
+    #+begin_src c++
+// Vector.cpp:
+#include "Vector.h" // get Vector’s interface
+                
+Vector::Vector(int s)
+    :elem{new double[s]}, sz{s}
+{    
+}
+double& Vector::operator[](int i)
+{
+    return elem[i];
+}
+int Vector::size()
+{
+    return sz;
+}
+    #+end_src
+
+    The code in ~user.cpp~ and ~Vector.cpp~ shares the ~Vector~ interface information presented in
+    ~Vector.h~, but the two files are otherwise independent and can be separately compiled.
+
+    A ~.cpp~ file that is compiled by itself (including the h files it ~#includes~) is called a
+    *translation unit*. A program can consist of many thousand translation units.
+** Modules (C++20)
+    The use of ~#includes~ is a very old, error-prone, and rather expensive way of composing programs
+    out of parts. If you ~#include header.h~ in 101 translation units, the text of ~header.h~ will be
+    processed by the compiler 101 times. If you ~#include header1.h~ before ~header2.h~ the declarations
+    and macros in ~header1.h~ might affect the meaning of the code in ~header2.h~. If instead you
+    ~#include header2.h~ before ~header1.h~, it is ~header2.h~ that might affect the code in ~header1.h~.
+    Obviously, this is not ideal, and in fact it has been a major source of cost and bugs since 1972
+    when this mechanism was first introduced into C.
+
+    Consider how to express the ~Vector~ and ~sqrt_sum()~ example from §3.2 using ~modules~:
+    #+begin_src c++
+// file Vector.cpp:
+module; // this compilation will define a module
+// ... here we put stuff that Vector might
+// need for its implementation ...
+export module Vector; // defining the module called "Vector"
+
+export class Vector {
+    public:
+        Vector(int s);
+        double& operator[](int i); int size();
+    private:
+        double∗ elem; // elem points to an array of sz doubles
+        int sz;
+};
+
+Vector::Vector(int s)
+:elem{new double[s]}, sz{s}
+{
+}
+
+double& Vector::operator[](int i)
+{
+return elem[i];
+}
+
+int Vector::size()
+{
+return sz;
+}
+
+export int size(const Vector& v) { return v.size(); }
+    #+end_src
+    This defines a module called ~Vector~, which exports the class Vector, all its member functions,
+    and the non-member function ~size()~
+
+    The way we use this module is to ~import~ it where we need it. For example:.
+    #+begin_src c++
+// file user.cpp:
+// 
+import Vector; // get Vector’s interface
+#include <cmath>
+
+double sqrt_sum(Vector& v)
+{
+    double sum = 0;
+    for (int i=0; i!=v.size(); ++i)
+        sum+=std::sqrt(v[i]);
+    return sum;
+}
+    #+end_src
+
+    The differences between headers and modules are not just syntactic.
+    • A module is compiled once only (rather than in each translation unit in which it is used).
+    • Two modules can be ~imported~ in either order without changing their meaning.
+    • If you import something into a module, users of your module do not implicitly gain access
+       to (and are not bothered by) what you imported: ~import~ is not transitive.
+** Namespaces
+    C++ offers *namespaces* as a mechanism for expressing that some declarations belong together and
+    that their names shouldn’t clash with other names
+
+    #+begin_src c++
+namespace My_code {
+    class complex {
+        // ...
+    };
+    complex sqrt(complex);
+    // ...
+    int main();
+}
+
+int My_code::main()
+{
+    complex z {1,2};
+    auto z2 = sqrt(z);
+    std::cout << '{' << z2.real() << ',' << z2.imag() << "}\n";
+    // ...
+}
+
+int main()
+{
+    return My_code::main();
+}
+    #+end_src
+        By putting my code into the namespace ~My_code~, I make sure that my names do not conflict
+        with the standard-library names in namespace ~std~
+
+        If repeatedly qualifying a name becomes tedious or distracting, we can bring the name into a
+        scope with a ~using~-declaration:
+        #+begin_src c++
+void my_code(vector<int>& x, vector<int>& y)
+{
+    using std::swap; // ...
+    swap(x,y);
+    other::swap(x,y); // ...
+}
+        #+end_src
+
+        To gain access to all names in the standard-library namespace, we can use a ~using~-directive:
+        #+begin_src c++
+using namespace std;
+        #+end_src
+** Error Handling
+*** Exceptions
+    Consider again the ~Vector~ example.
+
+    Assuming that out-of-range access is a kind of error that we want to recover from, the solution
+    is for the ~Vector~ implementer to detect the attempted out-of-range access and tell the user
+    about it. The user can then take appropriate action. For example, ~Vector::operator[]()~ can
+    detect an attempted out-of-range access and throw an ~out_of_range~ exception:
+    #+begin_src c++
+double& Vector::operator[](int i)
+{
+    if (i<0 || size()<=i)
+        throw out_of_range{"Vector::operator[]"};
+    return elem[i];
+}
+    #+end_src
+    The ~throw~ transfers control to a handler for exceptions of type ~out_of_range~ in some function that
+    directly or indirectly called ~Vector::operator[]()~. To do that, the implementation will *unwind*
+    the function call stack as needed to get back the context of that caller. That is, the exception
+    handling mechanism will exit scopes and functions as needed to get back to a caller that has
+    expressed interest in handling that kind of exception, invoking destructors (§4.2.2) along the
+    way as needed. For example:
+
+    #+begin_src c++
+void f(Vector& v) {
+// ...
+    try { // exceptions here are handled by
+          // the handler defined below
+        v[v.size()] = 7; // try to access beyond the end of v
+    }
+    catch (out_of_range& err) {
+    // ... handle range error ...
+        cerr << err.what() << '\n';
+    }
+    // ...
+}
+    #+end_src
+
+    We put code for which we are interested in handling exceptions into a ~try~-block. The attempted
+    assignment to ~v[v.size()]~ will fail. Therefore, the ~catch~-clause providing a handler for
+    exceptions of type ~out_of_range~ will be entered. The ~out_of_range~ type is defined in the standard
+    library (in ~<stdexcept>~) and is in fact used by some standard-library container access
+    functions.
+
+    The main technique for making error handling simple and systematic (called *Resource Acquisition
+    Is Initialization*; RAII) is explained in §4.2.2. The basic idea behind RAII is for a constructor
+    to acquire all resources necessary for a class to operate and have the destructor release all
+    resources, thus making resource release guaranteed and implicit.
+
+    A function that should never throw an exception can be declared ~noexcept~. For example:
+    #+begin_src c++
+void user(int sz) noexcept {
+    Vector v(sz);
+    iota(&v[0],&v[sz],1); // fill v with 1,2,3,4...
+    // ...
+}
+    #+end_src
+*** Invariants
+    The use of exceptions to signal out-of-range access is an example of a function checking its
+    argument and refusing to act because a basic assumption, a *precondition*, didn’t hold
+    #+begin_src c++
+Vector::Vector(int s)
+{
+    if (s<0)
+        throw length_error{"Vector constructor: negative size"};
+    elem = new double[s];
+    sz = s;
+}
+    #+end_src
+
+    If operator ~new~ can’t find memory to allocate, it throws a ~std::bad_alloc~.
+    #+begin_src c++
+void test()
+{
+    try {
+        Vector v(−27);
+    }
+    catch (std::length_error& err) {
+// handle negative size
+    }
+    catch (std::bad_alloc& err) {
+// handle memory exhaustion
+    }
+}
+    #+end_src
+
+    Often, a function has no way of completing its assigned task after an exception is thrown. Then,
+    ‘‘handling’’ an exception means doing some minimal local cleanup and rethrowing the exception.
+    #+begin_src c++
+void test()
+{
+    try {
+        Vector v(−27);
+    }
+    catch (std::length_error&) {
+        // do something and rethrow
+        cerr << "test failed: length error\n";
+        throw; // rethrow
+    }
+    catch (std::bad_alloc&) {
+        // Ouch! this program is not designed to handle memory exhaustion
+        std::terminate(); // terminate the program
+    }
+}
+    #+end_src
+*** Error-Handling Alternatives
+    Throwing an exception is not the only way of reporting an error that cannot be handled locally.
+    A function can indicate that it cannot perform its allotted task by:
+    • throwing an exception
+    • somehow return a value indicating failure
+    • terminating the program (by invoking a function like ~terminate()~, ~exit()~, or ~abort())~.
+
+
+    One way to ensure termination is to add ~noexcept~ to a function so that a ~throw~ from anywhere in
+    the function’s implementation will turn into a ~terminate()~.
+*** Contracts
+    The standard library offers the debug macro, ~assert()~, to assert that a condition must hold at
+    run time. For example:
+    #+begin_src c++
+void f(const char∗ p)
+{
+    assert(p!=nullptr);
+    // p must not be the nullptr
+}
+    #+end_src
+    If the condition of an ~assert()~ fails in "debug mode", the program terminates
+*** Static Assertions
+    Exceptions report errors found at run time. If an error can be found at compile time, it is
+    usually preferable to do so.
+
+    The ~static_assert~ mechanism can be used for anything that can be expressed in terms of constant
+    expressions
+    #+begin_src c++
+constexpr double C = 299792.458; // km/s
+void f(double speed)
+{
+    constexpr double local_max = 160.0/(60∗60); // 160 km/h == 160.0/(60*60) km/s
+    static_assert(speed<C,"can't go that fast"); // error: speed must be a constant
+    static_assert(local_max<C,"can't go that fast"); // OK
+    // ...
+}
+    #+end_src
+
+    In general, ~static_assert(A,S)~ prints ~S~ as a compiler error message if ~A~ is not ~true~. If you
+    don’t want a specific message printed, leave out the ~S~ and the compiler will supply a default message:
