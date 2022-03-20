@@ -1,4 +1,4 @@
-% Created 2022-03-07 Mon 10:31
+% Created 2022-03-20 Sun 19:11
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -16,6 +16,11 @@
 \input{../preamble.tex}
 \newcommand{\ssmile}[1]{\mathord{\stackrel{\smallsmile}{#1}}}
 \DeclareMathOperator{\lv}{lv}
+\newcommand{\FF}{f\mspace{-7mu}f}
+\newcommand{\TT}{t\mspace{-3mu}t}
+\newcommand{\IF}{i\mspace{-4mu}f}
+\DeclareMathOperator{\Asm}{\mathcal{A}sm}
+\DeclareMathOperator{\nMod}{\mathcal{M}od}
 \makeindex
 \author{John Longley \& Dag Normann}
 \date{\today}
@@ -34,437 +39,15 @@
 
 
 \section{Theory of Computability Models}
-\label{sec:orgf06d3d9}
-\begin{itemize}
-\item \(e\downarrow\) 'the value of \(e\) is defined'
-\item \(e\uparrow\) 'the value of \(e\) is undefined'
-\item \(e=e'\) 'the values of both \(e\) and \(e'\) are defined and they are equal'
-\item \(e\simeq e'\) 'if either \(e\) or \(e'\) is defined then so is the other and they are equal'
-\item \(e\succeq e'\) 'if \(e'\) is defined then so is \(e\) and they are equal'
-\end{itemize}
-
-
-if \(e\) is a mathematical expression possibly involving the variable \(x\), we write \(\Lambda x.e\)
-to mean the ordinary (possibly partial) function \(f\) defined by \(f(x)\simeq e\)
-
-Finite sequences of length \(n\) starts from index 0.
-\subsection{Higher-Order Computability Models}
-\label{sec:org94e3ad1}
-\subsubsection{Computability Models}
-\label{sec:org5e9c12b}
-\begin{definition}[]
-\label{3.1.1}
-A \textbf{computability model} \(\bC\)  over a set \(\sfT\) of \textbf{type names} consists of
-\begin{itemize}
-\item an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the \textbf{datatypes} of \(\bC\)
-\item for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
-\textbf{operations} of \(\bC\)
-\end{itemize}
-
-
-s.t.
-\begin{enumerate}
-\item for each \(\tau\in\sfT\), the identity function \(\id:\bC(\tau)\to\bC(\tau)\) is in \(\bC(\tau,\tau)\)
-\item for any \(f\in\bC[\rho,\sigma]\) and \(g\in\bC[\sigma,\tau]\) we have \(g\circ f\in\bC[\rho,\tau]\) where \(\circ\) denotes ordinary
-composition of partial functions
-\end{enumerate}
-\end{definition}
-
-We shall use uppercase letters \(A,B,C,\dots\) to denote \textbf{occurrences} of sets within \(\abs{\bC}\):
-that is, sets \(\bC(\tau)\) implicitly tagged with a type name \(\tau\). We shall write \(\bC[A,B]\)
-for \(\bC[\sigma,\tau]\) if \(A=\bC(\sigma)\) and \(B=\bC(\tau)\)
-
-In typical cases of interest, the operations of \(\bC\) will be 'computable' maps of some kind between datatypes
-
-\begin{definition}[]
-A computability model \(\bC\) is \textbf{total} if every operation \(f\in\bC[A,B]\) is a total
-function \(f:A\to B\)
-\end{definition}
-
-\begin{definition}[]
-A computability model \(\bC\) has \textbf{weak (binary cartesian) products} if there is an operation
-assigning to each \(A,B\in\abs{\bC}\) a datatype \(A\bowtie B\in\abs{\bC}\) along with
-operations \(\pi_A\in\bC[A\bowtie B,A]\) and \(\pi_B\in\bC[A\bowtie B,B]\) (known as \textbf{projections}) s.t. for
-any \(f\in\bC[C,A]\) and \(g\in\bC[C,B]\) there exists \(\la f,g\ra\in\bC[C,A\bowtie B]\) satisfying the following for
-all \(c\in C\)
-\begin{enumerate}
-\item \(\la f,g\ra(c)\downarrow\) iff \(f(c)\downarrow\) and \(g(c)\downarrow\)
-\item \(\pi_A(\la f,g\ra(c))=f(c)\) and \(\pi_B(\la f,g\ra(c))=g(c)\)
-\end{enumerate}
-
-
-We say that \(d\in A\bowtie B\) \textbf{represents} the pair \((a,b)\) if \(\pi_A(d)=a\) and \(\pi_B(d)=b\)
-\end{definition}
-
-In contrast to the usual definition of categorical products, the operation \(\la f,g\ra\) need not be
-unique, since many elements of \(A\bowtie B\) may represent the same pair \((a,b)\). We do not formally
-require that every \((a,b)\) is represented in \(A\bowtie B\), though in all cases of interest this will be
-so. The reader is also warned that \(\pi_A\circ\la f,g\ra\) will not in general coincide with \(f\) .
-
-\begin{definition}[]
-A \textbf{weak terminal} in a computability model \(\bC\) consists of a datatype \(I\in\abs{\bC}\) and an
-element \(i\in I\) s.t. for any \(A\in\abs{\bC}\) the constant function \(\Lambda a.i\) is in \(\bC[A,I]\)
-\end{definition}
-
-If \(\bC\) has weak products and a weak terminal \((I,i)\), then for any \(A\in\abs{\bC}\) there is an
-operation \(t_A\in\bC[A,I\bowtie A]\) s.t. \(\pi_A\circ t_A=\id_A\)
-\subsubsection{Examples of Computability Models}
-\label{sec:org51bb659}
-\begin{examplle}[]
-\label{3.1.5}
-Model with single datatype \(\N\) and whose operations \(\N\rightharpoonup\N\) are precisely the
-Turing-computable partial functions. The model has standard products, since the well-known
-computable pairing operation
-\begin{equation*}
-\la m,n\ra=(m+n)(m+n+1)/2+m
-\end{equation*}
-defines a bijection \(\N\times\N\to\N\). Any element \(i\in\N\) may serve as a weak terminal,
-since \(\Lambda n.i\) is computable
-\end{examplle}
-
-\begin{examplle}[]
-\label{3.1.6}
-untyped \(\lambda\)-calculus
-
-Terms \(M\) of the \(\lambda\)-calculus are generated from a set of variable symbols \(x\) by means of the following
-grammar:
-\begin{equation*}
-M::=x\mid MM'\mid\lambda x.M
-\end{equation*}
-Writing \(\sfL\) for the quotient set \(\Lambda/=_\beta\)
-
-We write \(M[x\mapsto N]\) for the result of substituting \(N\) for all free occurrences of \(x\)
-within \(M\)
-
-We define \(\Lambda\)  to be the set of untyped \(\lambda\)-terms modulo \(\alpha\)-equivalence.
-
-Let \(\sim\) be any equivalence relation on \(\Lambda\) with the following properties:
-\begin{equation*}
-(\lambda x.M)N\sim M[x\mapsto N],\quad M\sim N\Rightarrow PM\sim PN
-\end{equation*}
-\begin{enumerate}
-\item \((\lambda x.x)M\sim M\)
-\item If \(M\sim N\), then \((\lambda x.N)M\sim(\lambda x.M)N\) and hence \(N\sim M\).
-\item If \(M\sim N\) and \(N\sim O\), then
-\end{enumerate}
-
-Then we have \(M\sim N\Rightarrow MP\sim NP\) since \((\lambda y.yP)M\sim(\lambda y.yP)N\Rightarrow MP\sim NP\).
-
-As a example, we may define \(=_\beta\) to be the smallest equivalence relation \(\sim\) satisfying the
-above properties and also
-\begin{equation*}
-M\sim N\Rightarrow \lambda x.M\sim\lambda x.N
-\end{equation*}
-
-Writing \([M]\) for the \(\sim\)-equivalence class of \(M\), any term \(P\in A\) induces a
-well-defined mapping \([M]\mapsto[PM]\) on \(\Lambda/\sim\). The mappings induced by some \(P\) in this way are
-called \textbf{\(\lambda\)-definable}
-
-We may regard \(\Lambda/\sim\) as a total computability model: the sole datatype is \(\Lambda/\sim\) itself, and
-the operations on it are exactly the \(\lambda\)-definable mappings. It also has weak products: a
-pair \((M,N)\) may be represented by the term \(pair\;M\;N\) where \(pair=\lambda xyz.zxy\)
-the terms \(fst=\lambda p.p(\lambda xy.x)\) and \(snd=\lambda p.p(\lambda xy.y)\). We can check that
-\(fst(pair\; M\;N)\sim M\) and \(snd(pair\;M\;N)\sim N\)
-
-We can also obtain a submodel \(\Lambda^0/\sim\) consisting of the equivalence classes of closed terms \(M\)
-\end{examplle}
-
-\begin{examplle}[]
-\label{3.1.7}
-Let \(B\) be any family of \textbf{base sets}, and let \(\la B\ra\) denote the family of sets generated
-from \(B\) by adding the singleton set \(1=\{()\}\) and closing under binary products \(X\times Y\) and
-set-theoretic function spaces \(Y^X\). We shall consider some computability models whose family
-of datatypes is \(\la B\ra\)
-
-First we may define a computability model \(\sfS(B)\) with \(\abs{\sfS(B)}=\la B\ra\) (often called
-the \textbf{full set-theoretic model over} \(B\)) by letting \(\sfS(B)[X,Y]\) consist of all
-set-theoretic functions \(X\to Y\) for \(X,Y\in\la B\ra\); that is, we consider all functions to be
-computable. However this model is of limited interest since it does not represent an interesting
-concept of computability
-
-To do better we may start by noting that whatever the 'computable' functions between these sets
-are supposed to be, it is reasonable to expect that they will enjoy the following closure
-properties
-\begin{enumerate}
-\item For any \(X\in\la B\ra\), the unique function \(X\to 1\) is computable
-\item For any \(X,Y\in\la B\ra\), the projections \(X\times Y\to X\), \(X\times Y\to Y\) is computable
-\item For any \(X,Y\in\la B\ra\), the application function \(Y^X\times X\to Y\) is computable
-\item If \(f:Z\to X\) and \(g:Z\to Y\) is computable, so is their pairing \((f,g):Z\to X\times Y\)
-\item If \(f:X\to Y\) and \(g:Y\to Z\) are computable, so is their composition \(g\circ f:X\to Z\)
-\item If \(f:Z\times X\to Y\) is computable, so is its transpose \(\hatf:Z\to Y^X\)
-\end{enumerate}
-
-
-One possible approach is therefore to start by specifying some set \(C\) of functions between
-out datatypes that we wish to regard as ``basic computable operations'', and define a
-computability model \(\sfK(B;C)\) over \(\la B\ra\) whose operations are exactly the functions
-generated from \(C\) under the above closure conditions
-
-Take \(B=\{\N\}\); we shall often denote \(\sfS(\{\N\})\) by \(\sfS\). Let \(C\) consist of the
-following basic operations: the zero function \(\Lambda x.0:\N\to 1\), the successor function \(suc:\N\to\N\);
-and for each \(X\in\la B\ra\), the primitive recursion operator \(rec_X:(X\times X^{X\times\N}\times\N)\to X\) defined by
-\begin{align*}
-&rec_X(x,f,0)=0\\
-&rec_X(x,f,n+1)=f(rec_X(x,f,n),n)
-\end{align*}
-the resulting model \(\sfK(B;C)\) consists of exactly those operations of \(\sfS\) definable in
-Gödel's \textbf{System T}
-\end{examplle}
-\subsubsection{Weakly Cartesian Closed Models}
-\label{sec:org9c2b580}
-\begin{definition}[]
-\label{3.1.8}
-Suppose \(\bC\) has weak products and a weak terminal. We say \(\bC\) is \textbf{weakly cartesian closed} if
-it is endowed with the following for each \(A,B\in\abs{\bC}\):
-\begin{itemize}
-\item a choice of datatype \(A\Rightarrow B\in\abs{\bC}\)
-\item a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\), external to the structure of \(\bC\)
-\end{itemize}
-
-
-s.t. for any partial function \(f:C\times A\rhu B\) the following are equivalent
-\begin{enumerate}
-\item \(f\) is represented by some \(\barf:\C[C\bowtie A,B]\), in the sense that if \(d\)
-represents \((c,a)\) then \(\barf(d)\simeq f(c,a)\)
-\item \(f\) is represented by some total operation \(\hatf:\bC[C,A\Rightarrow B]\), in the sense that
-\begin{equation*}
-\forall c\in C,a\in A\quad\hatf(c)\cdot_{AB}a\simeq f(c,a)
-\end{equation*}
-\end{enumerate}
-\end{definition}
-
-\(\cdot_{AB}\) is represented by an operation \(app_{AB}\in\C[(A\Rightarrow B)\bowtie A,B]\)
-
-Crucially, and in contrast to the definition of cartesian closed category, there is no
-requirement that \(f\) is unique. This highlights an important feature of our framework: in many
-models of interest, elements of \(A\Rightarrow B\) will be \textbf{intensional} objects (programs or algorithms),
-and there may be many intensional objects giving rise to the same partial function \(A\to B\)
-
-\begin{examplle}[]
-Consider again the model of Example \ref{3.1.5}, comprising the partial Turing-computable
-functions \(\N\rhu\N\). Here \(\N\Rightarrow\N\) can only be \(\N\), so we must provide a suitable
-operation \(\cdot:\N\times\N\to\N\). This is done using the concept of a \textbf{universal Turing machine}.
-Let \(T_0, T_1,\dots\)  be some sensibly chosen enumeration of all Turing machines for computing
-partial functions \(\N\rhu\N\). Then there is a Turing machine that accepts two inputs \(e,a\) and
-returns the result of applying the machine \(T_e\) to the single input \(a\). We may therefore
-take \(\cdot\) to be the partial function computed by \(U\)
-
-Clearly the partial functions \(f:\N\times\N\rhu\N\)  representable within the model via the pairing
-operation from Example \ref{3.1.5} are just the partial computable ones. We may also see that
-these coincide exactly with those represented by some total computable \(\barf:\N\to\N\), in the
-sense that \(f(c,a)\simeq\tilf(c)\cdot a\).
-
-\(\Leftarrow\): Given a computable \(\tilf\) the operation \(\Lambda(c,a).\tilf(c)\cdot a\) is clearly computable
-
-\(\Rightarrow\): \(s\)-\(m\)-\(n\) theorem
-
-When endowed with this weakly cartisian closed structure, this computability model is known as
-\textbf{Kleene's first model} of \(K_1\)
-\end{examplle}
-
-\begin{examplle}[]
-\label{3.1.10}
-Now consider the model \(\Lambda/\sim\) ; we shall write \(\sfL\) for the set \(\Lambda/\sim\) considered as the
-sole datatype in this model. Set \(\sfL\Rightarrow\sfL=\sfL\bowtie\sfL=\sfL\). We may obtain a weakly cartesian
-closed structure by letting \(\cdot\) be given by application. If \(M\in\Lambda\) induces an operation
-in \([\sfL\bowtie \sfL,\sfL]\) representing some \(f:\sfL\times\sfL\to\sfL\), then \(\lambda x.\lambda y.M(pair\;x\;y)\)
-induces the corresponding operation in \([\sfL,\sfL\Rightarrow\sfL]\); conversely if \(N\) induces an
-operation in \([\sfL,\sfL\Rightarrow\sfL]\) then \(\lambda z.N(fst\;z)(snd\;z)\) induces the corresponding one
-in \([\sfL\bowtie\sfL,\sfL]\)
-\end{examplle}
-
-\begin{examplle}[]
-For models of the form \(\sfK(B;C)\), we naturally define \(X\Rightarrow Y=Y^X\) and take \(\cdot_{XY}\) to be
-ordinary function application. These models are endowed with binary products, and it is
-immediate from closure condition 6 in Example \ref{3.1.7} that they are weakly cartesian closed
-
-Such models show that not every element of \(X\Rightarrow Y\) need represent an operation in \(\bC[X,Y]\),
-or equivalently one in \(\bC[1,X\Rightarrow Y]\). This accords with the idea that our models consist of
-'computable' operations acting on potentially 'non-computable' data: operations in \(\bC[X,Y]\)
-are computable, whereas elements of \(X\) need not be
-\end{examplle}
-\subsubsection{Higher-Order Models}
-\label{sec:org8d3ee2c}
-\begin{definition}[]
-A \textbf{higher-order structure} is a computability model \(\bC\) possessing a weak terminal \((I,i)\) and
-endowed with the following for each \(A,B\in\abs{\bC}\)
-\begin{itemize}
-\item a choice of datatype \(A\Rightarrow B\in\abs{\bC}\)
-\item a partial function \(\cdot_{AB}:(A\Rightarrow B)\times A\rhu B\)
-\end{itemize}
-\end{definition}
-
-We treat \(\Rightarrow\) as right-associative and \(\cdot\) as left-associative
-
-The significance of the weak terminal \((I,i)\) here is that it allows us to pick out a
-subset \(A^\sharp\) of each \(A\in\abs{\bC}\), namely the set of elements of the form \(f(i)\)
-where \(f\in\bC[I,A]\) and \(f(i)\downarrow\).
-
-This is independent of the choice of \((I,i)\): if \(a=f(i)\) and \((J,j)\) is another weak
-terminal, then composing \(f\) with \(\Lambda x.i\in\bC[J,I]\) gives \(f'\in\bC[J,A]\) with \(f'(j)=a\).
-
-Intuitively, we think of \(A^\sharp\) as playing the role of the 'computable' elements of \(A\), and \(i\) as
-some generic computable element.
-On the one hand, if \(a\in A\) were computable, we would expect each
-\(\Lambda x.a\) to be computable so that \(a\in A^\sharp\); on the other hand, the image of a computable element
-under a computable operation should be computable, so that every element of \(A^\sharp\) is
-computable.
-
-Any weakly cartesian closed model \(\bC\) is a higher-structure.
-
-\begin{definition}[]
-\label{3.1.13}
-A \textbf{higher-order (computability) model} is a higher-order structure \(\bC\) satisfying the following
-conditions for some (or equivalently any) weak terminal \((I,i)\)
-\begin{enumerate}
-\item A partial function \(f:A\rhu B\) is present in \(\bC[A,B]\) iff there
-exists \(\hatf\in\bC[I,A\Rightarrow B]\) s.t.
-\begin{equation*}
-\hatf(i)\downarrow,\quad\forall a\in A.\hatf(i)\cdot a\simeq f(a)
-\end{equation*}
-\item For any \(A,B\in\abs{\bC}\), there exists \(k_{AB}\in(A\Rightarrow B\Rightarrow A)^\sharp\) s.t.
-\begin{equation*}
-\forall a.k_{AB}\cdot a\downarrow,\quad \forall a,b.k_{AB}\cdot a\cdot b=a
-\end{equation*}
-\item For any \(A,B,C\in\abs{\bC}\) there exits
-\begin{equation*}
-s_{ABC}\in((A\Rightarrow B\Rightarrow C)\Rightarrow(A\Rightarrow B)\Rightarrow(A\Rightarrow C))^\sharp
-\end{equation*}
-s.t.
-\begin{equation*}
-\forall f,g.s_{ABC}\cdot f\cdot g\downarrow,\quad\forall f,g,a.s_{ABC}\cdot f\cdot g\cdot a\simeq(f\cdot a)\cdot(g\cdot a)
-\end{equation*}
-\end{enumerate}
-\end{definition}
-
-The elements \(k\) and \(s\) correspond to combinators from combinatory logic.
-
-\(k\) allows us to construct \textbf{constant} maps in a computable way
-
-A possible intuition for \(s\) is that it somehow does duty for an application
-operation \((B\Rightarrow C)\times B\rhu C\)
-within \(\bC\) itself, where the application may be performed uniformly in a parameter of type A.p
-
-\begin{proposition}[]
-\label{3.1.14}
-Suppose \(\bC\) is a higher-order model
-\begin{enumerate}
-\item for any \(j<m\), there exists \(\pi_j^m\in(A_0\Rightarrow\cdots\Rightarrow A_{m-1}\Rightarrow A_j)^\sharp\) s.t.
-\begin{equation*}
-\forall a_0,\dots,a_{m-1}.\pi_j^m\cdot a_0\cdot\dots\cdot a_{m-1}=a_j
-\end{equation*}
-\item Suppose \(m,n>0\). Given
-\begin{gather*}
-f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp,\quad(j=0,\dots,n-1),\\
-g\in(B_0\Rightarrow\dots\Rightarrow B_{n-1}\Rightarrow C)^\sharp
-\end{gather*}
-there exists \(h\in (A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow C)^\sharp\) s.t.
-\begin{equation*}
-\forall a_0,\dots,a_{m-1}.h\cdot a_0\cdot\dots\cdot a_{m-1}\simeq g\cdot(f_0\cdot a_0\cdot\dots\cdot a_{m-1})\cdot\dots\cdot(f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
-\end{equation*}
-\item Suppose \(m>0\). For any element \(f\in (A_0\Rightarrow\cdots\Rightarrow A_{m-1}\Rightarrow B)^\sharp\), there
-exists \(f^\dagger\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B)^\sharp\) s.t.
-\begin{gather*}
-\forall a_0,\dots,a_{m-1}.f^\dagger\cdot a_0\cdot\dots\cdot a_{m-1}\simeq f\cdot a_0\cdot\dots\cdot a_{m-1}\\
-\forall k<m.\forall a_0,\dots,a_{k-1}.f^\dagger\cdot a_0\cdot\dots\cdot a_{k-1}\downarrow
-\end{gather*}
-\end{enumerate}
-\end{proposition}
-
-\(i_A=s_{A(A\Rightarrow A)A}\cdot k_{A\Rightarrow A}\cdot k_{AA}\in(A\Rightarrow A)^\sharp\)
-
-\begin{proof}
-\begin{enumerate}
-\item consider
-\begin{align*}
-&T[x]\Rightarrow x\\
-&T[(E_1\;E_2)]\Rightarrow(T[E_1]\;T[E_2])\text{if $x$ does not occur free in $E$}\\
-&T[\lambda x.E]\Rightarrow(\bK\;T[E])\\
-&T[\lambda x.x]\Rightarrow\bI\\
-&T[\lambda x.\lambda y.E]\Rightarrow T[\lambda x.T[\lambda y.E]]\text{if $x$ occurs free in $E$}\\
-&T[\lambda x.(E_1\;E_2)]\Rightarrow(\bS\;T[\lambda x.E_1]\;T[\lambda x.E_2])\text{if $x$ occurs free in $E_1$ or $E_2$}
-\end{align*}
-so \(A\Rightarrow B\Rightarrow B\to\lambda x^Ay^B.y^B\to \bK_{B\Rightarrow B,A}\cdot I_B\)
-\end{enumerate}
-\end{proof}
-
-If \(\bC,\bD\) are higher-order structures, we say \(\bC\) is a \textbf{full substructure} of \(\bD\) if
-\begin{itemize}
-\item \(\abs{\bC}\subseteq\abs{\bD}\)
-\item \(\bC[A,B]=\bD[A,B]\) for all \(A,B\in\abs{\bC}\)
-\item some (or equivalently any) weak terminal in \(\bC\) is also a weak terminal in \(\bD\)
-\item the meaning of \(A\Rightarrow B\) and \(\cdot_{AB}\) in \(\bC\) and \(\bD\) coincide
-\end{itemize}
-
-
-Note that if \((I,i)\) and \((J,j)\) are weak terminals in \(\bC\) then \(\Lambda x.j\in\bC[I,J]\), so
-if \((I,i)\) is a weak terminal in \(\bD\) then so is \((J,j)\)
-
-\begin{theorem}[]
-A higher-order structure is a higher-order model iff it is a full substructure of a weakly
-cartesian closed model
-\end{theorem}
-
-\begin{proof}
-Let \(\bC\) be a higher-order structure.
-
-\(\Leftarrow\): suppose \(\bD\) is weakly cartesian closed and \(\bC\) is a
-full substructure of \(\bD\) with a weak terminal \((I,i)\)
-\begin{enumerate}
-\item For any \(f\in\bC[A,B]=\bD[A,B]\) we have that \(f\circ\pi_A\in\bD[I\bowtie A,B]\) represents \(\Lambda(x,a).f(a)\),
-which by definition \ref{3.1.8} is in turn represented by some total \(\hatf\in\bD[I,A\Rightarrow B]\).
-
-Conversely, given \(f:A\rhu B\) and \(\hatf\in\bC[I,A\Rightarrow B]\) with \(\hatf(i)\downarrow\)
-and \(\hatf(i)\cdot a\simeq f(a)\) for all \(a\), take \(\hatg=\hatf\circ(\Lambda x.i)\in\bC[I,A\Rightarrow B]=\bD[I,A\Rightarrow B]\) so
-that \(\hatg\) is total and represents \(g=\Lambda(x,a).f(a):I\times A\rhu B\). Now
-let \(\barg\in\bD[I\bowtie A,B]\) also represents \(g\). Then \(\barg\circ\la\Lambda a.i,\id_A\ra\in\bD[A,B]=\bC[A,B]\) and
-it is routine to check that \(\barg\circ\la\Lambda a.i,\id_A\ra=f\)
-
-\item Suppose \(A,B\in\abs{\bC}\). Let \(k'\in\bD[A,B\Rightarrow A]\) correspond to \(\pi_A\in\bD[A\bowtie B,A]\) as in
-definition \ref{3.1.8}, then \(k'(a)\cdot b\simeq\pi_A(d)\). Let \(\hatk'\in\bD[I,A\Rightarrow(B\Rightarrow A)]\) correspond
-to \(k'\circ\pi_A'\in\bD[I\bowtie A,B\Rightarrow A]\) where \(\pi_A'\in\bD[I\bowtie A,A]\) and take \(k=\hatk'(i)\)
-\(k\cdot a\cdot b=\hatk'(i)\cdot a\cdot b=(k'\circ\pi_A'(i,a))\cdot b=k'(a)\cdot b=a\)
-
-\item 
-\end{enumerate}
-
-\(\Rightarrow\): Suppose \(\bC\) is a higher-order model, with \((I,i)\) a weak terminal. We build a weakly
-cartesian closed model \(\bC^\times\) into which \(\bC\) embeds fully as follows:
-\begin{itemize}
-\item Datatypes of \(\bC^\times\) are sets \(A_0\times\dots\times A_{m-1}\), where \(m>0\) and \(A_0,\dots,A_{m-1}\in\abs{\bC}\)
-\item If \(D=A_0\times\dots\times A_{m-1}\) and \(E=B_0\times\dots\times B_{n-1}\) where \(m,n>0\) the operations
-in \(\bC^\times[D,E]\) are those partial functions \(f:D\rhu E\) of the form
-\begin{equation*}
-f=\Lambda(a_0,\dots,a_{m-1}).(f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
-\end{equation*}
-where \(f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp\) for each \(j\); we say that \(f_0,\dots,f_{n-1}\) \textbf{witness}
-the operation \(f\). Note that for \((f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})\) to be
-defined, it is necessary that all its components be defined
-\end{itemize}
-
-
-It remains to check the relevant properties of \(\bC^\times\). That \(\bC^\times\) is a computability model is
-straightforward: the existence of identities follows from part 1 of Proposition \ref{3.1.14}
-and composition from part 2. \(\bC^\times\) has standard products and that \((I,i)\) is a weak terminal
-in \(\bC^\times\).
-
-Now let's show that \(\bC^\times\) is weakly cartesian closed. Given \(D=A_0\times\dots\times A_{m-1}\)
-and \(E=B_0\times\dots\times B_{n-1}\) with \(m,n>0\), take \(C_j=A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j\) for each \(j\), and
-let \(D\Rightarrow E\) be the set of tuples \((f_0,\dots,f_{n-1})\in C_0\times\dots\times C_{n-1}\) witnessing operations
-in \(\bC^\times[D,E]\). The application \(\cdot_{DE}\) is then given by
-\begin{equation*}
-(f_0,\dots,f_{n-1})\cdot_{DE}(a_0,\dots,a_{m-1})\simeq(f_0\cdot a_0\cdot\dots\cdot a_{m-1},\dots,f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
-\end{equation*}
-
-Next, given an operation \(g\in\bC^\times[G\times D,E]\) witnessed by operations \(g_0,\dots,g_{n-1}\) in \(\bC\),
-take \(g_0^\dagger,\dots,g_{n-1}^\dagger\) as in Proposition \ref{3.1.14} (3); then \(g_0^\dagger,\dots,g_{n-1}^\dagger\) witness
-the corresponding total operation \(\hatg\in\bC^\times[G,D\Rightarrow E]\). Conversely, the witnesses for any such
-total \(\hatg\) also witness the corresponding \(g\)
-\end{proof}
-\subsubsection{Typed Partial Combinatory Algebras}
-\label{sec:orgebd661f}
-The following definition captures roughly what is left of a higher-order model once the
-operations are discarded
+\label{sec:org99ae9fa}
+\subsection{Computational Structure in Higher-Order Models}
+\label{sec:org430c34d}
+\subsubsection{Combinatory Completeness}
+\label{sec:orgb024662}
+Combinatory completeness can be seen as a syntactic counterpart to the notion of weakly
+cartesian closed model. In essence, combinatory completeness asserts that any operation
+definable by means of a formal expression over A (constructed using application) is
+representable by an element of A itself.
 
 \begin{definition}[]
 \label{3.1.16}
@@ -486,20 +69,8 @@ satisfying the following conditions
 \begin{equation*}
 \forall f,g. s\cdot f\cdot g\downarrow,\quad\forall f,g,a.s\cdot f\cdot g\cdot a\simeq(f\cdot a)\cdot(g\cdot a)
 \end{equation*}
+A \textbf{lax TPCA} is obtained from a TPCA change '\(\simeq\)' to '\(\succeq\)' in the axiom \(s\)
 \end{enumerate}
-\end{enumerate}
-
-
-A TPCA is \textbf{total} if all the application operations \(\cdot_{AB}\) are total
-\end{definition}
-
-Any higher-order model yields an underlying TPCA. However, in passing to this TPCA we lose the
-information that says which element of \(A\Rightarrow B\) are supposed to represent operations.
-
-\begin{definition}[]
-
-
-\begin{enumerate}
 \item If \(\bA^\circ\) denotes a partial applicative structure, a \textbf{partial applicative
 substructure} \(\bA^\sharp\) of \(\bA^\circ\) consists of a subset \(A^\sharp\subseteq A\) for each \(A\in\abs{\bA^\circ}\) s.t.
 \begin{itemize}
@@ -507,144 +78,130 @@ substructure} \(\bA^\sharp\) of \(\bA^\circ\) consists of a subset \(A^\sharp\su
 \end{itemize}
 
 such a pair \((\bA^\circ;\bA^\sharp)\) is called a \textbf{relative partial applicative structure}
-
 \item A \textbf{relative TPCA} is a relative partial applicative structure \((\bA^\circ,\bA^\sharp)\) s.t. there exist
 elements \(k_{AB}, s_{ABC}\) in \(\bA^\sharp\) witnessing that \(\bA^\circ\) is a TPCA
 \end{enumerate}
 \end{definition}
 
-A relative TPCA \((\bA^\circ,\bA^\sharp)\) is \textbf{full} if \(\bA^\sharp=\bA^\circ\). We will use \(\bA\) to range over both
-ordinary TPCAs and relative ones (writing \(\bA^\circ\), \(\bA^\sharp\) for the two components of \(\bA\) in
-the latter case), so that in effect we identify an ordinary TPCA \(\bA\) with the relative
-TPCA \((\bA;\bA)\). Indeed, we may sometimes refer to ordinary TPCAs as 'full TPCAs' . Clearly the
-models \(K_1\) and \(\Lambda/\sim\) are full, while in general \(\sfK(B;C)\) is not: rather, it is a
-relative TPCA \(\bA\) in which \(\bA^\circ\) is a full set-theoretic type structure whilst \(\bA^\sharp\)
-consists of only the \(C\)-computable elements
+\begin{definition}[]
+Suppose \(\bA\) is a relative partial applicative structure over \(\sfT\)
+\begin{enumerate}
+\item The set of well-typed \textbf{applicative expressions} \(e:\sigma\) over \(\bA\) is defined inductively as
+follows
+\begin{itemize}
+\item for each \(\sigma\in\sfT\), we have an unlimited supply of variables \(x^\sigma:\sigma\)
+\item for each \(\sigma\in\sfT\) and \(a\in\bA^\sharp(\sigma)\), we have a \textbf{constant} symbol \(c_a:\sigma\) (we shall often
+write \(c_a\) simply as \(a\))
+\item If \(e:\sigma\to\tau\) and \(e':\sigma\) are applicative expressions, then \(ee'\) is an applicative
+expression of type \(\tau\).
+\end{itemize}
+
+We write \(V(e)\) for the set of variables appearing in \(e\)
+
+\item A \textbf{valuation} in \(\bA\) is a function \(v\) assigning to certain variables \(x^\sigma\) an
+element \(v(x^\sigma)\in\bA^\circ(\sigma)\). Given an applicative expression \(e\) and a valuation \(v\)
+covering \(V(e)\), the value \(\llb{e}_v\), when defined, is given inductively by
+\begin{equation*}
+\llb{x^\sigma}_v=v(x),\quad\llb{c_a}_v=a,\quad\llb{ee'}_\nu\simeq\llb{e}_v\cdot\llb{e'}_v
+\end{equation*}
+Note that if \(e:\tau\) and \(\llb{e}_v\) is defined then \(\llb{e}_v\in\bA^\circ(\tau)\).
+\end{enumerate}
+\end{definition}
+
+Note that for any \(v\) with \(\ran(v)\in\bA^\sharp\), we can prove \(\llb{e:\tau}_v\in\bA^\sharp(\tau)\) by induction:
+\begin{enumerate}
+\item If \(e\) is of the form \(x^\tau\)
+\item If \(e\) is of the form \(c_a\) where \(a\in\bA^\sharp(\tau)\)
+\item If \(e\) is of the form \(e'e''\) where \(e':\sigma\to\tau\) and \(e'':\sigma\).
+
+\(\llb{e}_v=\llb{e'}_v\cdot\llb{e''}_v\) where \(\llb{e'}_v\in\bA^\sharp(\sigma\to\tau)\) and \(\llb{e''}_v\in\bA^\sharp(\sigma)\).
+Since \(\bA^\sharp\) is a substructure of \(\bA^\circ\), if \(\llb{e'}_v\cdot\llb{e''}_v\downarrow\), then \(\llb{e}\in\bA^\sharp(\tau)\)
+\end{enumerate}
+
+\begin{definition}[]
+Let \(\bA\) be a relative partial applicative structure. We say \(\bA\) is \textbf{lax combinatory complete}
+if for every applicative expression \(e:\tau\) over \(\bA\) and every variable \(x^\sigma\), there is an
+applicative expression \(\lambda^*x^\sigma.e\) with \(V(\lambda^*x^\sigma.e)=V(e)-\{x^\sigma\}\) s.t. for any valuation \(v\)
+covering \(V(\lambda^*x^\sigma.e)\) and any \(a\in\bA^\circ(\sigma)\) we have
+\begin{equation*}
+\llb{\lambda^*x^\sigma.e}_v\downarrow,\quad\llb{\lambda^*x^\sigma.e}_v\cdot a\succeq\llb{e}_{v,x\mapsto a}
+\end{equation*}
+We say \(\bA\) is \textbf{strictly combinatory complete} if this holds with '\(\simeq\)' in place of '\(\succeq\)'
+\end{definition}
 
 \begin{theorem}[]
-There is a canonical bijection between higher-order models and relative TPCAs
+\label{3.3.3}
+A (relative) partial applicative structure \(\bA\) is a lax (relative) TPCA iff it is lax
+combinatory complete
 \end{theorem}
 
 \begin{proof}
-First suppose \(\bC\) is a higher-order model, and let \(\bA^\circ\) be its underlying partial
-applicative structure. Take \((I,i)\) a weak terminal in \(\bC\), and for any \(A\in\abs{\bC}\),
-define \(A^\sharp=\{g(i)\mid g\in\bC[I,A],g(i)\downarrow\}\). As noted there, this is independent of the choice
-of \((I,i)\); in fact, it is easy to see that \(a\in A^\sharp\) iff \((A,a)\) is a weak terminal. To
-see that the \(A^\sharp\) form an applicative substructure, suppose \(f\in(A\Rightarrow B)^\sharp\) is witnessed
-by \(f'\in\bC[I,A\Rightarrow B]\) and \(a\in A^\sharp\) is witnessed by \(a'\in\bC[I,A]\), and suppose further
-that \(f\cdot a=b\). Take \(\check{f'}\in\bC[A\Rightarrow B]\) corresponding to \(f'\); then \(\check{f'}(a)=b\)
-and so \(\check{f'}\circ a'\) witnesses \(b\in B^\sharp\)
+If \(\bA\) is lax combinatory complete, then for any \(\rho\), \(\sigma\), \(\tau\) we may define
+\begin{align*}
+k_{\sigma\tau}&=\llb{\lambda^*x^\sigma.(\lambda^*y^\tau.x)}_\emptyset\\
+s_{\rho\sigma\tau}&=\llb{\lambda^*x^{\rho\to\sigma\to\tau}.(\lambda^*y^{\rho\to\sigma}.(\lambda^*z^\rho.xz(yz)))}_\emptyset
+\end{align*}
 
-Let \(\bA^\sharp\) denote the substructure formed by the sets \(A^\sharp\). It is directly build into
-Definition \ref{def3.1.13} that there are elements \(k_{AB}, s_{ABC}\) in \(\bA^\sharp\) with the
-properties required by Definition \ref{3.1.16}; thus \((\bA^\circ;\bA^\sharp)\) is a relative TPCA
-
-For the converse, suppose \(\bA\) is a relative TPCA. Take \(\abs{\bC}=\abs{\bA^\circ}\) and
-for \(A,B\in\abs{\bC}\), let \(\bC[A,B]\) consist of all partial functions \(\Lambda a.f\cdot a\)
-for \(f\in(A\Rightarrow B)^\sharp\). To see that \(\bC\) has identities, for any \(A\in\abs{\bC}\), we have
-\begin{equation*}
-i_A=s_{A(A\Rightarrow A)A}\cdot k_{A(A\Rightarrow A)}\cdot k_{AA}\in(A\Rightarrow A)^\sharp
-\end{equation*}
-and clearly \(i_A\) induces \(\id_A\in\bC[A,A]\).  For composition, given
-operations \(f\in\bC[A,B]\), \(g\in\bC[B,C]\) induced by \(f'\in(A\Rightarrow B)^\sharp\), \(g'\in(B\Rightarrow C)^\sharp\), we have
-that \(g\circ f\in\bC[A,C]\) is induced by \(s_{ABC}\cdot(k_{(B\Rightarrow C)}\cdot g)\cdot f\). Thus \(\bC\) is a computability
-mode
-
-For a weak terminal, take any \(U\in\abs{\bC}\) and let \(I=U\Rightarrow U\) and \(i=i_U\) as defined above.
-Then for any \(A\) we have that \(k_{IA}\cdot i\in(A\Rightarrow U\Rightarrow U)^\sharp\) induces \(\Lambda a.i\in\bC[A,I]\)
-
-To turn \(\bC\) into a higher-order structure, we take \(\Rightarrow\) and \(\cdot\) as in \(\bA^\circ\). We may now
-verify that for any \(A\) we have
-\begin{equation*}
-A^\sharp=\{g(i)\mid g\in\bC[I,A],g(i)\downarrow\}
-\end{equation*}
-so that the present meaning of \(A^\sharp\) coincides with its meaning in Section \ref{3.1.4}. For
-given \(g\in A^\sharp\) we have \(k_{IA}\cdot a\in(I\Rightarrow A)^\sharp\) inducing an operation \(g\) with \(g(i)=a\).
-Conversely, given \(g\in\bC[I,A]\) with \(g(i)\downarrow\) we have that \(g(i)=g'\cdot i\) for
-some \(g'\in(I\Rightarrow A)^\sharp\)?; but \(i\in I^\sharp\) so \(g(i)\in A^\sharp\)
-
-By applying the above equation to the type \(A\Rightarrow B\), we see that conditions 1 and 2 of
-Definition \ref{3.1.13} are satisfied, and conditions 3 and 4 are immediate from the \(k,s\)
-conditions in Definition \ref{3.1.16}. Thus \(\bC\) is a higher-order model
+Conversely, if \(\bA\) is a lax TPCA, then given any suitable choice of elements \(k\) and \(s\)
+for \(\bA\), we may define \(\lambda^*x^\sigma.e\) by induction on the structure of \(e\):
+\begin{align*}
+\lambda^*x^\sigma.x&=s_{\sigma(\sigma\to\sigma)}k_{\sigma(\sigma\to\sigma)}k_{\sigma\sigma}&&\\
+\lambda^*x^\sigma.a&=k_{\tau\sigma}a&&\text{for each }a\in\bA^\sharp(\tau)\\
+\lambda^*x^\sigma.ee'&=s_{\sigma\tau\tau'}(\lambda^*x^\sigma.e)(\lambda^*x^\sigma.e')&&\text{if }e:\tau\to\tau',e':\tau\text{ and }ee'\text{ contains }x
+\end{align*}
 \end{proof}
 
-In the setting of a relative TPCA \(\bA\), we have a natural \textbf{degree structure} on the elements
-of \(\bA^\circ\). Specifically, if \(a\in A\) and \(b\in B\) where \(A,B\in\abs{\bA^\circ}\), let us
-write \(a\gg b\) if there exists \(f\in\bA^\sharp(A\Rightarrow B)\) with \(f\cdot a=b\)
+The same argument shows that \(\bA\) is a strict TPCA iff it is strictly combinatory complete
 
-If \(\abs{\bA}\) consists of just a single datatype, then TPCA is just a single set \(A\) equipped
-with a partial 'application' operation \(\cdot:A\times A\rhu A\) s.t. for some \(k,s\in A\) we have
+we often tacitly suppose that a TPCA \(\bA\) comes equipped with some choice of k and s drawn from A♯,
+and in this case we shall use the notation \(\lambda^*x.e\) for the applicative expression given by the
+above proof. Since all the constants appearing in e are drawn from \(A^\sharp\), the same will be true for
+\(\lambda^*x.e\).
+
+
+In TPCAs constructed as syntactic models for untyped or typed \(\lambda\)-calculi (as in Example 3.1.6 or
+Section 3.2.3), the value of \(\lambda^*x.e\) coincides with \(\lambda x.e\). However, the notational distinction is worth
+retaining, since the term \(\lambda^*x.e\) as defined above is not syntactically identical
+to \(\lambda x.e\).
+
+More generally, we may consider terms of the \(\lambda\)-calculus as \textbf{meta-expressions} for applicative
+expressions. Specifically any such \(\lambda\)-term \(M\) can be regarded as denoting an applicative
+expression \(M^\dagger\) as follows:
 \begin{equation*}
-\forall x,y.k\cdot x\cdot y=x,\quad\forall x,y.s\cdot x\cdot y\downarrow,\quad\forall x,y,z.s\cdot x\cdot y\cdot z\simeq(x\cdot z)\cdot(y\cdot z)
-\end{equation*}
-We call such a structure an \textbf{partial combinatory algebra} (or PCA)
-\subsubsection{Lax Models}
-\label{sec:org468fcf0}
-For simplicity, we have worked so far with a simple definition of computability model in which
-operations are required to be closed under ordinary composition of partial functions. It turns
-out, however, that with a few refinements, practically all the general theory presented in this
-chapter goes through under a somewhat milder assumption.
-
-\begin{definition}[]
-A \textbf{lax computability model} \(\bC\)  over a set \(\sfT\) of \textbf{type names} consists of
-\begin{itemize}
-\item an indexed family \(\abs{\bC}=\{\bC(\tau)\mid\tau\in\sfT\}\) of sets, called the \textbf{datatypes} of \(\bC\)
-\item for each \(\sigma,\tau\in\sfT\), a set \(\bC[\sigma,\tau]\) of partial functions \(f:\bC(\sigma)\to\bC(\tau)\), called the
-\textbf{operations} of \(\bC\)
-\end{itemize}
-
-
-s.t.
-\begin{enumerate}
-\item for each \(\tau\in\sfT\), the identity function \(\id:\bC(\tau)\to\bC(\tau)\) is in \(\bC(\tau,\tau)\)
-\item for any \(f\in\bC[\rho,\sigma]\) and \(g\in\bC[\sigma,\tau]\), there exists \(h\in\bC[\rho,\tau]\) with \(h(a)\succeq g(f(a))\) for
-all \(a\in\bC(\rho)\)
-\end{enumerate}
-
-
-We may refer to \(h\) here as a \textbf{supercomposition} of \(f\) and \(g\).
-\end{definition}
-
-We sometimes refer to our standard computability models as \textbf{strict} when we wish to emphasize the
-contrast with lax models. Of course, for total computability models, the distinction
-evaporates completely.
-
-One possible motivation for the concept of lax model is that it is often natural to think of an
-application \(f(a)\) in terms of some computational agent \(F\) representing \(f\) being placed ‘alongside’
-a representation \(A\) of a to yield a composite system \(F\mid A\), which may then evolve in certain ways
-via interactions between \(F\) and \(A\). If an agent \(G\) representing \(g\) is then placed alongside this to
-yield a system \(G\mid F\mid A\), there is the possibility that \(G\) may interact ‘directly’ with \(F\) rather
-than just with the result obtained from \(F\mid A\); thus, \(G\mid F\) might admit other behaviours not
-accounted for by \(g\circ f\) . (For a precise example of this in process algebra, see Longley
-[183].)
-
-The notion of a \textbf{(relative) lax TPCA} is given by replacing the axioms for \(s_{ABC}\) in
-Definition \ref{3.1.16} with
-\begin{equation*}
-\forall f,g.s\cdot f\cdot g\downarrow,\quad\forall f,g,a.s\cdot f\cdot g\cdot a\succeq (f\cdot a)\cdot(g\cdot a)
+x^\dag=x,\quad c_a^\dag=c_a,\quad (MN)^\dag=M^\dag N^\dag,\quad(\lambda x.M)^\dag=\lambda^*x.(M^\dag)
 \end{equation*}
 
-The definitions of weak products and weak terminal may be carried over unchanged to the
-setting of lax computability models; note that \(\la f,g\ra\) is still required to be a pairing in the
-‘strict’ sense that its domain coincides precisely with \(\dom f\cap\dom g\). The definition of weakly
-cartesian closed model is likewise unchanged, although one should note that in the lax
-setting, whether a given model is weakly cartesian closed may be sensitive to the choice of the
-type operator \(\bowtie\).
+Some caution is needed here, however, because \(\beta\)-equivalent meta-expressions
+do not always have the same meaning
+\begin{examplle}[]
+Consider the two meta-expressions \((\lambda x.(\lambda y.y)x)\) and \(\lambda x.x\). Although these are
+\(\beta\)-equivalent, the first expands to \(s(ki)i\) and the second to \(i\), where \(i\equiv skk\).
+\end{examplle}
 
-For the definition of a lax higher-order model, we simply replace '\(\simeq\)' by '\(\succeq\)' in
-condition 4(?) of Definition \ref{3.1.13}
+The moral here is that \(\beta\)-reductions are not valid underneath \(\lambda^*\)-abstractions: in this case,
+the reduction \((\lambda^*y.y)x\rightsquigarrow x\) is not valid underneath \(\lambda^*\). However at
+least for the definition of \(\lambda^*\) given above, \(\beta\)-reductions at top level are valid.
 
-\begin{theorem}[]
+\begin{proposition}[]
+\label{3.5.5}
 \begin{enumerate}
-\item Any lax higher-order model is a full substructure of a lax weakly cartesian closed model
-\item If \(\bD\) is a lax weakly cartesian closed model in which some weak terminal \((I,i)\) is a
-weak unit, any full substructure of \(\bD\) containing \(I\) is a lax higher-order model
+\item If \(M\) is a meta-expression, \(x\) is a variable and \(a\) is a constant or variable,
+then \(\llb{((\lambda x.M)a)^\dag}_v\succeq\llb{M[x\mapsto a]^\dag}\)
+\item If \(M,N\) are meta-expressions, \(x\notin FV(N)\), no free occurrence of \(x\) in \(M\) occurs
+under a \(\lambda\), and \(\llb{N^\dag}_v\downarrow\), then \(\llb{((\lambda x.M)N)^\dag}_v\succeq\llb{M[x\mapsto N]^\dag}_v\)
 \end{enumerate}
-\end{theorem}
+\end{proposition}
 
+\begin{proof}
+Longley's PhD thesis
+\end{proof}
 
-\subsubsection{Type worlds}
-\label{sec:org88cff48}
+From now on, we will not need to distinguish formally between meta-expressions and the
+applicative expressions they denote. For the remainder of this chapter we shall use the \(\lambda^*\)
+notation for such (meta-)expressions, retaining the asterisk as a reminder that the usual rules
+of \(\lambda\)-calculus are not always valid.
+\subsubsection{Pairing}
+\label{sec:org0b15bf5}
 \begin{definition}[]
 \begin{enumerate}
 \item A \textbf{type world} is simply a set \(\sfT\) of \textbf{type names} \(\sigma\), optionally endowed with any or
@@ -667,79 +224,383 @@ any \(\sigma,\tau\in\sfT\) we have \(\bC(\sigma\to\tau)=\bC(\sigma)\Rightarrow\b
 \end{enumerate}
 \end{definition}
 
-\begin{examplle}[]
-The one-element type world \(\sfO=\{*\}\) with just the arrow structure \(*\to*=*\). TPCAs over this
-type world are precisely (untyped) PCAs; both \(K_1\) and \(\Lambda/\sim\) are examples
-\end{examplle}
+\begin{theorem}[]
+There is a canonical bijection between higher-order models and relative TPCAs
+\end{theorem}
 
-\begin{examplle}[]
-If \(\beta_0,\dots,\beta_{n-1}\) are distinct \textbf{basic type names} and \(B_0,\dots,B_{n-1}\) are sets, we may define
-the type word \(\sfT^{\to}(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) to consist of formal type expressions
-freely constructed from \(\beta_0,\dots,\beta_{n-1}\) via \(\to\), fixing the interpretation of each \(\beta_i\)
-at \(B_i\). This type world has a fixing map and an arrow structure, but no product. We may write
-just \(\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\) if we do not wish to constrain the interpretation of the \(\beta_i\)
-
-A typical example is the type world \(\sfT^\to(\ttN=\N)\). Models over this type would correspond
-to \textbf{finite type structures} over \(\N\); the models \(\sfK(B;C)\) are examples
-
-Type world \(\sfT^{\to}(\ttN=\N_\bot)\) where \(\N_\bot\) is the set of natural numbers together with an
-additional element \(\bot\) representing 'non-termination'. Whereas \(\N\) may be used to model
-actual \textbf{results} of computation, we may think of \(\N_\bot\) as representing some computational
-\textbf{process} which may or may not return a natural number.
-\end{examplle}
-
-\begin{examplle}[]
-Similarly, we define \(\sfT^{\to\times}=(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) to be the type world consisting
-of type expressions freely constructed form \(\beta_0,\dots,\beta_{n-1}\) via \(\to\) and \(\times\), fixing the
-interpretation of each \(\beta_i\) at \(B_i\). If no fixing map is required, we write
-just \(\sfT^{\to\times}(\beta_0,\dots,\beta_{n-1})\)
-
-Type worlds featuring a \textbf{unit type} (denoted by \(\texttt{1}\)) are also useful. We shall
-write \(\sfT^{\to\times\texttt{1}}(\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})\) for the type world
+Let \(\bA\) be a relative TPCA (which is combinatory complete) over a type world \(\sfT\) with arrow structure, and suppose
+that \(\bA\) (considered as a higher-order model) has weak products, inducing a product
+structure \(\times\) on \(\sfT\). This means that for any \(\sigma,\tau\in\sfT\) there are elements
 \begin{equation*}
-\sfT^{\to\times}(\texttt{1}=\{()\},\beta_0=B_0,\dots,\beta_{n-1}=B_{n-1})
+fst\in\bA^\sharp((\sigma\times\tau)\to\sigma),\quad snd\in\bA^\sharp((\sigma\times\tau)\to\tau)
 \end{equation*}
-We will often refer to the type names in a type world simply as \textbf{types}, and use \(\rho\), \(\sigma\), \(\tau\) to range
-over them. When dealing with formal type expressions, we adopt the usual convention that \(\to\)
-is right-associative, so that \(\rho\to\sigma\to\tau\) means \(\rho\to(\sigma\to\tau)\). For definiteness, we may also declare
-that \(\times\) is right-associative, although in practice we shall not always bother to distinguish
-between \((\rho\times\sigma)\times\tau\) and \(\rho\times(\sigma\times\tau)\). We consider \(\times\) as binding more tightly than \(\to\)
-
-We shall use the notation \(\sigma_0,\dots,\sigma_{r-1}\to\tau\) as an abbreviation for \(\sigma_0\to\sigma_1\to\dots\to\sigma_{r-1}\to\tau\)
-(allowing this to mean \(\tau\) in the sense \(r=0\)). This allows us to express our intention
-regarding which objects are to be thought of as 'arguments' to a given operation: for instance,
-the types \(\ttN,\ttN,\ttN\to\ttN\) and \(\ttN,\ttN\to(\ttN\to\ttN)\) are formally the same, but in
-the first case we are thinking of a three-argument operation returning a natural number, while
-in the second we are thinking of a two-argument operation returning a function \(\N\to\N\). We also
-write \(\sigma^{(r)}\to\tau\) for the type \(\sigma,\dots,\sigma\to\tau\) with \(r\) arguments. The notation \(\sigma^r\) is
-reserved for the \(r\)-fold product type \(\sigma\times\dots\times\sigma\)
-\end{examplle}
+And for each \(\sigma,\tau\in\sfT\) a \textbf{paring} operation
+\begin{equation*}
+pair\in\bA^\sharp(\sigma\to\tau\to(\sigma\times\tau))
+\end{equation*}
+s.t.
+\begin{equation*}
+\forall a\in\bA^\circ(\sigma),b\in\bA^\circ(\tau).\;fst\cdot(pair\cdot a\cdot b)=a\wedge snd\cdot(pair\cdot a\cdot b)=b
+\end{equation*}
 
 \begin{proposition}[]
-Any type \(\sigma\in\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\) may be uniquely written in the form \(\sigma_0,\dots,\sigma_{r-1}\to\beta_i\)
+A higher-order model with weak products has pairing iff it is weakly cartesian closed
 \end{proposition}
 
-We shall call this the \textbf{argument form} of \(\sigma\). The importance of this is that it provides a useful
-induction principle for types: if a property holds for \(\sigma_0,\dots,\sigma_{r-1}\to\beta_i\) whenever it holds
-for each of \(\sigma_0,\dots,\sigma_{r-1}\), then it holds for all \(\sigma\in\sfT^{\to}(\beta_0,\dots,\beta_{n-1})\). We shall
-refer to this as \textbf{argument induction}; it is often preferable as an alternative to the usual
-\textbf{structural induction} on types
+\begin{lemma}[\ref{3.1.14}]
+Suppose \(m,n>0\). Given
+\begin{gather*}
+f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp,\quad(j=0,\dots,n-1),\\
+g\in(B_0\Rightarrow\dots\Rightarrow B_{n-1}\Rightarrow C)^\sharp
+\end{gather*}
+there exists \(h\in (A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow C)^\sharp\) s.t.
+\begin{equation*}
+\forall a_0,\dots,a_{m-1}.h\cdot a_0\cdot\dots\cdot a_{m-1}\simeq g\cdot(f_0\cdot a_0\cdot\dots\cdot a_{m-1})\cdot\dots\cdot(f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
+\end{equation*}
+\end{lemma}
 
-Closely associated with argument form is the notion of the \textbf{level} of a type \(\sigma\): informally, the
-stage at which \(\sigma\) appears in the generation of \(\sfT^\to(\beta_0,\dots,\beta_{n-1})\) via argument induction:
+\begin{proof}
+The binary partial functions representable in \(\bA^\sharp((\rho\times\sigma)\to\tau)\) are exactly those representable
+in \(\bA^\sharp(\rho\to\sigma\to\tau)\)
+
+Given \(f\in\bA^\sharp((\rho\times\sigma)\to\tau)\), by Proposition \ref{3.1.14}, we have \(h\in\bA^\sharp(\rho\to\sigma\to\tau)\) where
+\begin{equation*}
+\forall a,b.\; h\cdot a\cdot b\simeq f\cdot(pair\;\cdot a\cdot b)
+\end{equation*}
+
+Given \(f\in\bA^\sharp(\rho\to\sigma\to\tau)\), by the same Proposition, we have \(h\in\bA^\sharp((\rho\times\sigma)\to\tau)\) where
+\begin{equation*}
+\forall a,b.\; h\cdot c\simeq f\cdot(fst\cdot c)\cdot(snd\cdot c)
+\end{equation*}
+\end{proof}
+
+Henceforth we shall generally work with pair in preference to the ‘external’ pairing of
+operations, and will write \(pair\cdot a\cdot b\) when there is no
+danger of confusion.
+
+In untyped models, pairing is automatic
+ \begin{equation*}
+pair=\lambda^*xyz.zxy,\quad fst=\lambda^*p.p(\lambda^*xy.x),\quad snd=\lambda^*p.p(\lambda^*xy.y)
+ \end{equation*}
+\subsubsection{Booleans}
+\label{sec:org2410ac3}
+\begin{definition}[]
+A model \(\bA\) has \textbf{booleans} if for some type \(\ttB\) there exist elements
 \begin{align*}
-\lv(\beta_i)&=0\\
-\lv(\sigma_0,\dots,\sigma_{r-1}\to\beta_i)&=1+\max_{i<r}\lv(\sigma_i)\quad(r\ge 1)
+\TT,\FF&\in\bA^\sharp(\ttB)\\
+\IF_\sigma&\in\bA(\ttB,\sigma,\sigma\to\sigma)\text{ for each }\sigma
 \end{align*}
-When working with \(\sfT^{\to\times}(\beta_0,\dots,\beta_{n-1})\), it is natural to augment this definition with
+s.t. for all \(x,y\in\bA^\circ(\sigma)\) we have
 \begin{equation*}
-\lv(\sigma\times\tau)=\max(\lv(\sigma),\lv(\tau))
+\IF_\sigma\cdot\TT\cdot x\cdot y=x,\quad\IF_\sigma\cdot\FF\cdot x\cdot y=y
 \end{equation*}
-We may define the \textbf{pure type of level \(k\) over \(\sigma\)}, written \(\bark[\sigma]\):
+Note that \(\TT,\FF\) need not be the sole element of \(\bA^\sharp(\bB)\)
+\end{definition}
+
+Alternatively, we may define a notion of having booleans in the setting of computability
+model \(\bC\) with weak products: replace \(\IF_\sigma\) with \(\IF'_\sigma\in\bC[\B\times\sigma\times\sigma,\sigma]\). In a TPCA with
+products and pairing the two definitions coincide
+
+In untyped models, the existence of booleans is automatic: \(\TT=\lambda^*xy.x\), \(\FF=\lambda^*xy.y\)
+and \(\IF=\lambda^*zxy.zxy\)
+
+Obviously, the value of an expression \(\IF_\sigma\cdot b\cdot e\cdot e'\) cannot be defined unless the values of
+both \(e\) and \(e'\) are defined. However, there is a useful trick that allows us to build conditional
+expressions whose definedness requires only that the chosen branch of the conditional is
+defined. This trick is specific to the higher-order setting, and is known as \textbf{strong definition
+by cases}:
+
+\begin{proposition}[]
+Suppose \(\bA\) has booleans as above. Given applicative expressions \(e,e':\sigma\) there is an
+applicative expression \((e\mid e'):\ttB\to\sigma\) s.t. for any valuation \(v\) covering \(V(e)\)
+and \(V(e')\) we have
 \begin{equation*}
-\bbar{0}[\sigma]=\sigma,\quad\ove{k+1}[\sigma]=\bark[\sigma]\to\sigma
+\llb{(e\mid e')}_v\downarrow,\quad\llb{(e\mid e')\cdot\TT}_v\succeq\llb{e}_v,\quad
+\llb{(e\mid e')\cdot\FF}_v\succeq\llb{e'}_v
 \end{equation*}
-For type worlds generated by a single base type \(\beta\), we may write simply \(\bark\)
-for \(\bark[\beta]\). For instance, in the type word \(\sfT^{\to}(\N)\) we write \(\bbar{2}\) for the
-type \((\ttN\to\ttN)\to\ttN\).
+\end{proposition}
+
+\begin{proof}
+Let \(\rho\) be any type s.t. \(\bA^\circ(\rho)\) is inhabited by some element \(a\), and define
+\begin{equation*}
+(e\mid e')=\lambda^*z^{\ttB}\cdot(\IF_\sigma z(\lambda^*r^\rho.e)(\lambda^*r^\rho.e')c_a)
+\end{equation*}
+where \(z,r\) are fresh variables
+
+\(\llb{(e\mid e')}_v\downarrow\)  since by lax combinatory completeness
+
+\(\llb{(e\mid e')\cdot\TT}_v\succeq\llb{e}_v\) by \ref{3.5.5}
+\end{proof}
+
+The expressions \(\lambda^*r.e\), \(\lambda^*r.e'\) in the above proof are known as \textbf{suspensions} or \textbf{thunks}: the idea is
+that \(\llb{\lambda^*r.e}_v\) is guaranteed to be defined, but the actual evaluation of \(e_v\) (which may be
+undefined) is ‘suspended’ until the argument \(c_a\) is supplied.
+\subsubsection{Numerals}
+\label{sec:org7973510}
+\begin{definition}[]
+A model \(\bA\) has \textbf{numerals} if for some type \(\ttN\) there exist
+\begin{align*}
+\hat{0},\hat{1},\hat{2},\dots&\in\bA^\sharp(\ttN)\\
+suc&\in\bA^\sharp(\ttN\to\ttN)
+\end{align*}
+and for any \(x\in\bA^\sharp(\sigma)\) and \(f\in\bA^\sharp(\ttN\to\sigma\to\sigma)\) an element
+\begin{equation*}
+Rec_\sigma(x,f)\in\bA^\sharp(\ttN\to\sigma)
+\end{equation*}
+s.t. for all \(x\in\bA^\sharp(\sigma)\), \(f\in\bA^\sharp(\ttN\to\sigma\to\sigma)\) and \(n\in\N\) we have
+\begin{align*}
+suc\cdot\hatn&=\what{n+1}\\
+Rec_\sigma(x,f)\cdot\hat{0}&=x\\
+Rec_\sigma(x,f)\cdot\what{n+1}&\succeq f\cdot\hatn\cdot(Rec_\sigma(x,f)\cdot\hatn)
+\end{align*}
+\end{definition}
+
+The above definition has the advantage that it naturally adapts to the setting of a
+computability model C with products: just replace the types of \(f\) and \(Rec_\sigma(x,f)\) above
+with \(\bC[\ttN\times\sigma,\sigma]\) and \(\bC[\ttN,\sigma]\) respectively.
+
+\begin{proposition}[]
+A model \(\bA\) has numerals iff it has elements \(\hatn\), \(suc\) as above and
+\begin{equation*}
+rec_\sigma\in\bA^\sharp(\sigma\to(\ttN\to\sigma\to\sigma)\to\ttN\to\sigma)\quad\text{for each }\sigma
+\end{equation*}
+s.t. for all \(x\in\bA^\circ(\sigma)\), \(f\in\bA^\circ(\ttN\to\sigma\to\sigma)\) and \(n\in\N\) we have
+\begin{align*}
+suc\cdot\hatn&=\what{n+1}\\
+rec_\sigma\cdot x\cdot f\cdot\hat{0}&=x\\
+rec_\sigma\cdot x\cdot f\cdot\what{n+1}&\succeq f\cdot\hatn\cdot(rec_\sigma\cdot x\cdot f\cdot\hatn)
+\end{align*}
+\end{proposition}
+
+\begin{proof}
+\(\Leftarrow\): Let \(Rec_\sigma(x,f)=rec_\sigma\cdot x\cdot f\)
+
+\(\Rightarrow\): define
+\begin{equation*}
+rec_\sigma=Rec_{\sigma\to(\ttN\to\sigma\to\sigma)\to\sigma}(\lambda^*xf.x,\lambda^*nr.\lambda^*xf.fn(rxf))
+\end{equation*}
+?
+\end{proof}
+
+\begin{exercise}
+Show that \(\bA\) has numerals, then \(\bA\) has booleans
+\end{exercise}
+
+\begin{proposition}[]
+\label{3.3.13}
+Every untyped model has numerals
+\end{proposition}
+
+\begin{proof}
+Using the encodings for pairings and booleans given above, we may define the \textbf{Curry
+numerals} \(\hatn\) in any untyped models as follows:
+\begin{equation*}
+\hat{0}=\la\TT,\TT\ra,\quad\what{n+1}=\la\FF,\hatn\ra
+\end{equation*}
+and \(suc=\lambda^*x.\la\FF,x\ra\). We also have elements for the zero testing and predecessor operations:
+take \(iszero=fst\) and \(pre=\lambda^*x.\IF(iszero\;x)\hat{0}(snd\;x)\)
+\end{proof}
+
+In any model with numerals, a rich class of functions \(\N^r\to\N\) is representable. For example, the
+(first-order) primitive recursive functions on \(\N\)
+
+\begin{proposition}[]
+\label{3.3.14}
+For any primitive recursive \(f:\N^r\to\N\) there is an applicative expression \(e_f:\N^{(r)}\to\N\)
+(involving constants 0, \(suc\), \(rec_{\ttN}\)) s.t. in any model \((\bA^\circ;\bA^\sharp)\) with numerals
+we have \(\llb{e_f}_v\in\bA^\sharp\) (where \(v\) is the obvious valuation of the constants) and
+\begin{equation*}
+\forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\hatn_{r-1}=\hatm
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+
+\end{proof}
+\subsubsection{Recursion and Minimization}
+\label{sec:org7bc5005}
+\begin{definition}[]
+\begin{enumerate}
+\item A total model \(\bA\) \textbf{has general recursion}, or \textbf{has fixed points}, if for every
+element \(f\in\bA^\sharp(\rho\to\rho)\) there is an element \(Fix_\rho(f)\in\bA^\sharp(\rho)\) s.t. \(Fix_\rho(f)=f\cdot Fix_\rho(f)\)
+\item An arbitrary model \(\bA\) \textbf{has guarded recursion}, or \textbf{guarded fixed points}, if for every
+element \(f\in\bA^\sharp(\rho\to\rho)\) where \(\rho=\sigma\to\tau\) there is an element \(GFix_\rho(f)\in\bA^\sharp(\rho)\)
+s.t. \(GFix_\rho(f)\cdot x\succeq f\cdot GFix_\rho(f)\cdot x\) for all \(x\in\bA^\circ(\sigma)\)
+\end{enumerate}
+\end{definition}
+
+\begin{proposition}[]
+\begin{enumerate}
+\item A total model \(\bA\) has general recursion iff for every type \(\rho\) there is an
+element \(Y_\rho\in\bA^\sharp((\rho\to\rho)\to\rho)\) s.t. for all \(f\in\bA^\circ(\rho\to\rho)\) we have
+\begin{equation*}
+Y_\rho\cdot f=f\cdot(Y_\rho\cdot f)
+\end{equation*}
+\item \(\bA\) has guarded recursion iff for every type \(\rho=\sigma\to\tau\) there is an
+element \(Z_\rho\in\bA^\sharp((\rho\to\rho)\to\rho)\) s.t. for all \(f\in\bA^\circ(\rho\to\rho)\) and \(x\in\bA^\circ(\sigma)\) we have
+\begin{equation*}
+Z_\rho\cdot f\downarrow,\quad Z_\rho\cdot f\cdot x\succeq f\cdot(Z_\rho\cdot f)\cdot x
+\end{equation*}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Define
+\begin{equation*}
+Y_\rho=Fix_{(\rho\to\rho)\to\rho}(\lambda^*y.\lambda^*f.f(yf)),\quad Z_\rho=GFix_{(\rho\to\rho)\to\rho}(\lambda^*z.\lambda^*fx.f(zf)x)
+\end{equation*}
+\end{proof}
+
+Not all models of interest possess such recursion operators. Clearly, if \(\bA\) is a \textbf{total} model
+with \(\bA(\ttN)=\N\) a type of numerals as above, then \(\bA\) cannot have general or even guarded
+recursion: if \(\rho=\ttN\to\ttN\)  and \(f=\lambda^*gx.suc(gx)\) then we would
+have \(Z\cdot f\cdot\hatn=suc\cdot Z\cdot f\cdot\hatn\), which is impossible. However, many models
+with \(\bA(\ttN)=\N_\bot\) will have general recursion
+
+Any \textbf{untyped} total model has general recursion, since we may take
+\begin{equation*}
+W=\lambda^*wf.f(wwf),\quad Y=WW
+\end{equation*}
+(This element \(Y\) is known as the \textbf{Turing fixed point combinator}). Likewise, every untyped
+model, total or not, has guarded recursion, since we may take
+\begin{equation*}
+V=\lambda^*vfx.f(vvf)x,\quad Z=VV
+\end{equation*}
+
+Note in passing that Kleene’s \textbf{second recursion theorem} from classical computability theory is
+tantamount to the existence of a guarded recursion operator in \(K_1\)
+
+We can now prove \ref{3.3.13}. In any untyped model, let \(Z\) be a guarded recursion operator,
+define
+\begin{equation*}
+R=\lambda^*rxfm.\IF(iszero\;m)(kx)(\lambda^*y.f(pre\;m))(rxf(pre\; m)\hat{0})
+\end{equation*}
+and take \(rec=\lambda^*xfm.(ZR)xfmi\).
+
+\begin{definition}[]
+A model \(\bA\) with numerals \textbf{has minimization} if it contains an
+element \(min\in\bA^\sharp((\ttN\to\ttN)\to\ttN)\) s.t. whenever \(\hatg\in\bA^\circ(\ttN\to\ttN)\) represents some
+total \(g:\N\to\N\) and \(m\) is the least number s.t. \(g(m)=0\), we have \(min\cdot\hatg=\hatm\)
+\end{definition}
+
+\begin{proposition}[]
+\label{3.3.19}
+There is an applicative expression Min involving constants \(\hat{0}\), suc, iszero, if
+and \(Z\) s.t. in any model with numerals and guarded recursion, \(\llb{Min}_v\) is a
+minimization operator
+\end{proposition}
+
+\begin{proof}
+Take \(Min=Z(\lambda^*M.\lambda^*g.\IF(iszero(g\;\hat{0}))\hat{0}(M(\lambda^*n.g(suc\;n))))\)
+\end{proof}
+
+\begin{proposition}[]
+For any partial computable \(f:\N^r\rhu\N\) there is an applicative
+expression \(e_f:\ttN^{(r)}\to\ttN\) (involving constants 0, suc, \(rec_{\ttN}\), min) s.t. in any
+model \(\bA\) with numerals and minimization we have \(\llb{e_f}_v\in\bA^\sharp\) (with the obvious
+valuation \(v\)) and
+\begin{equation*}
+\forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\dots\cdot\hatn_{r-1}=\hatm
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+Since our definition of minimization refers only to total functions \(g:\N\to\N\), we appeal to the
+\emph{Kleene normal form} theorem: there are primitive recursive functions \(T:\N^{r+2}\to\N\) and \(U:\N\to\N\)
+such that any partial computable \(f\) has an ‘index’ \(e\in\N\) such
+that \(f(\barn)\simeq U(\mu y.T(e,\barn,y)=0)\)
+for all \(\barn\). Using this, the result follows easily from Propositions \ref{3.3.14} and \ref{3.3.19}.
+\end{proof}
+\subsubsection{The Category of Assemblies}
+\label{sec:org6dcc549}
+\begin{definition}[]
+Let \(\bC\) be a lax computability model over \(T\). The \textbf{category of assemblies over} \(\bC\),
+written \(\Asm(\bC)\) is defined as follows:
+\begin{itemize}
+\item Objects \(X\) are triples \((\abs{X},\rho_X,\Vdash_X)\) where \(\abs{X}\) is a set, \(\rho_X\in T\)
+names some type, and \(\Vdash_X\subseteq\bC(\rho_X)\times\abs{X}\) is a relation
+s.t. \(\forall x\in\abs{X}.\exists a\in\bC(\rho_X).a\Vdash_Xx\) (The formula \(a\Vdash_Xx\) may be read as '\(a\)
+\textbf{realizes} \(x\)')
+\item A morphism \(f:X\to Y\) is a function \(f:\abs{X}\to\abs{Y}\) that is \textbf{tracked} by
+some \(\barf\in\bC[\rho_X,\rho_Y]\), in the sense that for any \(x\in\abs{X}\) and \(a\in\bC(\rho_X)\) we have
+\begin{equation*}
+a\Vdash_Xx\Rightarrow\barf(a)\Vdash_Yf(x)
+\end{equation*}
+\end{itemize}
+
+
+An assembly \(X\) is called \textbf{modest} if \(a\Vdash_Xx\wedge a\Vdash_Xx'\) implies \(x=x'\). We
+write \(\nMod(\bC)\) for the full subcategory of \(\Asm(\bC)\) consisting of modest assemblies
+\end{definition}
+
+Intuitively, we regard an assembly \(X\) as an ``abstract datatype'' for which we have a concrete
+implementation on the ``machine'' \(\bC\). The underlying set \(\abs{X}\) is the set of values of
+the abstract type, and for each \(x\in\abs{X}\), the elements \(a\Vdash_Xx\) are the possible
+machine representations of this abstract value. (Note that an abstract value \(x\) may have many
+possible machine representations \(a\).) The morphisms \(f:X\to Y\) may then be regarded as the
+``computable mappings'' between such datatypes
+
+In the case that \(\bC\) is a lax TPCA \(\bA\), we may also denote the above
+categories \(\Asm(\bA)\), \(\nMod(\bA)\), or by \(\Asm(\bA^\circ;\bA^\sharp)\), \(\nMod(\bA^\circ;\bA^\sharp)\). Note that
+realizers for elements \(x\in\abs{X}\) may be arbitrary elements of \(\bA^\circ(\rho_X)\), whereas a
+morphism \(f:X\to Y\) must be tracked by an element of \(\bA^\sharp(\rho_X\to\rho_Y)\)
+
+Viewed in this way, all the datatypes we shall typically wish to consider in fact live in the
+subcategory \(\nMod(\bC)\): an abstract data value is uniquely determined by any of its machine
+representations. Note also that if \(Y\) is modest, a morphism \(f:X\to Y\) is completely determined by
+any \(\barf\) that tracks it.
+
+\begin{definition}[]
+Let the category \(\bC\) have binary products. An \textbf{exponential} of objects \(B\) and \(C\) consists
+of an object \(C^B\) and an arrow \(\epsilon:C^B\times B\to C\) s.t. for any object \(A\) and
+arrow \(f:A\times B\to C\) there is a unique arrow \(\tilf:A\to C^B\) s.t. \(\epsilon\circ(\tilf\times 1_B)=f\)
+\begin{center}\begin{tikzcd}
+C^B\\
+A\ar[u,"\tilf"']
+\end{tikzcd}\hspace{1cm}\begin{tikzcd}
+C^B\times B\ar[r,"\epsilon"]&C\\
+A\times B\ar[u,"\tilf\times 1_B"]\ar[ur,"f"']
+\end{tikzcd}\end{center}
+\end{definition}
+
+
+\begin{theorem}[]
+\label{3.3.22}
+Let \(\bC\) be a lax computability model
+\begin{enumerate}
+\item If \(\bC\) has a weak terminal, then \(\Asm(\bC)\) has a terminal object 1
+\item If \(\bC\) has weak products, then \(\Asm(\bC)\) has binary cartesian products
+\item If \(\bC\) weakly cartesian closed, then \(\Asm(\bC)\) is cartesian closed
+\item If \(\bC\) has a weak terminal and booleans, \(\Asm(\bC)\) has the coproduct \(1+1\)
+\item If \(\bC\) has a weak terminal and numerals, \(\Asm(\bC)\) has a natural number object
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\begin{enumerate}
+\item If \((I,i)\) is a weak terminal, define \(1=(\{i\},I,\Vdash_1=\{(i,i)\})\). Then for any \(X\in\Asm(\bC)\),
+\(f=\Lambda x.i\) is the unique morphism where \(\barf=\Lambda x.i\).
+\setcounter{enumi}{1}
+\item If \(X\) and \(Y\) are assemblies and \(\rho\) is a weak product of \(\rho_X\) and \(\rho_Y\), define
+the assembly \(X\times Y\) by
+\begin{equation*}
+\abs{X\times Y}=\abs{X}\times\abs{Y},\quad\rho_{X\times Y}=\rho,\quad a\Vdash_{X\times Y}(x,y)\text{ iff }
+\pi_X(a)\Vdash_Xx\wedge\pi_Y(a)\Vdash_Yy
+\end{equation*}
+\item If \(X\) and \(Y\) are assemblies, let us say an element \(t\in\bC(\rho_X\to\rho_Y)\) \textbf{tracks} a
+function \(f:\abs{X}\to\abs{Y}\) if
+\begin{equation*}
+\forall x\in\abs{X},a\in\bC(\rho_X).\;a\Vdash_Xx\Rightarrow t\cdot_{XY}a\Vdash_Yf(x)
+\end{equation*}
+Now define the assembly \(Y^X\) as follows:
+\begin{align*}
+\abs{Y^X}&=\{f:\abs{X}\to\abs{Y}\mid f\text{ is tracked by some }t\in\bC(\rho_X\to\rho_Y)\}\\
+\rho_{Y^X}&=\rho_X\to\rho_Y\\
+t\Vdash_{Y^X}f&\Leftrightarrow t\text{ tracks }f
+\end{align*}
+\end{enumerate}
+\end{proof}
+
+Theorem \ref{3.2.22} also holds with \(\nMod(\bC)\), and the
+inclusion \(\nMod(\bC)\hookrightarrow\Asm(\bC)\) preserves all the relevant structure
 \end{document}

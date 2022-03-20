@@ -6,6 +6,11 @@
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \newcommand{\ssmile}[1]{\mathord{\stackrel{\smallsmile}{#1}}}
 #+LATEX_HEADER: \DeclareMathOperator{\lv}{lv}
+#+LATEX_HEADER: \newcommand{\FF}{f\mspace{-7mu}f}
+#+LATEX_HEADER: \newcommand{\TT}{t\mspace{-3mu}t}
+#+LATEX_HEADER: \newcommand{\IF}{i\mspace{-4mu}f}
+#+LATEX_HEADER: \DeclareMathOperator{\Asm}{\mathcal{A}sm}
+#+LATEX_HEADER: \DeclareMathOperator{\nMod}{\mathcal{M}od}
 #+LATEX_HEADER: \makeindex
 
 * COMMENT Introduction and Motivations
@@ -537,6 +542,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
+    label:3.1.18
     There is a canonical bijection between higher-order models and relative TPCAs
     #+END_theorem
 
@@ -752,6 +758,11 @@
     type \((\ttN\to\ttN)\to\ttN\).
 ** Computational Structure in Higher-Order Models
 *** Combinatory Completeness
+    Combinatory completeness can be seen as a syntactic counterpart to the notion of weakly
+    cartesian closed model. In essence, combinatory completeness asserts that any operation
+    definable by means of a formal expression over A (constructed using application) is
+    representable by an element of A itself.
+
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     label:3.1.16
@@ -769,9 +780,14 @@
           \begin{equation*}
           \forall f,g. s\cdot f\cdot g\downarrow,\quad\forall f,g,a.s\cdot f\cdot g\cdot a\simeq(f\cdot a)\cdot(g\cdot a)
           \end{equation*}
+           A *lax TPCA* is obtained from a TPCA change '\(\simeq\)' to '\(\succeq\)' in the axiom \(s\)
+    3. If \(\bA^\circ\) denotes a partial applicative structure, a *partial applicative
+            substructure* \(\bA^\sharp\) of \(\bA^\circ\) consists of a subset \(A^\sharp\subseteq A\) for each \(A\in\abs{\bA^\circ}\) s.t.
+       * if \(f\in(A\Rightarrow B)^\sharp\), \(a\in A^\sharp\) and \(f\cdot a\downarrow\) in \(\bA^\circ\), then \(f\cdot a\in B^\sharp\)
 
-
-    A *lax TPCA* is obtained from a TPCA change '\(\simeq\)' to '\(\succeq\)' in the axiom \(s\)
+       such a pair \((\bA^\circ;\bA^\sharp)\) is called a *relative partial applicative structure*
+    4. A *relative TPCA* is a relative partial applicative structure \((\bA^\circ,\bA^\sharp)\) s.t. there exist
+       elements \(k_{AB}, s_{ABC}\) in \(\bA^\sharp\) witnessing that \(\bA^\circ\) is a TPCA
     #+END_definition
 
     #+ATTR_LATEX: :options []
@@ -795,6 +811,14 @@
        \end{equation*}
        Note that if \(e:\tau\) and \(\llb{e}_v\) is defined then \(\llb{e}_v\in\bA^\circ(\tau)\).
     #+END_definition
+
+    Note that for any \(v\) with \(\ran(v)\in\bA^\sharp\), we can prove \(\llb{e:\tau}_v\in\bA^\sharp(\tau)\) by induction:
+    1. If \(e\) is of the form \(x^\tau\)
+    2. If \(e\) is of the form \(c_a\) where \(a\in\bA^\sharp(\tau)\)
+    3. If \(e\) is of the form \(e'e''\) where \(e':\sigma\to\tau\) and \(e'':\sigma\).
+
+       \(\llb{e}_v=\llb{e'}_v\cdot\llb{e''}_v\) where \(\llb{e'}_v\in\bA^\sharp(\sigma\to\tau)\) and \(\llb{e''}_v\in\bA^\sharp(\sigma)\).
+       Since \(\bA^\sharp\) is a substructure of \(\bA^\circ\), if \(\llb{e'}_v\cdot\llb{e''}_v\downarrow\), then \(\llb{e}\in\bA^\sharp(\tau)\)
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -826,17 +850,17 @@
     for \(\bA\), we may define \(\lambda^*x^\sigma.e\) by induction on the structure of \(e\):
     \begin{align*}
     \lambda^*x^\sigma.x&=s_{\sigma(\sigma\to\sigma)}k_{\sigma(\sigma\to\sigma)}k_{\sigma\sigma}&&\\
-    \lambda^*x^\sigma.e&=k_{\tau\sigma}e&&\text{if }e:\tau\text{ does not contain } x\\
+    \lambda^*x^\sigma.a&=k_{\tau\sigma}a&&\text{for each }a\in\bA^\sharp(\tau)\\
     \lambda^*x^\sigma.ee'&=s_{\sigma\tau\tau'}(\lambda^*x^\sigma.e)(\lambda^*x^\sigma.e')&&\text{if }e:\tau\to\tau',e':\tau\text{ and }ee'\text{ contains }x
     \end{align*}
     #+END_proof
 
     The same argument shows that \(\bA\) is a strict TPCA iff it is strictly combinatory complete
 
-    we often tacitly suppose that a TPCA A comes equipped with some choice of k and s drawn from A♯,
-    and in this case we shall use the notation λ∗x.e for the applicative expression given by the
-    above proof. Since all the constants appearing in e are drawn from A♯, the same will be true for
-    λ∗x.e.
+    we often tacitly suppose that a TPCA \(\bA\) comes equipped with some choice of k and s drawn from A♯,
+    and in this case we shall use the notation \(\lambda^*x.e\) for the applicative expression given by the
+    above proof. Since all the constants appearing in e are drawn from \(A^\sharp\), the same will be true for
+    \(\lambda^*x.e\).
 
 
     In TPCAs constructed as syntactic models for untyped or typed \lambda-calculi (as in Example 3.1.6 or
@@ -859,13 +883,423 @@
     \beta-equivalent, the first expands to \(s(ki)i\) and the second to \(i\), where \(i\equiv skk\).
     #+END_examplle
 
-    The moral here is that \beta-reductions are not valid underneath \(\lambda^*\)-abstractions
+    The moral here is that \beta-reductions are not valid underneath \(\lambda^*\)-abstractions: in this case,
+    the reduction \((\lambda^*y.y)x\rightsquigarrow x\) is not valid underneath \(\lambda^*\). However at
+    least for the definition of \(\lambda^*\) given above, \beta-reductions at top level are valid.
 
     #+ATTR_LATEX: :options []
     #+BEGIN_proposition
-    1. If \(M\) and \(N\) are meta-expressions where all bound variables within \(M\) are distinct
-       from the free variables of \(N\) and from \(x\), then the  applicative
-       expressions \(M^\dag[x\mapsto N^\dag]\) and \((M[x\mapsto N])^\dag\) are syntactically identical
-    2. In this situation, \(\llb{((\lambda x.M)N)^\dag}_v\succeq\llb{M[x\mapsto N]^\dag}_v\)  for any valuation \(v\) covering
-       the relevant variables
+    label:3.5.5
+    1. If \(M\) is a meta-expression, \(x\) is a variable and \(a\) is a constant or variable,
+       then \(\llb{((\lambda x.M)a)^\dag}_v\succeq\llb{M[x\mapsto a]^\dag}\)
+    2. If \(M,N\) are meta-expressions, \(x\notin FV(N)\), no free occurrence of \(x\) in \(M\) occurs
+       under a \lambda, and \(\llb{N^\dag}_v\downarrow\), then \(\llb{((\lambda x.M)N)^\dag}_v\succeq\llb{M[x\mapsto N]^\dag}_v\)
     #+END_proposition
+
+    #+BEGIN_proof
+    Longley's PhD thesis
+    #+END_proof
+
+    From now on, we will not need to distinguish formally between meta-expressions and the
+    applicative expressions they denote. For the remainder of this chapter we shall use the \(\lambda^*\)
+    notation for such (meta-)expressions, retaining the asterisk as a reminder that the usual rules
+    of \lambda-calculus are not always valid.
+*** Pairing
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. A *type world* is simply a set \(\sfT\) of *type names* \sigma, optionally endowed with any or
+       all of the following:
+       1. a *fixing map*, assigning a set \(\sfT[\sigma]\) to certain type names \(\sigma\in\sfT\)
+       2. a *product structure*, consisting of a total binary operation \((\sigma,\tau)\mapsto\sigma\times\tau\)
+       3. an *arrow structure*, consisting of a total binary operation \((\sigma,\tau)\mapsto\sigma\to\tau\)
+    2. A *computability model over* a type world \(\sfT\) is a computability model \(\bC\) with index
+       set \(\sfT\) (so that \(\abs{\bC}=\{\bC(\sigma)\mid\sigma\in\sfT\}\)) subject to the following conventions
+       1. If \(\sfT\) has a fixing map, then \(\bC(\sigma)=T[\sigma]\) whenever \(\sfT(\sigma)\) is defined
+       2. If \(\sfT\) has a product structure, then \(\bC\) has weak products and for any \(\sigma,\tau\in\sfT\)
+          we have \(\bC(\sigma\times\tau)=\bC(\sigma)\bowtie\bC(\tau)\)
+       3. If \(\sfT\) has an arrow structure, then \(\bC\) is a higher-order model and for
+          any \(\sigma,\tau\in\sfT\) we have \(\bC(\sigma\to\tau)=\bC(\sigma)\Rightarrow\bC(\tau)\)
+       4. If \(\sfT\) has both a product and an arrow structure, then \(\bC\) is weakly cartesian closed
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There is a canonical bijection between higher-order models and relative TPCAs
+    #+END_theorem
+
+    Let \(\bA\) be a relative TPCA (which is combinatory complete) over a type world \(\sfT\) with arrow structure, and suppose
+    that \(\bA\) (considered as a higher-order model) has weak products, inducing a product
+    structure \(\times\) on \(\sfT\). This means that for any \(\sigma,\tau\in\sfT\) there are elements
+    \begin{equation*}
+    fst\in\bA^\sharp((\sigma\times\tau)\to\sigma),\quad snd\in\bA^\sharp((\sigma\times\tau)\to\tau)
+    \end{equation*}
+    And for each \(\sigma,\tau\in\sfT\) a *paring* operation
+    \begin{equation*}
+    pair\in\bA^\sharp(\sigma\to\tau\to(\sigma\times\tau))
+    \end{equation*}
+    s.t.
+    \begin{equation*}
+    \forall a\in\bA^\circ(\sigma),b\in\bA^\circ(\tau).\;fst\cdot(pair\cdot a\cdot b)=a\wedge snd\cdot(pair\cdot a\cdot b)=b
+    \end{equation*}
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    A higher-order model with weak products has pairing iff it is weakly cartesian closed
+    #+END_proposition
+
+    #+ATTR_LATEX: :options [\ref{3.1.14}]
+    #+BEGIN_lemma
+    Suppose \(m,n>0\). Given
+       \begin{gather*}
+       f_j\in(A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow B_j)^\sharp,\quad(j=0,\dots,n-1),\\
+       g\in(B_0\Rightarrow\dots\Rightarrow B_{n-1}\Rightarrow C)^\sharp
+       \end{gather*}
+       there exists \(h\in (A_0\Rightarrow\dots\Rightarrow A_{m-1}\Rightarrow C)^\sharp\) s.t.
+       \begin{equation*}
+       \forall a_0,\dots,a_{m-1}.h\cdot a_0\cdot\dots\cdot a_{m-1}\simeq g\cdot(f_0\cdot a_0\cdot\dots\cdot a_{m-1})\cdot\dots\cdot(f_{n-1}\cdot a_0\cdot\dots\cdot a_{m-1})
+       \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    The binary partial functions representable in \(\bA^\sharp((\rho\times\sigma)\to\tau)\) are exactly those representable
+    in \(\bA^\sharp(\rho\to\sigma\to\tau)\)
+
+    Given \(f\in\bA^\sharp((\rho\times\sigma)\to\tau)\), by Proposition ref:3.1.14, we have \(h\in\bA^\sharp(\rho\to\sigma\to\tau)\) where
+    \begin{equation*}
+    \forall a,b.\; h\cdot a\cdot b\simeq f\cdot(pair\;\cdot a\cdot b)
+    \end{equation*}
+
+    Given \(f\in\bA^\sharp(\rho\to\sigma\to\tau)\), by the same Proposition, we have \(h\in\bA^\sharp((\rho\times\sigma)\to\tau)\) where
+    \begin{equation*}
+    \forall a,b.\; h\cdot c\simeq f\cdot(fst\cdot c)\cdot(snd\cdot c)
+    \end{equation*}
+    #+END_proof
+
+     Henceforth we shall generally work with pair in preference to the ‘external’ pairing of
+     operations, and will write \(pair\cdot a\cdot b\) when there is no
+     danger of confusion.
+
+     In untyped models, pairing is automatic
+     \begin{equation*}
+    pair=\lambda^*xyz.zxy,\quad fst=\lambda^*p.p(\lambda^*xy.x),\quad snd=\lambda^*p.p(\lambda^*xy.y)
+     \end{equation*}
+*** Booleans
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A model \(\bA\) has *booleans* if for some type \(\ttB\) there exist elements
+    \begin{align*}
+    \TT,\FF&\in\bA^\sharp(\ttB)\\
+    \IF_\sigma&\in\bA(\ttB,\sigma,\sigma\to\sigma)\text{ for each }\sigma
+    \end{align*}
+    s.t. for all \(x,y\in\bA^\circ(\sigma)\) we have
+    \begin{equation*}
+    \IF_\sigma\cdot\TT\cdot x\cdot y=x,\quad\IF_\sigma\cdot\FF\cdot x\cdot y=y
+    \end{equation*}
+    Note that \(\TT,\FF\) need not be the sole element of \(\bA^\sharp(\bB)\)
+    #+END_definition
+
+    Alternatively, we may define a notion of having booleans in the setting of computability
+    model \(\bC\) with weak products: replace \(\IF_\sigma\) with \(\IF'_\sigma\in\bC[\B\times\sigma\times\sigma,\sigma]\). In a TPCA with
+    products and pairing the two definitions coincide
+
+    In untyped models, the existence of booleans is automatic: \(\TT=\lambda^*xy.x\), \(\FF=\lambda^*xy.y\)
+    and \(\IF=\lambda^*zxy.zxy\)
+
+    Obviously, the value of an expression \(\IF_\sigma\cdot b\cdot e\cdot e'\) cannot be defined unless the values of
+    both \(e\) and \(e'\) are defined. However, there is a useful trick that allows us to build conditional
+    expressions whose definedness requires only that the chosen branch of the conditional is
+    defined. This trick is specific to the higher-order setting, and is known as *strong definition
+    by cases*:
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Suppose \(\bA\) has booleans as above. Given applicative expressions \(e,e':\sigma\) there is an
+    applicative expression \((e\mid e'):\ttB\to\sigma\) s.t. for any valuation \(v\) covering \(V(e)\)
+    and \(V(e')\) we have
+    \begin{equation*}
+    \llb{(e\mid e')}_v\downarrow,\quad\llb{(e\mid e')\cdot\TT}_v\succeq\llb{e}_v,\quad
+    \llb{(e\mid e')\cdot\FF}_v\succeq\llb{e'}_v
+    \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \rho be any type s.t. \(\bA^\circ(\rho)\) is inhabited by some element \(a\), and define
+    \begin{equation*}
+    (e\mid e')=\lambda^*z^{\ttB}\cdot(\IF_\sigma z(\lambda^*r^\rho.e)(\lambda^*r^\rho.e')c_a)
+    \end{equation*}
+    where \(z,r\) are fresh variables
+
+    \(\llb{(e\mid e')}_v\downarrow\)  since by lax combinatory completeness
+
+    \(\llb{(e\mid e')\cdot\TT}_v\succeq\llb{e}_v\) by ref:3.5.5
+    #+END_proof
+
+    The expressions \(\lambda^*r.e\), \(\lambda^*r.e'\) in the above proof are known as *suspensions* or *thunks*: the idea is
+    that \(\llb{\lambda^*r.e}_v\) is guaranteed to be defined, but the actual evaluation of \(e_v\) (which may be
+    undefined) is ‘suspended’ until the argument \(c_a\) is supplied.
+*** Numerals
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A model \(\bA\) has *numerals* if for some type \(\ttN\) there exist
+    \begin{align*}
+    \hat{0},\hat{1},\hat{2},\dots&\in\bA^\sharp(\ttN)\\
+    suc&\in\bA^\sharp(\ttN\to\ttN)
+    \end{align*}
+    and for any \(x\in\bA^\sharp(\sigma)\) and \(f\in\bA^\sharp(\ttN\to\sigma\to\sigma)\) an element
+    \begin{equation*}
+    Rec_\sigma(x,f)\in\bA^\sharp(\ttN\to\sigma)
+    \end{equation*}
+    s.t. for all \(x\in\bA^\sharp(\sigma)\), \(f\in\bA^\sharp(\ttN\to\sigma\to\sigma)\) and \(n\in\N\) we have
+    \begin{align*}
+    suc\cdot\hatn&=\what{n+1}\\
+    Rec_\sigma(x,f)\cdot\hat{0}&=x\\
+    Rec_\sigma(x,f)\cdot\what{n+1}&\succeq f\cdot\hatn\cdot(Rec_\sigma(x,f)\cdot\hatn)
+    \end{align*}
+    #+END_definition
+
+    The above definition has the advantage that it naturally adapts to the setting of a
+    computability model C with products: just replace the types of \(f\) and \(Rec_\sigma(x,f)\) above
+    with \(\bC[\ttN\times\sigma,\sigma]\) and \(\bC[\ttN,\sigma]\) respectively.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    A model \(\bA\) has numerals iff it has elements \(\hatn\), \(suc\) as above and
+    \begin{equation*}
+    rec_\sigma\in\bA^\sharp(\sigma\to(\ttN\to\sigma\to\sigma)\to\ttN\to\sigma)\quad\text{for each }\sigma
+    \end{equation*}
+    s.t. for all \(x\in\bA^\circ(\sigma)\), \(f\in\bA^\circ(\ttN\to\sigma\to\sigma)\) and \(n\in\N\) we have
+    \begin{align*}
+    suc\cdot\hatn&=\what{n+1}\\
+    rec_\sigma\cdot x\cdot f\cdot\hat{0}&=x\\
+    rec_\sigma\cdot x\cdot f\cdot\what{n+1}&\succeq f\cdot\hatn\cdot(rec_\sigma\cdot x\cdot f\cdot\hatn)
+    \end{align*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\Leftarrow\): Let \(Rec_\sigma(x,f)=rec_\sigma\cdot x\cdot f\)
+
+    \(\Rightarrow\): define
+    \begin{equation*}
+    rec_\sigma=Rec_{\sigma\to(\ttN\to\sigma\to\sigma)\to\sigma}(\lambda^*xf.x,\lambda^*nr.\lambda^*xf.fn(rxf))
+    \end{equation*}
+    ?
+    #+END_proof
+
+    #+BEGIN_exercise
+    Show that \(\bA\) has numerals, then \(\bA\) has booleans
+    #+END_exercise
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:3.3.13
+    Every untyped model has numerals
+    #+END_proposition
+
+    #+BEGIN_proof
+    Using the encodings for pairings and booleans given above, we may define the *Curry
+    numerals* \(\hatn\) in any untyped models as follows:
+    \begin{equation*}
+    \hat{0}=\la\TT,\TT\ra,\quad\what{n+1}=\la\FF,\hatn\ra
+    \end{equation*}
+    and \(suc=\lambda^*x.\la\FF,x\ra\). We also have elements for the zero testing and predecessor operations:
+    take \(iszero=fst\) and \(pre=\lambda^*x.\IF(iszero\;x)\hat{0}(snd\;x)\)
+    #+END_proof
+
+    In any model with numerals, a rich class of functions \(\N^r\to\N\) is representable. For example, the
+    (first-order) primitive recursive functions on \(\N\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:3.3.14
+    For any primitive recursive \(f:\N^r\to\N\) there is an applicative expression \(e_f:\N^{(r)}\to\N\)
+    (involving constants 0, \(suc\), \(rec_{\ttN}\)) s.t. in any model \((\bA^\circ;\bA^\sharp)\) with numerals
+    we have \(\llb{e_f}_v\in\bA^\sharp\) (where \(v\) is the obvious valuation of the constants) and
+    \begin{equation*}
+    \forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\hatn_{r-1}=\hatm
+    \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+
+    #+END_proof
+*** Recursion and Minimization
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. A total model \(\bA\) *has general recursion*, or *has fixed points*, if for every
+       element \(f\in\bA^\sharp(\rho\to\rho)\) there is an element \(Fix_\rho(f)\in\bA^\sharp(\rho)\) s.t. \(Fix_\rho(f)=f\cdot Fix_\rho(f)\)
+    2. An arbitrary model \(\bA\) *has guarded recursion*, or *guarded fixed points*, if for every
+       element \(f\in\bA^\sharp(\rho\to\rho)\) where \(\rho=\sigma\to\tau\) there is an element \(GFix_\rho(f)\in\bA^\sharp(\rho)\)
+       s.t. \(GFix_\rho(f)\cdot x\succeq f\cdot GFix_\rho(f)\cdot x\) for all \(x\in\bA^\circ(\sigma)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. A total model \(\bA\) has general recursion iff for every type \rho there is an
+       element \(Y_\rho\in\bA^\sharp((\rho\to\rho)\to\rho)\) s.t. for all \(f\in\bA^\circ(\rho\to\rho)\) we have
+       \begin{equation*}
+       Y_\rho\cdot f=f\cdot(Y_\rho\cdot f)
+       \end{equation*}
+    2. \(\bA\) has guarded recursion iff for every type \(\rho=\sigma\to\tau\) there is an
+       element \(Z_\rho\in\bA^\sharp((\rho\to\rho)\to\rho)\) s.t. for all \(f\in\bA^\circ(\rho\to\rho)\) and \(x\in\bA^\circ(\sigma)\) we have
+       \begin{equation*}
+       Z_\rho\cdot f\downarrow,\quad Z_\rho\cdot f\cdot x\succeq f\cdot(Z_\rho\cdot f)\cdot x
+       \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    Define
+    \begin{equation*}
+    Y_\rho=Fix_{(\rho\to\rho)\to\rho}(\lambda^*y.\lambda^*f.f(yf)),\quad Z_\rho=GFix_{(\rho\to\rho)\to\rho}(\lambda^*z.\lambda^*fx.f(zf)x)
+    \end{equation*}
+    #+END_proof
+
+    Not all models of interest possess such recursion operators. Clearly, if \(\bA\) is a *total* model
+    with \(\bA(\ttN)=\N\) a type of numerals as above, then \(\bA\) cannot have general or even guarded
+    recursion: if \(\rho=\ttN\to\ttN\)  and \(f=\lambda^*gx.suc(gx)\) then we would
+    have \(Z\cdot f\cdot\hatn=suc\cdot Z\cdot f\cdot\hatn\), which is impossible. However, many models
+    with \(\bA(\ttN)=\N_\bot\) will have general recursion
+
+    Any *untyped* total model has general recursion, since we may take
+    \begin{equation*}
+    W=\lambda^*wf.f(wwf),\quad Y=WW
+    \end{equation*}
+    (This element \(Y\) is known as the *Turing fixed point combinator*). Likewise, every untyped
+    model, total or not, has guarded recursion, since we may take
+    \begin{equation*}
+    V=\lambda^*vfx.f(vvf)x,\quad Z=VV
+    \end{equation*}
+
+    Note in passing that Kleene’s *second recursion theorem* from classical computability theory is
+    tantamount to the existence of a guarded recursion operator in \(K_1\)
+
+    We can now prove ref:3.3.13. In any untyped model, let \(Z\) be a guarded recursion operator,
+    define
+    \begin{equation*}
+    R=\lambda^*rxfm.\IF(iszero\;m)(kx)(\lambda^*y.f(pre\;m))(rxf(pre\; m)\hat{0})
+    \end{equation*}
+    and take \(rec=\lambda^*xfm.(ZR)xfmi\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A model \(\bA\) with numerals *has minimization* if it contains an
+    element \(min\in\bA^\sharp((\ttN\to\ttN)\to\ttN)\) s.t. whenever \(\hatg\in\bA^\circ(\ttN\to\ttN)\) represents some
+    total \(g:\N\to\N\) and \(m\) is the least number s.t. \(g(m)=0\), we have \(min\cdot\hatg=\hatm\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:3.3.19
+    There is an applicative expression Min involving constants \(\hat{0}\), suc, iszero, if
+    and \(Z\) s.t. in any model with numerals and guarded recursion, \(\llb{Min}_v\) is a
+    minimization operator
+    #+END_proposition
+
+    #+BEGIN_proof
+    Take \(Min=Z(\lambda^*M.\lambda^*g.\IF(iszero(g\;\hat{0}))\hat{0}(M(\lambda^*n.g(suc\;n))))\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    For any partial computable \(f:\N^r\rhu\N\) there is an applicative
+    expression \(e_f:\ttN^{(r)}\to\ttN\) (involving constants 0, suc, \(rec_{\ttN}\), min) s.t. in any
+    model \(\bA\) with numerals and minimization we have \(\llb{e_f}_v\in\bA^\sharp\) (with the obvious
+    valuation \(v\)) and
+    \begin{equation*}
+    \forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\dots\cdot\hatn_{r-1}=\hatm
+    \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    Since our definition of minimization refers only to total functions \(g:\N\to\N\), we appeal to the
+    /Kleene normal form/ theorem: there are primitive recursive functions \(T:\N^{r+2}\to\N\) and \(U:\N\to\N\)
+    such that any partial computable \(f\) has an ‘index’ \(e\in\N\) such
+    that \(f(\barn)\simeq U(\mu y.T(e,\barn,y)=0)\)
+    for all \(\barn\). Using this, the result follows easily from Propositions ref:3.3.14 and ref:3.3.19.
+    #+END_proof
+*** The Category of Assemblies
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(\bC\) be a lax computability model over \(T\). The *category of assemblies over* \(\bC\),
+    written \(\Asm(\bC)\) is defined as follows:
+    * Objects \(X\) are triples \((\abs{X},\rho_X,\Vdash_X)\) where \(\abs{X}\) is a set, \(\rho_X\in T\)
+      names some type, and \(\Vdash_X\subseteq\bC(\rho_X)\times\abs{X}\) is a relation
+      s.t. \(\forall x\in\abs{X}.\exists a\in\bC(\rho_X).a\Vdash_Xx\) (The formula \(a\Vdash_Xx\) may be read as '\(a\)
+      *realizes* \(x\)')
+    * A morphism \(f:X\to Y\) is a function \(f:\abs{X}\to\abs{Y}\) that is *tracked* by
+      some \(\barf\in\bC[\rho_X,\rho_Y]\), in the sense that for any \(x\in\abs{X}\) and \(a\in\bC(\rho_X)\) we have
+      \begin{equation*}
+      a\Vdash_Xx\Rightarrow\barf(a)\Vdash_Yf(x)
+      \end{equation*}
+
+
+    An assembly \(X\) is called *modest* if \(a\Vdash_Xx\wedge a\Vdash_Xx'\) implies \(x=x'\). We
+    write \(\nMod(\bC)\) for the full subcategory of \(\Asm(\bC)\) consisting of modest assemblies
+    #+END_definition
+
+    Intuitively, we regard an assembly \(X\) as an "abstract datatype" for which we have a concrete
+    implementation on the "machine" \(\bC\). The underlying set \(\abs{X}\) is the set of values of
+    the abstract type, and for each \(x\in\abs{X}\), the elements \(a\Vdash_Xx\) are the possible
+    machine representations of this abstract value. (Note that an abstract value \(x\) may have many
+    possible machine representations \(a\).) The morphisms \(f:X\to Y\) may then be regarded as the
+    "computable mappings" between such datatypes
+
+    In the case that \(\bC\) is a lax TPCA \(\bA\), we may also denote the above
+    categories \(\Asm(\bA)\), \(\nMod(\bA)\), or by \(\Asm(\bA^\circ;\bA^\sharp)\), \(\nMod(\bA^\circ;\bA^\sharp)\). Note that
+    realizers for elements \(x\in\abs{X}\) may be arbitrary elements of \(\bA^\circ(\rho_X)\), whereas a
+    morphism \(f:X\to Y\) must be tracked by an element of \(\bA^\sharp(\rho_X\to\rho_Y)\)
+
+    Viewed in this way, all the datatypes we shall typically wish to consider in fact live in the
+    subcategory \(\nMod(\bC)\): an abstract data value is uniquely determined by any of its machine
+    representations. Note also that if \(Y\) is modest, a morphism \(f:X\to Y\) is completely determined by
+    any \(\barf\) that tracks it.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let the category \(\bC\) have binary products. An *exponential* of objects \(B\) and \(C\) consists
+    of an object \(C^B\) and an arrow \(\epsilon:C^B\times B\to C\) s.t. for any object \(A\) and
+    arrow \(f:A\times B\to C\) there is a unique arrow \(\tilf:A\to C^B\) s.t. \(\epsilon\circ(\tilf\times 1_B)=f\)
+    \begin{center}\begin{tikzcd}
+    C^B\\
+    A\ar[u,"\tilf"']
+    \end{tikzcd}\hspace{1cm}\begin{tikzcd}
+    C^B\times B\ar[r,"\epsilon"]&C\\
+    A\times B\ar[u,"\tilf\times 1_B"]\ar[ur,"f"']
+    \end{tikzcd}\end{center}
+    #+END_definition
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    label:3.3.22
+    Let \(\bC\) be a lax computability model
+    1. If \(\bC\) has a weak terminal, then \(\Asm(\bC)\) has a terminal object 1
+    2. If \(\bC\) has weak products, then \(\Asm(\bC)\) has binary cartesian products
+    3. If \(\bC\) weakly cartesian closed, then \(\Asm(\bC)\) is cartesian closed
+    4. If \(\bC\) has a weak terminal and booleans, \(\Asm(\bC)\) has the coproduct \(1+1\)
+    5. If \(\bC\) has a weak terminal and numerals, \(\Asm(\bC)\) has a natural number object
+    #+END_theorem
+
+    #+BEGIN_proof
+    1. If \((I,i)\) is a weak terminal, define \(1=(\{i\},I,\Vdash_1=\{(i,i)\})\). Then for any \(X\in\Asm(\bC)\),
+       \(f=\Lambda x.i\) is the unique morphism where \(\barf=\Lambda x.i\).
+    2. [@2] If \(X\) and \(Y\) are assemblies and \rho is a weak product of \(\rho_X\) and \(\rho_Y\), define
+       the assembly \(X\times Y\) by
+       \begin{equation*}
+       \abs{X\times Y}=\abs{X}\times\abs{Y},\quad\rho_{X\times Y}=\rho,\quad a\Vdash_{X\times Y}(x,y)\text{ iff }
+       \pi_X(a)\Vdash_Xx\wedge\pi_Y(a)\Vdash_Yy
+       \end{equation*}
+    3. If \(X\) and \(Y\) are assemblies, let us say an element \(t\in\bC(\rho_X\to\rho_Y)\) *tracks* a
+       function \(f:\abs{X}\to\abs{Y}\) if
+       \begin{equation*}
+       \forall x\in\abs{X},a\in\bC(\rho_X).\;a\Vdash_Xx\Rightarrow t\cdot_{XY}a\Vdash_Yf(x)
+       \end{equation*}
+       Now define the assembly \(Y^X\) as follows:
+       \begin{align*}
+       \abs{Y^X}&=\{f:\abs{X}\to\abs{Y}\mid f\text{ is tracked by some }t\in\bC(\rho_X\to\rho_Y)\}\\
+       \rho_{Y^X}&=\rho_X\to\rho_Y\\
+       t\Vdash_{Y^X}f&\Leftrightarrow t\text{ tracks }f
+       \end{align*}
+    #+END_proof
+
+    Theorem ref:3.2.22 also holds with \(\nMod(\bC)\), and the
+    inclusion \(\nMod(\bC)\hookrightarrow\Asm(\bC)\) preserves all the relevant structure
