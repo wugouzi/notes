@@ -438,6 +438,10 @@
     latter is defined and \(\tilPhi^Z(n)=0\) otherwise
     #+END_proof
 
+    \begin{equation*}
+    \le_m\Rightarrow\le_{tt}\Rightarrow\le_{wtt}\Rightarrow\le_T
+    \end{equation*}
+
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     The *effective disjoint union* of sets \(A\) and \(B\) is
@@ -473,6 +477,11 @@
     Trivial
     #+END_proof
 ** Descriptive complexity of sets
+    In a computable enumeration \((Z_s)_{s\in\N}\) of a set \(Z\), for each \(x\), \(Z_s(x)\) can
+    change at most once, namely from 0 to 1. Which sets \(Z\) are described if we allow an arbitrary
+    finite number of changes
+
+
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     We say that a set \(Z\) is \(\Delta_2^0\) if there is a computable sequence of strong
@@ -486,7 +495,97 @@
     \end{equation*}
     denotes its value at the *end of* stage \(s\). For instance, given a \(\Delta_2^0\) set \(Z\) with a
     computable approximation, instead of \(\Phi_{e,s}^{Z_s}(x)\) we simply write \(\Phi_e^Z(x)[s]\). We say
-    that the expression \(E\) is *stable at* \(s\) if \(E[t]=E[s]for all \(t\ge s\)
+    that the expression \(E\) is *stable at* \(s\) if \(E[t]=E[s]\)for all \(t\ge s\)
+
+    #+ATTR_LATEX: :options [Shoenfield Limit Lemma]
+    #+BEGIN_lemma
+    label:1.4.2
+    \(Z\) is \(\Delta_2^0\) \(\Leftrightarrow\) \(Z\le_T\emptyset'\). The equivalence is uniform
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(\Leftarrow\): Fix a Turing functional \(\Phi_e\) s.t. \(Z=\Phi_e^{\emptyset'}\). Since \(\emptyset'\) is c.e.,
+    let \(\la \emptyset'_s\ra_{s\in\N}\) be a computable enumeration of \(\emptyset'\). Define
+    \begin{equation*}
+    Z_s(x)=
+    \begin{cases}
+    1&\Phi_{e,s}^{\emptyset'_s\downarrow}=1\\
+    0&\text{otherwise}
+    \end{cases}
+    \end{equation*}
+    Let \(u=\use\Phi_e^{\emptyset'}(x)\), there is \(s\) s.t. \(\emptyset'_s\uhr u=\emptyset'\uhr u\), thus there is \(s\ge t\)
+    s.t. \(Z_s(x)=Z(x)\)
+
+    Then the required approximation is
+    given by \(Z_s=\{x<s:\Phi_e^{\emptyset'}(x)[s]=1\}\)
+
+    \(\Rightarrow\): We define a c.e. set \(C\) s.t. \(Z\le_TC\). This is sufficient because \(C\le_m\emptyset'\) by
+    Proposition ref:1.2.2. The set \(C\) is called the *change set* because it records the changes of
+    the computable approximation. If \(Z_s(x)\neq Z_{s+1}(x)\) we put \(\la x,i\ra\) into \(C_{s+1}\),
+    where \(i\) is the least s.t. \(\la x,i\ra\notin C_s\). To show that \(Z\le_TC\), on input \(x\), using the
+    oracle \(C\) compute the least \(i\) s.t. \(\la x,i\ra\notin C\). If \(i\) is even then \(Z(y)=Z_0(y)\),
+    otherwise \(Z(y)=1-Z_0(y)\)
+
+    We have obtained \(C\) and the Turing reduction of \(Z\) to \(C\) effectively from the
+    computable approximation of \(Z\). Proposition ref:1.2.2 is also effective
+    #+END_proof
+
+    If \(Z=\Phi_e^{\emptyset'}\) we say that \(e\) is a *\(\Delta_2^0\)-index* for \(Z\). A number \(e\) is
+    a \(\Delta_2^0\) index only if \(\Phi_e^{\emptyset'}\) is total
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. We say that a set \(Z\) is *\omega-c.e.* if there is a computable
+       approximation \((Z_s)_{s\in\N}\) of \(Z\) and a computable function \(b\) s.t.
+       \begin{equation*}
+       b(x)\ge\#\{s>x:Z_x(x)\neq Z_{s-1}(x)\}\text{ for each }x
+       \end{equation*}
+    2. If \(Z_s(s-1)=0\) for each \(s>0\) and \(b(x)\) can be chosen constant of value \(n\), then
+       we say \(Z\) is \(n\)-c.e.
+    #+END_definition
+
+    Thus \(Z\) is 1-c.e. iff \(Z\) is c.e., and \(Z\)  is 2-c.e. iff \(Z=A-B\) for c.e. sets \(A,B\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(Z\) is \(\omega\)-c.e. \(\Leftrightarrow\) \(Z\le_{wtt}\emptyset'\) \(\Leftrightarrow\) \(Z\le_{tt}\emptyset'\)
+
+    The equivalence are effective
+    #+END_proposition
+
+    #+BEGIN_proof
+    First suppose that \(Z_{wtt}\emptyset'\) via a functional \(\Phi_e\) with computable use bound \(f\). To
+    show that \(Z\) is \omega-c.e., let \(Z_s=\{x<s:\Phi_e^{\emptyset'}(x)[s]=1\}\). Since \(\Phi_e^{\emptyset'}(x)[s]\) only
+    becomes undefined when a number less than \(f(x)\) enters \(\emptyset'\), the number of changes
+    of \(Z_s(x)\) is bounded by \(2f(x)\)
+
+    Now suppose that \(Z\) is \omega-c.e. via the computable approximation \((Z_s)_{s\in\N}\) and the
+    function \(b\) bounding the number of changes. We show that \(Z\le_{tt}\emptyset'\). Let \(C\) be the
+    change set. Since \(b(x)\ge\min\{i:\la x,i\ra\notin C\}\), the reduction of \(Z\) to \(C\) given there can be
+    carried out by computing a truth-table from the input \(x\) and evaluating it on the answers to
+    oracle questions to \(C\)
+    #+END_proof
+
+    #+ATTR_LATEX: :width .9\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ComputabilityAndRandomness/1.jpg]]
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    \(A\) is \(\Delta_2^0\) \(\Leftrightarrow\) \(A\) is both \(\Sigma_2^0\) and \(\Pi_2^0\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    \begin{align*}
+    A\in\Delta_2^0&\Leftrightarrow A\le_T\emptyset'\\
+    &\Leftrightarrow A\text{ and }\N-A\text{ are c.e. in }\emptyset'\\
+    &\Leftrightarrow A\in\Sigma_2^0\cap\Pi_2^0
+    \end{align*}
+    last iff from Theorem ref:1.4.13
+    #+END_proof
+
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -620,3 +719,59 @@
     #+BEGIN_proof
 
     #+END_proof
+** Absolute computational complexity of sets
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(f,g:\N\to\R\). \(f\) *dominates* \(g\) if \(f(n)\ge g(n)\) for almost every \(n\)
+    #+END_definition
+
+    1. \(A\) is *low* if \(A'\le_T\emptyset'\)
+    2. \(A\) is *computably dominated* if each function \(g\le_TA\) is dominated by a computable
+       function
+    3. \(A\) is *high* if \(\emptyset''\le_TA'\)
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(n\ge 0\). We say that \(C\) is \(low_n\) if \(C^{(n)}\equiv_T\emptyset^{(n)}\)
+    #+END_definition
+
+    If \(C\in low_1\) we simply say that \(C\) is *low*. Each low set is \(\Delta_2^0\).
+
+    Each class \(low_n\) is closed downward under Turing reducibility, and contained in \(\Delta_{n+1}^0\)
+    \begin{equation*}
+    \text{computable}\subset low_1\subset low_2\subset\dots\subset\{Z:Z\not\ge_T\emptyset'\}
+    \end{equation*}
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(C\) is *superlow* if \(C'\equiv_{tt}\emptyset'\)
+    #+END_definition
+
+    It suffices to require that \(C'\le_{tt}\emptyset'\), because \(\emptyset'\le_mC'\) for any \(C\) by ref:1.2.14. By
+    ref:1.4.4 it is equivalent to ask that \(C'\) be \omega-c.e.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(A\) is *generalized \(low_1\)*, or in \(\GL_1\) for short, if \(A'\equiv_TA\oplus\emptyset'\)
+    #+END_definition
+
+    #+BEGIN_exercise
+    label:1.5.5
+    If \(C\) is superlow, there is a computable function \(h\) s.t. \(Y\le_TC\) implies \(Y\le_{tt}\emptyset'\)
+    with use function bounded by \(h\) for each \(Y\)
+    #+END_exercise
+
+    #+BEGIN_proof
+
+    #+END_proof
+
+    #+BEGIN_exercise
+    label:1.5.7
+    If \(B\) is \(low_2\) then the index set \(\{e:W_e\le_TB\}\) is \(\Sigma_3^0\)
+    #+END_exercise
+
+    #+BEGIN_exercise
+    label:1.5.8
+    \(B\) is \(low_2\)\(\Leftrightarrow\) \(\Tot^B=\{e:\Phi_e^B\text{ total}\}\) is \(\Sigma_3^0\)
+    #+END_exercise
