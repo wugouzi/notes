@@ -25,3 +25,37 @@
     and starts executing a pre-arranged function in the kernel.
 
 ** Processes and memory
+    An xv6 process consists of user-space memory (instructions, data, and stack) and per-process
+    state private to the kernel. Xv6 time-shares processes: it transparently switches the available
+    CPUs among the set of processes waiting to execute
+
+    ~Fork~ gives the new process exactly the same memory contents (both instructions and data) as the
+    calling process. ~Fork~ returns in both the original and new processes. In the original process,
+    fork returns the new process’s PID. In the new process, fork returns zero.
+
+    The ~exit~ system call causes the calling process to stop executing and to release resources such
+    as memory and open files. Exit takes an integer status argument, conventionally 0 to indicate
+    success and 1 to indicate failure.
+** I/O and File descriptors
+    A *file descriptor* is a small integer representing a kernel-managed object that a process may
+    read from or write to.
+
+    Internally, the xv6 kernel uses the file descriptor as an index into a per-process table, so
+    that every process has a private space of file descriptors starting at zero
+
+    By convention, a process reads from file descriptor 0 (standard input), writes output to file
+    descriptor 1 (standard output), and writes error messages to file descriptor 2 (standard error).
+
+    The ~read~ and ~write~ system calls read bytes from and write bytes to open files named by file
+    descriptors. The call ~read(fd, buf, n)~ reads at most ~n~ bytes from the file descriptor ~fd~, copies
+    them into ~buf~, and returns the number of bytes read. Each file descriptor that refers to a file
+    has an offset associated with it. ~Read~ reads data from the current file offset and then advances
+    that offset by the number of bytes read: a subsequent read will return the bytes following the
+    ones returned by the first ~read~. When there are no more bytes to read, read returns zero to
+    indicate the end of the file.
+
+    The ~dup~ system call duplicates an existing file descriptor, returning a new one that refers to
+    the same underlying I/O object.
+** Pipes
+    A *pipe* is a small kernel buffer exposed to processes as a pair of file descriptors, one for
+    reading and one for writing.

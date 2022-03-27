@@ -1,0 +1,426 @@
+#+TITLE: Hoare Logic and Program Verification
+#+AUTHOR: Qi'ao Chen@@latex:\\@@21210160025@m.fudan.edu.cn
+#+startup: beamer
+#+LaTeX_CLASS: beamer
+#+OPTIONS: H:2
+#+BEAMER_FRAME_LEVEL: 2
+#+LATEX_HEADER: \mode<beamer>{\usetheme{Madrid}}
+#+LATEX_HEADER: \input{preamble.tex}
+#+LATEX_HEADER: \usepackage{ebproof}
+#+LATEX_HEADER: \usepackage{syntax}
+#+LATEX_HEADER: \makeindex
+* Introduction
+** Bird's Eye View
+    * Also known as *Floyd Hoare Logic* is a formal system for reasoning rigorously abotu the
+      correctness of computer programs
+    * First proposed by C. A. R. Hoare (Turing Award, 1980)
+    * Original Idea seeded by Robert Floyd (Turing Award, 1978)
+** Formally
+    * A Proof System for reasoning about *partial corretness* of certain kinds of programs
+      * set of axioms
+      * rules of inference
+      * underlying logic
+    * *Motivation*: Assertion checking in (sequential) programs
+** What does a program like
+    #+begin_src c++
+
+    #+end_src
+* Preliminaries
+** Backus–Naur form
+    * *Backus–Naur form* or *Backus normal form* (BNF) is a metasyntax notation for Chomsky's context-free
+      grammars, often used to describe the syntax of languages used in computing
+    * Context-free grammar has the same computability as pushdown automata [[https://knightscholar.geneseo.edu/cgi/viewcontent.cgi?article=1001&context=computability-oer][(a proof)]]
+** Example
+    \begin{grammar}
+    <S> ::= `-' <FN> | <FN>
+
+    <FN> ::= <DL> | <DL> `.' <DL>
+
+    <DL> ::= <D>|<D> <DL>
+
+    <D> ::=  `0' | `1'|`2'|`3'|`4'|`5'|`6'|`7'|`8'|`9'
+    \end{grammar}
+    \bigskip Here ~S~ is the start symbol, ~FN~ products a fractional number, ~DL~ is a digit list, while ~D~ is a digit
+    Then for ~S~, we have
+    #+BEGIN_center
+    ~S~ \(\Rightarrow\) ~FN~ \(\Rightarrow\)  ~DL . DL~ \(\Rightarrow\) ~D . DL~ \(\Rightarrow\) ~3 . DL~ \(\Rightarrow\)\par ~3 . D DL~ \(\Rightarrow\) ~3 . D D~  \(\Rightarrow\)
+    ~3 . 1 D~ \(\Rightarrow\) ~3 . 1 4~
+    #+END_center
+** A simple imperative language
+    * Expressions
+      \begin{equation*}
+      E\;::=\;n\mid x\mid -E\mid E+E\mid\dots
+      \end{equation*}
+    * Boolean Conditions
+      \begin{equation*}
+      B\;::=\;\texttt{true}\mid E=E\mid E>= E\mid\neg B\mid B\wedge B
+      \end{equation*}
+    * Program Statements
+      \begin{equation*}
+      P\;::=\; x:= E\mid P;P\mid\texttt{ if }B\texttt{ then }P\texttt{ else }P\mid\texttt{ while }B\; P
+      \end{equation*}
+** A simple assertion language
+    *Assertion* : A logical formula describing a set of valuations on program variables with some
+    /interesting/ property.
+
+    Expressed in the underlying logic (FO here)
+
+    * Expressions
+      \begin{equation*}
+      E\;::=\;n\mid x\mid -E\mid E+E\mid\dots
+      \end{equation*}
+      Here the set of variables is not restricted to the set of program variables
+    * Basic Propositions
+      \begin{equation*}
+      E\;::=\; E=E\mid E>= E
+      \end{equation*}
+    * Assertions
+      \begin{equation*}
+      A\;::=\;\texttt{true}\mid B\mid\neg A\mid A\wedge A\mid\forall v\;A
+      \end{equation*}
+** Assertion Semantics
+    * As program executes, the valuation of variables (read *state*) changes
+    * An execution of a program statement, transforms one state to another state
+    * At some point during execution, let the state be \(s\)
+    * Program satisfies assertion \(A\) at this point iff \(s\vDash A\)
+      \begin{align*}
+      s\vDash B&\quad\text{ iff }\quad\llb{B}_s=\texttt{true}\\
+      s\vDash\neg A&\quad\text{ iff }\quad s\not\vDash A\\
+      s\vDash A_1\wedge A_2&\quad\text{ iff }\quad s\vDash A_1\text{ and }s\vDash A_2\\
+      s\vDash\forall v.A&\quad\text{ iff }\quad \forall x\in\Z.s[x\mapsto v]\vDash A
+      \end{align*}
+      Here, the free variables in assertions are assumed to be included in the set of program variables
+** Example program
+    Consider the following program written in our imperative language, annotated with assertions
+    from our assertions language:
+    #+begin_src
+_(ensures n>= 0)
+k := 0;
+j := 1;
+while (k != n) {
+k := k+1;
+j := 2*j;
+}
+_(assert j = 2^n)
+    #+end_src
+
+    We wish to check if starting from a positive value for \(n\), is the value of \(j\) equal
+    to \(2^n\) after having executed all the statements?
+* Hoare Logic
+** Hoare Triple: Syntax
+    A *Hoare triple* \(\{\phi_1\}P\{\phi_2\}\) is a formula:
+    * \(\phi_1\) and \(\phi_2\) are formulae in a base logic (FO logic for us)
+    * \(P\) is a program in our imperative language
+    * \(\phi_1\): *Precondition*, \(\phi_2\): *Postcondition*
+
+
+    Examples of syntactically correct Hoare triples
+    * \(\{(n\ge 0)\wedge(n^2>28)\}\;m:=n+1; m:=m*m\;\{\neg(m=36)\}\)
+    * \(\{\exists x,y.(y>0)\wedge(n=x^y)\}\;n:=n*(n+1)\;\{\exists x,y.(n=x^y)\}\)
+** Hoare Triple: Semantics
+    * The *partial correctness* specification \(\{\phi_1\}P\{\phi_2\}\) is valid iff starting from a state \(s\)
+      satisfying \(\phi_1\)
+      * Whenever an execution of \(P\) terminates in state \(s'\), then \(s'\vDash\phi_2\)
+    * The *total corretness* specification \(\{\phi_1\}P\{\phi_2\}\) is valid iff starting from a state \(s\)
+      satisfying \(\phi_1\)
+      * Every execution of \(P\) terminates, and
+      * Whenever an execution of \(P\) terminates in state \(s'\), then \(s'\vDash\phi_2\)
+
+
+*** Partial/Total Correctness
+    For programs without loops, both semantics coincide
+** Assignment Rule
+    #+ATTR_LATEX: :options {Program Construct}
+    #+BEGIN_block
+    \begin{align*}
+    &E::= x\mid n\mid E+E\mid E\mid \dots\\
+    &P::=x:=E
+    \end{align*}
+    #+END_block
+
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{}
+    \infer1{\{\phi([x\mapsto E])\}x:=E\{\phi(x)\}}
+    \end{prooftree}
+    \end{equation*}
+    where \(\phi([x\mapsto E])\) replaces every free occurrence of \(x\) in \phi by \(E\)
+    #+END_block
+
+    Example:
+    \begin{equation*}
+    \{(z\cdot y>5)\wedge(\exists x.y=x^x)\}x:=z*y\{(x>5)\wedge(\exists x.y=x^x)\}
+    \end{equation*}
+** Rule for Sequential Composition
+    #+ATTR_LATEX: :options {Program Construct}
+    #+BEGIN_block
+    \(P::=P;P\)
+    #+END_block
+
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{\phi\}P_1\{\eta\}}
+    \hypo{\{\eta\}P_2\{\psi\}}
+    \infer2{\{\phi\}P_1;P_2\{\psi\}}
+    \end{prooftree}
+    \end{equation*}
+    #+END_block
+
+    Example:
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{y+z>4\}y:=y+z\{y>4\}}
+    \hypo{\{y>4\}x:=y+2\{x>6\}}
+    \infer2{\{y+z>4\}y:=y+z;x:=y+2\{x>6\}}
+    \end{prooftree}
+    \end{equation*}
+** Rule of Consequence
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\phi\Rightarrow\phi_1}
+    \hypo{\{\phi_1\}P\{\psi_1\}}
+    \hypo{\psi_1\Rightarrow\psi}
+    \infer3{\{\phi\}P\{\psi\}}
+    \end{prooftree}
+    \end{equation*}
+    \(\phi\Rightarrow\phi_1\) and \(\psi_1\Rightarrow\psi\) are implications in underlying (FO) logic
+    #+END_block
+** Rules for Conditional Branch
+    #+ATTR_LATEX: :options {Program Construct}
+    #+BEGIN_block
+    \begin{align*}
+    &E::=n\mid x\mid -E\mid E+E\mid\dots\\
+    &B::=\texttt{true}\mid E=E\mid E>= E\mid\neg B\mid B\wedge B\\
+    &P::=\texttt{if }P\texttt{ then }P\texttt{ else }P
+    \end{align*}
+    #+END_block
+
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{\phi\wedge B\}P_1\{\psi\}}
+    \hypo{\{\phi\wedge\neg B\}P_2\{\psi\}}
+    \infer2{\{\phi\}\texttt{if $B$ then $P_1$ else $P_2$\{\psi\}}}
+    \end{prooftree}
+    \end{equation*}
+    #+END_block
+
+    Example:
+
+    #+LATEX: \scalebox{0.8}{
+    \begin{prooftree}%[center=false]
+    \hypo{\{(y>4)\wedge(z>1)\}y:=y+z\{y>3\}}
+    \hypo{\{(y>4)\wedge\neg(z>1)\}y:=y-1\{y>3\}}
+    \infer2{\{y>4\}\texttt{ if }(z>1)\texttt{ then $y:=y+z$ else $y:=y-1$}\{y>3\}}
+    \end{prooftree}
+    #+LATEX: }
+** Partial Corretness of Loops
+    #+ATTR_LATEX: :options {Program Construct}
+    #+BEGIN_block
+    \begin{align*}
+    &E::=n\mid x\mid -E\mid E+E\mid\dots\\
+    &B::=\texttt{true}\mid E=E\mid E>= E\mid\neg B\mid B\wedge B\\
+    &P::=\texttt{while }B\;P
+    \end{align*}
+    #+END_block
+
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{\phi\wedge B\}P\{\phi\}}
+    \infer1{\{\phi\}\texttt{ while }B\;P\{\phi\wedge\neg B\}}
+    \end{prooftree}
+    \end{equation*}
+    * \phi is *loop invariant*
+    * Partial Corretness Semantics:
+      * If loop does not terminate, Hoare triples is vacuously satisfied
+      * If it terminates, \(\phi\wedge\neg B\) must be satisfied after termination
+
+    #+END_block
+** Partial Correctness of Loops
+    #+ATTR_LATEX: :options {Inference Rule}
+    #+BEGIN_block
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{\phi\wedge B\}P\{\phi\}}
+    \infer1{\{\phi\}\texttt{ while }B\;P\{\phi\wedge\neg B\}}
+    \end{prooftree}
+    \end{equation*}
+    #+END_block
+
+    Example:
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{\{(y=x+z)\wedge (z\neq 0)\}x:=x+1;z:=z-1\{y=x+z\}}
+    \infer1{\{y=x+z\}}\texttt{while }(z!=0)x:=x+1;z:=z-1\{(y=x+z)\wedge(z=0)\}
+    \end{prooftree}
+    \end{equation*}
+** Summary of Axioms
+    * Assignment
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{}
+      \infer1{\{\phi([x\mapsto E])\}x:=E\{\phi(x)\}}
+      \end{prooftree}
+      \end{equation*}
+    * Sequential Composition
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi\}P_1\{\eta\}}
+      \hypo{\{\eta\}P_2\{\psi\}}
+      \infer2{\{\phi\}P_1;P_2\{\psi\}}
+      \end{prooftree}
+      \end{equation*}
+    * Conditional Statement
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi\wedge B\}P_1\{\psi\}}
+      \hypo{\{\phi\wedge\neg B\}P_2\{\psi\}}
+      \infer2{\{\phi\}\texttt{if $B$ then $P_1$ else $P_2$\{\psi\}}}
+      \end{prooftree}
+      \end{equation*}
+    * Iteration
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi\wedge B\}P\{\phi\}}
+      \infer1{\{\phi\}\texttt{ while }B\;P\{\phi\wedge\neg B\}}
+      \end{prooftree}
+      \end{equation*}
+    * Weakening pre-condition, Strengthening post-condition
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\phi\Rightarrow\phi_1}
+      \hypo{\{\phi_1\}P\{\psi_1\}}
+      \hypo{\psi_1\Rightarrow\psi}
+      \infer3{\{\phi\}P\{\psi\}}
+      \end{prooftree}
+      \end{equation*}
+** Structural Rules
+    * Conjunction
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi_1\}P\{\psi_1\}}
+      \hypo{\{\phi_2\}P\{\psi_2\}}
+      \infer2{\{\phi_1\wedge\phi_2\}P\{\psi_1\wedge\psi_2\}}
+      \end{prooftree}
+      \end{equation*}
+    * Disjunction
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi_1\}P\{\psi_1\}}
+      \hypo{\{\phi_2\}P\{\psi_2\}}
+      \infer2{\{\phi_1\vee\psi_2\}P\{\psi_1\vee\psi_2\}}
+      \end{prooftree}
+      \end{equation*}
+    * Existential Quantification(\(v\) is not free in \(P\))
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi\}P\{\psi\}}
+      \infer1{\{\exists v.\phi\}P\{\exists v.\psi\}}
+      \end{prooftree}
+      \end{equation*}
+    * Universal Quantification(\(v\) is not free in \(P\))
+      \begin{equation*}
+      \begin{prooftree}%[center=false]
+      \hypo{\{\phi\}P\{\psi\}}
+      \infer1{\{\forall v.\phi\}P\{\forall v.\psi\}}
+      \end{prooftree}
+      \end{equation*}
+** A Hoare logic proof
+    Let \(P\) be
+    #+begin_src
+      k := 0
+      j := 1
+      while (k != n) {
+        k := k + 1;
+        j := 2 + j;
+      }
+    #+end_src
+
+    Our goal is to prove the validity of \(\{n>0\}P\{j=1+2*n\}\)
+** A Hoare logic proof
+    Sequential composition rule will give us a proof if we can fill in the template
+    \begin{gather*}
+    \{n>0\}\\
+    \texttt{k := 0}\\
+    \{\varphi_1\}\\
+    \texttt{j := 1}\\
+    \{\varphi_2\}\\
+    \texttt{while (k != n) \{k := k+1; j := 2+j;\}}\\
+    \{j=1+2*n\}
+    \end{gather*}
+** A Hoare logic proof
+    To prove
+    \begin{equation*}
+    \{\varphi_2\}\texttt{while(k != n)\{k := k+1;j := 2+j;\}}\{j=1+2*n\}
+    \end{equation*}
+    using loop invariant \(j=1+2*k\)
+
+    We only need to show that
+    * \(\varphi_2\Rightarrow(j=1+2*k)\)
+    * \(\{(j=1+2*k)\wedge(k\neq n)\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}\)
+    * \(((j=1+2*k)\wedge\neg(k\neq n))\Rightarrow(j=1+2*n)\)
+** A Hoare logic proof
+    * \(\varphi_2\Rightarrow(j=1+2*k)\) holds if \(\varphi_2\) is \(j=1+2*k\)
+    * \((j=1+2*k)\wedge\neg(k\neq n)\Rightarrow(j=1+2*n)\) holds in integer arithmetic
+** A Hoare logic proof
+    To show
+    \begin{equation*}
+    \{(j=1+2*k)\wedge(k\neq n)\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}
+    \end{equation*}
+    Applying assignment rule twice
+    \begin{gather*}
+    \{2+j=1+2*k\}\texttt{j:=2+j}\{j=1+2*k\}\\
+    \{2+j=1+2*(k+1)\}\texttt{k:=k+1}\{2+j=1+2*k\}
+    \end{gather*}
+    Simplifying and applying sequential compositon rule we we get
+    \begin{equation*}
+    \{j=1+2*k\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}
+    \end{equation*}
+    Then apply rule for strengthening precedent
+    \begin{equation*}
+    \begin{prooftree}%[center=false]
+    \hypo{(j=1+2*k)\wedge(k\neq n)\Rightarrow(j=1+2*k)}
+    \infer[no rule]1{\{j=1+2*k\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}}
+    \infer1{\{(j=1+2*k)\wedge(k\neq n)\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}}
+    \end{prooftree}
+    \end{equation*}
+** A Hoare logic proof
+    we have thus show that
+    \begin{gather*}
+    \{n>0\}\\
+    \texttt{k := 0}\\
+    \{\varphi_1\}\\
+    \texttt{j := 1}\\
+    \{\varphi_2:j=1+2*k\}\\
+    \texttt{while (k != n) \{k := k+1; j := 2+j;\}}\\
+    \{j=1+2*n\}
+    \end{gather*}
+** A Hoare logic proof
+    Similarly, we choose \(\varphi_1\) as \(k=0\), hence we have
+    \begin{gather*}
+    \{n>0\}\\
+    \texttt{k := 0}\\
+    \{\varphi_1:k=0\}\\
+    \texttt{j := 1}\\
+    \{\varphi_2:j=1+2*k\}\\
+    \texttt{while (k != n) \{k := k+1; j := 2+j;\}}\\
+    \{j=1+2*n\}
+    \end{gather*}
+* Soundness and Completeness
+** Soundness
+    Hoare Logic has a sound proof system
+** Relative Completeness of Hoare Logic
+    #+ATTR_LATEX: :options [Cook, 1974]
+    #+BEGIN_theorem
+    If there is a complete proof system for proving assertions in the underlying logic, then all
+    valid Hoare triples have a proof
+    #+END_theorem
