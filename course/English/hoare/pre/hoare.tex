@@ -1,4 +1,4 @@
-% Created 2022-03-26 Sat 20:44
+% Created 2022-03-29 Tue 13:50
 % Intended LaTeX compiler: pdflatex
 \documentclass[presentation]{beamer}
 \usepackage[utf8]{inputenc}
@@ -26,7 +26,7 @@
  pdftitle={Hoare Logic and Program Verification},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 28.0.90 (Org mode 9.6)}, 
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
  pdflang={English}}
 \begin{document}
 
@@ -36,16 +36,37 @@
 \end{frame}
 
 \section{Introduction}
-\label{sec:org675ebdb}
-\begin{frame}[label={sec:orgbc8549e}]{Bird's Eye View}
+\label{sec:org08617e2}
+\begin{frame}[label={sec:org3c0ef75}]{Formal Methods}
 \begin{itemize}
-\item Also known as \alert{Floyd Hoare Logic} is a formal system for reasoning rigorously abotu the
-correctness of computer programs
+\item \alert{Formal Specification}: using mathematical notation to give a precise description of what a
+program should do
+\item \alert{Formal Verification}: using precise rules to mathematically prove that a program satisfies a
+formal specification
+\item \alert{Formal Development (Refinement)}: developing programs in a way that ensures mathematically they
+meet their formal specifications
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgbb70686}]{Why}
+For some applications, correctness is especially important
+\begin{itemize}
+\item nuclear reactor controllers
+\item car braking systems
+\item fly-by-wire aircraft
+\item software controlled medical equipment
+\item voting machines
+\item cryptographic code
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org18f8130}]{Bird's Eye View}
+\begin{itemize}
+\item Also known as \alert{Floyd Hoare Logic} is a formal system for reasoning rigorously about the
+correctness of \emph{imperative} programs
 \item First proposed by C. A. R. Hoare (Turing Award, 1980)
 \item Original Idea seeded by Robert Floyd (Turing Award, 1978)
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org14cf818}]{Formally}
+\begin{frame}[label={sec:org26d089b}]{Formally}
 \begin{itemize}
 \item A Proof System for reasoning about \alert{partial corretness} of certain kinds of programs
 \begin{itemize}
@@ -56,18 +77,18 @@ correctness of computer programs
 \item \alert{Motivation}: Assertion checking in (sequential) programs
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgcae9782},fragile]{What does a program like}
+\begin{frame}[label={sec:orgbf4be46},fragile]{What does a program like}
 \end{frame}
 \section{Preliminaries}
-\label{sec:orgcf696da}
-\begin{frame}[label={sec:orgef21826}]{Backus–Naur form}
+\label{sec:org9eff8ca}
+\begin{frame}[label={sec:orgca3bd4b}]{Backus–Naur form}
 \begin{itemize}
 \item \alert{Backus–Naur form} or \alert{Backus normal form} (BNF) is a metasyntax notation for Chomsky's context-free
 grammars, often used to describe the syntax of languages used in computing
 \item Context-free grammar has the same computability as pushdown automata \href{https://knightscholar.geneseo.edu/cgi/viewcontent.cgi?article=1001\&context=computability-oer}{(a proof)}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org5d673fa},fragile]{Example}
+\begin{frame}[label={sec:org8c87ba4},fragile]{Example}
  \begin{grammar}
 <S> ::= `-' <FN> | <FN>
 
@@ -84,7 +105,7 @@ Then for \texttt{S}, we have
 \texttt{3 . 1 D} \(\Rightarrow\) \texttt{3 . 1 4}
 \end{center}
 \end{frame}
-\begin{frame}[label={sec:orgb7cd74a}]{A simple imperative language}
+\begin{frame}[label={sec:orge63ab0c}]{A simple imperative language}
 \begin{itemize}
 \item Expressions
 \begin{equation*}
@@ -100,7 +121,7 @@ P\;::=\; x:= E\mid P;P\mid\texttt{ if }B\texttt{ then }P\texttt{ else }P\mid\tex
 \end{equation*}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orga1d6c44}]{A simple assertion language}
+\begin{frame}[label={sec:org3b6cb7f}]{A simple assertion language}
 \alert{Assertion} : A logical formula describing a set of valuations on program variables with some
 \emph{interesting} property.
 
@@ -122,7 +143,7 @@ A\;::=\;\texttt{true}\mid B\mid\neg A\mid A\wedge A\mid\forall v\;A
 \end{equation*}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org1fb7fcc}]{Assertion Semantics}
+\begin{frame}[label={sec:org8866bd9}]{Assertion Semantics}
 \begin{itemize}
 \item As program executes, the valuation of variables (read \alert{state}) changes
 \item An execution of a program statement, transforms one state to another state
@@ -137,7 +158,7 @@ s\vDash\forall v.A&\quad\text{ iff }\quad \forall x\in\Z.s[x\mapsto v]\vDash A
 Here, the free variables in assertions are assumed to be included in the set of program variables
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org724fdbe},fragile]{Example program}
+\begin{frame}[label={sec:org2a73851},fragile]{Example program}
  Consider the following program written in our imperative language, annotated with assertions
 from our assertions language:
 \begin{verbatim}
@@ -155,8 +176,8 @@ We wish to check if starting from a positive value for \(n\), is the value of \(
 to \(2^n\) after having executed all the statements?
 \end{frame}
 \section{Hoare Logic}
-\label{sec:orgf078f3c}
-\begin{frame}[label={sec:orgc31ea3b}]{Hoare Triple: Syntax}
+\label{sec:orgec7a796}
+\begin{frame}[label={sec:orga623d02}]{Hoare Triple: Syntax}
 A \alert{Hoare triple} \(\{\phi_1\}P\{\phi_2\}\) is a formula:
 \begin{itemize}
 \item \(\phi_1\) and \(\phi_2\) are formulae in a base logic (FO logic for us)
@@ -171,7 +192,7 @@ Examples of syntactically correct Hoare triples
 \item \(\{\exists x,y.(y>0)\wedge(n=x^y)\}\;n:=n*(n+1)\;\{\exists x,y.(n=x^y)\}\)
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org147f379}]{Hoare Triple: Semantics}
+\begin{frame}[label={sec:orga154981}]{Hoare Triple: Semantics}
 \begin{itemize}
 \item The \alert{partial correctness} specification \(\{\phi_1\}P\{\phi_2\}\) is valid iff starting from a state \(s\)
 satisfying \(\phi_1\)
@@ -191,7 +212,7 @@ satisfying \(\phi_1\)
 For programs without loops, both semantics coincide
 \end{block}
 \end{frame}
-\begin{frame}[label={sec:org5589228}]{Assignment Rule}
+\begin{frame}[label={sec:org7b99118}]{Assignment Rule}
 \begin{block}{Program Construct}
 \begin{align*}
 &E::= x\mid n\mid E+E\mid E\mid \dots\\
@@ -214,7 +235,7 @@ Example:
 \{(z\cdot y>5)\wedge(\exists x.y=x^x)\}x:=z*y\{(x>5)\wedge(\exists x.y=x^x)\}
 \end{equation*}
 \end{frame}
-\begin{frame}[label={sec:org4d3232e}]{Rule for Sequential Composition}
+\begin{frame}[label={sec:orgf362505}]{Rule for Sequential Composition}
 \begin{block}{Program Construct}
 \(P::=P;P\)
 \end{block}
@@ -238,7 +259,7 @@ Example:
 \end{prooftree}
 \end{equation*}
 \end{frame}
-\begin{frame}[label={sec:orgeea7ab3}]{Rule of Consequence}
+\begin{frame}[label={sec:orga24b83e}]{Rule of Consequence}
 \begin{block}{Inference Rule}
 \begin{equation*}
 \begin{prooftree}%[center=false]
@@ -251,7 +272,7 @@ Example:
 \(\phi\Rightarrow\phi_1\) and \(\psi_1\Rightarrow\psi\) are implications in underlying (FO) logic
 \end{block}
 \end{frame}
-\begin{frame}[label={sec:orgd24dabd}]{Rules for Conditional Branch}
+\begin{frame}[label={sec:org16baa57}]{Rules for Conditional Branch}
 \begin{block}{Program Construct}
 \begin{align*}
 &E::=n\mid x\mid -E\mid E+E\mid\dots\\
@@ -280,7 +301,7 @@ Example:
 \end{prooftree}
 }
 \end{frame}
-\begin{frame}[label={sec:orgf9a9e0d}]{Partial Corretness of Loops}
+\begin{frame}[label={sec:org58cc1a4}]{Partial Corretness of Loops}
 \begin{block}{Program Construct}
 \begin{align*}
 &E::=n\mid x\mid -E\mid E+E\mid\dots\\
@@ -306,7 +327,7 @@ Example:
 \end{itemize}
 \end{block}
 \end{frame}
-\begin{frame}[label={sec:org11e363b}]{Partial Correctness of Loops}
+\begin{frame}[label={sec:orgc684e93}]{Partial Correctness of Loops}
 \begin{block}{Inference Rule}
 \begin{equation*}
 \begin{prooftree}%[center=false]
@@ -324,7 +345,7 @@ Example:
 \end{prooftree}
 \end{equation*}
 \end{frame}
-\begin{frame}[label={sec:org7b84f27}]{Summary of Axioms}
+\begin{frame}[label={sec:org23d59d8}]{Summary of Axioms}
 \begin{itemize}
 \item Assignment
 \begin{equation*}
@@ -367,7 +388,7 @@ Example:
 \end{equation*}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org588b58f}]{Structural Rules}
+\begin{frame}[label={sec:org4170b63}]{Structural Rules}
 \begin{itemize}
 \item Conjunction
 \begin{equation*}
@@ -401,7 +422,7 @@ Example:
 \end{equation*}
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org90d6e51},fragile]{A Hoare logic proof}
+\begin{frame}[label={sec:org2c35c53},fragile]{A Hoare logic proof}
  Let \(P\) be
 \begin{verbatim}
       k := 0
@@ -414,7 +435,7 @@ Example:
 
 Our goal is to prove the validity of \(\{n>0\}P\{j=1+2*n\}\)
 \end{frame}
-\begin{frame}[label={sec:org1cdecf8}]{A Hoare logic proof}
+\begin{frame}[label={sec:org5373e90}]{A Hoare logic proof}
 Sequential composition rule will give us a proof if we can fill in the template
 \begin{gather*}
 \{n>0\}\\
@@ -426,7 +447,7 @@ Sequential composition rule will give us a proof if we can fill in the template
 \{j=1+2*n\}
 \end{gather*}
 \end{frame}
-\begin{frame}[label={sec:org45e6eae}]{A Hoare logic proof}
+\begin{frame}[label={sec:orgb4d1501}]{A Hoare logic proof}
 To prove
 \begin{equation*}
 \{\varphi_2\}\texttt{while(k != n)\{k := k+1;j := 2+j;\}}\{j=1+2*n\}
@@ -440,13 +461,13 @@ We only need to show that
 \item \(((j=1+2*k)\wedge\neg(k\neq n))\Rightarrow(j=1+2*n)\)
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:org96c7d46}]{A Hoare logic proof}
+\begin{frame}[label={sec:org09e7061}]{A Hoare logic proof}
 \begin{itemize}
 \item \(\varphi_2\Rightarrow(j=1+2*k)\) holds if \(\varphi_2\) is \(j=1+2*k\)
 \item \((j=1+2*k)\wedge\neg(k\neq n)\Rightarrow(j=1+2*n)\) holds in integer arithmetic
 \end{itemize}
 \end{frame}
-\begin{frame}[label={sec:orgd44ecf6}]{A Hoare logic proof}
+\begin{frame}[label={sec:orgc5d1c93}]{A Hoare logic proof}
 To show
 \begin{equation*}
 \{(j=1+2*k)\wedge(k\neq n)\}\texttt{k:=k+1;j:=2+j}\{j=1+2*k\}
@@ -469,7 +490,7 @@ Then apply rule for strengthening precedent
 \end{prooftree}
 \end{equation*}
 \end{frame}
-\begin{frame}[label={sec:orgf2c3c6b}]{A Hoare logic proof}
+\begin{frame}[label={sec:org4b7a5d0}]{A Hoare logic proof}
 we have thus show that
 \begin{gather*}
 \{n>0\}\\
@@ -481,7 +502,7 @@ we have thus show that
 \{j=1+2*n\}
 \end{gather*}
 \end{frame}
-\begin{frame}[label={sec:orgd330970}]{A Hoare logic proof}
+\begin{frame}[label={sec:orgd71bf6f}]{A Hoare logic proof}
 Similarly, we choose \(\varphi_1\) as \(k=0\), hence we have
 \begin{gather*}
 \{n>0\}\\
@@ -494,11 +515,17 @@ Similarly, we choose \(\varphi_1\) as \(k=0\), hence we have
 \end{gather*}
 \end{frame}
 \section{Soundness and Completeness}
-\label{sec:orgea99f67}
-\begin{frame}[label={sec:orgc68dd73}]{Soundness}
+\label{sec:org11ba960}
+\begin{frame}[label={sec:orgb5bf044}]{Soundness}
+We use \(\vdash\{p\}c\{q\}\) to represent that there is a derivation of \(\{p\}c\{q\}\) following the rules
+
 Hoare Logic has a sound proof system
 \end{frame}
-\begin{frame}[label={sec:orgc5bad14}]{Relative Completeness of Hoare Logic}
+\begin{frame}[label={sec:org6b5b256}]{Relative Completeness of Hoare Logic}
+Hoare logic is incomplete: \(\vDash\{\texttt{true}\}P\{\texttt{false}\}\) iff \(P\) does not halt. But
+the halting problem is undecidable
+
+
 \begin{theorem}[Cook, 1974]
 If there is a complete proof system for proving assertions in the underlying logic, then all
 valid Hoare triples have a proof
