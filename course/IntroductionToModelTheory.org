@@ -8,6 +8,9 @@
 #+LATEX_HEADER: \makeindex
 #+LATEX_HEADER: \def \EF {\text{EF}}
 #+LATEX_HEADER: \def \tint {\text{int}}
+#+LATEX_HEADER: \DeclareMathOperator{\Ex}{Ex}
+#+LATEX_HEADER: \DeclareMathOperator{\Bd}{Bd}
+#+LATEX_HEADER: \DeclareMathOperator{\tbd}{bd}
 
 * Back-and-forth Equivalence \rom{1}
     Convention: Relations and functions are sets of pairs \((x,y)\)
@@ -1758,6 +1761,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_proposition
+    label:3.3.2
     Suppose \(M\preceq N\), \(p\in S_n(M)\), \(q\in S_n(N)\), \(q\sqsupseteq p\). Then there is \(I\),
     ultrafilter \(\calu\) on \(I\) s.t. (for some copy of \(M^{\calu}\), moved by isomorphism), \(M\preceq N\preceq M^{\calu}\), \(p\subseteq q\subseteq p^{\calu}\)
     #+END_proposition
@@ -3088,6 +3092,311 @@
 
 
 
+* Fundamental Order and Forking
+** The fundamental order
+    Fix \(n<\omega\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(M\preceq\M\), \(p\in S_n(M)\), \(\varphi(x_1,\dots,x_n;\bary)\). \(p\) *represents* \varphi
+    if \(\exists\barb\in M\) \(\varphi(\barx,\barb)\in p(\barx)\). \(p\) *omits* \varphi otherwise
+
+    The *class* of \(p\) is \([p]=\{\varphi:p\text{ represents }\varphi\}\)
+
+    \([p]\le[q]\) if \([p]\supseteq[q]\)
+
+    The *fundamental order* is \(\{[p]:M\preceq\M,p\in S_n(M)\}\), with \(\le\) (depends on \(n\)). \(p\le q\) means \([p]\le[q]\)
+    #+END_definition
+
+    #+BEGIN_remark
+    \(\le\) is a partial order on the fundamental order but a preorder on the class \(\{p:M\vDash T,p\in S_n(M)\}\)
+    #+END_remark
+
+    \([p]\) is not a standard notation
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(n=1\), \(\varphi(x,y):=x=y\). \(p\in S_1(M)\) represents \(p\) iff \(\exists b\in M\), \(x=b\in p(x)\) iff \(p\)
+    is a constant type
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    \(n=1\), \(T=\DLO\), there are four classes:
+    1. constant types
+    2. types at \(+\infty\)
+    3. types at \(-\infty\)
+    4. others
+
+
+    \begin{center}\begin{tikzcd}
+    2\ar[rd]&&3\ar[ld]\\
+    &4\ar[d]\\
+    &1
+    \end{tikzcd}\end{center}
+
+    \(x=y\) is represented in 1
+
+    \(x<y\) is represented in 1,3,4 \(\tp(2/\R)\) has \(x<3\), \(\tp(-\infty/\R)\)
+    has \(x<0\), \(\tp(\sqrt{2}/\Q)\) has \(x<2\), \(\tp(+\infty/R)\) doesn't have \(x<b\)
+
+    \(x>y\) is represented in 1,2,4
+
+    \(\tp(\sqrt{2}/\Q)\) and \(\tp(0^+/\R)\) have the same class
+    #+END_examplle
+
+    Goal: in a stable theory: if \(q\) is an extension of \(p\), then if \(q\sqsupseteq p\), then \([q]=[p]\),
+    if \(q\sqsupseteq p\), then \([q]<[p]\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Suppose \(M\preceq N\), \(p\in S_n(M)\), \(q\in S_n(N)\), \(p\subseteq q\)
+    1. \([q]\le[p]\)
+    2. \([q]=[p]\) iff for any \(L\)-formula \(\varphi(\barx,\bary)\), if \(\barb\in N\)
+       and \(\varphi(\barx,\barb)\in q(\barx)\), then \(\exists\barb'\in M\) \(\varphi(\barx,\barb')\in p\)
+    3. if \(q\sqsupseteq p\), then \([q]=[p]\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    1. every formula \varphi represented by \(p\) is represented by \(q\)
+    2. \([q]=[p]\Leftrightarrow[q]\ge[p]\Leftrightarrow[q]\subseteq[p]\Leftrightarrow\) this condition
+    3.
+    #+END_proof
+
+    #+BEGIN_remark
+    Suppose \(M\preceq N\), \(p\in S_n(M)\), \(q\in S_n(N)\), \(p\subseteq q\)
+    1. \([q]=[p]\)  means
+       that
+       \(\forall\varphi(\barx,\bary)\in L\),
+       \(\exists\barb\in N\), \(\varphi(\barx,\barb)\in q(\barx)\Rightarrow \exists\barb\in M\varphi(\barx,\barb)\in p(\barx)\)
+    2. but \(q\sqsupseteq p\) considers \(L(M)\)-formulas
+
+
+    \(q\sqsupseteq p\) iff \([q]=[p]\) in \(L(M)\)-structures
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \(M,N\preceq\M\), \(p\in S_n(M)\), \(q\in S_n(N)\), then \([p]\ge[q]\) iff \(\exists\) ultrafilter \(\calu\) and
+    elementary embedding \(M\to N^{\calu}\) making \(q^{\calu}\supseteq p\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\Rightarrow\) similar to ref:3.3.2
+
+    \(\Leftarrow\): \([q^{\calu}]=[q]\) because \(q^{\calu}\sqsupseteq q\), \([q^{\calu}]\le[p]\) because \(q^{\calu}\supseteq p\)
+    #+END_proof
+** The fundamental order in stable theory
+    Assume \(T\) is stable
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:3.31.8
+    Suppose \(M\preceq N\preceq\M\), \(p\in S_n(M)\), \(q_1,q_2\in S_n(N)\), \(q_1,q_2\supseteq p\) and \([q_1]=[p]=[q_2]\). Then \(q_1=q_2\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    similar to ref:3.3.8
+
+    Suppose \(q_1\neq q_2\), \(\exists\varphi(\barx,\barb)\) s.t. \(\varphi\in q_1, \neg\varphi\in q_2\)
+
+    Let \(\beta=[p]\)
+
+    *Claim*: If \(M'\preceq\M\), \(p'\in S_n(M')\), \([p']=\beta\),
+     then \(\exists N'\succeq M'\), \(\exists q_1',q_2'\in S_n(N')\), \(q_1',q_2'\supseteq p'\), \([q_1']=[q_2']=\beta\)
+     and \(\exists\barb'\in N'\), \(\varphi(\barx,\barb')\in q_1'\) and \(\neg\varphi\in q_2'\)
+
+     \([p']\ge[p]\), so there \(\calu\), elementary embedding \(M'\to M^{\calu}\) s.t. \(p^{\calu}\supseteq p'\).
+     Then we have \(M'\to M^{\calu}\to N^{\calu}\)
+
+     \([q_1^{\calu}]=[q_1]=\beta=[q_2]=[q_2^{\calu}]\). Let \(q_i'=q_i^{\calu}\), \(N'=N^{\calu}\)
+
+     Using the claim, we can build a tree of types
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    label:3.31.9
+    If \(M\preceq N\), \(p\in S_n(M)\), \(q\in S_n(N)\), \(q\supseteq p\)
+    1. \(q\sqsupseteq p\Leftrightarrow[q]=[p]\)
+    2. \(q\not\sqsupseteq p\Leftrightarrow[q]<[p]\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Let \(q'\) be the heir of \(p\), \(q'\in S_n(N)\)
+
+    If \(q\sqsupseteq p\), then \(q=q'\)
+
+    If \([q]=[p]\), then \([q]=[q']=[p]\) so Lemma ref:3.31.8 shows \(q=q'\)
+    #+END_proof
+** bounds
+    \(T\) is stable
+
+    Fix \(A\subseteq\M\), \(p\in S_n(A)\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(M\preceq\M\), \(M\supseteq A\), then \(\Ex_M(p)=\{[q]:q\in S_n(M), q\supseteq p\}\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Every chain in \(\Ex_M(p)\) has an upper bound
+    #+END_lemma
+
+    #+BEGIN_proof
+    Let \(F=\{q\in S_n(M):q\supseteq p\}\). Suppose \(\{[q_i]:i\in I\}\) is a chain, \(q_i\in F\), \((I,\le)\) a linear
+    order, \([q_i]\le[q_j]\) for \(i\le j\)
+
+    If \(i\le j\), \(q_i\) omits \varphi, then \(q_j\) omits \varphi
+
+    Let \(\Sigma(\barx)=\{\neg\varphi(\barx,\barb):\varphi(\barx,\bary)\text{ omitted by some }q, \barb\in M\}\)
+
+    *Claim*: \(p(\barx)\cup\Sigma(\barx)\) is consistent
+
+    suppose \(\varphi_1,\dots,\varphi_m\), \(\varphi_j\) is omitted by \(q_{i_j}\), \(i_j\in I\), \(\barb_1,\dots,\barb_m\in M\).
+    Want \(p\cup\{\neg\varphi_j(\barx,\barb_j):1\le j\le m\}\) consistent
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\Bd_M(p)=\{\text{maximal }\beta\in\Ex_M(p)\}\)
+
+    Elements of \(\Bd_M(p)\) are called *bounds* of \(p\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    \(\forall\beta\in\Ex_M(p)\), \(\exists\beta'\in\Bd_M(p)\), \(\beta'\ge\beta\), and \(\Bd_M(p)\) is not empty
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    Suppose \(A\preceq\M\), \(p\in S_n(A)\), \(A\) is a model
+
+    *Claim*: \([p]=\max\Ex_M(p)\), so \(\Bd_M(p)=\{[p]\}\)
+
+    Take \(q\in S_n(M)\), \(q\sqsupseteq p\), then \([q]=[p]\), \([q]\in\Ex_M(p)\).
+    If \(r\in S_n(M)\), \(r\supseteq p\), then \([r]\le[p]\), so if \(p\in\Ex_M(p)\) then \(\beta\le[p]\)
+    #+END_examplle
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(M,N\preceq M\), \(M,N\supseteq A\)
+    1. \(\forall\beta\in Ex_M(p)\), \(\exists\beta'\in\Ex_N(p)\), \(\beta'\ge\beta\)
+    2. \(\Bd_M(p)=\Bd_N(p)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. Take \(M'\preceq\M\), \(M'\supseteq M\cup N\), \(\beta\in\Ex_M(p)\) means \(\exists q\in S_n(M)\), \(q\supseteq p\), \([q]=\beta\)
+
+       Let \(q'\in S_n(M')\) be \(q'\sqsupseteq q\)
+
+       Let \(r=q'\uhr N\). Then \(r\supseteq p\), so \([r]\in\Ex_N(p)\). \([r]\ge[q']=[q]=\beta\)
+    2. suppose \(\beta\in\Bd_M(p)\). By 1 twice,
+    #+END_proof
+** Theorem of the bound
+    \(T\) is stable
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(p\in S_n(\M)\) is *Lascar \(A\)-invariant* if \(p\) is \(M\)-invariant for every \(A\subseteq M\preceq\M\)
+    #+END_definition
+
+    weaker than being \(A\)-invariant in stable theory
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:3.31.17
+    If \(A\subseteq M\preceq\M\), \(p\in S_n(A)\), \(q\in S_n(M)\), \(q\supseteq p\), \([q]\in\Bd(p)\). Let \(q^{\M}\) be the
+    global heir of \(q\). Then \(q^{\M}\) is Lascar \(A\)-invariant
+    #+END_lemma
+
+    #+BEGIN_proof
+    By ref:3.31.5, \([q^{\M}]=[q]\in\Bd(p)\). If \(q^{\M}\) isn't Lascar \(A\)-invariant, there is
+    small \(N\supseteq A\) \(q^{\M}\) isn't \(N\)-invariant, not \(N\)-definable.
+    Then \(q^{\M}\not\sqsupseteq q^{\M}\uhr N\). By Proposition ref:3.31.9, \([q^{\M}\uhr N]>[q^{\M}]=[q]\)
+
+    Let \(r=q^{\M}\uhr N\), \(r\supseteq p\), so \([r]\in\Ex_N(p)\), \([q]\in\Bd(p)=\Bd_N(p)\) is maximal
+    in \(\Ex_N(p)\), but \([r]>[q]\), \([r]\in\Ex_N(p)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:3.31.18
+    If \(\barb\in M\), \(A\subseteq\M\), then \(\exists M\supseteq A\), \(M\preceq\M\), the global heir of \(\tp(\barb/M)\) is
+    Lascar \(A\)-invariant. Also given \(\beta\in\Bd(\tp(\barb/A))\), can make \(\tp(\barb/M)\) and it's
+    heir have class \beta
+    #+END_lemma
+
+    #+BEGIN_proof
+    Take \(\beta\in\Bd(p)\), \(p=\tp(\barb/A)\). Take \(M\supseteq A\) \(M\preceq\M\). Take \(q\in S_n(M)\), \([q]=\beta\).
+    Take \(\barb_0\vDash q\), \(\tp(\barb_0/A)=\tp(\barb/A)\). There
+    is \(\sigma\in\Aut(\M/A)\), \(\sigma(\barb_0)=\barb\).
+
+    Move \(M,q,b_0\) by \sigma, We may assume \(\barb_0=\barb\), so \(\tp(\barb/M)=q\), \([q]=\beta\).
+
+    By ref:3.31.17, \(q^{\M}\) is Lascar \(A\)-invariant
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:3.31.19
+    Fix \(\barb,A\). Suppose \(M_1,M_2\preceq\M\), \(M_1,M_2\supseteq A\). Let \(p_i\in S_n(\M)\) be the heir
+    of \(\tp(\barb/M_i)\). Suppose \(p_1,p_2\) are Lascar \(A\)-invariant, then \(p_1=p_2\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Suppose \(p_1\neq p_2\). Take \(\varphi(\barx,\barc)\in p_1(\barx)\), \(\neg\varphi(\barx,\barc)\in p_2\).
+
+    Lemma ref:3.31.18 shows there is \(M_3\preceq\M\), \(M_3\supseteq A\) s.t. \(\tp(\barc/M_3)\sqsubseteq r\in S_n(\M)\) and \(r\)
+    is Lascar \(A\)-invariant.
+
+    Take \(\bare\vDash r\uhr M_1M_2M_3\barb\). Note \(\barb\vDash p_1\uhr M_1\) and \(\bare\vDash r\uhr M_1\barb\). Then
+    \((\barb,\bare)\vDash(p_1\otimes r)\uhr M_1\) since \(p_1,r\) are \(M_1\)-invariant. In stable theory, product
+    commutes. Therefore \((\bare,\barb)\vDash(r\otimes p_1)\uhr M_1\). Then \(\barb\vDash p_1\uhr M_1e\).
+
+    \(\bare\vDash r\uhr M_3=\tp(\barc/M_3)\), \(\bare\equiv_{M_3}\barc\), \(p_1\) is \(M_3\)-invariant.
+    Hence \(\varphi(\barx,\bare)\in p_1\). So \(\M\vDash\varphi(\barc,\bare)\)
+
+    Same argument with \(p_2\), get \(\M\vDash\neg\varphi(\barc,\bare)\), a contradiction
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(p\in S_n(A)\), \(\abs{\Bd(p)}=1\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Take \(\barb\vDash p\), \(\beta_1,\beta_2\in\Bd(p)\). Lemma ref:3.31.18, there is \(A\subseteq M_1,M_2\preceq\M\)
+    s.t. \([\tp(\barb/M_i)]=\beta\) if \(p_i=\tp(\barb/M_i)\), \(p_i^{\M}\) is Lascar \(A\)-invariant.
+
+    Lemma ref:3.31.19 \(p_1^{\M}=p_2^{\M}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\tbd(p)=\)the bound of \(p\)
+    #+END_definition
+
+    example
+** Non-forking extensions
+    Assume stability
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    If \(A\subseteq B\), \(p\in S_n(A)\), \(q\in S_n(B)\), \(p\subseteq q\), then \(\tbd(q)\le\tbd(p)\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    Take \(M\supseteq B\), \(M\preceq\M\), \(r\in S_n(M)\), \(\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    If \(A\subseteq B\), \(p\in S_n(A)\), \(q\in S_n(B)\), \(q\supseteq p\), \(q\) is a *nonforking extension* of \(p\)
+    iff \(\tbd(q)=\tbd(p)\)
+    #+END_definition
+
+** wef
+    *Intuition* if \varphi forks over \(A\), then \(\varphi(\M)\) is "small", and
+    \(\{\varphi(\M):\varphi\text{ forks over }A\}\) is an ideal
 
 * Appendices                  :ignore:
   #+LATEX: \appendix
