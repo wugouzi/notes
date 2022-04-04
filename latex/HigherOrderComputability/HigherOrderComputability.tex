@@ -1,4 +1,4 @@
-% Created 2022-04-01 Fri 18:55
+% Created 2022-04-04 Mon 12:56
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -21,6 +21,10 @@
 \newcommand{\IF}{i\mspace{-4mu}f}
 \DeclareMathOperator{\Asm}{\mathcal{A}sm}
 \DeclareMathOperator{\nMod}{\mathcal{M}od}
+\DeclareMathOperator{\PC}{\textsf{PC}}
+\DeclareMathOperator{\PCF}{PCF}
+\DeclareMathOperator{\eff}{eff}
+\DeclareMathOperator{\tT}{T}
 \makeindex
 \author{John Longley \& Dag Normann}
 \date{\today}
@@ -39,11 +43,139 @@
 
 
 \section{Theory of Computability Models}
-\label{sec:orgb3afb28}
+\label{sec:org772aa94}
+\subsection{Further Examples of Higher-Order Models}
+\label{sec:org1838659}
+\subsubsection{Kleene's Second Model}
+\label{sec:orgef1c5ca}
+Whereas \(K_1\) captures a notion of computability for finitary data such as numbers, our next
+example embodies a notion of computability in an \emph{infinitary} setting.
+
+When our computation returns a result \(F(g)\in\N\), it must do so after only a finite number of
+'computation steps'
+
+If \(F:\N^{\N}\to\N\) is computable, the function \(F\) can be completely described by recording, for
+each finite sequence \(m_0,\dots,m_{r-1}\), whether the information '\(g(0)=m_0,\dots,g(r-1)=m-1\)'
+suffices to determine the value of \(F(g)\), and if so, what the value is. We write \(\la\cdots\ra\)for
+standard computable operation \(\N^*\to\N\)
+\begin{align*}
+&f(\la m_0,\dots,m_{r-1}\ra)=m-1&&\text{if }F(g)=m\text{ whenever }g(0)=m_0,\dots,g(r-1)=m_{r-1}\\
+&f(\la m_0,\dots,m_{r-1}\ra)=0&&\text{'}g(0)=m_0,\dots,g(r-1)=m_{r-1}\text{' does not}\\
+&&&\text{suffice to determine }F(g)
+\end{align*}
+We can then compute \(F(g)\) from just \(f\) and \(g\)
+\begin{align*}
+F(g)=(f\mid g):=&f(\la g(0),\dots,g(r-1)\ra)-1\\
+&\text{where }r=\mu r.f(\la g(0),\dots,g(r-1)\ra)>0
+\end{align*}
+Even if \(f\in\N^{\N}\) does not represent some \(F\) in this way, we can regard the above formula
+as defining a \emph{partial} computable function \((f\mid-):\N^{\N}\rhu\N\)
+
+A small tweak is to obtain an application operation with codomain \(\N^{\N}\) rather than \(\N\).
+In effect, the computaion now accepts an additional argument \(n\in N\), which can be assumed to
+be known before any queries to \(g\) are made. We may therefore define
+\begin{align*}
+(f\odot g)(n):=&f(\la n,g(0),\dots,g(r-1)\ra)-1\\
+&\text{where }r=\mu r.f(\la n,g(0),\dots,g(r-1)\ra)>0
+\end{align*}
+In general, this will define a \textbf{partial} function \(\N\rhu\N\). We shall henceforth
+consider \(f\odot g\) to be 'defined' only if the above formula yields a \emph{total} function \(\N\to\N\). In
+this way, we obtain a partial application operation
+\begin{equation*}
+\odot:\N^{\N}\times\N^{\N}\rhu\N^{\N}
+\end{equation*}
+The structure \((\N^{\N},\odot)\) is known to be \textbf{Kleene's second model}
+
+We can also restrict \(\odot\) to the set of total \emph{computable}' functions \(\N\to\N\). Since the natural
+candidates for \(k,s\) in \(K_2\) are computable, this gives us both a PCA \(K_2^{\eff}\) and a
+relative PCA \((K_2;K_2^{\eff})\)
+\subsubsection{Typed \texorpdfstring{\(\lambda\)}{λ}-Calculi}
+\label{sec:org167de23}
+
+We work in the type world \(\sfT=\sfT^{\to}(\beta_0,\dots,\beta_{r-1})\) where \(\beta_i\) are base types. We
+assume given some set \(C\) of \textbf{constant symbols} \(c\), each with an assigned type \(\tau_c\in\sfT\);
+we also suppose we have an unlimited supply of \textbf{variable symbols} \(x^\sigma\) for each \(\sigma\).
+
+\(\Xi\) specifies \textbf{basic evaluation contexts} \(K[-]\)
+
+\begin{examplle}[]
+Let \(C\) consist of the following constants
+\begin{align*}
+\hat{0}&:\ttN\\
+suc&:\ttN\to\ttN\\
+rec_\sigma&:\sigma\to(\sigma\to\ttN\to\sigma)\to\ttN\to\sigma
+\end{align*}
+Let \(\Delta\) consist of the \(\delta\)-rules
+\begin{gather*}
+rec_\sigma xf\hat{0}\rightsquigarrow x\\
+rec_\sigma xf(suc\; n)\rightsquigarrow f(rec_\sigma xfn)n
+\end{gather*}
+and let \(\Xi\) consist of the contexts of the forms
+\begin{equation*}
+[-]N,\quad suc[-],\quad rec_\sigma PQ[-]
+\end{equation*}
+The first means that if \(M\rightsquigarrow M'\) then \(MN\rightsquigarrow MN'\)
+
+This defines Gödel's \textbf{System \(T\)}
+\end{examplle}
+
+\begin{examplle}[Plotkin's PCF]
+Let \(C\) consists of the following constants
+\begin{align*}
+\hat{0}&:\ttN\quad\forall n\in\N\\
+suc,pre&:\ttN\to\ttN\\
+ifzero&:\ttN,\ttN,\ttN\to\ttN\\
+Y_\sigma&:(\sigma\to\sigma)\to\sigma\quad\forall\sigma\in\sfT
+\end{align*}
+Let \(\Delta\) consist of rules of the forms
+\begin{align*}
+suc\;\hatn&\rightsquigarrow\what{n+1}\\
+pre\;\what{n+1}&\rightsquigarrow\hatn\\
+pre\;\hat{0}&\rightsquigarrow\hat{0}\\
+ifzero\;\hat{0}&\rightsquigarrow\lambda xy.x\\
+ifzero\;\what{n+1}&\rightsquigarrow\lambda xy.y\\
+Y_\sigma f&\rightsquigarrow f(Y_\sigma f)
+\end{align*}
+and let \(\Xi\) consist of the contexts of the forms
+\begin{equation*}
+[-]N,\quad suc[-],\quad pre[-],\quad ifzero[-]
+\end{equation*}
+The resulting language is known as Plotkin's PCF (\emph{Programming language for Computable Functions})
+\end{examplle}
+
+Given \(\Delta\) and \(\Xi\) as above, let us define a \textbf{one-step reduction} relation \(\rightsquigarrow\) between closed terms
+of the same type by means of the following inductive definition
+\begin{enumerate}
+\item \((\lambda x^\sigma.M)N\rightsquigarrow M[x^\sigma\mapsto N]\) (\textbf{\(\beta\)-reduction})
+\item If \((cM_0\dots M_{r-1}\rightsquigarrow N)\in\Delta\) and \(-^*\) denotes some type-respecting substitution of closed
+terms for the free variables of \(cM_0\dots M_{r-1}\),
+then \((cM_0^*\dots M_{r-1}^*)\rightsquigarrow N^*\)
+\item If \(M\rightsquigarrow M'\) and \(K[-]\in\Xi\), then \(K[M]\rightsquigarrow K[M']\)
+\end{enumerate}
+
+
+We call the entire system the \textbf{typed \(\lambda\)-calculus} specified by \(\vec{\beta},C,\Delta,\Xi\)
+
+Depending on the choice of \(\Delta\) and \(\Xi\), the relation \(\rightsquigarrow\) may or may not be \textbf{deterministic} in the
+sense that \(M\rightsquigarrow M'\wedge M\rightsquigarrow M''\Rightarrow M'=M''\). Note that both System T and PCF have deterministic
+reduction relations.
+
+Typically we are interested in the possible values of a closed term \(M\), that is, those
+terms \(M'\) s.t. \(M\rightsquigarrow^*M'\) and \(M'\) can be reduced no further. In System T, every
+closed \(M:\ttN\) reduces to a unique numeral \(suc^k\hat{0}\). In PCF, there are terms such
+as \(Y_{\ttN}(\lambda x^{\ttN}.x)\)  that can never be reduced to a value. Thus System T is in essence
+a language for \textbf{total} functions, whilst PCF is a language for \textbf{partial} ones
+
+
+Let \(=_{op}\) be the \textbf{operational equivalence} relation on closed terms generated by
+\begin{equation*}
+M\rightsquigarrow M'\Rightarrow M=_{op}M',\quad M=_{op}M'\Rightarrow MN=_{op}M'N\wedge PM=_{op}PM'
+\end{equation*}
+
 \subsection{Simulations Between Computability Models}
-\label{sec:org88e2d1f}
+\label{sec:org2edba36}
 \subsubsection{Simulations and Transformations}
-\label{sec:org3d5c168}
+\label{sec:org1530e10}
 \begin{definition}[]
 Let \(\bC\) and \(\bD\) be lax computability models over type worlds \(T,U\) respectively. A
 \textbf{simulation} \(\gamma\) of \(\bC\) in \(\bD\) (written in \(\gamma:\bC\lrarhd\bD\))
@@ -187,8 +319,69 @@ some \(u\in\bD[J,\gamma I]\)
 The notion of a transformation between simulations carries across immediately to the relative
 TPCA setting: an applicative simulation \(\gamma:\bA\lrarhd\bB\) is transformable to \(\delta\) if for each type
 \(\sigma\) there exists \(t\in\bB^\sharp(\gamma\sigma\to\delta\sigma)\) s.t. \(a'\Vdash_\sigma^\gamma a\) implies \(t\cdot a'\Vdash_\sigma^\delta a\)
+
+\begin{definition}[]
+Suppose \(\bA\) and \(\bB\) are (lax) relative TPCAs over \(\sfT\) and \(\sfU\) respectively, and
+suppose \(\gamma:\bA\lrarhd\bB\) is an applicative simulation
+\begin{enumerate}
+\item \(\gamma\) is \textbf{discrete} if \(b\Vdash^\gamma a\) and \(b\Vdash^\gamma a'\) imply \(a=a'\)
+\item \(\gamma\) is \textbf{single-valued} if for all \(a\in\bA\) there is exactly one \(b\in\bB\) with \(b\Vdash^\gamma a\). \(\gamma\) is
+\textbf{projective} if \(\gamma\sim\gamma'\) for some single-valued \(\gamma'\)
+\item If \(\bA\) and \(\bB\) have booleans \(\TT_{\bA}\), \(\FF_{\bA}\) and \(\TT_{\bB}\), \(\FF_{\bB}\)
+respectively, \(\gamma\) \textbf{respects booleans} if there exists \(q\in\bB^\sharp\) s.t.
+\begin{equation*}
+b\Vdash^\gamma\TT_{\bA}\Rightarrow q\cdot b=\TT_{\bB},\quad b\Vdash^\gamma\FF_{\bA}\Rightarrow q\cdot b=\FF_{\bB}
+\end{equation*}
+\item If \(\bA\) and \(\bB\) have numerals \(\hatn\) and \(\tiln\) respectively, \(\gamma\) \textbf{respects numerals} if
+there exists \(q\in\bB^\sharp\) s.t. for all \(n\in\N\)
+\begin{equation*}
+b\Vdash^\gamma\hatn\Rightarrow q\cdot b=\tiln
+\end{equation*}
+\item If \(\sfT=\sfU\), we say \(\gamma\) is \textbf{type-respecting} if \(\gamma\) is the identity on types, and moreover:
+\begin{itemize}
+\item \(\Vdash_\sigma^\gamma=\id_{\sfT[\sigma]}\) whenever \(\sfT\) fixes the interpretation of \(\sigma\)
+\item Application is itself a realizer for \(\gamma\) at each \(\sigma,\tau\): that is,
+\begin{equation*}
+f'\Vdash_{\sigma\to\tau}^\gamma f\wedge a'\Vdash_\sigma^\gamma a\wedge f\cdot a\downarrow\Rightarrow f'\cdot a'\Vdash_\tau^\gamma f\cdot a
+\end{equation*}
+\item If \(\sfT\) has product structure, then \(\bA,\bB\) have pairing and
+\begin{align*}
+a'\Vdash_\sigma^\gamma a\wedge b'\Vdash_\tau^\gamma b&\Rightarrow pair\cdot a'\cdot b'\Vdash_{\sigma\times\tau}^\gamma pair\cdot a\cdot b\\
+d'\Vdash_{\sigma\times\tau}^\gamma d&\Rightarrow fst\cdot d'\Vdash_\sigma^\gamma fst\cdot d\wedge snd\cdot d'\Vdash_\sigma^\gamma snd\cdot d
+\end{align*}
+\end{itemize}
+\end{enumerate}
+\end{definition}
+
+\begin{remark}
+Show that if \(\gamma\) respects numerals then \(\gamma\) respects booleans
+\end{remark}
+
+\subsubsection{Simulations and Assemblies}
+\label{sec:orgebc39b6}
+A simulation \(\gamma:\bC\lrarhd\bD\) naturally induces a functor \(\gamma_*:\Asm(\bC)\to\Asm(\bD)\) , capturing the
+evident idea that any datatypes implementable within \(\bC\) must also be implementable in \(\bD\)
+\begin{itemize}
+\item On objects \(X\), define \(\gamma_*(X)\) by \(\abs{\gamma_*(X)}=\abs{X}\), \(\rho_{\gamma_*(X)}=\gamma\rho_X\)
+and \(b\Vdash_{\gamma_*(X)}x\) iff \(\exists a\in\bC(\rho_X)\), \(a\Vdash_Xx\wedge b\Vdash_{\rho_X}^\gamma a\)
+\item On morphisms \(f:X\to Y\), define \(\gamma_*(f)=f\). Note that if \(r\in\bC[\rho_X,\rho_Y]\) tracks \(f\) as a
+morphism in \(\Asm(\bC)\), and \(r'\in\bD[\gamma\rho_X,\gamma\rho_Y]\) tracks \(r\) w.r.t. \(\gamma\), then \(r'\)
+tracks \(f\) as a morphism in \(\Asm(\bC)\)
+\end{itemize}
+
+
+Moreover, a transformation \(\xi:\gamma\to\delta\) yields a natural transformation \(\xi_*:\gamma_*\to\delta_*\): just
+take \(\xi_{*X}=\id_{\abs{X}}:\gamma_*(X)\to\delta_*​ (X)\), and note that if \(t\) witnesses \(\gamma\preceq\delta\) at \(X\),
+then \(t\) tracks \(\xi_{*​X}\).
+
+\begin{definition}[]
+\begin{enumerate}
+\item \(\gamma\) respects numerals iff \(\gamma_*\) preserves the natural number object
+\end{enumerate}
+\end{definition}
+
 \subsection{Examples of Simulations and Transformations}
-\label{sec:org52edb97}
+\label{sec:org55dd87e}
 \begin{examplle}[]
 Suppose \(\bC\) is any (lax) computability model with weak products, and consider the following
 variation on the 'product completion' construction described in the proof of Theorem \ref{3.1.15}.
@@ -199,4 +392,175 @@ the inclusion \(\bC\hookrightarrow\bC^\times\) and \(\bC^\times\to\bC\) sending 
 simulations. Moreover, they constitute an equivalence \(\bC\simeq\bC^\times\). This shows that every strict
 (lax) computability model with weak products is equivalent to one with standard products
 \end{examplle}
+
+\begin{proposition}[]
+For any partial computable \(f:\N^r\rhu\N\) there is an applicative
+expression \(e_f:\ttN^{(r)}\to\ttN\) (involving constants 0, suc, \(rec_{\ttN}\), min) s.t. in any
+model \(\bA\) with numerals and minimization we have \(\llb{e_f}_v\in\bA^\sharp\) (with the obvious
+valuation \(v\)) and
+\begin{equation*}
+\forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\dots\cdot\hatn_{r-1}=\hatm
+\end{equation*}
+\end{proposition}
+
+\begin{examplle}[]
+Let \(\bA\) be any untyped (lax relative) PCA, or more generally any model with
+numerals \(\bar{0},\bar{1},\dots\) and minimization. We may then define a single-valued applicative
+simulation \(\kappa:K_1\lrarhd\bA\) by taking \(a\Vdash^\kappa n\) iff \(a=\hat{n}\). Condition 3 is
+satisfied because the application operation \(\cdot:\N\times\N\rhu\N\) of \(K_1\) is representable by an
+element of \(\bA^\sharp\)
+
+Model with single datatype \(\N\) and whose operations \(\N\rightharpoonup\N\) are precisely the
+Turing-computable partial functions. \(K_1\)is weakly cartesian closed.
+
+For any partial computable \(f:\N^r\rhu\N\) there is an applicative
+expression \(e_f:\ttN^{(r)}\to\ttN\) (involving constants 0, suc, \(rec_{\ttN}\), min) s.t. in any
+model \(\bA\) with numerals and minimization we have \(\llb{e_f}_v\in\bA^\sharp\) (with the obvious
+valuation \(v\)) and
+\begin{equation*}
+\forall n_0,\dots,n_{r-1},m. f(n_0,\dots,n_{r-1})=m\Rightarrow\llb{e_f}_v\cdot\hatn_0\cdot\dots\cdot\hatn_{r-1}=\hatm
+\end{equation*}
+
+In particular models, many choices of numerals may be available. For instance, if \(\bA=\bA^\sharp=\Lambda/\sim\),
+then besides the \emph{Curry numerals}, we also have the \textbf{Church numerals} \(\tiln=\lambda f.\lambda x.f^nx\)
+\end{examplle}
+
+\begin{examplle}[]
+The model \(\Lambda^0/=\beta\) consisting of closed \(\lambda\)-terms modulo \(\beta\)-equivalence. Let \(\ceil{-}\) be
+any effective \textbf{Gödel numbering} of \(\lambda\)-terms as natural numbers, and define \(\gamma:\Lambda^0/=_\beta\lrarhd K_1\) by
+\begin{equation*}
+m\Vdash^\gamma[M]\quad\text{ iff }\quad m=\ceil{M'}\text{ for some }M'=_\beta M
+\end{equation*}
+Justaposition of \(\lambda\)-terms is tracked by a computable function \((\ceil{M},\ceil{N})\mapsto\ceil{MN}\)
+at the level of Gödel numbers. Thus \(\gamma\) is applicative
+
+We have transformations \(\id_{K_1}\preceq\gamma\circ\kappa\) and \(\gamma\circ\kappa\preceq\id_{K_1}\); these correspond to the
+observation that the 'encoding' and 'decoding' mappings \(n\mapsto\ceil{\hatn}\)
+and \(\ceil{\hatn}\mapsto n\)
+are computable. Also there is a term \(P\in\Lambda^0\) s.t. \(P(\what{\ceil{M}})=_\beta M\) for any \(M\in\Lambda^0\) by
+Kleene's enumeration theorem, therefore \(\kappa\circ\gamma\preceq\id_{\Lambda^0/=_\beta}\)
+
+However we don't have \(\id_{\Lambda^0/=_\beta}\preceq\kappa\circ\gamma\)
+
+It can be easily shown that \(K_1\) is not equivalent to \(\Lambda^0/=_\beta\). Let us say a relative
+PCA \(\bA\) has \textbf{decidable equality} if there is an element \(q\in\bA^\sharp\) s.t.
+\begin{equation*}
+q\cdot x\cdot y=
+\begin{cases}
+\TT&x=y\\
+\FF&\text{otherwise}
+\end{cases}
+\end{equation*}
+Clearly \(K_1\) has decidable equality, and it is easy t see that if \(\bA\simeq\bB\) then \(\bA\) has
+decidable equality iff \(\bB\) does. However, if a total relative PCA \(\bA\) were to contain such
+an element, we could define \(v=Y(q\;\FF)\) so that \(v=q\;\FF\;v\) which would yield a
+contradiction
+
+Here \(Y\;f=f(Y\; f)\)
+\end{examplle}
+
+
+
+\begin{examplle}[]
+We may translate System T terms \(M\) to PCF terms \(M^\theta\) simply by replacing all
+constants \(rec_\sigma\) by suitable implementations of these recursors in PCF
+
+In any untyped model, let \(Z\) be a guarded recursion operator,
+define
+\begin{equation*}
+R=\lambda rxfm.\IF(iszero\;m)(kx)(\lambda y.f(pre\;m))(rxf(pre\; m)\hat{0})
+\end{equation*}
+and take \(rec=\lambda xfm.(ZR)xfmi\).
+
+Such a translation induces a type-respecting applicative
+simulation \(\theta:\tT^0/=_{op}\lrarhd \PCF^0/=_{op}\). This simulation is single-valued
+as \(M=_{op}M'\Rightarrow M^\theta=_{op}M'^\theta\). It is easy to see that \(\theta\) respects numerals
+\end{examplle}
+
+\begin{examplle}[]
+We may also translate PCF into the untyped \(\lambda\)-calculus. One such translation \(\phi\) may be defined on
+constants as follows. We write \(\la M,N\ra\) for \(pair\;M\;N\) and
+define \(\hat{0}=\la\lambda xy.x,\lambda xy.x\) and \(\what{n+1}=\la\lambda xy.y,\hatn\ra\)
+\begin{align*}
+\hatn^\phi&=\hatn\\
+suc^\phi&=\lambda z.\la\lambda xy.y,z\ra\\
+pre^\phi&=\lambda z.(fst\;z)\hat{0}(snd\;z)\\
+ifzero^\phi&=fst\\
+Y_\sigma^\phi&=(\lambda xy.y(xxy))(\lambda xy.y(xxy))
+\end{align*}
+This induces an applicative simulation \(\phi:\PCF^0/=_{op}\lrarhd\Lambda^0/=_\beta\) respecting numerals.
+Moreover if \(M=_{op}M'\) then \(M^\phi=_\beta M'^\phi\)
+\end{examplle}
+
+\begin{examplle}[Interpretations of System \(T\)]
+Let \(\bA\) be any total relative TPCA with numerals \(\hat{0},\hat{1},\dots\) of type \(\ttN\), and
+associated operations \(suc\), \(rec_\sigma\). To any closed term \(M:\sigma\) in Gödel's System \(T\), we
+may associate an element \(\llb{M}\in\bA^\sharp(\sigma)\) as follows: replace each occurrence of \(\lambda\) by \(\lambda^*\)
+to obtain a meta-expression \(M^*\), then expand \(M^*\) to an applicative expression \(M^\dag\)
+and evaluate it in \(\bA\), interpreting the constants \(\hat{0}\), \(suc\), \(rec_\sigma\) in the
+obvious way
+
+Clearly \(\llb{MN}=\llb{M}\cdot\llb{N}\) and if \(M\rightsquigarrow M'\) then \(\llb{M}=\llb{M'}\). We therefore
+obtain a type-respecting simulation \(\llb{-}:T^0/=_{op}\lrarhd\bA\)
+
+Now suppose \(\gamma:\bA\lrarhd\bB\) is a type- and numeral-respecting applicative simulation between
+total models with numerals. By the above, we have applicative simulations
+\(\llb{-}_{\bA}:\tT^0/=_{op}\lrarhd\bA\) and \(\llb{-}_{\bB}:\tT^0/=_{op}\lrarhd\bB\), but it nee not in
+general be the case that \(\gamma\circ\llb{-}_{\bA}\sim\llb{-}_{\bB}\). This shows that a model \(\bB\) may in
+general admit several inequivalent applicative simulations of \(\tT^0/=_{op}\)
+\end{examplle}
+
+\begin{examplle}[Interpretations of PCF]
+Let \(\bA\) be any strict relative TPCA with numerals and general recursion. Since \(\bA\) contains
+elements playing playing the role of the PCF constants \(\hatn\), \(suc\), \(pre\), \(ifzero\)
+and \(Y_\sigma\), we may translate closed PCF terms \(M:\sigma\) into expressions \(\tilM:\sigma\) over \(A\)
+by simply replacing \(\lambda\) with \(\lambda^*\) and expanding. Note that \(M=_{op}M'\)
+implies \(\llb{\tilM}\simeq\llb{\tilM'}\) in \(\bA\). This does not itself give us an applicative
+simulation \(\PCF^0/=_{op}\lrarhd\bA\) since \(\llb{\tilM}\) may sometimes be undefined. However,
+we may obtain such a simulation \(\theta_{\bA}\) via a suspension trick: let \(\theta_{\bA}\sigma=\N\to\sigma\) for each \(\sigma\),
+and take \(a\Vdash_\sigma^{\theta_{\bA}}[M]\) iff \(a\cdot\hat{0}\simeq\llb{\tilM}\). (For example, we
+have \(\llb{\lambda^*u.\tilM}\Vdash[M]\) for any \(M\)) \(\theta_{\bA}\) is an applicative morphism, being
+realized at each \(\sigma\), \(\tau\) by \(\lambda^*fxu.(fu)(xu)\)
+\end{examplle}
+\subsubsection{Effective and Continuous Models}
+\label{sec:org609a5ad}
+It is natural to want to identify a class of computability models that are genuinely
+‘effective’, in the sense that their data can be represented in some reasonable finitary way
+and their operations are ultimately implementable on a Turing machine.
+
+\begin{definition}[]
+An \textbf{effective (relative) TPCA} is a (relative) TPCA \(\bA\) with numerals equipped with a
+numeral-respecting applicative simulation \(\gamma:\bA\lrarhd K_1\)
+\end{definition}
+
+Syntactic models in general, such as \(\Lambda^0/\sim\) is effective TPCAs: The simulation \(\gamma\) is given by a
+Gödel numbering of syntactic terms.
+
+We may define \(\gamma:K_2^{\eff}\lrarhd K_1\) by setting \(m\Vdash^\gamma f\) iff \(\forall n.m\cdot n=f(n)\)
+
+\begin{examplle}[]
+The following shows what can happen if the numeral-respecting condition in definition is
+omitted. Let \(f:\N\to\N\) be some fixed non-computable function. The definition of \(K_1\) may be
+relativized to \(f\) as follows: let \(T_0',T_1',\dots\) be a sensibly chosen enumeration of all
+Turing machines equipped with an \emph{oracle} for \(f\), so that a computation may ask for the value
+of some \(f(m)\) as a single step. Now take \(e\cdot^fn\) to be the result of applying \(T_e'\) to the
+input \(n\), and let \(K_1^f=(\N,\cdot^f)\). The proof that \(K_1\) is a PCA readily carries over
+to \(K_1^f\)
+
+There is an applicative simulation \(\gamma:K_1^f\lrarhd K_1\): we may take \(m\Vdash^\gamma n\) iff \(m\cdot^f0=n\)
+\end{examplle}
+
+\begin{definition}[]
+A \textbf{continuous (relative) TPCA} is a (relative) TPCA \(\bA\) with numerals equipped with a
+numeral-respecting applicative simulation \(\gamma:\bA\lrarhd K_2\)
+\end{definition}
+
+\begin{definition}[]
+A continuous TPCA \((\bA,\gamma)\) is \textbf{full continuous} if the following hold:
+\begin{enumerate}
+\item For every \(f:\N\to\N\) there is some \(a\in\bA(\ttN\to\ttN)\) that represents \(f\)
+\item Moreover, a realizer for some such \(a\) may be computed from \(f\) within \(K_2\) - that is,
+there exists \(h\in K_2\) s.t. for all \(f\in\N^{\N}\) we have
+\end{enumerate}
+\end{definition}
 \end{document}
