@@ -8,6 +8,8 @@
 #+LATEX_HEADER: \makeindex
 #+LATEX_HEADER: \usepackage[UTF8]{ctex}
 #+LATEX_HEADER: \def \FORM {\text{FORM}}
+#+LATEX_HEADER: \def \Rep {\text{Rep}}
+#+LATEX_HEADER: \def \ZC {\text{ZC}}
 #+LATEX_HEADER: \def \PROOF {\text{PROOF}}
 * 集合的宇宙
 ** 数理逻辑
@@ -1431,7 +1433,266 @@
     \(g(x_0)=F^M(x_0,g\uhr\pred(X^M,x_0,R^M))=G(x_0)\)，矛盾
     #+END_proof
 
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    一下概念对\(\ZF-\Pow\)的传递模型都是绝对的
+    1. \(\alpha^\beta\) (序数)
+    2. \(\rank(x)\)
+    3. \(\trcl(x)\)
+    #+END_theorem
 
+    #+BEGIN_proof
+    1. 若\(\alpha=0\)，则\(\alpha^\beta=0\)
+
+       它是递归定义的，因此是绝对的
+
+       规定\(\On\times\On\)上的关系\(R\)为
+       \begin{equation*}
+       R=\{((\alpha,\beta_1),(\alpha,\beta_2))\mid\beta_1\in\beta_2\}\subseteq\On^2
+       \end{equation*}
+       显然\(R\)是良基关系，\(R\)是似集合的，\(\pred(\On^2,(\alpha,\beta),R)=\{\alpha\}\times\beta\)
+
+       定义\(F:\On^2\times V\to V\)为
+       \begin{equation*}
+       F(\alpha,\beta,x)=
+       \begin{cases}
+       0&\alpha=0\vee x\notin\On^3\\
+       1&\beta=0\wedge\alpha\neq 0\\
+       \left( \bigcup_{y\in x}\pi_3(y) \right)\cdot\alpha&\text{otherwise},x\in\On^3
+       \end{cases}
+       \end{equation*}
+       有\(M\)的传递性，\(x=(x_1,x_2,x_3)\in M\Rightarrow x_1,x_2,x_3\in M\)
+
+       由\((x_1,x_2,x_3)\)的绝对性，\(y=\pi_3(x)\)是绝对的，因为\(y=\pi_3(x)\)为
+       \begin{equation*}
+       \exists x_1\exists x_2\exists x_3(x=(x_1,x_2,x_3)\wedge y=x_3)
+       \end{equation*}
+
+       验证\(G(\alpha,\beta)=\alpha^\beta\)是基于\(F\)递归定义的，因此\(G\)是绝对的
+
+    2. \(\rank(x)\)，即\(\rank(V,x,\in)\)
+
+       \(\rank(x)=\sup\{\rank(y)+1\mid y\in x\}\)，找\(F\)，并证明绝对性，练习
+
+    3. \(\trcl(x)=x\cup\bigcup\{\trcl(y)\mid y\in x\}\)练习
+    #+END_proof
+
+    #+BEGIN_remark
+    \(\alpha+\beta\)也是递归定义的
+    #+END_remark
+
+    #+BEGIN_remark
+    - \(\rank(x)\)的定义用到\(V_\alpha\)
+    - 当\(M\not\vDash\Pow\)，\(V_\alpha^M\)没有意义
+    - \(\rank(x)\)仍可递归定义为\(\sup\{\rank(y)+1\mid y\in x\}\)
+    - 当\(M\vDash\Pow\)，则两种定义等价
+    #+END_remark
+
+    定义公式\(\varphi(x,y)\)为
+    \begin{equation*}
+    \forall z(z\in y\leftrightarrow z\subseteq x)
+    \end{equation*}
+    当\(V\vDash\Pow\)，则\(V\vDash\forall x\exists!y\varphi(x,y)\)，即\(\varphi(x,y)\)定义了一个函数，记作\(\calp(x)=y\)
+
+    若\(M\vDash\Pow\)，则
+    \begin{equation*}
+    V\vDash\forall x\in M\exists!y\in M\varphi^M(x,y)
+    \end{equation*}
+    当\(M\)传递时，\(\subseteq^M\Leftrightarrow\subseteq\)，若\(M\vDash\Pow\)，则
+    \begin{equation*}
+    V\vDash(\varphi^M\text{定义了$M$到$M$的函数})
+    \end{equation*}
+    记该函数为\(\calp^M(x)\)，即\(\calp^M(x)=\{z\in M\mid z\subseteq^Mx\}\)
+    当\(M\)传递时，\(\calp^M(x)=\{z\in M\mid z\subseteq x\}=\calp(x)\cap M\)
+
+    同理\(V_\alpha^M=\{x\in M\mid(\rank(x)<\alpha)^M\}\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    若\(M\)是\(\ZF\)的传递模型，则
+    1. 若\(x\in M\)，则\(\calp^M(x)=\calp(x)\cap M\)
+
+       只需\(\Pow\)加传递
+    2. 如果\(\alpha\in M\)，则\(V_\alpha^M=V_\alpha\cap M\)
+
+       只需\(\ZF-\Pow\)，若有\(\Pow\)，则\(V_\alpha^M\)是由\(\calp^M\)得到的
+    #+END_lemma
+
+    #+BEGIN_remark
+    \(\calp\)与\(V_\alpha\)作为函数不是绝对的
+
+    固定\(x\in M\)，则\(\calp(x)\)可以是带参数\(x\)的公式
+    \begin{equation*}
+    \calp(x)(y):\forall z(z\in y\leftrightarrow z\in x)
+    \end{equation*}
+    此时谓词\(\calp(x)\)是绝对的，\((\calp(x))^M=\calp(x)\cap M\)
+
+    固定\(\alpha\in M\cap\On\)，则\(V_\alpha\)可以看成带参数\(\alpha\)的谓词，此时\((V_\alpha)^M=V_\alpha\cap M\)是绝对的
+    #+END_remark
+** 不可达基数与ZFC的模型
+
+    一般来讲，\(V_\alpha\)不是\(\ZF\)的模型，比如\(\ZFm\vdash(V_\omega\vDash\ZFC-\Inf)\)
+
+    令\(Z\)表示\(\ZF-\)替换公理模式（Rep）
+
+    \(ZC\)表示\(\ZFC-\Rep\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    如果\(\gamma>\omega\)是无穷极限序数，则\(\ZF\vdash(V_\gamma\vDash Z)\)，\(\ZFC\vdash(V_\gamma\vDash\ZC)\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    假设\(V\vDash\ZF\)
+    - 存在公理：
+    - 外延公理：\(\forall x\in V_\gamma\forall y\in V_\gamma\forall u\in V_\gamma((u\in x\leftrightarrow u\in y)\to x=y)\)，\(V_\gamma\)传递
+    - 分离公理模式：假设\(x\in V_\gamma\)，则存在\(\beta<\gamma\)使得\(x\in V_\beta\)，故\(x\subseteq V_\beta\)，
+      \(\calp(x)\subseteq\calp(V_\beta)=V_{\beta+1}\subseteq V_\gamma\)，则若\(x\in V_\gamma\)，则\(X\)的子集均属于\(V_\gamma\)
+
+      分离公理
+      \begin{equation*}
+      \forall x\in V_\gamma\exists Y\in V_\gamma\forall u\in V_\gamma(u\in Y\leftrightarrow u\in X\wedge\varphi^M(u))
+      \end{equation*}
+      在\(V\)里面可以看到这些是\(X\)的子集，且能看到\(X\)的所有子集在\(V_\gamma\)里
+    - 对集公理，\(\forall x\forall y\exists z\forall u(u\in z\leftrightarrow u=x\vee u=y)\)
+
+      设\(x,y\in V_\gamma\subseteq\WF=V\)，有\(\rank(\{x,y\})<\max\{\rank(x),\rank(y)\}+\omega\)，故\(\{x,y\}\in V_\gamma\)
+    - 并集公理，类似
+    - 幂集公理，类似
+    - 无穷公理
+
+      对于\(\ZFm-\Pow-\Rep\)的传递模型，\(\emptyset\)与后继运算是绝对的
+
+      \(\omega\in V_\gamma\)，故无穷公理的相对化成立
+    - 基础公理
+
+      \(\forall x\in V_\gamma((x\neq\emptyset)^{V_\gamma}\to\exists y\in V_\gamma(y\in x\wedge(y\cap x=\emptyset)^{V_\gamma}))\)
+
+      对于\(\ZFm-\Pow-\Rep\)的传递模型，\(\emptyset\)与\(\cap\)是绝对的
+
+      而\(V_\gamma\subseteq\WF=V\)，故Fon成立
+
+
+
+    若\(V\vDash\ZFC\)，设\(x\in V_\gamma\)，则\(V\vDash\exists R(R\text{是$X$的良序})\)。\(R\subseteq X\times X\Rightarrow R\in V_\gamma\)，对
+    于\(\ZFm-\Pow-\Inf-\Rep\)的传递模型\(V_\gamma\)有
+    \begin{equation*}
+    V\vDash(R\text{是$X$的良序})^{V_\gamma}
+    \end{equation*}
+
+    #+END_proof
+
+    #+BEGIN_exercise
+    证明\(V_{\omega+\omega}\)不满足Rep
+    #+END_exercise
+
+    #+BEGIN_proof
+    \(f:n\to\omega+n\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    工作在\(\ZFC\)
+    * \(\ZF\)不能证明“\(V_\omega\)存在”
+    * \(\ZF\)不能证明“对任意\(x\)，\(\trcl(x)\)存在”
+    #+END_proposition
+
+    #+BEGIN_proof
+    构造模型否定这两个命题
+
+    令\(V\vDash\ZFC\)，令\(X_0=\omega\), \(X_{\alpha+1}=\calp(X_\alpha)\), \(X_\gamma=\bigcup_{\beta<\gamma}X_\beta\)（\(\gamma\)极限序数）
+
+    显然\(\barX=\bigcup_{\alpha\in\On}X_\alpha=\WF=V\) （练习）
+
+    容易验证以下事实：\(X_\alpha\)传递，设\(f(x,y)\)表
+    示\(\{x,y\}\),\((x-y)\),\(x\times y\),\(\bigcup x\),\(\cap x\),\(\calp(x)\),\(\dots\)
+
+    若\(x\in X_\alpha\),\(y\in X_\beta\)，则\(f(x,y)\in X_{\max\{\alpha,\beta\}+\omega}\)
+
+    类似可证\(X_\omega\)是\(\ZC-\Inf\)的传递模型
+
+    由于\(\omega\in X_\omega\)，故\(X_\omega\vDash\Inf\)，即\(X_\omega\vDash\ZC\)
+
+    显然\(V_\omega\not\subseteq\omega=X_0\)，于是存在\(V_n\not\subseteq X_0\)，故\(\calp(V_n)\not\subseteq\calp(X_0)\)，即\(\forall k<\omega\)，
+    \(V_{n+k}\not\subseteq X_k\)，故\(\forall n<\omega\)，都有\(V_\omega\not\subseteq X_n\)，故\(V_\omega\notin X_\omega\)
+
+    但要严格地说的话得找到一个东西定义\(V_\omega\)然后证明它的相对化在\(X_\omega\)不满足
+
+    另一方面，\(V_0\subseteq X_0\Rightarrow V_n\subseteq X_n\)，于是\(V_\omega\subseteq X_\omega\)
+
+    令\(G:\omega\to\WF\)为\(G(n)=V_\alpha\)
+
+    验证\(G\)相对于\(X_\omega\)是绝对的，\(G\)的任何一个片段都是有穷的，因此片段的值域都在\(X_\omega\)中，因
+    为\(X_\omega\)对于任何有穷集合封闭
+
+    注：当\(M\vDash\ZF-\Pow\)，我们知道递归函数\(G\)的绝对性，此时\(X_\omega\not\vDash\Rep\)，然而\(X_\omega\)的任何有穷
+    子集都属于\(X_\omega\)，故而对任何\(f:\omega\to X_\omega\)，有\(f(\{0,\dots,n\})\in X_\omega\)，可以证明\(G\)的绝对性（练习）
+
+    \(V_\omega\)被公式\(\eta(x):\exists n\in\omega(x\in G(n))\)
+
+    (\(V_\omega\)被“\(\alpha\in V_\omega\)”定义，但是\(X_\omega\)不一定认为\(V_\omega\)是集合，必需用\(X_\omega\)认可的方式定义)
+
+    \(V_\omega\)存在指的是
+    \begin{equation*}
+    \exists y\forall x(x\in y\leftrightarrow\eta(x))
+    \end{equation*}
+    由于\(G\)是绝对的，\(\eta(x)\)绝对，因此\(X_\omega\)认为“\(V_\omega\)存在”当且仅
+    当\(\exists y\in X_\omega\forall x\in X_\omega(x\in y\leftrightarrow\eta(x))\)
+
+    由于\(V_\omega\subseteq X_\omega\)且\(X_\omega\)是传递的，以上的公式等价于
+    \begin{equation*}
+    \exists y\in X_\omega\forall x(x\in y\leftrightarrow\eta(x))
+    \end{equation*}
+    而这样的\(y\)只能是\(V_\omega\)，而\(V_\omega\notin X_\omega\)，因此以上句子不成立
+
+    即\(\ZFC\vdash"X_\omega\vDash\ZC+V_\omega\text{不存在}"\)
+
+    证明“\(x\)存在且\(\trcl(x)\)不存在”，假设\(V\vDash\ZFC\)，令\(t(u)=\{u\}\)，\(x_n=t^n(n)\)，
+    \(\rank(x_n)=2n\)，\(x=\{x_n\mid n<\omega\}\)，
+    令\(X_0=x\),\(X_1=\bigcup X_0\),\(\dots\),\(X_{n+1}=\bigcup X_n\)，则\(\trcl(x)=\bigcup_{n<\omega}X_n\)
+
+    令\(Y_0=\omega\cup X_0\)，\(Y_{n+1}=\calp(Y_n)\cup Y_n\cup X_n\)，验证\(Y_\omega=\bigcup_{n<\omega}Y_n\)是传递的，验证\(Y_\omega\vDash\ZC\)，
+    验证\(x\in Y_1\subseteq Y\)，验证\(\trcl(x)=\bigcup_{n<\omega}X_n\notin Y\)，即验证\(\forall n\exists m(X_m\not\subseteq Y_n)\)
+
+    后面类似，证明\(Y_\omega\vDash"\trcl(x)\text{不存在}"\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    如果\(\kappa\)是不可达基数，则在\(\ZFm\)中可以证明\(V_\kappa\vDash\ZF\)，在\(\ZFCm\)中可以证明\(V_\kappa\vDash\ZFC\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    已知\(\ZFm\vDash(V_\kappa\vDash Z)\),\(\ZFCm\vDash(V_\kappa\vDash\ZC)\)，下面验证替换公理模式
+    \begin{equation*}
+    \forall A(\forall x\in A\exists!y\psi(x,y)\to\exists B\forall x\in A\exists y\in B\psi(x,y))
+    \end{equation*}
+    相对化
+    \begin{equation*}
+    \forall A\in M(\forall x\in A\exists!y\in M\psi^M(x,y)\to\exists B\in M\forall x\in A\exists y\in B\psi(x,y))
+    \end{equation*}
+    假设\(A\in V_\kappa\)且\(\forall x\in A\exists!y\in V_\kappa\psi^M(x,y)\)
+
+    由于\(\kappa\)是极限序数，故\(A\in V_\kappa\Rightarrow\exists\alpha<\kappa(A\in V_\alpha)\)，因此\(A\subseteq V_\alpha\)，而\(V\vDash(\psi^M:A\to V_\kappa)\)，于
+    是\(V\vDash\abs{A}\le\abs{V_\alpha}<\kappa\), \(V\vDash\abs{f(A)}<\kappa\),\(V\vDash f(A)\subseteq V_\kappa\)，由\(\kappa\)的正则性，所以存
+    在\(\beta<\kappa\)，\(f(A)\subseteq V_\beta\)，于是\(f(A)\in V_{\beta+1}\subseteq V_\kappa\)，即\(B=f(A)\)即可
+    #+END_proof
+
+    注：\(V_\kappa\)的基数小于\(\kappa\)的子集都是\(V_\kappa\)的元素
+
+    若\(M\)的有穷子集都是\(M\)的元素，则\(M\vDash\)有穷Rep
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    \(\ZFC\)中不能证明“存在不可达基数”
+    #+END_corollary
+
+    #+BEGIN_proof
+    若\(\ZFC\vdash\)“存在不可达基数”，则\(\ZFC\vdash"V_\kappa\vDash\ZFC"\)，即\(\ZFC\vdash\exists X(\ZFC)^X\)，因为\(V_\kappa\)是个集合，
+    因此\(\ZFC\vdash\Con(\ZFC)\)
+
+    若只能找到一个真类，我们不能得到能证明一致性
+    #+END_proof
 
 
 ** Exercise
