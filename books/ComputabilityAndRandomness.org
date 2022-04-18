@@ -6,6 +6,7 @@
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \DeclareMathOperator{\use}{\textsf{use}}
 #+LATEX_HEADER: \DeclareMathOperator{\Cop}{Cop}
+#+LATEX_HEADER: \DeclareMathOperator{\non}{\textsf{non}}
 #+LATEX_HEADER: \makeindex
 
 * The complexity of sets
@@ -575,6 +576,7 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_corollary
+    label:1.4.14
     \(A\) is \(\Delta_2^0\) \(\Leftrightarrow\) \(A\) is both \(\Sigma_2^0\) and \(\Pi_2^0\)
     #+END_corollary
 
@@ -747,6 +749,7 @@
     computable \(\{0,1\}\)-valued function \(g\)
     #+END_exercise
 ** Absolute computational complexity of sets
+*** Sets that are \texorpdfstring{\(low_n\)}{lown}
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     Let \(f,g:\N\to\R\). \(f\) *dominates* \(g\) if \(f(n)\ge g(n)\) for almost every \(n\)
@@ -802,11 +805,11 @@
     label:1.5.8
     \(B\) is \(low_2\)\(\Leftrightarrow\) \(\Tot^B=\{e:\Phi_e^B\text{ total}\}\) is \(\Sigma_3^0\)
     #+END_exercise
-
+*** Computably dominated sets
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     \(A\) is called *computably dominated* if each function \(g\le_TA\) is dominated by a computable
-    functional
+    function
     #+END_definition
 
     \(E\subseteq\N\)  is *hyperimmune* if \(E\) is infinite and \(p_E\) is not dominated by a computable
@@ -850,4 +853,172 @@
     \begin{equation*}
     g(s)\simeq\mu t\ge s.A_t\uhr s=A\uhr s
     \end{equation*}
+    Note that \(g\le_TA\). Assume that there is a computable function \(f\) s.t. \(g(s)\le f(s)\) for
+    each \(s\). Then \(A\) is computable: for each \(n\) and each \(s>n\) we have \(A_t(n)=A(n)\)
+    for some \(t\in[s,f(s))\), namely \(t=g(s)\). On the other hand, if \(s\) is sufficiently large
+    then \(A_u(n)=A_s(n)\) for all \(u\ge s\). Thus to compute \(A\), on input \(n\) determine the
+    least \(s>n\) s.t. \(A_u(n)=A_s(n)\) for all \(u\in[s,f(s))\). Then \(A_s(n)=A(n)\), so the
+    output \(A_s(n)\) is correct
+    #+END_proof
+*** Sets that are \texorpdfstring{\(high_n\)}{highn}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(n\ge 0\). A set \(C\) is \(high_n\) if \(\emptyset^{(n+1)}\le_TC^{(n)}\)
+    #+END_definition
+
+    All the classes \(high_n\) are closed upward under Turing reducibility, so the complementary
+    classes \(\non-high_n=2^{\N}-high_n\) are closed downward. Therefore
+    \begin{equation*}
+    comp.\subset low_1\subset low_2\subset\dots\subset\non-high_2\subset\non-high_1\subset\{Z:Z\not\ge_T\emptyset'\}
+    \end{equation*}
+
+    It is easy to define a function \(f\le_T\emptyset'\) that dominates all computable functions: the
+    set \(\{\la e,x\ra:\Phi_e(x)\downarrow\}\) is c.e., and hence many-one reducible to \(\emptyset'\) via a computable
+    function \(h\). Let \(f(x)=\max\{\Phi_e(x):e\le x\wedge h(\la e,x\ra)\in\emptyset')\}\). If \(\Phi_e\) is total
+    then \(f(x)\ge\Phi_e(x)\) for all \(x\ge e\). This property of \(\emptyset'\) in fact characterizes the high
+    sets.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(C\) is high \(\Leftrightarrow\) some function \(f\le_TC\) dominates all computable functions
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): We define a function \(f\le_TC\) that dominates each total \(\Phi_e\), extending the argument
+    for the case \(C=\emptyset'\). Note that \(\Tot=\{e:\Phi_e\text{ total}\}\) is \(\Pi_2^0\), and
+    hence \(\ove{\Tot}\le_m\emptyset''\le_TC'\). By the Limit Lemma ref:1.4.2, \(\Tot\) is \(\Delta_2^0(C)\), there is
+    a \(A\)-computable approximation \((T_s)_{s\in\N}\) of \(\Tot\). Define \(f\le_TA\) as:
+    \(\forall x\in\N\), let
+    \begin{align*}
+    &S_x=\mu s(\forall e\le x(\Phi_{e,s}(x)\downarrow\text{ or }T_s(e)=0))\\
+    &f(x)=\max\{\Phi_{e,S_x}(x)\mid e\le x,\Phi_{e,S_x}(x)\downarrow\}
+    \end{align*}
+    *Claim*: \(\forall x\), \(S_x\) exists
+
+    For any \(e\le x\), if \(\Phi_e\) is total, then \(S_x\) always exists. Otherwise, \(T_s(e)\) converges
+    to 0
+
+    *Claim*: \(f\) dominates all computable total functions
+
+    \(\forall x\ge e\), \(\exists s\le S_x\), \(\Phi_{e,s}\downarrow\le f(x)\)
+
+    \(\Leftarrow\): Suppose \(f\le_TC\) dominates all computable functions. We show
+    that \(\N-\emptyset''=\{e:\Phi_e^{\emptyset'}(e)\uparrow\}\) is Turing reducible to \(C'\). Note that \(\Phi_e^{\emptyset'}(e)\uparrow\) iff the
+    computation is undefined at infinitely many stages, that is, no computation \(\Phi_e^{\emptyset'}(e)[s]\) is
+    stable. Thus \(\Phi_e^{\emptyset'}(e)\uparrow\) iff the partial computable function
+    \begin{equation*}
+    g(s)\simeq\mu t>s[\Phi_e^{\emptyset'}(e)[t]\uparrow]
+    \end{equation*}
+    is total. In that case \(g\) is dominated by \(f\), and therefore
+    \begin{equation*}
+    e\notin\emptyset''\Leftrightarrow\exists n_0\forall n\ge n_0\exists t[n\le t\le f(n)\wedge\Phi_e^{\emptyset'}(e)[t]\uparrow]
+    \end{equation*}
+    Since \(t\) is bounded by \(f(n)\) and \(f\le_T(C)\), this shows that \(\N-\emptyset''\) is \(\Sigma_2^0(C)\).
+    Also \(\emptyset''\in\Sigma_2^0\subseteq\Sigma_2^0(C)\). Therefore \(\emptyset''\le_TC'\) by Proposition ref:1.4.14 relative to \(C\)
+    #+END_proof
+** Post's problem
+*** Turing incomparable \texorpdfstring{\(\Delta_2^0\)}{Δ02}-sets
+    For sets \(Y,Z\), we write \(Y\mid_TZ\) if \(Y\not\le_TZ\) and \(Z\not\le_TY\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There are sets \(Y,Z\le_T\emptyset'\) s.t. \(Y\mid_TZ\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Noe that \(Y\mid_TZ\) is equivalent to the conjunction of the statements \(R_i\) for all \(i\) where
+    \begin{align*}
+    R_{2e}&:\exists n\neg Y(n)=\Phi_e^Z(n)\\
+    R_{2e+1}&:\exists n\neg Z(n)=\Phi_e^Y(n)
+    \end{align*}
+    Thus we may divide the overall task that \(Y\mid_TZ\) into subtasks, called *requirements*. To *meet* a
+    requirement means to make its statement true.
+
+    The construction of \(Y\) and \(Z\) is relative to \(\emptyset'\). We meet the requirements one by one
+    in the given order. We define sequences \(\sigma_0\prec\sigma_1\prec\dots\) and \(\tau_0\prec\tau_1\prec\dots\) and let \(Y=\bigcup_i\sigma_i\)
+    and \(Z=\bigcup_i\tau_i\). As stage \(i+1\) we meet \(R_i\) by defining \(\sigma_{i+1}\) and \(\tau_{i+1}\)
+    appropriately. Since we have \(\emptyset'\) at our disposal as an oracle, we may ask whether \(\Phi_e^Z(n)\)
+    can be made defined for a particular number \(n\). Then we may define \(Y(n)\) in such a way
+    that it differs from \(\Phi_e^Z(n)\). This method of providing a counterexample to an equality of
+    sets is called *diagonalization*
+
+    *Construction*. Let \(\sigma_0=\tau_0=\emptyset\)
+
+    _Stage \(i+1\), \(i=2e\)_. Let \(n=\abs{\sigma_i}\). Using \(\emptyset'\) as an oracle, check whether there
+    is \(\tau\succ\tau_i\) s.t. \(y=\Phi_e^\tau(n)\downarrow\). (Note that this is a \(\Sigma_0^1\) question, so it can be answered
+    by \(\emptyset\).) It so, let \(\tau_{i+1}=\tau\) and \(\sigma_{i+1}=\sigma_ix\) where \(x=\max(1-y,0)\). Otherwise
+    let \(\sigma_{i+1}=\sigma_i0\) and \(\tau_{i+1}=\tau_i0\)
+
+    _Stage \(i+1\), \(i=2e+1\)_. Similar
+
+    *Verification*. Clearly \(Y,Z\le_T\emptyset'\). Each requirement \(R_{2e}\) is met: if we cannot find an
+     extension \(\tau\succ\tau_i\) s.t. \(\Phi^\tau_e(n)\downarrow\), then by use principle \(\Phi_e^Z(n)\uparrow\). Otherwise we ensure
+     that \(Y(n)\neq\Phi_e^Z(n)\). Either way \(R_{2e}\) is met
+    #+END_proof
+*** Simple sets
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A c.e. set \(A\) is *simple* if \(\N-A\) is infinite and \(A\cap W\neq\emptyset\) for each infinite c.e. set \(W\)
+    #+END_definition
+
+    In particular, \(\N-A\) is not c.e., so \(A\) is not computable.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There is a simple set
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(A=\ran(\psi)\) where
+    \begin{equation*}
+    \psi(i)\simeq\text{ the first element }\ge 2i\text{ enumerated into }W_i
+    \end{equation*}
+    Since \psi is partial computable, \(A\) is c.e. If \(x<2i\) is in \(A\) then \(x=\psi(k)\) for
+    some \(k<i\). Hence \(\#A\cap[0,2i)\le i\), so \(A\) is co-infinite. By definition \(A\) is simple
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    There is a low simple set \(A\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let
+    \begin{align*}
+    S_e&:\#W_e=\infty\Rightarrow W_e\cap A\neq\emptyset\\
+    L_e&:\exists^\infty sJ^A(e)[s-1]\downarrow\Rightarrow J^A(e)\downarrow
+    \end{align*}
+    that restrict \(A\). If \(L_e\) is met then \(A'(e)=\lim_sf(e,s)\) where
+    \begin{equation*}
+    f(e,s)=
+    \begin{cases}
+    1&J^A(e)[s]\downarrow\\
+    0
+    \end{cases}
+    \end{equation*}
+    So \(A'\le_T\emptyset'\) by the Limit Lemma ref:1.4.2. That is \(A\) is low.
+
+    The strategy for \(L_e\) is as follows. When \(J^A(e)[s-1]\) newly converges then \(L_e\)
+    *restrains* \(A\) up to \(s\); in other words, \(L_e\) attempts to prevent numbers \(<s\) from
+    entering \(A\)
+
+    The conflict between the \(A\)-positive requirements \(S_i\) and the \(A\)-restricting
+    requirements \(L_e\) is resolved by imposing an effective *priority ordering*, for instance
+    \begin{equation*}
+    S_0>L_0>S_1>L_1>\dots
+    \end{equation*}
+
+    If a requirement is initialized at stage \(s\), it can afterwards only put numbers \(\ge s\)
+    into \(A\). Since oracle questions occurring in the computation \(J^A(e)[s-1]\) are less
+    than \(s\), an enumeration of such numbers cannot injure \(L_e\)
+
+    *Construction*. Let \(A_0=\emptyset\)
+
+    /Stage \(s>0\)/
+    1. For each \(e<s\), if \(J^A(e)[s-1]\downarrow\) but \(J^A(e)[s-2]\uparrow\) in case \(s>1\), then initialize the
+       requirements \(S_i\) for \(i>e\). We say that \(L_e\) *acts*
+    2. For each \(e<s\), if \(A_{s-1}\cap W_{e,s-1}=\emptyset\) and there is \(x\in W_{e,s}\) s.t. \(x\ge 2e\)
+       and \(x\) is no less than the last stage when \(S_e\) was initialized, then enumerate the
+       least such \(x\) into \(A\). We say that \(S_e\) *acts*
+
     #+END_proof
