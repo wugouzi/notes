@@ -5,6 +5,8 @@
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \usepackage{minted}
 #+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \let\OldTexttt\texttt
+#+LATEX_HEADER: \renewcommand{\texttt}[1]{\OldTexttt{\color{MidnightBlue} #1}}
 * The Basics
 ** Introduction
     The operator ~<<~ ("put to") writes its second argument onto its first
@@ -38,7 +40,7 @@
     auto d = 1.2;     // a double
     auto z = sqrt(y); // z has the type of whatever
                       // sqrt(y) returns 
-    auto bb {true};   //bbisabool
+    auto bb {true};   //bb is a bool
     #+end_src
 
     With ~auto~, we tend to use the ~=~ because there is no potentially troublesome type conversion
@@ -705,3 +707,173 @@ void f(double speed)
 
     In general, ~static_assert(A,S)~ prints ~S~ as a compiler error message if ~A~ is not ~true~. If you
     don’t want a specific message printed, leave out the ~S~ and the compiler will supply a default message:
+
+* Classes
+** Introduction
+** Concrete Types
+    The basic idea of *concrete classes* is that they behave ‘‘just like built-in types.’’
+*** An Arithmetic Type
+    #+begin_src c++
+class complex {
+    double re, im; // representation: two doubles
+    public:
+        // construct complex from two scalars
+        complex(double r, double i) :re{r}, im{i} {}
+        // construct complex from one scalar
+        complex(double r) :re{r}, im{0} {}
+        // default complex: {0,0}
+        complex() :re{0}, im{0} {}
+        
+        double real() const { return re; }
+        void real(double d) { re=d; }
+        double imag() const { return im; }
+        void imag(double d) { im=d; }
+        
+        complex& operator+=(complex z) {
+            re+=z.re; // add to re and im im+=z.im;
+            return *this; // and return the result
+        }
+        complex& operator-=(complex z) {
+            re-=z.re;
+            im-=z.im;
+            return *this;
+        }
+        complex& operator*=(complex); // defined out-of-class somewhere
+        complex& operator/=(complex); // defined out-of-class somewhere
+};
+    #+end_src
+
+    ~complex~ must be efficient or it will remain unused. This implies that simple operations must be
+    inlined. That is, simple operations (such as constructors, ~+=~, and ~imag()~) must be implemented
+    without function calls in the generated machine code. *Functions defined in a class are inlined
+    by default*. It is possible to explicitly request inlining by preceding a function declaration
+    with the keyword ~inline~
+
+    A constructor that can be invoked without an argument is called a *default constructor*.
+
+    The ~const~ specifiers on the functions returning the real and imaginary parts indicate that these
+    functions do not modify the object for which they are called. A ~const~ member function can be
+    invoked for both ~const~ and non-~const~ objects, but a non-~const~ member function can only be
+    invoked for non-~const~ objects.
+
+    #+begin_src c++
+complex z = {1,0};
+const complex cz {1,3};
+z = cz; // OK: assigning to a non-const variable
+cz = z; // error: complex::operator=() is a non-const member function double
+x = z.real(); // OK: complex::real() is a const member function
+    #+end_src
+
+    Many useful operations do not require direct access to the representation of complex, so they
+    can be defined separately from the class definition:
+    #+begin_src c++
+complex operator+(complex a, complex b) { return a+=b; }
+complex operator−(complex a, complex b) { return a-=b; }
+complex operator−(complex a) { return {−a.real(), −a.imag()}; }
+complex operator∗(complex a, complex b) { return a*=b; }
+complex operator/(complex a, complex b) { return a/=b; }
+    #+end_src
+
+    The compiler converts operators involving complex numbers into appropriate function calls. For
+    example, ~c!=b~ means operator ~!=(c,b)~ and ~1/a~ means operator ~/(complex{1},a)~.
+
+    User-defined operators ("overloaded operators") should be used cautiously and conventionally.
+    The syntax is fixed by the language, so you can’t define a unary ~/~. Also, it is not possible to
+    change the meaning of an operator for built-in types, so you can’t redefine ~+~ to subtract ~ints~.
+*** A Container
+    A *container* is an object holding a collection of elements.
+
+    We need a mechanism to ensure that the memory allocated by the constructor is deallocated; that
+    mechanism is a *destructor*
+
+    #+begin_src c++
+class Vector { public:
+        Vector(int s) :elem{new double[s]}, sz{s}
+        // constructor: acquire resources
+        {
+            // initialize elements
+            for (int i=0; i!=s; ++i)
+                elem[i]=0;
+        }
+        // destructor: release resources
+        ~Vector() { delete[] elem; }
+        
+        double& operator[](int i);
+        int size() const;
+        
+    private:
+        double* elem; // elem points to an array of sz doubles
+        int sz;
+};
+    #+end_src
+
+    ~Vector~'s constructor allocates some memory on the free store (also called the *heap* or *dynamic*
+    *store*) using the ~new~ operator. The destructor cleans up by freeing that memory using the
+    ~delete[]~ operator. Plain ~delete~ deletes an individual object, ~delete[]~ deletes an array.
+
+    The technique of acquiring resources in a constructor and releasing them in a destructor, known
+    as *Resource Acquisition Is Initialization* or *RAII*, allows us to eliminate "naked ~new~
+    operations", that is, to avoid allocations in general code and keep them buried inside the
+    implementation of well-behaved abstractions.
+*** Initializing Containers
+    * *Initializer-list constructor*: Initialize with a list of elements.
+    * ~push_back()~: Add a new element at the end of (at the back of) the sequence.
+
+
+    #+begin_src c++
+class Vector {
+    public:
+        // initialize with a list of doubles
+        Vector(std::initializer_list<double>); 
+        // ...
+        // add element at end, increasing the size by one 
+        void push_back(double);
+        // ...
+};
+    #+end_src
+
+    The ~push_back()~ is useful for input of arbitrary numbers of elements
+    #+begin_src c++
+Vector read(istream& is) {
+    Vector v;
+    for (double d; is>>d; ) // read floating-point values into d
+        v.push_back(d); // add d to v return v;
+}
+    #+end_src
+
+    The input loop is terminated by an end-of-file or a formatting error.
+
+    The way to provide Vector with a move constructor, so that returning a potentially huge amount
+    of data from read() is cheap
+    #+begin_src c++
+Vector v = read(cin); // no copy of Vector elements here
+    #+end_src
+
+    The ~std::initializer_list~ used to define the initializer-list constructor is a standard-library
+    type known to the compiler: when we use a ~{}~-list, such as ~{1,2,3,4}~, the compiler will create
+    an object of type ~initializer_list~ to give to the program. So, we can write:
+    #+begin_src c++
+ // v1 has 5 elements Vector
+Vector v1 = {1,2,3,4,5};
+// v2 has 4 elements
+v2 = {1.23, 3.45, 6.7, 8};
+    #+end_src
+    ~Vector~'s initializer-list constructor might be defined like this:
+    #+begin_src c++
+Vector::Vector(std::initializer_list<double> lst) // initialize with a list
+    :elem{new double[lst.size()]}, sz{static_cast<int>(lst.size())}
+{
+    copy(lst.begin(),lst.end(),elem); // copy from lst into elem (§12.6)
+}
+    #+end_src
+
+    Unfortunately, the standard-library uses ~unsigned~ integers for sizes and subscripts, so I need
+    to use the ugly ~static_cast~ to explicitly convert the size of the initializer list to an ~int~
+
+    A ~static_cast~ does not check the value it is converting; the programmer is trusted to use it
+    correctly.
+
+    Other casts are ~reinterpret_cast~ for treating an object as simply a sequence of bytes and
+    ~const_cast~ for "casting away ~const~."
+** Abstract Types
+    an *abstract type* is a type that completely insulates a user from implementation details

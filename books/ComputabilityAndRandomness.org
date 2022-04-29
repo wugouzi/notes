@@ -1429,6 +1429,10 @@
     \end{equation*}
     #+END_proposition
 
+    #+BEGIN_proof
+    \(M(\ove{\abs{\sigma}}\sigma)=\sigma\)
+    #+END_proof
+
 
     #+BEGIN_proof
     take \(M(\ove{\abs{\sigma}}\sigma)=\sigma\). If \(M\) is not prefix free,
@@ -1459,3 +1463,189 @@
     \begin{equation*}
     \Omega=\lambda([\dom U^{\pf}]^{\prec})
     \end{equation*}
+    for any prefix machine \(M\), let \(\Omega_M=\lambda([\dom M]^{\prec})\)为\(M\)的停机概率
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    sequence \(\{\la d_i,\tau_i\ra\}_{i\in\N}\) computable, \(d_i\in\N\), \(\tau_i\in 2^{<\omega}\), if \(\sum_{i\in\N}2^{-d_i}\le 1\),
+    then \(\{\la d_i,\tau_i\ra\}_{i\in\N}\)is a 请求序列, where \(\sum_{i\in\N}^{-d_i}\le 1\) is *weight condition*
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Chaitin]
+    #+BEGIN_lemma
+    for any 请求序列\(\{\la d_i,\tau_i\ra\}_{i\in\N}\), there is a prefix free machine \(M\) satisfying the sequence,
+    i.e., there is prefix free set \(\{\sigma_i:i\in\N\}=\dom M\), and for all \(i\in\N\), \(M(\sigma_i)=\tau_i\), \(\abs{\sigma_i}=d_i\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    define \(S_i\) and \(S_i^*\) 记录可分配的 “号码库”与已分配的号码
+
+    /step 0/: let \(S_0=\{\emptyset\}\), \(S^*_0=\emptyset\)
+
+    recursively define \(S_i\) and \(S_i^*\) s.t.
+    1. \(S_i^*\cup S_i\) is prefix-free
+    2. \(S_i^*\cup S_i\)  is finite
+    3. \(\lambda([S_i^*\cup S_i]^{\prec})=1\)
+    4. \(\forall n\in\N\), there is at most one \(\sigma\in S_i\) s.t. \(\abs{\sigma}=n\)
+
+
+    /Step 1/: let \(\sigma_0=0^{d_0}\), let \(S_1=\{1,01,\dots,0^{d_0-1}1\}\), \(S_1^*=\{0^{d_0}\}\)
+
+    /Step \(i+1\)/: hope to satisfy \((d_i,\tau_i)\),
+    1. there is \(\sigma\in S_i\) s.t. \(\abs{\sigma}=d_i\), let \(\sigma_i=\sigma\), \(S_{i+1}=S_i\setminus\{\sigma_i\}\), \(S_i^*=S_i^*\cup\{\sigma_i\}\)
+    2. if not, find largest \(n\) s.t. \(n<d_i\) and there is \(\sigma\in S_i\), \(\abs{\sigma}=n\)
+
+       *Claim*: we can always find such \(n\) and \sigma
+
+       Otherwise \(\lambda([S_i]^{\prec})<\sum_{n>d_i}2^{-n}=2^{-d_i}\) (by 2 and 4),
+       then \(\lambda([S_i^*]^{\prec})=\sum_{j<i}2^{-d_j}>1-2^{-d_i}\), then \(\sum_{j\le i}2^{-d_j}>1\), contradicing
+       请求序列
+
+       let \(\sigma_i=\sigma 0^{d_i-n}\), \(S_{i+1}^*=S_i^*\cup\{\sigma_i\}\), \(S_{i+1}=S_i\setminus\{\sigma\}\cup\{\sigma 1,\dots,\sigma 0^{d_i-n-1}1\}\)
+
+
+    Now let \(\dom M=\bigcup_i S_i\) and \(M(\sigma_i)=\tau_i\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If there is 请求序列\(\{\la d_i,\tau_i\ra:i\in\N\}\), then there is \(c\in\N\) for all \(i\in\N\)
+    \begin{equation*}
+    K(\tau_i)\le d_i+c
+    \end{equation*}
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    * for a fixed \(d\in\N\), \sigma is *\(d\)-\(K\)-random* iff
+      \begin{equation*}
+      K(\sigma)\ge\abs{\sigma}-d
+      \end{equation*}
+    * \(Z\in 2^\omega\) is *1-random* iff \(\exists d\in\N\) s.t. any finite initial segment of \(Z\) is \(d\)-random,
+      i.e., \(\forall n\in\N\)
+      \begin{equation*}
+      K(Z\uhr n)\ge n-d
+      \end{equation*}
+    #+END_definition
+
+    this is impossible for \(C\)
+
+    for \(s\in\N\), let
+    \begin{equation*}
+    \Omega_s=\lambda([\{\sigma:U_s^{\pf}(\sigma)\downarrow\}]^\prec)
+    \end{equation*}
+    \(s\mapsto\Omega_s\) is computable, \(\Omega_s\le\Omega_{s+1}\le\Omega\) and \(\Omega=\lim_{s\to\infty}\Omega_s\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(Z\in 2^\omega\), let \(L(Z)=\{\sigma\in 2^{<\omega}:\sigma<_LZ\}\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    View \Omega in binary extension, then \(L(\Omega)\) is c.e.
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(L(\Omega)=\bigcup[\Omega_s\cup L(\Omega_s)]\)
+
+    Let \(A_s=\{\sigma\in 2^{<s}\mid\sigma<_L\Omega_s\}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(Z\in 2^\omega\) (real \(r=z.Z\), \(z\in\Z\))is *left c.e.* iff \(L(Z)\) is c.e.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. TFAE
+       1. \(Z\) left c.e.
+       2. there is computable \(\sigma_0<_L\sigma_1<\dots\) s.t. \(\lim_n\sigma_n=Z\), that is, \(\forall m\in\N\) there is \(\sigma_n\)
+          s.t. \(\sigma_n\uhr m=Z\uhr M\)
+    2. if \(Z\) (as a characteristic function) is c.e., then \(Z\) is left c.e.
+    #+END_proposition
+
+    \(0\le_L00\), \(\sigma\prec\tau\Rightarrow\sigma\le_L\tau\)
+
+    #+BEGIN_proof
+    1. \(\Rightarrow\):
+
+       \(\Leftarrow\): let \(A_s=\{\tau\in 2^{<s}\mid\tau<_L\sigma_s\}\), then \(\bigcup_sA_s=L(Z)\)
+    #+END_proof
+
+    not all left c.e. set is c.e.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_examplle
+    let
+    \begin{equation*}
+    A_0=010101\cdots
+    \end{equation*}
+    run \(\Phi_{e,s}(2e+1)\), assume for all \(s\in\N\), there is at most one \(e\le s\) s.t. \(\Phi_e(2e+1)\)
+    runs. If \(A_s\) is defined, then \(A_{s+1}\) is: if \(\Phi_{e,s}(2e+1)\downarrow\),
+    then \(A_{s+1}(2e)=1\), \(A_{s+1}(2e+1)=0\), the rest is the same as \(A_s\),
+    let \(A=\lim_sA_s\)
+
+    If \(A=W_e\), \(2e+1\in W_e\), then \(A(2e)=1\), \(A(2e+1)=0\), \(A\neq W_e\)
+
+    If \(2e+1\notin W_e\), then \(A(2e+1)=1\), \(A\neq W_e\)
+    #+END_examplle
+
+    actually \(A\) is 2-c.e.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. if \(Z\) is left c.e., then \(Z\le_T0'\)
+    2. \(\Omega\equiv_T0'\)
+    #+END_proposition
+
+    #+BEGIN_proof
+    1. input \(n\), to determine whether \(n\in Z\), ask \(0'\) whether those 01-string of
+       length \(n+1\) are belong to \(L(Z)\)
+
+       if there is \tau of length \(n\) and \(\tau 0\in L(Z)\), \(\tau 1\notin L(Z)\), then output \(n\in Z\),
+       otherwise \(n\notin Z\)
+
+       therefore \(Z\le_{tt}0'\Rightarrow\) \(Z\) is \omega-c.e.
+
+    2. Goal: \(0'\le_T\Omega\)
+
+       Consider: input \(0^e1\), run \(\Phi_e(e)\), if \(\Phi_e(e)\downarrow\), let \(M(0^e1)=\la\ra\), otherwise \(M\)
+       doesn't stop, \(\dom M\subseteq\{0^e1\mid e\in 0'\}\), therefore \(M\) is prefix-free, assume \(M=\Psi_d\),
+       let \(\rho=0^d1\) be \(M\)'s coding string, then \(U^{\pf}(\rho 0^e1)=M(0^e1)\),
+
+       then to determine whether \(e\in 0'\), we only need to know whether \(\rho 0^e1\in\dom U^{\pf}\).
+       Compute \(s\) s.t. \(\Omega\setminus\Omega_s<2^{-\abs{\rho}-e-1}\). Since \(\lim_s\Omega_s=\Omega\), we can always find
+       such \(s\), then \(U_s^{\pf}(\rho 0^e1)\downarrow\Leftrightarrow U^{\pf}(\rho 0^e1)\downarrow\Leftrightarrow e\in 0'\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    \Omega is 1-random, that is there is \(c\in\N\), for all \(n\in\N\)
+    \begin{equation*}
+    K(\Omega\uhr n)\ge n-c
+    \end{equation*}
+    #+END_proposition
+
+    #+BEGIN_proof
+    for any \tau, if \(\abs{\tau}<n-c\), then \(U^{\pf}(\tau)\neq\Omega\uhr n\)
+
+    if \(U^{\pf}(\tau)=\Omega\uhr n\), then there is \(s\) s.t. \(U^{\pf}_s(\tau)=\Omega_s\uhr n=\Omega\uhr n\)
+
+    We need to eliminate all sufficiently short \tau satisfying this
+
+    Let \(\Phi_e(\tau,d)\) compute all \(U^{\pf}_s(\tau)\) and \(\Omega_s\), if we find \(s,n\)
+    s.t. \(U^{\pf}_s(\tau)=\Omega_s\uhr n\) and \(\abs{\tau}<n-d-1\), then output smallest \(\mu\notin\ran U^{\pf}_s\)
+
+    By smn, there is recursive function \(g\) s.t. \(\Phi_{g(e,d)}(\tau)=\Phi_e(\tau,d)\), by fixed point
+    theorem, there is a fixed point \(c_e\) of \(g(e,x)\) s.t. \(\Phi_{c_e}(\tau)=\Phi_{g(e,c_e)}(\tau)=\Phi_e(\tau,c_e)\)
+
+    Suppose there is \(s,n\) s.t. \(U^{\pf}_s(\tau)\downarrow=\Omega_s\uhr n\) and \(\abs{\tau}<n-c_e-1\),
+    then \(\Phi_{c_e}(\tau)=\mu\notin\ran U^{\pf}\). By definition, \(\dom\Phi_{c_e}\subseteq\dom U^{\pf}\),
+    therefore \(\Phi_{c_e}\) is prefix-free, we may assume \(f\) is the function transform machine to
+    prefix-free function, then \(\Phi_{c_e}=\Phi_{f(c_e)}=\Psi_{c_e}\), let \(\nu=1^{c_e}0\tau\),
+    then \(U^{\pf}(\nu)=\Psi_{c_e}(\tau)=\Phi_{c_e}(\tau)=\mu\), but \(\mu\not\in\ran U_s^{\pf}\),
+    therefore \(\nu\in\dom U^{\pf}\setminus\dom U_s^{\pf}\),
+    therefore \(\Omega-\Omega_s\ge 2^{-\abs{\nu}}=2^{-(c_e+1+\abs{\tau})}>2^{-n}\), then \(\Omega_s\uhr n\neq\Omega\uhr n\)
+    #+END_proof
