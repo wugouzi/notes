@@ -2136,7 +2136,7 @@
 
     #+ATTR_LATEX: :options [ZFC]
     #+BEGIN_corollary
-    对任意有穷句子集\(F=\{\varphi_1,\dots,\varphi_n\}\)，对任意的传递集\(N\)，存在\(M\)满足
+    对任意有穷 *句子* 集\(F=\{\varphi_1,\dots,\varphi_n\}\)，对任意的传递集\(N\)，存在\(M\)满足
     1. \(N\subseteq M\)
     2. \(F\)相对于\((M,\in)\)是绝对的
     3. \(\abs{M}\le\abs{N}+\aleph_0\)
@@ -2321,4 +2321,350 @@
 
     #+BEGIN_proof
     若\(\ZF\vDash(\exists\alpha(V_\alpha\vDash F)^{V_\beta})\)
+    #+END_proof
+* 可构成集
+** 可定义性与哥德尔运算
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    令\(M\)是集合，\(X\subseteq M^n\)是 *相对于\(M\)由\(\psi\)通过参数可定义的* 是指存在\(y_1,\dots,y_m\in M\)使得
+    \begin{equation*}
+    X=\{(x_1,\dots,x_n)\mid\psi^M(x_1,\dots,x_n,y_1,\dots,y_m)\}
+    \end{equation*}
+    简称\(X\)为\(M\)的可定义子集
+    #+END_definition
+
+    \(\Def(M)\)为\(M\)的可定义子集, \(\bara\in X\in\Def(M)\Leftrightarrow\exists\psi(\barx,\bary)\exists\barb\in M^m M\vDash\psi(\bara,\barb)\)
+
+    \(\Def(M)\)看起来不是个集合，因为量词在公式上
+
+    #+BEGIN_remark
+    - \(\Def(M)\subseteq\calp(M)\)
+    - \(\abs{\Def(M)}\le\abs{M}+\aleph_0\) (AC)
+    - \(\Def(M)\)的定义是一个“2阶”表达式
+    - 在\(\ZF\)下，该“2阶”表达式可形式化为一个一阶表达式
+
+      \(Form(x)\)使得\(\forall n\in\N\), \(Form(n)\Leftrightarrow\) \(n\)是某公式\(\varphi\)的编码，于是\(\exists\varphi\Leftrightarrow\exists xForm(x)\)
+    - 对任意公式\(\psi\)，\(\psi^M\)都是\(\Delta_0\)公式
+    - 故\(\Def(M)\)中的集合被某个\(\Delta_0\)公式定义
+
+      \(X=\{\bara\mid\bara\in M^n\wedge\psi^M(\bara,\barb)\}\)
+    - 本节的目标是刻画\(\Def(M)\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    以下运算称为 *哥德尔运算*
+    \begin{align*}
+    &G_1(X,Y)=\{X,Y\}\\
+    &G_2(X,Y)=X\times Y\\
+    &G_3(X,Y)=\in\uhr X\times Y\\
+    &G_4(X,Y)=X-Y\\
+    &G_5(X,Y)=X\cap Y\\
+    &G_6(X,Y)=\bigcup X\\
+    &G_7(X,Y)=\dom(X)\\
+    &G_8(X,Y)=\{(x,y)\mid(y,x)\in X\}\\
+    &G_9(X,Y)=\{(x,y,z)\mid(x,z,y)\in X\}\\
+    &G_{10}(X,Y)=\{(x,y,z)\mid(y,z,x)\in X\}\\
+    \end{align*}
+    对任意集合\(M\)，\(\cl_G(M)\)表示\(M\)的 *哥德尔闭包*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    满足以下条件的公式\(\psi\)称为 *范式*
+    1. \(\psi\)中的逻辑符号只有\(\neg,\wedge,\exists\)
+    2. \(=\)不出现
+    3. 若\(x_i\in x_j\)出现在\(\psi\)中，则\(i\neq j\)
+    4. \(\exists\)只以这样的形式出现：\(\exists x_{m+1}\in x_i\varphi(x_1,\dots,x_{m+1})\)，其中\(1\le i\le m\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    每一\(\Delta_0\)公式都可改写为范式，即若\(\psi\)是\(\Delta_0\)公式，则存在一个范式\(\psi'\)对任意包含外延公理的
+    句子集\(\Sigma\)
+    \begin{equation*}
+    \Sigma\vdash\psi\leftrightarrow\psi'
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(\neg,\wedge,\exists\)是功能完全的，可以假设\(\psi\)仅含这些
+
+    公式\(x_i=x_j\)在外延公理下等价于\(\forall u\in x_i(u\in x_j)\wedge\forall u\in x_j(u\in x_i)\)
+
+    \(x_i\in x_i\Leftrightarrow\exists u\in x_i(u=x_i)\)
+
+    约束变元的下标的改变不影响公式的一阶性质
+    \begin{equation*}
+    \forall\barx(\exists y\varphi(\barx,y)\leftrightarrow\exists z\varphi(\barx,z))
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    对任意的\(\Delta_0\)公式\(\psi(x_1,\dots,x_n)\)，存在函数\(G\)，\(G\)是哥德尔运算的复合，并且对任
+    意\(Y_1,\dots,Y_n\)，\(G(Y_1,\dots,Y_n)=\{(x_1,\dots,x_n)\mid(\bigwedge x_i\in Y_i)\wedge\psi(x_1,\dots,x_n)\}\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    不妨设\(\psi\)是范式，对\(\psi\)的复杂度归纳
+    1. \(\psi(x_1,\dots,x_n)\)是原子公式，此时\(\psi\)形如\(x_i\in x_j\), \(i\neq j\)，对\(n\)用归纳法证明
+
+       \(x_1\in x_2\)，有\(\psi(x_1,x_2)\)，\(\theta(x_1,\dots,x_{10})\)在此处对应的\(G\)不是一个东西，因为它们定义出来的集合不一
+       样，因此\(G\)不一样
+       1. 如果\(n=2\)，则\(\psi(x_1,x_2)\)为\(x_1\in x_2\)或\(x_2\in x_1\)
+          - 若\(\psi\)为\(x_1\in x_2\)，令\(G=G_3\)
+          - 若\(\psi\)为\(x_2\in x_1\)，令\(G(Y_1,Y_2)=G_8(G_3(Y_2,Y_1),Y_2)\)
+       2. 若\(n>2\)且\(i,j\neq n\)，则\(\psi=\psi(x_1,\dots,x_{n-1})\)
+
+          由归纳假设，存在\(n-1\)元哥德尔运算\(G'\)，令\(G(Y_1,\dots,Y_n)=G_2(G'(Y_1,\dots,Y_{n-1}),Y_n)\)
+       3. \(n>2\)，\(i,j\neq n-1\)
+
+          则\(\psi=\psi(x_1,\dots,x_{n-2},x_n)\)，令
+          \(u_1=x_1,\dots,u_{n-2}=x_{n-2},u_{n-1}=x_n,u_n=x_{n-1}\)，令\(\theta(\baru)=\psi(\barx)=\psi(\baru)\),但它们定义的
+          集合不同，加了个变元
+
+          设\(\psi\)为\(x_{n-2}\in x_n\)
+
+          则\(\psi(\barx)\)：第\(n-2\)个分量属于第\(n-1\)个分量
+
+          \(\theta(\baru)\)：第\(n-2\)个分量属于第\(n-1\)个分量
+
+          由1.2可知，存在哥德尔运算\(G_\theta(Y_1,\dots,Y_n)=\{(a_1,\dots,a_n):\bigwedge_{k=1}^na_k\in Y_k\wedge\theta(\bara)\}\)，将
+          \(((a_1,\dots,a_{n-2}),a_{n-1},a_n)\)看作三元组
+
+          则\(G'=G_9(G_{\theta}(Y_1,\dots,Y_n),Y_n)\)
+
+          令\(G(Y_1,\dots,Y_n)=G'(Y_1,\dots,Y_{n-2},Y_n,Y_{n-1})\)
+       4. 设\(n>2\), \(i=n-1,j=n\)，\(x_{n-1}\in x_n\)
+
+          令\(G'(Y_1,\dots,Y_n)=G_3(Y_{n-1},Y_n)\times(Y_1\times\dots\times Y_{n-2})\)
+
+          \((x_{n-1},x_n,(x_1,\dots,x_{n-2}))\)是三元组，故\(G=G_{10}(G'(Y_1,\dots,Y_n),Y_n)\)
+       5. \(n>2\), \(i=n\), \(j=n-1\)，类似
+    2. 设\(\psi(x_1,\dots,x_n)\)是\(\neg\varphi(x_1,\dots,x_n)\)，
+       \begin{equation*}
+       G'(Y_1,\dots,Y_n)=\{(x_1,\dots,x_n)\mid\bigwedge_{i=1}^nx_i\in Y_i\wedge\varphi(x_1,\dots,x_n)\}
+       \end{equation*}
+       令\(G(Y_1,\dots,Y_n)=Y_1\times\dots\times Y_n-G'(Y_1,\dots,Y_n)\)
+    3. 设\(\psi(x_1,\dots,x_n)\)为\(\varphi_1(\barx)\wedge\varphi_2(\barx)\)
+
+       设\(G',G''\)分别对应\(\varphi_1,\varphi_2\)，则\(G(Y_1,\dots,Y_n)=G'(Y_1,\dots,Y_n)\cap G''(Y_1,\dots,Y_n)\)
+    4. 设\(\psi(x_1,\dots,x_n)\)形如\(\exists x_{n+1}\in x_i\varphi(x_1,\dots,x_{n+1})\)
+
+       设\(G_\varphi\)对应\(\varphi\)，则不难找到
+       \begin{equation*}
+       \varphi'(x_1,\dots,x_{n+1})=\varphi(x_1,\dots,x_{n+1})\wedge x_{n+1}\in x_i
+       \end{equation*}
+       对应的哥德尔运算的复合\(G'\)，显然
+       \begin{equation*}
+       \psi(x_1,\dots,x_n)\Leftrightarrow\exists x_{n+1}(\varphi'(x_1,\dots,x_{n+1}))
+       \end{equation*}
+       \begin{equation*}
+       \dom(G'(Y_1,\dots,Y_n,Y_{n+1}))=\{(x_1,\dots,x_n)\mid\exists x_{n+1}(\bigwedge_{i=1}^{n+1}x_i\in Y_i\wedge\varphi(x_1,\dots,x_{n+1}\wedge x_{n+1}\in x_i))\}
+       \end{equation*}
+       注意到\(x_{n+1}\in x_i\wedge x_i\in Y_i\Rightarrow x_{n+1}\in\bigcup Y_i\)
+
+       令\(G(Y_1,\dots,Y_n)=\dom(G'(Y_1,\dots,Y_n,\bigcup Y_i))\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    如果\(M\)传递且\(\cl_G(M)=M\)，则对任意\(\Delta_0\)公式\(\psi(x,y_1,\dots,y_m)\)，对任意集合\(X\in M\)，对任
+    意\(y_1,\dots,y_m\in M\)，如果
+    \begin{equation*}
+    Y=\{x\in X\mid\psi(x,y_1,\dots,y_m)\}
+    \end{equation*}
+    则\(Y\in M\)，注意到\(\psi=\psi^M\)，则有
+    \begin{equation*}
+    \forall\bary\in M\forall X\in M\exists Y\in M\forall u\in M(u\in Y\leftrightarrow u\in X\wedge\psi^M(u,\bary))
+    \end{equation*}
+    这是\(\psi(x,\bary)\)对应的分离公理，故\(\Delta_0\)-分离公理模式在\(M\)中为真
+    #+END_corollary
+
+    #+BEGIN_proof
+    \(y_1,\dots,y_m\in M\xRightarrow{G_1}\{y_1\},\dots,\{y_m\}\in M\)
+
+    设\(G(Y_0,Y_1,\dots,Y_m)\)是\(\psi(x,\bary)\)对应的哥德尔运算的组合，则
+    \(Y=\dom^{(m)}(G(X,\{y_1\},\dots,\{y_m\}))\)
+    #+END_proof
+
+    #+BEGIN_remark
+    以上证明给出了一个更强的结论：
+    若\(\psi(x,\bary)\)是一个\(\Delta_0\)公式，则存在哥德尔运算的复合\(G\)使得
+    \begin{equation*}
+    G(X,\{y_1\},\dots,\{y_m\})=\{x\in X\mid\psi(x,\bary)\}
+    \end{equation*}
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    如果\(G(X_1,\dots,X_n)\)是哥德尔运算的复合，则\(Z=G(X_1,\dots,X_n)\)等价于一个\(\Delta_0\)-公式，故\(G\)作为函
+    数相对于\(\ZF\)的传递模型是绝对的
+    #+END_lemma
+
+    #+BEGIN_proof
+    对\(G\)的复杂度归纳证明绝对
+    1. \(G\)是某个\(G_i\)
+
+       \(G_1,G_2,G_4,G_5,G_6,G_7\)已证
+
+       \(G_3(X,Y)=\in\uhr X\times Y\)，取\(\psi(X,Y,Z)\)为
+       \begin{equation*}
+       \forall u\in Z\exists x\in X\exists y\in Y(x\in y\wedge z=(x,y))\wedge\forall x\in X\forall y\in Y(x\in y\to\exists z\in Z(z=(x,y)))
+       \end{equation*}
+       于是\(\psi(X,Y,Z)\Leftrightarrow Z=G_3(X,Y)\)
+
+       \(\ZF\vdash\forall X\forall Y\exists!Z\psi(X,Y,Z)\)，若\(M\vDash\ZF\)，则
+       \begin{equation*}
+       \forall x\in M\forall y\in M\exists!z\in M\psi^M(X,Y,Z)
+       \end{equation*}
+       即\(X,Y\in M\Rightarrow G_3(X,Y)\in M\)
+
+       \(G_8(X,Y)=\{(x,y)\mid(y,z)\in X\}\)，令\(\psi(X,Y,Z)\)为
+       \begin{align*}
+       &\forall u\in Z\exists x\in\bigcup X\exists y\in\bigcup X\exists w\in X(w=(x,y)\wedge u=(y,x))\\
+       &\wedge\forall x\in\bigcup X\forall y\in\bigcup X\forall w\in X(w=(x,y)\to\exists u\in Z(u=(y,x)))\\
+       &\wedge(Y=Y)
+       \end{align*}
+       因为\(\{y,\{x,y\}\}\in X\Rightarrow x,y\in\bigcup X\)
+
+       同理\(M\vDash\ZF\Rightarrow (X,Y\in M\Rightarrow G_8(X,Y)\in M)\)
+
+       \(G_9,G_{10}\)与\(G_8\)类似
+
+
+    对\(G(X_1,\dots,X_n)\)的复杂度归纳证明
+    1. \(u\in G(X_1,\dots,X_n)\)是\(\Delta_0\)的
+    2. 若\(\varphi\)是\(\Delta_0\)的，则\(\forall u\in G(X_1,\dots,X_n)\varphi\)是\(\Delta_0\)的
+    3. \(Z=G(X_1,\dots,X_n)\)是\(\Delta_0\)的
+
+
+    设\(G(X_1,\dots,X_n)=G_i(F_1(X_1,\dots,X_n),F_2(X_1,\dots,X_n))\)
+    1. \(u\in G_1(F_1,F_2)\Leftrightarrow u=F_1\vee u=F_2\)
+
+       \(u\in G_2(F_1,F_2)\Leftrightarrow\exists x\in F_1\exists y\in F_2(u=(x,y))\)
+
+       \(u\in G_3(F_1,F_2)\Leftrightarrow\exists x\in F_1\exists y\in F_2(x\in y\wedge u=(x,y))\)
+
+       (练习)
+    2. \(\forall u\in G_1(F_1,F_2)\varphi\Leftrightarrow(u=F_1\to\varphi)\wedge(u=F_2\to\varphi)\)
+
+       \(\forall u\in G_2(F_1,F_2)\varphi\Leftrightarrow\forall x\in F_1\forall y\in F_2(u=(x,y)\to\varphi)\)
+
+       \(\forall u\in G_3(F_1,F_2)\varphi\Leftrightarrow\forall x\in F_1\forall y\in F_2(u=(x,y)\wedge x\in y\to\varphi)\)
+
+       \(\forall u\in G_4(F_1,F_2)\varphi\Leftrightarrow\forall u\in F_1(u\notin F_2\to\varphi)\)
+
+       (练习)
+    3. \(Z=G(X_1,\dots,X_n)\)可表示为
+       \begin{equation*}
+       \forall u\in Z(u\in G(\barX))\wedge u\in G(\barX)(u\in Z)
+       \end{equation*}
+    #+END_proof
+
+    #+BEGIN_remark
+    我们证明了“\(u\in G(x)\)”与“\(\forall u\in G(\barx)\varphi\)”是\(\Delta_0\)公式
+    #+END_remark
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    对任意传递集
+    \begin{equation*}
+    \Def(M)=\cl_G(M\cup\{M\})\cap\calp(M)
+    \end{equation*}
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\subseteq\): 设\(X\in\Def(M)\)形如\(\{x\in M\mid\psi^M(x,y_1,\dots,y_m)\}\)，\psi公式，\(\bary\in M\)
+
+    由于\(\psi^M\)是一个\(\Delta_0\)公式，故存在哥德尔运算的组合\(G\)使得
+    \begin{equation*}
+    G(M,\{y_1\},\dots,\{y_m\})=\{x\in M\mid\psi^M(x,y_1,\dots,y_m)\}
+    \end{equation*}
+    故\(X\in\cl_G(M\cup\{M\})\)
+
+    \(\supseteq\): 设\(y_1,\dots,y_m\in M\)以及哥德尔运算的组合\(G\)使得
+    \begin{equation*}
+    X=G(M,y_1,\dots,y_m)
+    \end{equation*}
+    且\(X\subseteq M\)，存在\(\Delta_0\)公式\(\varphi(u,M,y_1,\dots,y_m)\)使得
+    \begin{equation*}
+    \varphi(u,M,\bary)\Leftrightarrow u\in G(M,\bary)
+    \end{equation*}
+
+    显然\(X=\{u\mid\varphi(u,M,y_1,\dots,y_m)\}\)，将\(\varphi\)中形如"\(\forall x\in M\)"，"\(\exists x\in M\)"的量词改为“\(\forall x\)”，
+    “\(\exists x\)”，则\(\varphi\)变为\(\psi\)
+
+    由于\(M\)是传递模型，受囿量词关于\(M\)的相对化不改变，故\(\psi^M=\varphi\)
+
+    即\(X=\{u\in M\mid\psi^M(u,M,\bary)\}\in\Def(M)\)
+    #+END_proof
+
+    #+BEGIN_remark
+    \begin{equation*}
+    \ZF\vdash\forall X((X\text{传递})\to\forall u(u\in\Def(X)\leftrightarrow u\in\cl_G(X\cup\{X\})\wedge u\subseteq X))
+    \end{equation*}
+    若\(M\vDash\ZF\)
+    \begin{equation*}
+    \forall X\in M((X\text{传递})^M\to\forall u\left((u\in\Def(X))^M\leftrightarrow (u\in\cl_G(X\cup\{X\})\wedge u\subseteq X))^M\right)
+    \end{equation*}
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    如果（类）\(M\)是\(\ZF\)的传递模型，则类函数\(X\mapsto\Def(X)\)相对于\(M\)是绝对的
+    #+END_lemma
+
+    #+BEGIN_proof
+    关键要证明\(X\mapsto\cl_G(X)\)的绝对性
+
+    递归定义函数\(F:\omega\times V\to V\)为
+    \begin{align*}
+    &F(0,X)=X\\
+    &F(n+1,X)=F(n,X)\cup\{G_i(X,Y)\mid X,Y\in F(n,X),i=1,\dots,10\}
+    \end{align*}
+    则\(\cl_G(X)=\bigcup\ran(F(-,X))\)
+
+    故只需验证\(F\)的绝对性，只需验证\(F(n)\)到\(F(n+1)\)的运算绝对
+
+    将\(F(n,X)\)看作变元\(W\)，只需验证函数
+    \begin{equation*}
+    W\cup\{G_i(X,Y)\mid X,Y\in W,i=1,\dots,10\}
+    \end{equation*}
+    绝对
+
+    只需验证\(Z=G(W)=\{G_i(X,Y)\mid X,Y\in W,i=1,\dots,10\}\)绝对，由
+    \begin{align*}
+    \forall u\in Z\exists x,y\in W(\bigvee_{i=1}^{10}u=G_i(x,y))\wedge
+    \forall x,y\in W\exists u\in z(\bigvee_{i=1}^{10}u=G_i(x,y))
+    \end{align*}
+    故\(Y=\cl_G(X)\)是\(\Delta_0\)公式，\(M\)作为\(\ZF\)的传递模型，对\(G_i\)封闭，故
+    \(\cl_G(X)\in M\)，因此它作为函数绝对
+
+    由于\(M\vDash\ZF\)，若\(X\in M\)传递，则\(\forall u\in M\)有
+    \begin{align*}
+    V\vDash(u\in\Def(X))^M&\leftrightarrow[u\in\cl_G(X\cup\{X\})\wedge u\subseteq X]^M\\
+    &\leftrightarrow(u\in\cl_G(X\cup\{X\}))^M\wedge(u\subseteq X)^M\\
+    &\leftrightarrow u\in\cl_G(X\cup\{X\})\wedge u\subseteq X\\
+    &\leftrightarrow u\in\Def(X)
+    \end{align*}
+    最后\(Z=\Def(X)\)当且仅当\(\varphi(X,Z)\):
+    \begin{equation*}
+    \forall u\in Z(u\in\Def(X))\wedge\forall u(u\in\Def(X)\to u\in Z)
+    \end{equation*}
+    它的相对化只在与\(\forall u\)
+
+    设\(X,Z\in M\)，显然\(\varphi(X,Z)\to\varphi^M(X,Z)\)
+
+    另一方面，\(u\in\Def(X)\Rightarrow u\in\cl_G(X\cup\{X\})\subseteq M\Rightarrow u\in M\)，因为哥德尔函数是绝对的
+
+    最后，若\(X\in M\)传递，则\(\Def(X)\in M\)，这是因为
+    \begin{equation*}
+    \Def(X)=\{u\mid u\in\cl_G(X\cup\{X\})\wedge u\subseteq X\}=\{u\in M\mid(u\in\cl_G(X\cup\{X\}))^G\wedge(u\subseteq^MX)\}
+    \end{equation*}
+    由分离公理，\(Def(X)\in M\)
+
+    故\(X\mapsto\Def(X)\) (\(X\)传递)是绝对的
     #+END_proof
