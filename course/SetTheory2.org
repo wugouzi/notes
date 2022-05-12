@@ -11,6 +11,7 @@
 #+LATEX_HEADER: \def \Rep {\text{Rep}}
 #+LATEX_HEADER: \def \ZC {\text{ZC}}
 #+LATEX_HEADER: \def \PROOF {\text{PROOF}}
+#+LATEX_HEADER: \DeclareMathOperator{\rankl}{\rank_{\bL}}
 * 集合的宇宙
 ** 数理逻辑
     在\(\ZFC\)下证明\(\ZFC\vdash\CH\)，希望将"\(\ZFC\vdash\CH\)"表述为一阶句子
@@ -2497,6 +2498,8 @@
     \end{equation*}
     #+END_remark
 
+    设\(M\)是集合,对任意\(\psi\)，\(\psi^M\)是\(\Delta_0\)公式
+
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
     如果\(G(X_1,\dots,X_n)\)是哥德尔运算的复合，则\(Z=G(X_1,\dots,X_n)\)等价于一个\(\Delta_0\)-公式，故\(G\)作为函
@@ -2587,7 +2590,7 @@
 
     \(\supseteq\): 设\(y_1,\dots,y_m\in M\)以及哥德尔运算的组合\(G\)使得
     \begin{equation*}
-    X=G(M,y_1,\dots,y_m)
+    X=G(M,\{y_1\},\dots,\{y_m\})
     \end{equation*}
     且\(X\subseteq M\)，存在\(\Delta_0\)公式\(\varphi(u,M,y_1,\dots,y_m)\)使得
     \begin{equation*}
@@ -2601,6 +2604,9 @@
 
     即\(X=\{u\in M\mid\psi^M(u,M,\bary)\}\in\Def(M)\)
     #+END_proof
+
+    * \(u\in G(X_1,\dots,X_n)\)是\(\Delta_0\)-公式
+    * 若\(\psi\)是\(\Delta_0\)公式，则\(\forall u\in G(X_1,\dots,X_n)\varphi\)也是\(\Delta_0\)公式
 
     #+BEGIN_remark
     \begin{equation*}
@@ -2667,4 +2673,200 @@
     由分离公理，\(Def(X)\in M\)
 
     故\(X\mapsto\Def(X)\) (\(X\)传递)是绝对的
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    对任意传递集
+    1. \(\Def(M)\subseteq\calp(M)\)
+    2. \(M\subseteq\Def(M)\)
+    3. 若\(X\subseteq_fM\)，则\(X\in\Def(M)\)
+    4. 若AC且\(\abs{M}\ge\omega\),则\(\abs{\Def(M)}=\abs{M}\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    2. [@2] 若\(a\in M\)，则\(a\subseteq M\)，且
+       \begin{equation*}
+       a=\{u\in M\mid u\in a\}=\{u\in M\mid(u\in a)^M\}\in\Def(M)
+       \end{equation*}
+    3. 对\(n\)归纳证明：\(a_1,\dots,a_n\in M\Rightarrow\{a_1,\dots,a_n\}\in M\)
+
+       第0步：空集是可以定义的
+
+       第1步：若\(a\in M\)，\(\{a\}\)来自\(G_1\)
+
+       第\(n+1\)步：\(\{a_1,\dots,a_n\},\{a_{n+1}\}\in\Def(M)\)，故\(\{\{a_1,\dots,a_n\},\{a_{n+1}\}\}\in\Def(M)\)，
+       故\(\{a_1,\dots,a_{n+1}\}\in\Def(M)\)
+    4. \(x\in M\Rightarrow\{x\}\in\Def(M)\Rightarrow\abs{M}\le\abs{\Def(M)}\)
+
+       若\(X\in\Def(M)\)，则存在\(G\)以及\(a_1,\dots,a_n\in M\)使得\(X=G(M,a_1,\dots,a_n)\)，\(G\)是哥德尔运算的组
+       合，只有\(\omega\)个，故\(\abs{\Def(M)}\le\abs{M}\cdot\aleph_0=\abs{M}\)
+    #+END_proof
+** 哥德尔的\(\bL\)
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    对任意\(\alpha\)，递归定义\(L_\alpha\)
+    1. \(L_0=\emptyset\)
+    2. \(L_{\alpha+1}=\Def(L_\alpha)\)
+    3. 对与极限序数，\(L_\gamma=\bigcup_{\beta<\gamma}L_\beta\)
+
+
+    定义\(\bL=\bigcup_{\alpha\in\On}L_\alpha\)，\(\bL\)的元素称为 *可构成集*
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    对任意序数\(\alpha\)
+    1. \(L_\alpha\)传递
+    2. \(\alpha<\beta\Rightarrow L_\alpha\subseteq L_\beta\)
+    3. \(L_\alpha\subseteq V_\alpha\)
+    #+END_lemma
+
+    传递集有\(M\subseteq\Def(M)\)
+
+    #+BEGIN_proof
+    1. 归纳
+       1. 空集传递
+       2. \(L_{\alpha+1}=\Def(L_\alpha)\)
+
+          \(a\in L_{\alpha+1}\Rightarrow a\subseteq L_\alpha\subseteq\Def(L_\alpha)=L_{\alpha+1}\)
+    2. \(L_\alpha\subseteq\Def(L_\alpha)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \begin{equation*}
+    \rank_{\bL}(x):=\min\{\beta\mid x\in L_{\beta+1}\}
+    \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\forall\alpha\)
+    \begin{equation*}
+    L_\alpha=\{x\in\bL\mid\rank_{\bL}(x)<\alpha\}
+    \end{equation*}
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(x\in L_{\rank_{\bL}(x)+1}\)
+
+    若\(\rankl(x)<\alpha\),\(L_{\rankl(x)+1}\subseteq L_\alpha\Rightarrow x\in L_\alpha\)
+
+    若\(x\in L_\alpha\), \(\alpha\ge\rankl(x)+1\),\(\alpha>\rankl(x)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\forall\alpha\)
+    1. \(L_\alpha\cap\On=\alpha\)
+    2. \(\alpha\in\bL\wedge\rankl(\alpha)=\alpha\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. 归纳
+       1. \(L_0=\On=0\)
+       2. ​
+          \begin{align*}
+          L_{\alpha+1}\cap\On&=\{x\in\On\mid\rankl(x)<\alpha+1\}\\
+          &=(L_\alpha\cap\On)\cup\{x\in\On\mid\rankl(x)=\alpha\}\\
+          &=\alpha\cup\{x\in\On\mid\rankl(x)=\alpha\}
+          \end{align*}
+          只需证明\(\{x\in\On\mid\rankl(x)=\alpha\}=\{\alpha\}\)，因为\(\alpha\subseteq L_\alpha\)
+
+          在基础公理下“\(x\)是序数”是一个\(\Delta_0\)公式\(\varphi\)，故若\(x\in L_\alpha\),\(\varphi(x)\leftrightarrow\varphi^{L_\alpha}(x)\)
+
+          故\(\alpha=\{x\in L_\alpha\mid\varphi(x)\}=\{x\in L_\alpha\mid\varphi^{L_\alpha}(x)\}\in\Def(L_\alpha)\)，故\(\alpha\in L_{\alpha+1}\setminus L_\alpha\)
+
+          同时\(L_{\alpha+1}\cap\On\subseteq V_{\alpha+1}\cap\On=\alpha+1\)
+       3. 极限：作业
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\forall\alpha\in\On\)
+    1. \(L_\alpha\in L_{\alpha+1}\)
+    2. \(L_\alpha\)的任意有穷子集属于\(L_{\alpha+1}\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. \(L_\alpha=\{x\in L_\alpha\mid x=x\}=\{x\in L_\alpha\mid(x=x)^{L_\alpha}\}\in\Def(L_\alpha)\)
+    2. 8.1.10
+    #+END_proof
+
+    不能断言实数属于\(\bL\)，也不能断言\(\bL\)关于\(\Pow\)封闭
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. \(\forall n\in\omega\), \(L_\alpha=V_\alpha\)
+    2. \(L_\omega=V_\omega\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    如果\(AC\)，则\(\forall\alpha\ge\omega\), \(\abs{L_\alpha}=\abs{\alpha}\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    对\(\alpha\ge\omega\)归纳
+
+    - \(\alpha=\omega\)
+    - 若\(\alpha=\beta+1\)
+
+      \begin{equation*}
+      \abs{L_\alpha}=\abs{\Def(L_\beta)}=\abs{L_\beta}=\abs{\beta}=\abs{\alpha}
+      \end{equation*}
+    - 若\(\alpha\)极限序数, \(\abs{L_\beta}=\abs{\bigcup_{\beta<\alpha}L_\beta}\le\abs{\alpha}\)
+
+      另一方面，\(\alpha\subseteq L_\alpha\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [ZF]
+    #+BEGIN_theorem
+    \(\bL\)是\(\ZF\)的模型
+    #+END_theorem
+
+    #+BEGIN_proof
+    * 存在公理
+    * 外延公理 （\(\bL\)传递）
+    * 对集公理
+
+      若\(a,b\in\bL\)，则存在\(\alpha\)使得\(a,b\in L_\alpha\)，因此\(\{a,b\}\in L_{\alpha+1}\)
+    * 并集公理
+
+      \(y=\bigcup x\)\(\Delta_0\)\(\psi(x,y)\)定义，相对化为\(\forall x\in\bL\exists y\in\bL\psi(x,y)\)，只需验证\(x\in\bL\Rightarrow\bigcup x\in\bL\)
+
+      若\(x\in L_\alpha\)，则\(\bigcup x=\{y\mid\exists u\in x(y\in u)\}\)，由\(L_\alpha\)的传递性，
+      \(\bigcup x=\{y\in L_\alpha\mid[\exists u\in x(y\in u)]^{L_\alpha}\}\in L_{\alpha+1}\)
+
+      \(\bigcup x\)是哥德尔运算，\(x\in L_\alpha\Rightarrow\bigcup x\in\Def(L_\alpha)\)
+    * 分离公理 \(\forall X\in\bL\exists y\in\bL\forall u\in\bL(u\in y\leftrightarrow u\in X\wedge\varphi^{\bL}(u))\)
+
+      断言：\(\forall\alpha\exists\beta>\alpha\)使得\(\varphi\)相对于\(L_\beta\)和\(\bL\)绝对（练习）(\(\bL\)的反映定理)
+
+      设\(x\in L_\alpha\),\(y=\{u\mid u\in X\wedge\varphi^{L_\beta}(u)\}=\{u\in L_\beta\mid u\in x\wedge\varphi^{L_\beta}(u)\}\in L_{\beta+1}\)
+
+      显然\(\forall u\in\bL(u\in y\leftrightarrow u\in X\wedge\varphi^{L_\beta}(u)\leftrightarrow u\in X\wedge\varphi^{\bL}(u))\)
+    * \(\bL\)满足以上公理，\(x^+,\emptyset,\omega\)均绝对
+
+      故无穷公理，基础公理成立
+    * 幂集公理：\(\forall x\in\bL\exists y\in\bL\forall u\in\bL(u\in y\leftrightarrow u\subseteq x)\), \(y=\calp(x)\cap\bL\)，只需验证\(\bL\cap\calp(x)\in\bL\)
+
+      设\(x\in L_\alpha\), \(\calp(x)\cap\bL\subseteq\bL\)是集合
+
+      存在充分大的\(\beta>\alpha\)使得\(\calp(x)\cap\bL=\calp(x)\cap L_\beta\)
+
+      \(y=\{u\in L_\beta\mid(u\subseteq x)^{L_\beta}\}=\{u\in\bL\mid u\subseteq x\}=\calp(x)\cap\bL\in L_{\beta+1}\subseteq\bL\)
+    * 替换公理
+
+      \(\forall x\in\bL\exists!y\in\bL\psi^{\bL}(x,y)\to\forall A\in\bL\exists B\in\bL\forall a\in A\exists b\in B\psi^{\bL}(a,b)\)
+
+      任取\(A\in L_\alpha\)，取\(\beta>\alpha\)使得
+      1. \(\forall a\in A\exists b\in L_\beta\psi^{\bL}(a,b)\) 因为\(\psi^{\bL}\)是\(\bL\)上的函数，\(V\vDash\exists B\forall a\in A\exists b\in B\psi^{\bL}(a,b)\)，
+         于是\(B\subseteq L\)
+      2. \(\psi\)相对于\(L_\beta\)和\(\bL\)绝对
+      则\(B=\{b\in\bL\mid\exists a\in\psi^{\bL}(a,b)\}=\{b\in L_\beta\mid\exists a\in A\psi^{L_B}(a,b)\}\in L_{\beta+1}\)
+
+
     #+END_proof

@@ -1649,3 +1649,191 @@
     therefore \(\nu\in\dom U^{\pf}\setminus\dom U_s^{\pf}\),
     therefore \(\Omega-\Omega_s\ge 2^{-\abs{\nu}}=2^{-(c_e+1+\abs{\tau})}>2^{-n}\), then \(\Omega_s\uhr n\neq\Omega\uhr n\)
     #+END_proof
+
+
+    let \(f:\N\to\N\) be a strictly increasing computable function. 如果\(A\)每第\(f(i)\)位都是0，那
+    么\(A\) *不是随机的* ，我们构造一个 *测试* 来排除这样的序列\(A\)，对每个\(k\)测试是否有对任
+    意\(i\le k\)， \(A(f(i))=0\)，如果存在\(A(f(i))=1\)，\(A\) *通过测试*
+
+    对每个\(k\)，令
+    \begin{equation*}
+    U_k=\bigcap_{i\le k}[\{\sigma\in 2^{f(i)+1}:\sigma(f(i))=0\}]^{\prec}
+    \end{equation*}
+    若存在\(k\)使得\(A\notin U_k\)，则\(A\)通过测试，若\(A\in\bigcap_kU_k\)则\(A\)未通过测试，不是随机的
+
+    \(\lambda(U_k)=2^{-(k+1)}\)，故\(\lambda(\bigcap_kU_k)=\lim_{k\to\infty}2^{-k-1}=0\)
+
+    随机序列应该满足大数定律，给定无论多小的正实数\(\epsilon\)，我们可以设计一个测试来排除其中1的数量占
+    比\(\ge 1/2+\epsilon\)的序列，对\(m\in\N\)，定义
+    \begin{equation*}
+    C_m=\{\sigma\in 2^{m+1}:\frac{\sum_{i=0}^m\sigma(i)}{m+1}\ge 1/2+\epsilon\}
+    \end{equation*}
+    对于\(n\in\N\)，定义\(U_n=\bigcup_{m\ge n}[C_m]^{\prec}\)，
+    则\(A\in\bigcap_{n\in\N}U_n\Leftrightarrow\ove{\lim}_{n\to\infty}\frac{\sum_{i=0}^nA(i)}{n}\ge 1/2+\epsilon\)
+
+    根据Hoeffding inequality
+    \begin{equation*}
+    \lambda([C_m]^{\prec})\le(2^{-2\epsilon^2})^m
+    \end{equation*}
+    \begin{equation*}
+    \lambda(U_n)\le\frac{(e^{-2\epsilon^2})^n}{1-e^{-2\epsilon^2}}
+    \end{equation*}
+    \(\lambda(\bigcap_nU_n)=0\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(U\subset 2^\omega\) is *c.e. open* (\(\Sigma_1^0\) set) iff there is (prefix free) \(E\subseteq 2^{<\omega}\)
+    s.t. \(U=[E]^{\prec}\). \(P\) is *co-c.e. closed* iff its complement is c.e. open
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\{U_n\}_{n\in\omega}\) of open set (\(U_n=[E_n]^{\prec}\)) is *uniformly c.e. open* iff
+    \begin{equation*}
+    \{\la n,\sigma\ra\mid[\sigma]\subset U_n\}
+    \end{equation*}
+    is c.e.
+
+    This is equivalent to there is a sequence of \(E_n\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. \(\{U_n\}_{n<\omega}\) uniformly c.e. open, 对任意\(n\),\(\lambda(U_n)\le 2^{-n}\)，则称\(\{U_n\}_{n<\omega}\)
+       是一个 *马丁-洛夫测试*
+    2. \(Z\in 2^\omega\)通过马丁洛夫测试当且仅当\(Z\notin\bigcap_{n<\omega}U_n\)
+    3. \(Z\in 2^\omega\)是 马丁洛夫随机的 当且仅当\(Z\)通过所有的马丁洛夫测试
+    #+END_definition
+
+    #+BEGIN_remark
+    1. 马丁洛夫测试定义中的有关能行性的限制是必要的，否则所有序列都不是随机：令\(Z\in 2^\omega\)是任意序列，
+       \(\lambda([Z\uhr n]^{\prec})=2^{-n}\)
+    2. 可以减弱\(\lambda(U_n)\le 2^{-n}\)：存在以正有理数为值域的递归函数\(f:\N\to\Q\)且\(\lim_{n\to\infty}f(n)=0\)，使
+       得对任意\(n\in\N\)，有\(\lambda(U_n)\le f(n)\)
+
+       如果有这样的\(f\)，对每个\(n\)，找足够大的\(N\)，就是找个\(U_n\)的子序列
+    3. 也可增加要求\(U_0\supset U_1\supset\dots\)
+    #+END_remark
+
+    假设\(Z\in 2^\omega\)是可计算的，令\(U_n=[Z\uhr n]\)，则\(\{U_n\}_{n<\omega}\)是统一递归可枚举的，并
+    且\(\lambda(U_n)\le 2^{-n}\)，\(\bigcap_nU_n=\{Z\}\)，因此\(Z\)没有通过这个测试
+
+    前面的例子说明，马丁-洛夫随机的序列都满足大数定律，
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(M\) prefix free, \(\forall k\in\N\), let \(S_k=\{\sigma:K_M(\sigma)\le\abs{\sigma}-k\}\), then
+    1. \(\lambda([S_k]^{\prec})\le 2^{-k}\lambda([\dom M]^{\prec})\)
+    2. \(\forall k\in\N\),\(\lambda([S_k]^{\prec})\)可以统一图灵归约到\(\lambda([\dom M]^\prec)\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. 自然
+
+       \(\forall\sigma\in S_k\),\(\exists\sigma^*\in\dom M\),
+       \(M(\sigma^*)=\sigma\),\(\abs{\sigma^*}\le\abs{\sigma}-k\),\(\lambda([\sigma^*])\ge 2^{-\abs{\sigma}+k}\),
+
+       \(\lambda([\dom M]^{\prec})\ge\sum_{\sigma\in S_k}\lambda([\sigma^*])\ge\sum_{\sigma\in S_k}2^{-\abs{\sigma}+k}\ge 2^k\sum_{\sigma\in S_k}2^{-\abs{\sigma}}=2^k\lambda([S_k]^{\prec})\)
+    2. 要算一个实数\(\lambda([S_k]^{\prec})\)，即对任意\(c\in\N\)，能算出一个有理数\(q\in\Q\)使
+       得\(\lambda([S_k]^{\prec})-q<2^{-c}\)
+
+       考虑程序：枚举\(\dom M\)直到发现\(F\subseteq\dom M\)使得\(\lambda([\dom M]^\prec)-\lambda([F]^\prec)<2^{-c+k}\)
+
+       令\(E_0=\{\sigma\mid\sigma^*\in F\wedge\abs{\sigma^*}\le\abs{\sigma}-k\}\subseteq S_k\)
+
+       只需验证\(\lambda([S_k]^\prec)-\lambda([E_0]^\prec)<2^{-c}\)
+       \begin{align*}
+       \lambda([S_k]^\prec)-\lambda([E_0]^\prec)&\le(\lambda([\dom M]^\prec)-\lambda([F]^\prec))\cdot 2^{-k}\\
+       &= 2^{-c}
+       \end{align*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    序列\(Z\) 是马丁-洛夫随机当且仅当\(Z\)是1-随机
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): 要证明存在\(d\)使得对任意\(n\)使得\(K(Z\uhr n)>n-d\)
+
+    考虑一个test：对\(k\in\N\)，令\(U_k=\{Z\in 2^\omega:\exists nK(Z\uhr n)\le n-k\}\)，
+
+    *Claim* ：\(\{U_k\}_{n\in\omega}\)是 uniformly c.e. open (枚举所有的\(\sigma\)使得\(K(\sigma)\le n-k\))
+
+    \(\lambda(U_k)\le 2^{-k}\cdot\Omega\le 2^{-k}\)
+
+    则\(Z\)能通过测试，因此\(Z\notin\bigcap_kU_k\)，即存在\(k\)，\(Z\notin U_k\)
+
+    \(\Leftarrow\): 反设\(Z\)不是马丁洛夫随机的，要证\(Z\)不是1-随机的，则存在\(\{U_n\}_{n\in\N}\)使得\(Z\in\bigcap_nU_n\)，
+    令\(\{E_n\}_{n\in\N}\)是uniformly c.e.的无前束集合使得\(U_n=[E_n]^\prec\)，记\(E_n=\{\sigma_i^n:i\in N_n\}\)其
+    中\(N_n=\N\)
+
+    考虑请求序列：\(\{(\abs{\sigma^n_i}-n,\sigma^n_i)\mid n\in\N,i<N_n\}\)
+
+    则\(\lambda(U_k)=\sum_{i<N_n}2^{-\abs{\sigma_i^n}}\)，不妨设\(\lambda(U_k)\le 2^{-2k-1}\)，则
+    \(\sum_{n\in\N,i<N_n}2^{-\abs{\sigma_i^n}+n}=\sum_{n\in\N}=\sum_{n\in\N}2^{-n}\cdot\sum_{i<N_n}2^{-\abs{\sigma_i^n}}\le \sum_{n\in\N}2^{-n-1}\le 1\)
+
+    由无前束程序存在定理，存在无前束程序\(M\)满足该请求序列，即对任意\(\sigma_i^n\)，
+    \(K_m(\sigma^n_i)\le\abs{\sigma^n_i}-n\)，对任意\(b\in\N\)令\(n=b+c_M+1\)，由\(Z\in U_n\)，存在\(\sigma_i^n\prec Z\)
+    \(K(\sigma_i^n)\le K_M(\sigma_i^n)+c_M\le\abs{\sigma_i^n}-(b+c_M+1)+c_M\le\abs{\sigma^n_i}-b\)，故\(Z\)不是1-随机的
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    一个马丁洛夫测试是 *通用的马丁洛夫测试* 当且仅当对任意\(\{V_n\}_{n\in\omega}\)
+    \begin{equation*}
+    \bigcap_nV_n\subset\bigcap_nU_n
+    \end{equation*}
+    #+END_definition
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    存在通用的马丁-洛夫测试
+    #+END_theorem
+
+    #+BEGIN_proof
+    首先尝试统一地枚举所有的 ML-test
+
+    令\(\{\la U_n^e\ra_{n\in\N}:e\in\N\}\)是 统一 c.e. open集合的统一枚举，统一枚举\(\{W_e\}_{e\in\N}\)，
+    把\(W_e\)看作\(\{\la n,\sigma\ra\mid[\sigma]\subset U_n\}\)
+
+    对每个\(U^e_n\)加一个过滤，得到\(V^e_n\)一旦出现有\((n,\sigma)\)进\(U_n^e\)使得\(\lambda(U^e_{n,s})>2^{-n}\)，
+    就阻止其尽如\(V_n^e\)
+
+    由此\(\{\{V_n^e\}_{n\in\N}:e\in\N\}\)是对所有 ML-test 的统一枚举
+
+    令\(U_n=\bigcup_{e\in\N}V^e_{n+e+1}\)则\(\lambda(U_n)\le\sum_e\lambda(V^e_{n+e+1})\le 2^{-n}\)，不难验证\(\{U_n\}\)是通用的 ML-test
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    令MLR是所有马丁-洛夫随机序列组成的集合，则\(\lambda(MLR)=1\)，\(MLR\)是一个\(\Sigma_2^0\)的集合
+    #+END_corollary
+
+    #+ATTR_LATEX: :options [solovay randomness]
+    #+BEGIN_definition
+    1. \(\{S_n\}_{n\in\N}\) uniformly c.e. open set sequence and \(\sum_{n\in\N}\lambda(S_n)<\infty\),
+       then \(\{S_n\}_{n\in\N}\) is a *Solovay test*
+    2. \(Z\) is *Solovay random* if for any Solovay test \(\{S_n\}_{n\in\N}\) there is finitely
+       many \(S_n\) containing \(Z\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(Z\) is Solovay random iff \(Z\) is ML-random
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): if \(Z\) is not ML-random, then there is a ML-test \(\{U_n\}_{n\in\N}\) s.t. \(Z\in\bigcap_nU_n\) ,
+    then \(\{U_n\}_{n\in\N}\) is a Solovay test.
+
+    \(\Leftarrow\): if \(Z\) is not S-R, there is a S-test \(\{S_n\}_{n\in\N}\) and infinitely many \(n\)
+    s.t. \(Z\in S_n\), \(\sum_{n\in\N}\lambda(S_n)<\infty\)，不妨设\(\sum_{n\in\N}\lambda(S_n)<1\)：不妨令\(m\le\sum< m+1\)，则存在有
+    穷\(N\)使得\(\sum_{n\in\N}\ge m\),则存在有穷\(N\)使得\(\sum_{n\in N}\ge m\)，
+
+    考虑\(U_k=[\{\sigma\mid\exists\ge 2^k\text{s }n.[\sigma]\subseteq S_n\}]^\prec\)，则\(\lambda(U_k)\le 2^{-k}\)，可以验证\(\{U_k\}_{n\in\N}\)是
+    ML-test
+
+    对任意\(k\)存在\(m_k\)使得\([Z\uhr m_k]\)包含于至多\(2^k\)个\(S_n\)
+    #+END_proof

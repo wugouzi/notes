@@ -1,0 +1,50 @@
+#+TITLE: Practical Foundations for Programming Languages
+#+AUTHOR: Robert Harper
+
+#+EXPORT_FILE_NAME: ../latex/PracticalFoundationsForProgrammingLanguages/PracticalFoundationsForProgrammingLanguages.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\Exp}{\textsf{Exp}}
+* Judgements and Rules
+** Abstract Syntax
+*** Abstract Syntax Trees
+    Let \(\cals\) be a finite set of sorts. For a given set \(\cals\) of sorts, an *arity* has the
+    form \((s_1,s_2,\dots,s_n)s\), which specifies the sort \(s\in S\) of an operator taking \(n\ge 0\) arguments,
+    each of sort \(s_i\in\cals\).
+    Let \(\calo=\{\calo_\alpha\}\) be an arity-indexed family of disjoint sets of *operators* \(\calo_\alpha\) of arity \alpha. If \(o\) is
+    an operator of arity \((s_1,s_2,\dots,s_n)s\), we say that \(o\) has sort \(s\) and has \(n\) arguments of sorts
+    \(s_1,s_2,\dots,s_n\).
+
+    Fix a set \(\cals\) of sorts and an arity-indexed family \(\calo\) of sets of operators of each arity.
+    Let \(\calx=\{\calx_s\}_{s\in S}\) be a sort-indexed family of disjoint finite sets \(\calx_s\) of variables \(x\) of sort \(s\). When \(\calx\) is
+    clear from context, we say that a variable \(x\) is of sort \(s\) if \(x\in\calx_s\), and we say
+    that \(x\) is *fresh for* \(\calx\),or just *fresh* when \(\calx\) is understood, if \(x\notin\calx_s\) for any
+    sort \(s\). If \(x\) is fresh for \(\calx\) and \(s\) is a sort, then \(\calx,x\) is the family of sets
+    of variables obtained by adding \(x\) to \(\calx_s\) . The notation is ambiguous in that the sort \(s\)
+    is not explicitly stated but determined from context.
+
+    The family \(\cala[\calx]=\{\cala[\calx]_s\}_{s\in S}\) of *abstract syntax trees*, or *ast*'s, of sort \(s\) is the
+    smallest family satisfying the following conditions
+    1. A variable of sort \(s\) is an ast of sort \(s\): if \(x\in\calx_s\), then \(x\in\cala[\calx]_s\)
+    2. Operators combine ast's: if \(o\) is an operator of arity \((s_1,s_2,\dots,s_n)s\), and
+       if \(a_1\in\cala[\calx]_{s_1},\dots,a_n\in\cala[\calx]_{s_n}\), then \(o(a_1;\dots;a_n)\in\cala[\calx]_s\)
+
+
+    Variables are given meaning by substitution. If \(a\in\cala[\calx,x]_{s'}\) , and \(b\in\cala[\calx]_s\) ,
+    then \([b/x]a\in\cala[\calx]_{s'}\) is the result of *substituting* \(b\) for every occurrence of \(x\) in \(a\). The
+    ast \(a\) is called the *target*, and \(x\) is called the *subject*, of the *substitution*. Substitution is defined by the
+    following equations:
+    1. \([b/x]x=b\) and \([b/x]y=y\) if \(x\neq y\)
+    2. \([b/x]o(a_1;\dots;a_n)=o([b/x]a_1;\dots;[b/x]a_n)\)
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    If \(a\in\cala[\calx,x]\), then for every \(b\in\cala[\calx]\) there is a unique \(c\in\cala[\calx]\) s.t. \([b/x]a=c\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    If \(a=x\), then \(c=b\); otherwise, if \(a=y\neq x\), then \(c=y\). Otherwise,
+    #+END_proof
+*** Abstract Binding Trees
