@@ -8,6 +8,7 @@
 #+LATEX_HEADER: \DeclareMathOperator{\Cop}{Cop}
 #+LATEX_HEADER: \DeclareMathOperator{\pf}{pf}
 #+LATEX_HEADER: \DeclareMathOperator{\non}{\textsf{non}}
+#+LATEX_HEADER: \usepackage[UTF8]{ctex}
 #+LATEX_HEADER: \makeindex
 
 * The complexity of sets
@@ -1836,4 +1837,182 @@
     ML-test
 
     对任意\(k\)存在\(m_k\)使得\([Z\uhr m_k]\)包含于至多\(2^k\)个\(S_n\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    令\(d:2^{<\omega}\to\R^{\ge 0}\)函数
+    * \(d\)是一个 *鞅* (martingale)当且仅当对任意\(\sigma\)有
+      \begin{equation*}
+      d(\sigma)=\frac{d(\sigma 0)+d(\sigma 1)}{2}
+      \end{equation*}
+    * 称\(d\)是一个 *上鞅* （supermartingale）当且仅当
+      \begin{equation*}
+      d(\sigma)\ge\frac{d(\sigma 0)+d(\sigma 1)}{2}
+      \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    * 一个（上）鞅在序列\(Z\in 2^\omega\)上 *获胜* 当且仅当
+      \begin{equation*}
+      \sup_{n\in\N}d(Z\uhr n)=\infty
+      \end{equation*}
+    * （上）鞅的 *获胜集* 为
+      \begin{equation*}
+      S[d]=\{A\in 2^\omega:d\text{在\(A\)上获胜}\}
+      \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. 假设\(d\)是一个（上）鞅，\(r\in\R^+\)，且函数\(f:2^{<\omega}\to\R^{\ge 0}\)满足\(f=r\cdot d\)，那么\(f\)是一个
+       （上）鞅，且\(S[d]=S[f]\)
+    2. 若\(d_0,d_1,\dots\)是（上）鞅，且\(\sum_nd_n(\emptyset)<\infty\)，则\(\sum_nd_n\)也是（上）鞅
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    假设\(d\)是一个（上）鞅
+    1. 对任意\(\sigma\in 2^{<\omega}\)，任意由\(\sigma\)的尾节延伸组成的无前束集合\(S\)，都有
+      \begin{equation*}
+      \sum_{\tau\in S}2^{-\abs{\tau}}d(\tau)\le 2^{-\abs{\sigma}}d(\sigma)
+      \end{equation*}
+    2. 令\(E_k=\{\sigma:d(\sigma)\ge k\}\)，则\(\lambda([E_k]^\prec)\le d(\emptyset)/k\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    1. 考虑\(\abs{S}=1\), \(S=\{\tau\}\), \(d(\tau)\le d(\sigma)\cdot 2^{\abs{\tau}-\abs{\sigma}}\)
+，
+       假设\(\abs{S}=n\)时成立，对任意\(\sigma\)令\(\nu\succeq\sigma\)是最长的使得对任意\(\tau\in S\), \(\tau\succ\nu\)，考
+       虑\(S_0=\{\tau\in S:\tau\succeq\nu 0\}\), \(S_1=\{\tau\in S:\tau\succeq\nu 1\}\)，于是\(S_1,S_0\neq\emptyset\)，因此\(\abs{S_0},\abs{S_1}\le n\)，
+       （这里因为\(S\)是无前束的），由归纳假设\(\sum_{\tau\in S_i}2^{-\abs{\tau}}d(\tau)\le 2^{-\abs{\nu}-1}d(\nu i)\)，
+       加起来就可以了
+
+       若\(S=\{\tau_0,\tau_1,\dots\}\)且\(\sum_{\tau\in S}2^{-\abs{\tau}}d(\tau)>2^{-\abs{\sigma}}d(\sigma)\)，则存在\(N\)使
+       得\(\sum_{i<N}2^{-\abs{\tau_i}}d(\tau_i)>2^{-\abs{\sigma}}d(\sigma)\)，因此\(S\)有穷
+    2. 令\(F\subset E_k\)无前束，且\([F]^\prec=[E]^\prec\)，
+
+       \(\lambda([F]^\prec)=\sum_{\tau\in F}2^{-\abs{\tau}}\),\(\sum_{\tau\in F}2^{-\abs{\tau}}d(\tau)\le d(\emptyset)\)，而\(d(\tau)/k\ge 1\)，两边除
+       个\(k\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    （上）鞅是 *c.e.* 的当且仅当它的值是统一地左 c.e.的，即存在递归函数\(p:2^{<\omega}\to\N\)任给\(\sigma\in 2^{<\omega}\)，
+    c.e.集合\(W_{p(\sigma)}\)可以枚举所有小于\(d(\sigma)\)的二进有理数
+    #+END_definition
+
+    #+ATTR_LATEX: :options [施诺尔]
+    #+BEGIN_theorem
+    序列\(Z\)是ML-R当且仅当不存在c.e.的（上）鞅在\(Z\)上获胜
+    #+END_theorem
+
+    #+BEGIN_proof
+    在获胜鞅和上鞅是等价的
+
+    \(\Rightarrow\)：给定\(Z\in 2^\omega\)是ML-R的，反设有c.e.的上鞅\(d\)使得\(Z\in S[d]\)，不妨设\(d(\emptyset)=1\)，构造一个
+    ML-test\(\{U_n\}_{n\in\N}\)使得\(Z\in\bigcap_nU_n\)。
+
+    对任意\(n\)，令\(U_n=\llb{\{\sigma\mid d(\sigma)\ge 2^n\}}^\prec\)，由于\(d\)是c.e.的，则它是可以从下往上逼进的，如果
+    一个\(\sigma\)比\(2^n\)大，就可以在有穷步内发现，因此\(\{U_n\}_{n\in\omega}\)是 uniformly c.e.，由引理，
+    \(\lambda(U_n)\le d(\emptyset)/n=2^{-n}\)，故\(\{U_n\}\)是ML-test
+
+    由于\(Z\in S[d]\)，对任意\(n\)，存在\(m\)使得\(d(Z\uhr m)> 2^n\)，故\(Z\in U_n\)，因此\(Z\)不是ML-随
+    机
+
+    \(\Leftarrow\)：若\(Z\)不是ML-随机，即存在ML-test\(\{U_n\}_{n\in\N}\)使得\(Z\in\bigcap_nU_n\)，我们要找一个c.e.鞅\(d\)，
+    为此设计一组c.e.鞅\(\{d_n\}_{n\in\N}\)，每个\(d_n\)分别押\(Z\in U_n\)，令\(d=\sum_nd_n\)
+
+    设计“自下而上”逼进这些\(d_n\)的算法
+
+    对\(n\)，初始时\(d_n,0\)是常值为0的函数，令\(U_n=\llb{E_n}^\prec\)，\(E_n\)无前束，我们枚
+    举\(\{\la n,\sigma\ra\mid\sigma\in E_n\}\)，一旦发现\((n,\sigma)\)被枚举，令\(d_n(\sigma)\)的值+1，对\(\tau\succeq\sigma\)，令
+    \(d_n(\tau)\)的值+1，对\(k<\abs{\sigma}\)令\(d_n(\sigma\uhr k)\)的值\(+2^{k-\abs{\sigma}}\)
+
+    顶\(d=\sum_nd_n\)，则\(d(\emptyset)=\sum_{n\in\N}d_n(\emptyset)=\sum_{n\in\N}\sum_{\sigma\in E_n}2^{-\abs{\sigma}}=\sum_{n\in\N}\lambda(\llb{E_n}^\prec)\)
+    \(=\sum_{n\in\N}\lambda(U_n)\le\sum_{n\in\N}2^{-n}<\infty\)，故\(d\)是一个 c.e.鞅，故\(Z\in S[d]\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    对任意\(\cala\subset 2^\omega\)，且\(\lambda(\cala)=0\)（即存在开集序列\(\{U_n\}_{n\in\N}\)使得\(\lambda(U_n)\le 2^{-n}\)
+    且\(A\subset\bigcap_nU_n\)）当且仅当存在（上）鞅\(d\)使得\(\cala\subset S[d]\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    存在通用c.e.鞅\(d\)即对任意c.e.的鞅\(f\)都有\(S[f]\subset S[d]\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    令\(\{U_n\}\)是通用的ML-test
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    c.e.的（上）鞅\(d\)是 *最优的* 当且仅当对任意c.e.的（上）鞅\(f\)存在常量\(c_f\)使得对任意\(\sigma\in 2^{<\omega}\)
+    有\(c_f\cdot d(\sigma)\ge f(\sigma)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. 最优的c.e.（上）鞅都是通用c.e.（上）鞅
+    2. 存在最优的递归可枚举上鞅
+    3. 不存在对所有递归可枚举鞅的能行枚举，不存在最优的递归可枚举鞅
+    #+END_proposition
+
+    #+BEGIN_proof
+    2. [@2] 存在最优的上鞅
+
+       注意如果一个上鞅是c.e.的，则存在\(e\)使得\(W_e=\{(\sigma,q)\in 2^{<\omega}\times\Q_2\mid q<d(\sigma)\}\)，我们可以统一地枚
+       举所有的上鞅，统一地把每个\(W_e\)改造为\(W_{f(e)}\)(\(f\)可计算)：假设已有\(W_{f(e),s}\)，对任
+       意\(\sigma\in 2^{<\omega}\)令\(d_{e,s}(\sigma)=\max\{q\mid(\sigma,q)\in W_{f(e),s}\}\)，一旦发
+       现\((\sigma,q)\in W_{e,s+1}\setminus W_{e,s}\)且\(q>d_{e,s}(\sigma)\)，监查是否
+       有\(\frac{q+d_{e,s}(\sigma^c)}{2}\le d_{e,s}(\sigma^-)\)，其中\(\sigma\)的前驱叫\(\sigma^-\)，它对面的叫\(\sigma^c\)，
+       令\(d_{e,s}(\sigma)=q\)且\((\sigma,q)\in W_{f(e),s+1}\)
+
+       不难验证，\(\{d_e\}_{e\in\N}\)枚举了所有的c.e.上鞅，令\(d=\sum_{e\in\N}2^{-e}d_e/d_e(\emptyset)\)，则\(d\)是最优的
+
+    3. 先证明没有对所有c.e.鞅的c.e.枚举，反设\(\{d_e\}_{e\in\N}\)是对所有c.e.鞅的枚举，由此，我们可以递归
+       枚举所有非零的鞅\(\{f_i\}_{i\in\N}\)，\(f_i\)是发现的第\(i\)个非零鞅，尝试构造一个非零鞅与这些鞅不同
+
+       令\(d(\emptyset)\)：一旦发现\(f_{0,s}(\emptyset)=q>0\)，令\(d(\emptyset)=q/2\)
+
+       假设对每个\(\tau\in 2^n\)，\(d(\tau)\)已定义，一旦发现有\(\sigma\in 2^{n+1}\)使得\(f_{n+1,s}(\sigma)=q>0\)，
+       （故\(f_{n+1}(\sigma)\ge q\)），令\(d(\sigma)=\min\{q/2,d(\sigma^-)\}<q\)，令\(d(\sigma^c)=2d(\sigma^-)-d(\sigma)\)，对其
+       它\(\tau\in 2^{n+1}\)，令\(d(\tau)=d(\tau^-)\)，故\(d\neq f_i\) for all \(i\in\N\)
+
+       下证不存在最优的c.e.鞅
+
+       对任意c.e.鞅\(d\)，要证\(d\)不是最优的，要构造一个c.e.鞅\(f\)对任意\(c\)都存在\(\sigma\)使
+       得\(f(\sigma)\ge c\cdot d(\sigma)\)
+
+       为此构造一系列\(\{f_n\}_{n\in\N}\)使每个\(f_n(\emptyset)=1\)且存在\(\sigma\)使得\(f_n(\sigma)\ge 2^{2n}\cdot d(\sigma)\)，
+       令\(f=\sum_n2^{-n}f_n\)，于是对任意\(n\)有\(\sigma\)使得\(f(\sigma)\ge 2^{2n}2^{-n}d(\sigma)=2^nd(\sigma)\)
+
+       给定\(n\)，造\(f_n\)且找到\(\sigma\)见证\(f_n(\sigma)\ge 2^{2n}d(\sigma)\)，为了找\(\sigma\)，定义一系列\(\sigma_i\)并证
+       明某个\(\sigma_i\)可行
+
+       令\(\sigma_0=\emptyset\)，若\(d_s(\emptyset)\le 2^{-2n}\)，令\(f_n(0^s)=2^s\)(all in 0)，对任意\(\tau\in 2^s\)，
+       \(\tau\neq 0^s\), \(f_n(\tau)=0\)，若发现\(d_{s_0}(\emptyset)>2^{-2n}\)（\(\sigma_0=\emptyset\)就不能用了），等待\(t_0\)使得
+       \(\sum_{\tau\in 2^{s_0+1}}d_{t_0}(\tau)>2^{-2n}\cdot 2^{s_0+1}\)，由于\(d\)是鞅，\(t_0\)存在，此时比
+       较\(d_{t_0}(0^{s_0}0)\)与\(d_{t_0}(0^{s_0}1)\)，若\(i\)更小，令\(\sigma_1=0^{s_0}i\)，
+       \(t_n(\sigma_1)=2^{s_0+1}=2^{\abs{\sigma_1}}\)，对任意\(\tau\in 2^{s_0+1}\),\(\tau\neq\sigma_1\)，使\(f_n(\tau)=0\)
+
+       一般地，假设\(\sigma_k\)已构造，由归纳，\(f_n(\sigma_k)=2^{\abs{\sigma_k}}\)且\(\abs{\sigma_k}=\sum_{i<k}s_i+1\)，若
+       发现\(s_k\)有\(d_{s_k}(\sigma_k)>2^{-2n}\cdot f_n(\sigma_k)=2^{-2n}2^{\abs{\sigma_k}}\)，等\(t_k\)使得
+       \(\sum_{\tau\in 2^{s_k+1}}d_{t_k}(\sigma_k\tau)>2^{-2n}2^{\abs{\sigma_k}}2^{s_k+1}\)，由\(d\)是鞅，\(t_k\)总存在，
+       设\(d_{t_k}(\sigma_k0^{s_k}i)\le d_{t_k}(\sigma_k0^{s_k}(1-i))\)，令\(\sigma_{k+1}=\sigma_k0^{s_k}i\)，
+       令\(f(\sigma_{k+1})=2^{\abs{\sigma_{k+1}}}=2^{\abs{\sigma_k}+s_k+1}=2^{\sum_{i\le k}(S_i+1)}\)，其余的\(\tau\)为0
+
+       *Claim* 存在\(k\)，\(\sigma_k\)有定义，\(f_n(\sigma_k)\ge 2^{2n}d(\sigma_k)\)
+
+       反设对任意\(k\)有\(\sigma_k\)且\(d(\sigma_k)>2^{-2n}f_n(\sigma_k)\)，假
+       设\(d(\sigma_{k+1})>2^{-2n}f_n(\sigma_{k+1})\cdot 2^m\)，由构造，在\(t_k\)时，
+       \(d_{t_k}(\sigma_{k+1})\le d_{t_k}(\sigma^c_{\sigma+1})\)，
+       故\(d_{t_k}(\sigma_{k+1})\le d_{t_k}(\sigma_k)2^{s_k}\le d(\sigma_k)2^{s_k}\)，故
+       \(d(\sigma_k)\ge d_{t_k}(\sigma_{k+1})\cdot 2^{-s_k}>f_n(\sigma_{k+1})2^{-2n}2^{-s_k}2^m\)
+
+       \(d(\sigma_k)\ge\sum_{\tau\in 2^{\sigma_{k+1}}}d_{t_k}(\tau)\)
     #+END_proof
