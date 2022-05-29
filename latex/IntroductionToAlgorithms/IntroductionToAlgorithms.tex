@@ -1,0 +1,274 @@
+% Created 2022-05-25 Wed 11:16
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\usepackage{algpseudocode}
+\makeindex
+\author{CLRS}
+\date{\today}
+\title{Introduction To Algorithms}
+\hypersetup{
+ pdfauthor={CLRS},
+ pdftitle={Introduction To Algorithms},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+
+\section{Graph Algorithms}
+\label{sec:org0b44677}
+\subsection{Elementary Graph Algorithms}
+\label{sec:orgabeb81f}
+\subsubsection{Topological sort}
+\label{sec:org6e2a44c}
+\begin{algorithmic}[1]
+\Procedure{Topological-Sort}{$G$}
+\State call DFS\((G)\) to compute finishing times \(v.f\) for each vertex \(v\)
+\State as each vertex is finished, insert it onto the front of a linked list
+\State \textbf{return} the linked list of vertices
+\EndProcedure
+\end{algorithmic}
+
+We can perform a topological sort in time \(\Theta(V+E)\), since depth-first search takes \(\Theta(V+E)\)
+time and it takes \(O(1)\) time to insert each of the \(\abs{V}\) vertices onto the front of the
+linked list
+
+\begin{exercise}[22.4-3]
+Give an algorithm that determines whether or not a given undirected graph \(G=(V,E)\) contains a
+simple cycle. Your algorithm should run in \(O(V)\) time, independent of \(\abs{E}\)
+\end{exercise}
+
+\begin{proof}
+If the graph is acylic, then \(\abs{E}\le\abs{V}-1\) and we can run DFS in \(O(\abs{V})\). If
+there is a path going back, then at should end in \(\abs{V}\)th step
+\end{proof}
+
+\begin{exercise}[22.4-5]
+Another way to perform topological sorting on a directed acylic graph \(G=(V,E)\) is to
+repeatedly find a vertex of in-degree 0, output it, and remove it and all of its outgoing edges
+from the graph. Explain how to implement this idea so that it runs in time \(O(V+E)\). What
+happens to this algorithm if \(G\) has cycles?
+\end{exercise}
+
+\begin{proof}
+
+\end{proof}
+\subsection{Single-Source Shortest Paths}
+\label{sec:org73f43f2}
+\begin{algorithmic}[1]
+\Procedure{Initialize-single-source}{$G,s$}
+\For{\(v\in G.V\)}
+    \State \(v.d=\infty\)
+    \State \(v.\pi=nil\)
+\EndFor
+\State \(s.d=0\)
+\EndProcedure
+\end{algorithmic}
+
+\begin{algorithmic}[1]
+\Procedure{Relax}{$u,v,w$}
+\If{v.d\ge u.d+w(u,v)}
+    \State \(v.d=u.d+w(u,v)\)
+    \State \(v.\pi=u\)
+\EndIf
+\EndProcedure
+\end{algorithmic}
+
+\subsubsection{The Bellman-Ford algorithm}
+\label{sec:orgd1cc063}
+\begin{algorithmic}[1]
+\Procedure{Initialize-single-source}{$G,s$}
+    \For{\(i=1\) to \(\abs{G,V}-1\)}
+        \For{\((u,v)\in G.E\)}
+            \State RELAX\((u,v,w)\)
+        \EndFor
+    \EndFor
+    \For{each edge \((u,v)=G.E\)}
+        \If{\(v.d>u.d+w(u,v)\)}
+            \State \textbf{return }False
+        \EndIf
+    \EndFor
+\EndProcedure
+\end{algorithmic}
+
+
+\begin{lemma}[]
+Let \(G=(V,E)\) be a weighted, directed graph with source \(s\) and weight function \(w:E\to\R\),
+and assume that \(G\) contains no negative-weight cycles that are reachable from \(s\). Then
+after the \(\abs{V}-1\) iterations of the \textbf{for} loops, we have \(v.d=\delta(s,v)\) for all
+vertices \(v\) that are reachable from \(s\)
+\end{lemma}
+
+\begin{proof}
+Consider any vertex \(v\) that is reachable from \(s\), and let \(p=\la v_0,v_1,\dots,v_k\ra\)
+where \(v_0=s\) and \(v_k=v\) to be any shortest path from \(s\) to \(v\). Because shortest
+paths are simple, \(p\) has at most \(\abs{V}-1\) edges, and so \(k\le\abs{V}-1\). Each of
+the \(\abs{V}-1\) iterations of the \textbf{for} loop relaxes all \(\abs{E}\) edges. Among the edges
+relaxed in the \(i\)th iteration, for \(i=1,\dots,k\), is \((v_{i-1},v_i)\). By the path-relaxation
+property, therefore \(v.d=v_k.d=\delta(s,v_k)=\delta(s,v)\)
+\end{proof}
+
+\begin{corollary}[]
+Let \(G=(V,E)\) be a weighted, directed graph with source vertex \(s\) and weight
+function \(w:E\to\R\), and assume that \(G\) contains no negative-weight cycles that are reachable
+from \(s\). Then for each vertex \(v\in V\) there is a path from \(s\) to \(v\) iff BELLMAN-FORD
+terminates with \(v.d<\infty\) when it is run on \(G\)
+\end{corollary}
+
+\begin{theorem}[Correctness of the Bellman-Ford algorithm]
+Let BELLMAN-FORD be run on a weighted, directed graph \(G=(V,E)\) with source \(s\) and weight
+function \(w:E\to\R\). If \(G\) contains no negative-weight cycles that are reachable from \(s\),
+then the algorithm return TRUE, we have \(v.d=\delta(s,v)\) for all vertices \(v\in V\), and the
+predecessor subgraph \(G_\pi\) is a shortest-path tree rooted at \(s\). If \(G\) does contain a
+negative-weight cycle reachable from \(s\), then the algorithm returns FALSE
+\end{theorem}
+
+\begin{proof}
+Now suppose that graph \(G\) contains a negative-weight cycle that is reachable from the
+source \(s\); let this cycle be \(c=\la v_0,\dots,v_k\ra\), where \(v_0=v_k\). Then
+\begin{equation*}
+\sum_{i=1}^kw(v_{i-1},v_i)<0
+\end{equation*}
+Assume for the purpose of contradiction that the Bellman-Ford algorithm returns TRUE.
+Thus, \(v_i.d\le v_{i-1}.d+w(v_{i-1},v_i)\) for \(i=1,\dots,k\). Summing the inequalities around
+cycle \(c\) gives us
+\begin{align*}
+\sum_{i=1}^kv_i.d&\le\sum_{i=1}^k(v_{i-1}.d+w(v_{i-1},v_i))\\
+&=\sum_{i=1}^kv_{i-1}.d+\sum_{i=1}^kw(v_{i-1},v_i)
+\end{align*}
+But since \(\sum_{i=1}^kv_i.d=\sum_{i=1}^kv_{i-1}.d\), we have
+\begin{equation*}
+0\le\sum_{i=1}^kw(v_{i-1},v_i)
+\end{equation*}
+\end{proof}
+
+\begin{exercise}
+
+\end{exercise}
+\subsubsection{Single-source shortest paths in directed acyclic graphs}
+\label{sec:orgc9c5445}
+By relaxing the edges of a weighted dag \(G=(V,E)\) according to a topological sort of its
+vertices, we can compute shortest paths from a single source in \(\Theta(V+E)\) time. Shortest paths
+are always well defined in a dag
+
+\begin{algorithmic}[1]
+\Procedure{Dag-Shortest-Paths}{$G,w,s$}
+\State topological sort the vertices of \(G\)
+\State INITIALIZE-SINGLE-SOURCE\((G,s)\)
+\For{each vertex \(u\), taken in topological sorted order}
+    \For{each vertex \(v\in G.Adj[u]\)}
+        RELAX\((u,v,w)\)
+    \EndFor
+\EndFor
+\EndProcedure
+\end{algorithmic}
+
+\begin{exercise}[24.2-4]
+Given an efficient algorithm to count the total number of paths in a directed acylic graph.
+Analyze your algorithm
+\end{exercise}
+\subsubsection{Dijkstra's algorithm}
+\label{sec:orgd846e75}
+Dijkstra's algorithm solves the single-source shortest-paths problem on a weighted, directed
+graph \(G=(V,E)\) for the case in which all edge weights are nonnegative.
+\begin{algorithmic}[1]
+\Procedure{Dijkstra}{$G,w,s$}
+\State \(S=\emptyset\)
+\State \(Q=G.V\)
+\While{\(Q\neq\emptyset\)}
+    \State \(u=\)EXTRACT-MIN\((Q)\)
+    \State \(S=S\cup\{u\}\)
+    \For{each vertex \(v\in G.Adj[u]\)}
+        RELAX\((u,v,w)\)
+    \EndFor
+\EndWhile
+\EndProcedure
+\end{algorithmic}
+\subsubsection{Proofs of shortest-paths properties}
+\label{sec:org7335df6}
+\begin{lemma}[Triangle inequality]
+Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\) and source
+vertex \(s\). Then for all edges \(u,v)\in E\) we have
+\begin{equation*}
+\delta(s,v)\le\delta(s,u)+w(u,v)
+\end{equation*}
+\end{lemma}
+
+\begin{lemma}[Upper-bound property]
+Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\). Let \(s\in V\) be
+the source vertex, and let the graph be initialized by INITIALIZE-SINGLE-SOURCE\((G,s)\).
+Then \(v.d\ge\delta(s,v)\) for all \(v\in V\), and this invariant is maintained over any sequence of
+relaxation steps on the edges of \(G\). Moreover, once \(v.d\) achieves its lower
+bound \(\delta(s,v)\) it never changes
+\end{lemma}
+
+\begin{proof}
+By the inductive hypothesis, \(x.d\ge\delta(s,x)\) for all \(x\in V\) prior to the relaxation. The
+only \(d\) that may change is \(v.d\). If it changes, we have
+\begin{align*}
+v.d&=u.d+w(u,v)\\
+&\ge\delta(s,u)+w(u,v)\\
+&\ge\delta(s,v)
+\end{align*}
+\end{proof}
+
+\begin{corollary}[No-path property]
+Suppose that in a weighted, directed graph \(G=(V,E)\) with weight function \(w:E\to\R\), no path
+connects a source vertex \(s\in V\) to a given vertex \(v\in V\). Then, after the graph is
+initialized by INITIALIZE-SINGLE-SOURCE\((G,s)\), we have \(v.d=\delta(s,v)=\infty\) and this equality is
+maintained as an invariant over any sequence of relaxation steps on the edges of \(G\)
+\end{corollary}
+
+\begin{proof}
+By the upper-bound property, we always have \(\infty=\delta(s,v)\le v.d\)
+\end{proof}
+
+\begin{lemma}[]
+Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\), and
+let \((u,v)\in E\). Then immediately after relaxing edge \((u,v)\) by executing RELAX\((u,v,w)\),
+we have \(v.d\le u.d+w(u,v)\)
+\end{lemma}
+
+\begin{proof}
+If prior to relaxing edge \((u,v)\), we have \(v.d>u.d+w(u,v)\), then \(v.d=u.d+w(u,v)\)
+afterward. Otherwise \(v.d\) doesn't change
+\end{proof}
+
+\begin{lemma}[Convergence property]
+Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\), let \(s\in V\) be a
+source vertex, and let \(s\rightsquigarrow u\to v\) be a shortest path in \(G\) for some vertices \(u,v\in V\).
+Suppose \(G\) is initialized by INITIALIZE-SINGLE-SOURCE\((G,s)\) and then a sequence of
+relaxation steps that includes the call RELAX\((u,v,w)\) is executed on the edges of \(G\).
+If \(u.d=\delta(s,u)\) at any time prior to the call, then \(v.d=\delta(s,v)\) at all times after the call
+\end{lemma}
+
+\begin{proof}
+
+\end{proof}
+
+\begin{lemma}[Path-relaxation property]
+Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\), and let \(s\in V\)
+be a source vertex. Consider any shortest path \(p=\la v_0,\dots,v_k\ra\) from \(s=v_0\) to \(v_k\).
+If \(G\) is initialized by INITIALIZE-SINGLE-SOURCE\((G,s)\) and then a sequence of relaxation
+steps occurs that includes, in order, relaxing the edges \((v_0,v_1),\dots,(v_{k-1},v_k)\)
+then \(v_k.d=\delta(s,v_k)\) after these relaxations and at all times after wards.
+\end{lemma}
+\end{document}

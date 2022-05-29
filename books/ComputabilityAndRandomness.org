@@ -2016,3 +2016,397 @@
 
        \(d(\sigma_k)\ge\sum_{\tau\in 2^{\sigma_{k+1}}}d_{t_k}(\tau)\)
     #+END_proof
+
+
+
+    ML-random太弱了
+
+    关于随机序列的直观
+    * 随机序列不应该是左c.e.的
+    * \(\Omega\)是ML-R的
+    * 随机序列作为信息源应该是很“没用的”，而\(\Omega\equiv_T0'\)
+
+
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    给定 *可测* 集合\(S\subseteq 2^\omega\)，对任意\(\sigma\in 2^{<\omega}\)，任意\(r\in\N\)，如
+    果\(\lambda(S\cap[\sigma])\ge 2^{-(r+1)}2^{-\abs{\sigma}}\)，那么存在不同的\(\tau_0,\tau_1\succ\sigma\)满足
+    \(\abs{\tau_0}=\abs{\tau_1}=\abs{\sigma}+r+2\)且对\(i=0,1\)都有
+    \begin{equation*}
+    \lambda(S\cap[\tau_i])>2^{-(r+2)}2^{-\abs{\tau_i}}
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    给定\(S\)和\(\sigma\)满足条件，定义\(C=\{\tau\mid\abs{\tau}=\abs{\sigma}+r+2\}\)，\(\abs{C}=2^{r+2}\)，
+    \(\lambda(S\cap\llb{\sigma})=\sum_{\tau\in C}\lambda(S\cap\llb{\tau})\) （\(S\)可测有测度可加性）
+
+    对任意\(\tau\in C\)，有\(\lambda(S\cap\llb{\tau})\le\lambda(\llb{\tau})=2^{-\abs{\tau}}=2^{-\abs{\sigma}-(r+2)}\)
+
+    不妨设最差情况，剩下的\(S\)交分量都不够，于是
+    \(\lambda(S\cap\llb{\sigma})\le 2^{\abs{\sigma}-r-2}+(2^{r+2}-1)2^{-\abs{\sigma}-2r-4}<2^{-r-1-\abs{\sigma}}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    对每个01序列\(A\)都存在ML-R序列\(Z\)有\(A\le_TZ\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    令\(\{U_n\}_{n\in\N}\)是一个通用的ML-test，找\(Z\notin\bigcap_nU_n\)且\(A\le_TZ\)
+
+    其实我们只需令\(Z\notin U_1\)，令\(S=2^\omega\setminus U_1\)，即证\(Z\in S\)
+
+    注意由于\(\lambda(U_1)\le 2^{-1}\)，故\(\lambda(S)\ge 1/2\)，
+
+    为了构造\(Z\ge_TA\)且\(Z\in S\)，对任意\(\tau\in 2^{<\omega}\)，我们希望定义\(\sigma_\tau\)使得每
+    个\(\lambda(S\cap\llb{\sigma_\tau})>0\)且对任意\(\tau_1,\tau_2\),\(\tau_1\prec\tau_2\Leftrightarrow\sigma_{\tau_1}\prec\sigma_{\tau_2}\)
+
+    由于\(S\)是\(\Pi_1^0\)闭集，若\(Z\)满足对任意\(n\)，有\(m>n\)使是\(\lambda(S\cap[Z\uhr m])>0\)且\(Z\in S\)，
+
+    令\(\sigma_{()}=()\)，此时\(\lambda(S\cap\llb{\sigma_{()}})=\lambda(S)=1/2\)，
+
+    任给\(\sigma_\tau\)，归纳假设\(\lambda(S\cap\llb{\sigma_\tau})\ge 2^{-\abs{\tau}-1}2^{-\abs{\sigma_\tau}}\)，由引理，存在\(\sigma_0,\sigma_1\succ\sigma\)
+    使得\(\abs{\sigma_i}=\abs{\sigma}+\abs{\tau}+2\)且\(\lambda(S\cap\llb{\sigma_i})\ge 2^{-\abs{\tau}-2-\abs{\sigma_i}}\)，
+    取\(\sigma_{\tau 0}\), \(\sigma_{\tau 1}\)分别是满足上述条件的最左侧和最又测的\(\sigma_i\)
+
+    令\(f:\N\to\N\)，\(f(0)=0\)，\(f(n+1)=f(n)+n+2\)，则对任意\(\tau\)，\(f(\abs{\tau})=\abs{\sigma_\tau}\)
+
+    任给\(A\in 2^\omega\)，令\(Z=\bigcup_{n\in\N}\sigma_{A\uhr n}\)，则\(Z\in S\)
+
+    验证：\(A\le_TZ\)
+
+    假设\(A\uhr n\)已经计算，我们知道\(Z\uhr f(n)=\sigma_{A\uhr n}\)，我们要判定\(Z\uhr f(n+1)\)
+    是\(\sigma_{A\uhr n \verb!^!0}\)还是\(\sigma_{A\uhr n \verb!^!1}\)，即是看满足测度条件的最左还是最右的，
+
+    注意对任意\(\theta\succ A\uhr n\)使\(\abs{\theta}=f(n+1)\)，\(\theta\)不满足条件当且仅
+    当\(\lambda([\theta]^\prec\cap U_1)\ge 2^{-f(n+1)}-2^{-\abs{\tau}-1-\abs{\sigma_\tau}}\)，
+    注意\(\lambda(\llb{\theta}^\prec\cap U_1)\)是左c.e.的，我们总是能在有穷时间内发现这件事的，若\(Z\uhr f(n+1)\)是最左
+    侧的，那我们可以在有穷时间内发现它左边都不满足
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    称开集序列\(\{U_n\}_{n\in\N}\)是 *统一地递归可枚举于\(A\)的* ，当且仅当集合\(\{\la n,\sigma\ra\mid[\sigma]\subset U_n\}\)是递归
+    可枚举于\(A\)的，即存在\(e\)使得\(\{\la n,\sigma\ra\mid[\sigma]\subset U_n\}=\dom\Phi_e^A\)
+
+    若\(\{U_n\}_{n\in\N}\)是统一地递归可枚举于\(A\)的开集序列且对任意\(n\)有\(\lambda(U_n)\le 2^{-n}\)，则
+    称\(\{U_n\}_{n\in\N}\)是相对于\(A\)的马丁洛夫测试
+
+    \(Z\)是 相对于\(A\)马丁洛夫随机的 当且仅当通过每个测试
+    #+END_definition
+
+    #+ATTR_LATEX: :options [信息源版本的通用马丁-洛夫测试]
+    #+BEGIN_lemma
+    存在可计算函数\(g:\N\times\N\to\N\)，对任意信息源\(A\in 2^\omega\)，任意\(e,n\in\N\)，\(W^A_{g(e,n)}\)是无前束集的集
+    合，\(\lambda([W_{g(e,n)}^A]^\prec)\le 2^{-n}\)，并且对任意相对于 \(A\)的马丁-洛夫测试\(\{V_n\}_{n\in\N}\)都存
+    在\(e\)使得
+    \(\bigcap_nV_n\subset\bigcap_n[W_{g(e,n)}^A]^\prec\)
+
+    因此存在信息源版本的通用马丁-洛夫测试，即存在可计算函数\(f\)，对任意\(A\in 2^\omega\)，
+    \(\{[W_{f(n)^A}]^\prec\}_n\)是一个相对于\(A\)的马丁-洛夫测试，并且对任何相对于\(A\)的马丁洛夫测
+    试\(\{V_n\}_{n\in\N}\)，有\(\bigcap_nV_n\subset\bigcap_n[W_{f(n)}^A]^\prec\)
+    #+END_lemma
+
+    带信息源的无前束程序
+
+    有一个带信息源的通用无前束程序，记作\(U^{\pf}\)，定义
+
+    类似的定义一个（上）鞅\(d\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    给定序列\(A,Z\)，TFAE
+    1. \(Z\)是相对于\(A\)马丁-洛夫随机的
+    2. 存在常量\(c\)使得对任意\(n\)有
+       \begin{equation*}
+       K^A(Z\uhr n)\ge n-c
+       \end{equation*}
+    3. 不存在递归可枚举\(A\)的（上）鞅\(d\)使得\(Z\in S[d]\)
+    #+END_theorem
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    如果\(Z\le_TA\)，那么\(Z\)不是相对于\(A\)马丁-洛夫随机的
+    #+END_proposition
+
+    #+BEGIN_proof
+    \(\{[Z\uhr n]\mid n\in\N\}\)是\(c.e.\)在\(A\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [van Lambalgen]
+    #+BEGIN_theorem
+    给定序列\(A,B\)，\(A\oplus B\)是马丁-洛夫随机的当且仅当\(B\)是马丁洛夫随机的并且\(A\)是相对于\(B\)马
+    丁-洛夫随机的
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\)：假设\(A\oplus B\)是ML-R的，我们只需证明\(A\)是相对于B ML-R的，
+    反设\(A\)不是相对于\(B\) ML-R的，由引理，存在可计算函数\(f:\N\to\N\)使\(A\in\bigcap_n\llb{W_{f(n)}^B}^\prec\)，注
+    意对任意\(Y\in 2^\omega\)，任意\(n\)，有\(\lambda(\llb{W_{f(n)}^Y}^\prec)\le 2^{-n}\)
+
+    希望一个ML-test抓住\(A\oplus B\)
+
+    对任意\(n,s\in\N\)，定义\(E_{n,s}=\{\alpha\oplus\beta\mid\abs{\alpha}=\abs{\beta}=s\wedge\exists\sigma\preceq\alpha(\sigma\in W_{f(n),s}^\beta)\}\)，
+    令\(E_n=\bigcup_sE_{n,s}\)，容易验证\(\{E_n\}_{n\in\omega}\)是uniformly c.e.的
+
+    注意对任意\(\beta\in 2^{<\omega}\)，任意\(n,s\)，任意\(Y\succ\beta\)，有\(W^\beta_{f(n),s}\subseteq W_{f(n)}^Y\)
+    且\(\lambda(\llb{W_{f(n)}^Y})\le 2^{-n}\)
+
+    此外，假设\(\abs{\beta}=n\)，那么对\(\sigma\in W_{f(n),s}^\beta\)存在\(2^{s-\abs{\sigma}}\)个\(\alpha\succ\sigma\)，使\(\alpha\oplus\beta\in E_{n,s}\)
+
+    对任意\(n,s\)，
+    \(\lambda(\llb{E_{n,s}}^\prec)=\sum_{\beta\in 2^s}\sum_{\sigma\in W_{f(n),s}^\beta}2^{s-\abs{\sigma}-2s}=\lambda\llb{W_{f(n),s}^\beta}\le 2^{-n}\)，
+
+    注意对任意\(n\)，有\(E_{n,0}\subseteq E_{n,1}\subseteq\cdots\)，
+    故\(\lambda(\llb{E_n}^\prec)=\lim_{s\to\infty}\lambda(\llb{E_{n,s}})\le 2^{-n}\)，故
+    \(\{\llb{E_n}^\prec\mid n\in\N\}\)是ML-test
+
+    验证\(A\oplus B\in\bigcap_n\llb{E_n}^\prec\)：对任意\(n\)，有\(A\in\llb{W_{f(n)}^\beta}^\prec\)，即存在\(\sigma\prec A\)，存在最小的
+    \(\abs{s}>\abs{\sigma}\)使得\(\sigma\in W_{f(n),s}^{\beta\uhr s}\)则\(A\uhr s\oplus B\uhr s\in E_{n,s}\subset E_n\)，
+    故\(A\oplus B\in\bigcap_n\llb{E_n}^\prec\)
+
+    \(\Leftarrow\)：假设\(A\oplus B\)不是ML-R，进一步假设\(B\)是ML-R，证明\(A\)不是相对于\(B\)马丁洛夫随机的
+    令\(\{U_n\}_{n\in\N}\)是一个ML-test，\(A\oplus B\in\bigcap_nU_n\)，不妨设\(\lambda(U_n)\le 2^{-2n}\)
+
+    想法：首先尝试用一个测试来抓\(B\)，而抓不到\(B\)这个产生
+
+    对任意\(\sigma\in 2^{<\omega}\)，定义\(O_\sigma=\{\tau\oplus\sigma\mid\abs{\tau}=\abs{\sigma}\}\)，对任意\(n\in\N\)定
+    义\(S_n=\{\sigma\mid\lambda([O_\sigma]^\prec\cap U_n)\ge 2^{-n-\abs{\sigma}}\}\)，显然\(\{S_n\}_{n\in\N}\)是uniformly c.e.的
+
+    令\(S_n^*\subset S_n\)是\(S_n\)中\(\prec\)极小元集合，则\(S_n^*\)是无前束且\(\lambda[S_n^*]=\lambda[S_n]^\prec\)
+
+    已知对任意\(\sigma\in S_n^*\)，有\(\lambda([O_\sigma]^\prec\cap U_n)\ge 2^{-n-\abs{\sigma}}\)，但\(\lambda(U_n)\le 2^{-2n}\)，故
+    \(\sum_{\sigma\in S_n^*}2^{-n-\abs{\sigma}}\le\sum_{\sigma\in S_n^*}\lambda([O_\sigma]^\prec\cap U_n)\le\lambda(U_n)\le 2^{-2n}\)
+    故\(\lambda([S_n]^\prec)=\lambda[S_n^*]^\prec\le 2^{-n}\)，故\(\{[S_n]\}_{n\in\N}\)是一个ML-test也是一个Solovay test，于
+    是\(B\)通过Solovay test，即存在\(n_0\)使得对任意\(m>n_0\)有\(B\notin[S_n]^\prec\)
+
+    先在我们以\(B\)为oracle做测试抓\(A\)，对\(n,i\)，令
+    \begin{equation*}
+    E_n^i=\{\sigma\in 2^i\mid\llb{\sigma\oplus B\uhr i}\subseteq U_n\}
+    \end{equation*}
+    令\(E+n=\bigcup_{i>n} E_n^i\)，考虑\(\{E_n\}_{n>n_0}\)
+
+    任给\(n>n_0\)，任意\(i\in\N\)，有\([E_n^i]^\prec\subset[E_n^{i+1}]^\prec\)，由于
+    \(B\notin[S_n]^\prec\)，故
+    \begin{equation*}
+    \sum_{\sigma\in E_n^i}2^{-2i}=\sum_{\sigma\in E_n^i}\lambda[\sigma\oplus B\uhr r]\le \lambda([O_{B\uhr i}]^\prec\cap U_n)<2^{-n-i}
+    \end{equation*}
+    因此\(\lambda[E_n^i]^\prec=\sum_{\sigma\in E_n^i}<2^{-i}<2^{-n}\)，故\(\lambda[E_n]=\lim_{i\to\infty}\lambda[E_n^i]\le 2^{-n}\)，故
+    \(\{[E_n]^\prec\}_n\)是一个相对于\(B\)的ML-test
+
+    由于\(A\oplus B\in\bigcap_nU_n\)，对任意\(n\)存在\(i\)使得\([A\oplus B\uhr 2i]\subseteq U_n\)，故\(A\uhr i\in E_n\)，
+    故\(A\in[E_n]^\prec\)
+
+    故\(A\in\bigcap_{n\ge n_0}U_n\)，矛盾
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    对任意序列\(A,B\)，如果\(A\oplus B\)是马丁-洛夫随机的，那么\(A\bot_TB\)
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    假设\(A,B\)都是ML-R，那么\(A\)相对于\(B\)马丁-洛夫随机的当且仅当\(B\)是相对于\(A\)马丁-洛夫随机
+    的
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    任给序列\(A,B\)，如果\(A\)是\(\Delta_2^0\)的且\(A\)相对于\(B\)马丁-洛夫随机，那么\(B\)是广义低效的
+    #+END_lemma
+
+
+    #+BEGIN_proof
+    假设\(A\)是\(\Delta_2^0\)的，即存在可计算逼进\(\{A_s\}_{s\in\N}\)使得对任意\(n\)，\(A(n)=\lim_{s\to\infty}A_s(n)\)，
+    令\(g:\N\to\N\)使得对每个\(n\in\N\)有\(g(n)=\min\{s\in\N\mid\forall t\ge s A_s\uhr n=A_t\uhr n\}\)，显然\(g\le_T0'\)（因
+    为\(A\le 0'\)，或者里面是一个\(\Pi_1^0\)的问题），我们要证明\(B'\le_TB\oplus 0'\)，\(B'=\{e\mid\Phi^B_e(e)\downarrow\}\)，
+    对\(e\in\N\)，如果\(\Phi_e^B(e)\downarrow\)，则令\(s_e\)是最小的\(s\)使得\(\Phi_{e,s}^B(e)\downarrow\)，定义
+    \(\sigma_e=A_{s_e}\uhr(e+1)\)，如果\(\Phi_e^B(e)\uparrow\)，则\(\sigma_e\)无定义
+
+    对\(n\in\N\)，令\(U_n=[\{\sigma_e:e\ge n\}]^\prec\)，则\(\{U_n\}_{n\in\N}\)是在\(B\)中uniformly c.e.且
+    \(\lambda(U_n)\le\sum_{e\ge n}2^{-\abs{\sigma_e}}=\sum_{e\ge n}2^{-(e+1)}=2^{-n}\)
+
+    故\(\{U_n\}_{n\in\N}\)是相对于\(B\)的ML-test，也是Solovay test，由于\(A\)是相对于\(B\)的ML-R，
+    故\(A\notin\bigcap_nU_n\)，特别地，至多只有有穷个\(e\)使得\(A\in[\sigma_e]\)，即对余有穷多个\(e\)，
+    有\(A_{s_e}\uhr(e+1)\)，即\(s_e\ge g(e)\)，故\(S\)是我们需要的上界，故对余有穷个\(e\)，要判断是
+    否\(\Phi_e^B(e)\downarrow\)，只需要算到\(\Phi^B_{e,g(e)}(e)\)，故\(B'\le B\oplus 0'\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    对于\(n\ge 1\)称序列\(A\in 2^\omega\)是 *\(n\)-随机* 的，当且仅当\(A\)是相对于\(0^{(n-1)}\)随机
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    所有左c.e.的序列都\(\le_T0'\)，因而不是2-随机的，特别地，\(\Omega\)不是2-随机的
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    如果序列\(A\)是2-随机的，那么\(A\)是广义低效的
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(A\)相对于\(0'\) ML-R，由于\(0'\equiv\Omega\)，即\(A\)是相对于\(\Omega\) ML-R，又由\(\Omega\)是ML-R，故\(A\oplus\Omega\)是
+    ML-R，故\(\Omega\)是相对于\(A\) ML-R，又由\(\Omega\)是\(\Delta_2^0\)的，故\(A\)是广义低效的
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    一个（上）鞅是 *可计算的* ，当且仅当它的值是统一地递归的，即存在一个递归函数\(p:2^{<\omega}\to\N\)，任
+    给\(\sigma\in 2^{<\omega}\)，程序\(\Phi_{p(\sigma)}\)可以判断一个二进有理数是否小于\(d(\sigma)\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    对每个可计算的鞅\(d:2^{<\omega}\to\R^{\ge 0}\)存在可计算函数\(f:2^{<\omega}\to\Q^{\ge 0}\)是鞅且\(S[f]=S[d]\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    给定\(d\)，我们定义\(f:2^{<\omega}\to\Q^{\ge 0}\)，使对任意\(\sigma\in 2^{<\omega}\)有\(d(\sigma)<f(\sigma)<d(\sigma)+1\)，此
+    时\(S[f]=S[d]\)
+
+    给定一个对所有\(\R^{\ge 0}\)的枚举\(\{q_e\}_{e\in\N}\)，任取\(f(\emptyset)\)为第一个有理数使
+    得\(f(\emptyset)\in(d(\emptyset),d(\emptyset)+1)\)
+
+    假设已有\(f(\sigma)\in(d(\sigma),d(\sigma)+1)\)，我们要计算\(f(\sigma 0)\)和\(f(\sigma 1)\)，
+
+    首先，我们试图在\((d(\sigma),d(\sigma)+1)\)中更精确地定位\(f(\sigma)\)，即我们要找\(\epsilon,\delta\in\Q^{\ge 0}\)使
+
+    \(3/4<\epsilon+\delta<1\)且\(d(\sigma)+\epsilon<f(\sigma)\), \(f(\sigma)+\delta<d(\sigma)+1\)
+
+    由\(d\)可计算，这样的\(\epsilon,\delta\)可以能行地得到
+
+    我们定义\(f(\sigma 0)\)，然后令\(f(\sigma 1)=2f(\sigma)-f(\sigma 0)\)
+
+    为使\(f(\sigma 0)\)定义更精确，我们希望计算出\(\epsilon_0,\delta_0\in\Q^{>0}\)使\(\epsilon_0+\delta_0<1\)且如
+    果\(d(\sigma 0)+\epsilon_0<f(\sigma 0)\)且\(f(\sigma 0)+\delta_0< d(\sigma 0)+1\)，
+    为了使
+    \begin{align*}
+    f(\sigma 1)&=2f(\sigma)-f(\sigma 0)>2(d(\sigma)+\epsilon)-f(\sigma 0)\\
+    &>2(d(\sigma)+\epsilon)-(d(\sigma 0)-\delta_0)\\
+    &=d(\sigma 1)+2\epsilon-1+\delta_0>d(\sigma 1)\tag*{\star 1}
+    \end{align*}
+
+    \begin{align*}
+    f(\sigma 1)&=2f(\sigma)-f(\sigma 0)<2(d(\sigma)+1-\delta)-f(\sigma 0)\\
+    &<2(d(\sigma)+1-\delta)-(d(\sigma 0)+\epsilon_0)\\
+    &=d(\sigma 1)+2-2\delta-\epsilon<d(\sigma)+1\tag*{\star 2}
+    \end{align*}
+    为使\(\star 1\), \(\star 2\)成立，
+    \(2\epsilon+\delta_0>1\), \(2\delta+\epsilon_0>1\)
+
+    这样\(\epsilon_0,\delta_0\)总可以能行地得到，由于\(d(\sigma 0)\)是可计算的，总可以找到第一个满足\(d(\sigma 0)+\epsilon_0<q\)
+    且\(q+\delta_0<d(\sigma 0)+1\)的有理数，令\(f(\sigma 0)=q\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    一个序列\(Z\in 2^\omega\)是 *可计算随机的* 当且仅当不存在可计算的鞅可以在\(Z\)上获胜
+    #+END_definition
+
+    #+ATTR_LATEX: :options [施诺尔随机性]
+    #+BEGIN_definition
+    * 令\(d\)是一个鞅，\(g:\N\to\N\)是一个严格递增函数，称 *\(d\)在序列\(Z\)上\(g\)获胜* 当且仅当存在无穷
+      \(n\in\N\)使得\(d(Z\uhr g(n))\ge n\)
+    * 令\(S_g[d]\)是所有\(d\)在其上\(g\)获胜的序列组成的集合
+    * 称序列\(Z\in 2^\omega\)是 *施诺尔随机的* 当且仅当对任意可计算的鞅\(d\)任意可计算的严格递增函数\(g\)，
+      \(d\)都不在\(Z\)上\(g\)获胜
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    我们称一个马丁-洛夫测试\(\{U_n\}_{n\in\N}\)是一个 *施诺尔测试* 当且仅当\(\{\lambda(U_n)\}_{n\in\N}\)是统一地可计算
+    的
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    序列\(Z\)是施诺尔随机的，当且仅当对任意施诺尔测试\(\{U_n\}_{n\in\N}\), \(Z\notin\bigcap_nU_n\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    假设\(\{U_n\}_{n\in\N}\)是一个Sh-test且\(Z\in\bigcap_nU_n\)，我们构造一个可计算的鞅\(d\)以及可计算的递增函
+    数\(g:\N\to\N\)使得\(d\)能在\(Z\)上\(g\)获胜，即存在无穷多的\(n\)使\(d(Z\uhr g(n))\ge n\)
+
+    由于\(\{U_n\}_{n\in\omega}\)是uniformly c.e.的，存在uniformly c.e.的无前束\(E_n\subseteq 2^{<\omega}\)使
+    得\(U_n=\llb{E_n}^\prec\)，可以假设\(E_n\)是uniformly可计算的：首先我们可以枚举\(\sigma\)使
+    得\([\sigma]\subset U_n\)，若发现有\(\sigma\)会破坏\(E_n\)的无前束性，就可以断言\(\sigma\notin E_n\)；另一方面
+    若\([\sigma]\not\subset U_n\)，则\(\lambda(\llb{E_n\cup\sigma}^\prec)>\lambda(U_n)\)，由于\(\lambda(U_n)\)可计算，\(E_n\)可枚举，可以在有
+    穷时间内发现这件事
+
+    注意，若\(\sigma\in E_n\)，由\(\lambda(\llb{E_n})\le 2^{-n}\)（\(U_n\)是martingle），故\(\abs{\sigma}\ge n\)
+
+    令\(R=\bigcup_nE_n\)，则\(R\)是可计算的：显然\(R\)是c.e.的，对任意\(\tau\notin R\)，若\(\tau\in E_n\)，
+    则\(\abs{\tau}\ge n\)，故我们只需等到对任意\(n<\abs{\tau}\)判定\(\tau\notin E_n\)，即可断言\(\tau\notin R\)
+
+    对任意\(m\in\N\)，定义\(R_m=\{\sigma\in R\mid\abs{\sigma}\ge m\}\)，显然\(\{R_m\}_{m\in\N}\)是统一可计算的
+
+    定义\(r_m=\sum_{\sigma\in R_m}2^{-\abs{\sigma}}\)，则\(\{r_m\}_{m\in\N}\)是统一可计算的实数序列：
+    \(r_0=\sum_{\sigma\in R}2^{-\abs{\sigma}}=\sum_n\sum_{\sigma\in RE_n}2^{-\abs{\sigma}}\)，首先
+    \(\sum_{n\le m}\sum_{\sigma\in E_n}2^{-\abs{\sigma}}\)可计算，另一方面\(\sum_{n>m}\sum_{\sigma\in E_n}2^{-\abs{\sigma}}\le 2^{-m}\)，
+    故\(r_0\)可计算，可以越来越逼进它
+
+    考虑\(R\setminus R_m=\bigcup_{n\le m}E_n\)这是可计算的，令\(\barr_m=\sum_{\sigma\in R\setminus R_m}2^{-\abs{\sigma}}\)，则\(\barr_m\)是
+    可计算的，则\(r_m=r_0-\barr_m\)是可计算的
+
+    此外，\(\lim_{m\to\infty}r_m=0\)，因为\(\bigcap_mR_m=\emptyset\)，故存在一个严格递增可计算函数\(g:\N\to\N\)使
+    得\(r_{g(n)}\le (n+1)^{-1}\cdot 2^{-n}\)
+
+    又由于\(Z\in\bigcap_n\llb{E_n}^\prec\)而\(E_n\subseteq R_n\)，故存在无穷个\(m\in\N\)有\(Z\uhr m\in R\)
+
+    我们设计一个鞅来押注\(Z\uhr m\in R\)从而保证有无穷词押中，另一方面，由于\(E_n\subseteq R_n\)，
+    \(Z\in\bigcap_n\llb{R_n}^\prec\)，故对任意\(n\)，有\(Z\in\llb{R_{g(n)}}^2\)，对每个\(n\in\N\)，构造\(d_n\)使得
+    对\(\sigma\in R_{g(n)}\)，有\(d_n(\sigma)\ge n+1\)，最后令\(d=\sum_nd_n\)，故我们还要令\(d_n(\emptyset)\le 2^{-n}+1\)
+
+    想法：我们为了同时做到这两件事，必须孤注一掷下\(R_{g(n)}\)，而我们知
+    道\(r_{g(n)}\le(n+1)^{-1}2^{-n}\)，
+
+    定义\(d_n\)：定义可计算函数\(g^{-1}:\N\to\N\)使得\(g^{-1}(k)=\min\{l\mid g(l)>k\}\)，定
+    义\(p_n(\sigma)=\sum_{\substack{\tau\ge\sigma\\\tau\in R_{g(n)}}}g^{-1}(\abs{\tau})2^{\abs{\sigma}-\abs{\tau}}\)：
+    孤注一掷了，
+    对\(\tau\in R_{g(n)}\)，如果我们希望有\(d_n(\tau)=g^{-1}(\abs{\tau})\ge n\)，当此局到\(\sigma\prec\tau\)时，我们至少
+    要\(g^{-1}(\abs{\tau})\cdot 2^{\abs{\sigma}-\abs{\tau}}\)
+
+    在\(R_{g(n)}\)中的\(\tau\)之后，我们把\(\tau\)时的收获平均
+    分配，定义
+    \begin{equation*}
+    q_n(\sigma)=\sum_{\substack{\tau\in R(g(n))\\\tau\prec\sigma}}g^{-1}(\abs{\tau})
+    \end{equation*}
+    令\(d_n(\sigma)=p_n(\sigma)+q_n(\sigma)\)，要验证\(d_n(\sigma)=\frac{d_n(\sigma 0)+d_n(\sigma 1)}{2}\)：
+    1. \(\sigma\in R_{g(n)}\)，
+       \begin{align*}
+       p_n(\sigma 0)+p_n(\sigma 1)&=\sum_{\substack{\tau\in R_{g(n)}\\\tau\succ\sigma}}g^{-1}(\abs{\tau})2^{\abs{\sigma i}-\abs{\tau}}\\
+       &=2(\sum_{\substack{\tau\in R_{g(n)}\\\tau\succ\sigma}}g^{-1}(\abs{\tau})2^{\abs{\sigma}-\abs{\tau}})\\
+       &=2p_n(\sigma)-2g^{-1}(\abs{\sigma})
+       \end{align*}
+       而\(q_n(\sigma 0)+q_n(\sigma 1)=2(q_n(\sigma)+g^{-1}(\abs{\sigma}))\)，故\(d_n(\sigma 0)+d_n(\sigma 1)=2d_n(\sigma)\)
+    2. \(\sigma\notin R_{g(n)}\)
+    3. 还要验证对任意\(\sigma\)，\(d(\sigma)=\sum_nd_n(\sigma)<\infty\)
+
+       给定\(\sigma\)，首先对足够大的\(n\)，即\(g(n)\ge\abs{\sigma}\)，则不存在\(\tau\prec\sigma\)使\(\tau\in R_{g(n)}\)，
+       故\(q_n(\sigma)=0\)，故\(\sum_nq_n(\sigma)<\infty\)
+
+       其次，
+       \begin{align*}
+       p_n(\sigma)&=\sum_{i\ge n}\sum_{\substack{\tau\in R_{g(i)}\setminus R_{g(i+1)}\\\tau\succeq\sigma}}g^{-1}(\abs{\tau})2^{\abs{\sigma}-\abs{\tau}}\\
+       &=2^{\abs{\sigma}}\sum_{i\ge n}(i+1)\sum_{\substack{\tau\in R_{g(i)}\setminus R_{g(i+1)}\\\tau\succeq\sigma}}2^{-\abs{\tau}}\\
+       &=2^{\abs{\sigma}}\sum_{i\ge n}(i+1)(r_{g(i)}-r_{g(i+1)})\\
+       &\le 2^{\abs{\sigma}}\sum_{i\ge n}(i+1)r_{g(i)}\\
+       &=2^{\abs{\sigma}}\sum_{i\ge n}2^{-i}
+       \end{align*}
+       故\(\sum_np_n(\sigma)<\infty\)
+    4. \(d\)可计算
+
+       为此，验证\(\{d_n\}_{n\in\N}\)是uniformly可计算的，因为\(\lim_{n\to\infty}d_n(\sigma)=0\)：
+       显然\(\{q_n\}_n\)是uniformly computable，
+       而\(p_n(\sigma)=2^{\abs{\sigma}}\sum_{i\ge n}((i+1)(r_{g(i)}-r_{g(i+1)}))= 2^{\abs{\sigma}}nr_{g(i)}+\sum_{i>n}r_{g(i)}\)
+       ，由于\(r_{g(i)}\)
+    5. 最后验证\(Z\in S_g[d]\)
+    #+END_proof
