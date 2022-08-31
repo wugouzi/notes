@@ -1,0 +1,417 @@
+#+title: Lectures on the Model Theory of Valued Field
+#+AUTHOR: L. van den Dries
+
+#+EXPORT_FILE_NAME: ../latex/LecturesModelTheoryValuedField/LecturesModelTheoryValuedField.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\res}{res}
+* Introduction
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *valuation ring* is a domain \(R\) whose set of ideals is linearly ordered by inclusion
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. Each valuation ring is a local ring
+    2. Let \(R\) be a domain with fraction field \(K\). Then \(R\) is a valuation ring iff for
+       every \(a\in K^\times\) either \(a\in R\) or \(a^{-1}\in R\)
+    3. \(\bk[[t]]\) is a valuation ring
+    4. \(\bk[[t_1,\dots,t_n]]\) is not a valuation ring if \(n>1\)
+    #+END_proposition
+
+
+* Valuation Theory
+** Valuations
+    A *valuation* on an (additively written) abelian group \(A\) is a map
+    \begin{equation*}
+    v:A\setminus\{0\}\to\Gamma
+    \end{equation*}
+    into a linearly ordered set \Gamma, s.t. \(v(-x)=v(x)\) for nonzero \(x\in A\)
+    and \(v(x+y)\ge\min\{v(x),v(y)\}\) for \(x,y\in A\) s.t. \(x,y,x+y\neq 0\)
+
+    By convention, set \(v(0)=\infty\) and extend \Gamma to \(\Gamma_\infty=\Gamma\cup\{\infty\}\)
+
+    Note that if \(x,y\in A\) and \(v(x)< v(y)\), then \(v(x+y)=v(x)\)
+
+    An *ordered abelian group* is an abelian group \Gamma equipped with a translation invariant linear
+    order <. Such \Gamma is called *archimedean* if for any \(a,b>0\) there is \(n\in\N\) s.t. \(na>b\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \Gamma be an archimedean ordered abelian group, and \(\gamma\in\Gamma^{>0}\). Then there is a unique
+    embedding \(i:\Gamma\to\R\) of ordered groups s.t. \(i(\gamma)=1\). If there is no \(\beta\in\Gamma\) with \(0<\beta<\gamma\),
+    then \(i(\Gamma)=\Z\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    If \Gamma has no least positive element, the embedding is given by \(i(\beta)=\sup\{\frac{k}{n}:k\in\Z,n\ge 2,n\beta<k\gamma\}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *valuation* on a domain \(A\) is a function \(v:A\setminus\{0\}\to\Gamma\) where \Gamma is an ordered abelian group,
+    s.t. for all \(x,y\in A\setminus\{0\}\):
+    1. \(v(x+y)\ge\min\{v(x),v(y)\}\), provided \(x+y\neq 0\)
+    2. \(v(xy)=v(x)+v(y)\)
+    #+END_definition
+
+    Given a domain \(A\) we have a bijective correspondence between the set of ultrametric absolute
+    values on \(A\) and the set of valuations \(v:A\setminus\{0\}\to\R\)  with the ultrametric absolute
+    value \(\abs{\;}\) on \(A\) corresponding to the valuation \(v:A\setminus\{0\}\to\R\) given
+    by \(v(a):=-\log\abs{a}\)i
+
+    Let \(v:A\setminus\{0\}\to\Gamma\) be a valuation on the domain \(A\). Note that then \(v(1)=v(-1)=0\),
+    since \(v\) restricted to \(U(A)\) is a group morphism. Hence \(v(x)=v(-x)\) for
+    all \(x\in A\setminus\{0\}\), so \(v\) is a valuation on the additive group. We extend \(v\) uniquely to a
+    valuation \(v:K^\times\to\Gamma\) on the fraction field \(K\) of \(A\), by
+    \begin{equation*}
+    v(x/y)=v(x)-v(y), x,y\in A\setminus\{0\}
+    \end{equation*}
+    Thus \(v(K^\times)\) is a subgroup of \Gamma
+
+    When we refer to a valuation \(v:K^\times\to\Gamma\) on a field \(K\), we shall assume from now on
+    that \(v(K^\times)=\Gamma\). We call \(\Gamma=v(K^\times)\)  the *value group of the valuation*
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(v:K^\times\to\Gamma\) be a valuation on a field. We set
+    1. \(\calo_v:=\{x\in K:v(x)\ge 0\}\), a subring of \(K\)
+    2. \(\fm_v:=\{x\in K:v(x)>0\}\), an ideal of \(\calo_v\)
+    3. \(\bk_v:=\calo_v/\fm_v\)
+    #+END_definition
+
+    Note that \(v(x)=0\Leftrightarrow v(x^{-1})=0\) for \(x\in K^\times\), so \(U(\calo_v)=\calo_v\setminus\fm_v\). Therefore \(\calo_v\) is a
+    local ring with maximal ideal \(\fM_v\)
+
+    We have the following disjoint union in \(K\)
+    \begin{equation*}
+    K=\fm_v\sqcup U(\calo_v)\sqcup(\fm_v\setminus\{0\})^{-1}
+    \end{equation*}
+    For each \(x\in K^\times\), either \(x\in\calo_v\) or \(x^{-1}\in\calo_v\), so \(\calo_v\) is a valuation ring in \(K\)
+
+    We call \(v\) *trivial* if \(\Gamma=\{0\}\), *discrete* if \(\Gamma\cong\Z\) as ordered groups, and of *rank 1*
+    if \(\Gamma\neq 0\) and \Gamma is archimedean
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(A,B\subseteq\Gamma\) be well-ordered (by the ordering of \Gamma). Then \(A\cup B\) is well-ordered, the
+    set \(A+B:=\{\alpha+\beta:\alpha\in A,\beta\in B\}\) is well-ordered, and for each \(\gamma\in\Gamma\) there are only finitely
+    many \((\alpha,\beta)\in A\times B\) s.t. \(\alpha+\beta=\gamma\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Let \(A\subseteq\Gamma^{>0}\) be well-ordered. Then
+    \begin{equation*}
+    [A]:=\{\alpha_1+\dots+\alpha_n:\alpha_1,\dots,\alpha_n\in A\}
+    \end{equation*}
+    is also well-ordered, and for each \(\gamma\in[A]\) there are only finitely many
+    tuples \((n,\alpha_1,\dots,\alpha_n)\) with \(\alpha_1,\dots,\alpha_n\in A\) s.t. \(\gamma=\alpha_1+\dots+\alpha_n\)
+    #+END_lemma
+
+    A *valuation ring of a field* \(K\) is a subring \(A\) of \(K\) s.t. for each \(x\in K^\times\)
+    either \(x\in A\) or \(x^{-1}\in A\).
+
+    Let \(A\) be the valuation ring of the field \(K\). Then we have the disjoint union
+    \begin{equation*}
+    K=\fm_A\cup U(A)\cup(\fm_A\setminus\{0\})^{-1}
+    \end{equation*}
+    Consider the (abelian) quotient group \(\Gamma_A=K^\times/U(A)\), written additively. The binary
+    relation \(\ge\) on \(\Gamma_A\) defined
+    \begin{equation*}
+    xU(A)\ge yU(A)\Leftrightarrow x/y\in A
+    \end{equation*}
+    makes \(\Gamma_A\) into an ordered abelian group, and the natural map
+    \begin{equation*}
+    v_A:K^\times\to\Gamma_A,v_A(x)=xU(A)
+    \end{equation*}
+    is a valuation. Note that \(\calo_{v_A}=A\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A *valued field* is a pair \((K,A)\) where \(K\) is a field and \(A\) is a valuation ring of \(K\)
+    #+END_definition
+
+    Let \((K,A)\) be a valued field, and \(L\supseteq K\) a field extension. Then a valuation ring \(B\)
+    of \(L\) *lies over* \(A\) (or *dominates* \(A\)) if \(A=B\cap K\), equivalently, \((K,A)\subseteq(L,B)\). Note
+    that then \(\fm_A=\fm_B\cap K\), so we have an induced embedding of residue fields, \(A/\fm_A\to B/\fm_B\),
+    by means of which \(\bk_A=A/\fm_A\) is identified with a subfield of \(\bk_B=B/\fm_B\)
+** Valuation Rings and Integral Closure
+    Let \(A\subseteq B\) be rings. For an ideal \(I\) of \(A\) we get
+    \begin{equation*}
+    IB:=\{a_1b_1+\dots+a_nb_n:a_1,\dots,a_n\in I, b_1,\dots,b_n\in B\}
+    \end{equation*}
+    be the ideal of \(B\) generated by \(I\). If \(\fp\) and \(\fq\) are prime ideals of \(A\) and \(B\)
+    respectively, we say that \(\fq\)  *lies over* \(\fp\) if \(\fq\cap A=\fp\). In that case we have a ring
+    embedding \(a+\fp\mapsto a+\fq:A/\fp\to B/\fq\)
+
+    We call an element \(b\in B\) *integral over* \(A\) if \(b\) is a zero of a monic polynomial
+    over \(A\).
+    The elements of \(B\) that are integral over \(A\) form a suring of \(B\), called the *integral
+    closure* of \(A\) in \(B\). Call \(A\) *integral closed in* \(B\) if each \(b\in B\) that is integral
+    over \(A\) lies already in \(A\). \(B\) *integral over* \(A\) if every \(b\in B\) is integral
+    over \(A\)
+
+    Given rings \(A\subseteq B\subseteq C\) the ring \(C\) is integral over \(A\) iff \(C\) is integral over \(B\)
+    and \(B\) is integral over \(A\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    If \(A\subseteq B\) are domains and \(B\) is integral over \(A\), then \(A\) is a field \(\Leftrightarrow\) \(B\) is a field
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \(A\subset B\) be domains with \(B\) integral over \(A\) and let \(\fp\subset A\) and \(\fq\subset B\) be prime
+    ideals s.t. \(\fq\) lies over \(P\). Then \(\fp\) is maximal iff \(\fq\) is maximal
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(A\subset B\) are domains, \(B\) is integral over \(A\), \(\fq\) is a prime ideal in \(B\)
+    and \(\fp=\fq\cap A\), then \(BA_{\fp}\) is integral over \(A_{\fp}\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Consider \(b/t\) where \(b\in B\) and \(t\in A\setminus\fq\). There are \(a_0,\dots,a_{m-1}\in A\) with
+    \(b^m+\sum a_ib^i=0\), but then
+    \begin{equation*}
+    (b/t)^m+\sum(a_i/t^{m-i})(b/t)^i=0
+    \end{equation*}
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(A\subset B\) are domains, \(B\) is integral over \(A\), \(\fp\subset A\) is a prime ideal
+    and \(\fq_1\subseteq \fq_2\) are prime ideals in \(B\) lying over \(P\). Then \(\fq_1=\fq_2\)
+    #+END_lemma
+
+    #+ATTR_LATEX: :options [Lying Over Theorem]
+    #+BEGIN_theorem
+    Suppose \(A\subseteq B\) are domains, \(B\) is integral over \(A\) and \(\fp\) is a prime ideal of \(A\).
+    There is a prime ideal \(\fq\) of \(B\) s.t. \(A\cap\fq=\fp\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    Suppose \(A\) was a local ring then \(\fp\) is the unique maximal ideal of \(A\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Chevalley]
+    #+BEGIN_theorem
+    Suppose \(A\) is a subring of a field \(K\) and \(\fp\subseteq A\) is a prime ideal. Then there is a
+    valuation ring \(\calo\) of \(K\) with \(A\cap\fm_{\calo}=\fp\)
+    #+END_theorem
+
+
+
+    let \(A\subseteq B\) be rings, and suppose \(B\) is integral over \(A\). Let \(\fp\) be a prime ideal
+    of \(A\). Then there is a prime ideal \(\fq\) of \(B\) that lies over \(\fp\). Moreover, for each
+    such \(\fq\) the ideal \(\fp\) is maximal iff \(\fq\) is maximal.
+
+    Domain \(A\) is *integrally closed* if it is integrally closed in its field of fractions.
+
+    Given a domain \(A\) with fraction field \(K\), and a prime ideal \(\fp\) of \(A\) we let
+    \begin{equation*}
+    A_{\fp}:=\{\frac{x}{y}\in K:x,y\in A,y\notin\fp\}
+    \end{equation*}
+    be the localization of \(A\) w.r.t. \(\fp\). \(A_{\fp}\) is a local domain with the maximal
+    ideal \(\fp A_{\fp}\) and that this maximal ideal lies over \(\fp\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Given local rings \(A,B\), we say \(B\) *dominates* \(A\) (or that \(B\) *lies over* \(A\))
+    if \(A\subseteq B\) and \(\fm_A\subseteq\fm_B\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(A\) be a local subring of the field \(K\). Consider the class of all local subrings
+    of \(K\) that dominate \(A\), partially ordered by domination. Any maximal element of this class
+    is a valuation ring of \(K\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(A\) be a local subring of a field \(K\). The integral closure of \(A\) in \(K\) is the
+    intersection of all valuation rings of \(K\) that dominate \(A\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(A\) be a local domain integrally closed in \(K=\Frac(A)\), and let \(L\) be a normal field
+    extension of \(K\). Let \(B\) be the integral closure of \(A\) in \(L\). Then given any maximal
+    ideals \(\fn\) and \(\fn'\) of \(B\) there exists \(\sigma\in\Aut(L/K)\) s.t. \(\sigma(\fn)=\fn'\)
+    #+END_proposition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(A\) be a valuation ring of the field \(K\), and let \(L\supseteq K\) be an algebraic field
+    extension, and let \(B\) be the integral closure of \(A\) in \(L\). Then every valuaton ring
+    of \(L\) dominating \(A\) is of the form \(B_{\fn}\) for some maximal ideal \(\fn\subseteq B\)
+    #+END_proposition
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    With the same assumption as in the proposition, we have a bijection \(\fn\mapsto B_{\fn}\) from the set of
+    maximal ideals in \(B\) onto the set of valuation rings of \(L\) dominating \(A\). If in
+    addition \(L\) is a normal field extension of \(K\) then for any valuation rings \(V,V'\)
+    of \(L\) dominating \(A\) there exists \(\sigma\in\Aut(L/K)\) s.t. \(\sigma(V)=V'\)
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \(A\) be a valuation ring of \(K\), and \(C\) be a valuation ring of \(K^{\alg}\)
+    dominating \(A\). Then any valued field embedding \((K,A)\to(L,B)\) with algebraically
+    closed \(L\) extends to an embedding \((K^{\alg},C)\to(L,B)\)
+    #+END_corollary
+** Extensions of Valued Fields
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \((K,A)\subseteq(L,B)\) valued fields, \(\bk_A\subseteq\bk_B\) and \(\Gamma_A\subseteq\Gamma_B\),
+    \(b_1,\dots,b_n\in B\), \(\barb_1,\dots,\barb_n\) are \(\bk_A\)-linear
+    independent, \(c_1,\dots,c_m\in L\), \(v(c_1),\dots,v(c_m)\) are in different cosets of \(\Gamma_A\), then
+    \begin{equation*}
+    (b_i,c_j)_{i,j}
+    \end{equation*}
+    are \(\bk\)-linearly independent
+    #+END_proposition
+
+    #+BEGIN_proof
+    first show
+    \(a_1,\dots,a_n\in\bk\Rightarrow v(a_1b_1+\dots+a_nb_n)=\min_i\{v(a_i)\}\)
+    Pick \(a_i\) s.t. \(v(a_i)\) is the smallest.
+    divide by \(a_i\), we may assume \(v(a_i)>0\)
+
+    \begin{equation*}
+    \ove{\sum_ia_ib_i}=\sum\bara_i\barb_i\neq 0\Rightarrow v(\sum a_ib_i)=0
+    \end{equation*}
+
+    Next we show \(\forall a_{ij}\in k\), \(v(\sum a_{ij}b_ic_j)=\min_{ij}\{v(a_{ij}+v(c_j))\}\)
+
+    For each \(j\), \(v(\sum_ia_{ij}b_ic_j)=v(c_j)+v(\sum_ia_{ij}b_i)\), \(v(\sum_ia_{ij}b_i)\in\Gamma_A\), therefore
+    \(v(\sum_{ij}a_{ij}b_ic_j)=\min_{ij}\{v(a_{ij}+v(c_j))\}\)
+
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    \((K,A)\subseteq(L,B)\) valued fields
+    \begin{equation*}
+    [L:K]\ge[k_B:k_A][\Gamma_B:\Gamma_A]
+    \end{equation*}
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \((K,A)\) valued field, \(L=K(x)\), \(x\) transcendental. Then there is a unique \(B\subseteq L\)
+    valuation ring over \(A\) s.t. \(x\in B\), \(\barx\) transcendental over \(k_A\).
+    Moreover, \(k_B=k_A(\barx)\), \(\Gamma_B=\Gamma_A\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    It suffices to show the existence
+
+    \(1,\barx,\barx^2,\dots\) linearly independent over \(k_A\), \(v(\sum a_ix^i)=\min_iv(a_i)\)
+
+    Define \(v:k[x]\setminus\{0\}\to\Gamma_A\) s.t. \(v(f_0+f_1x+\dots+f_nx^n)=\min_iv_A(f_i)\)
+
+    NTS: \(v\) is a valuation
+
+    \(v(f+g)\ge\min\{v(f),v(g)\}\)
+
+    \(f=\sum f_ix^i\), \(g=\sum g_ix^i\)
+
+    \(fg=\sum_n(\sum_{i+j=n}f_ig_j)x^n\), let \(i_0\) minimal s.t. \(v(f)=v(f_{i_0})\), \(j_0\) be minimal
+    s.t. \(v(g)=v(g_{j_0})\), let \(n_0=i_0+j_0\)
+    \begin{equation*}
+    \sum_{i+j=n_0}f_ig_j=f_{i_0}g_{j_0}+\sum f_ig_j
+    \end{equation*}
+    \(v(\sum_{i+j=n}f_ig_j)\ge\min_{i+j=n}\{v(f_i)+v(g_j)\}\ge v(f)+v(g)\)
+    Therefore \(v(fg)=v(f)+v(g)\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(v:K^\times\to\Gamma\) valuation, \(L=K(x)\) transcendental, let \(\Gamma'\supseteq\Gamma\) ordered abelian group. If there
+    is \(\delta\in\Gamma'\) s.t. \(n\delta\notin\Gamma\) for all \(n\ge 1\), then \(v\) extends uniquely to a
+    valuation \(w:L^\times\to\Gamma'\) on \(L\) s.t. \(w(x)=\delta\), \(w(L^\times)=\Gamma+\Z\delta\), \(k_v=k_w\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(w(\sum c_ix^i)=\min_i\{v(c_i)+i\delta\}\)
+    #+END_proof
+** Algebraically Closed Valued Fields
+    in 1-sorted language, a *valued field* is \((K,\calo)\) where \(K\) is a valuation ring of \(K\), in
+    this case, \(\call_p=\{+,\cdot,-,0,1,P\}\), \(P\) is an additional predicate symbol to be interpretated as
+    a valuation ring
+
+    \(\ACVF\): \(K\) is a field that is algebraically closed, \(P\) is a predicate for a (proper) valuation
+    subring of \(K\)
+    \begin{equation*}
+    \forall x(x\neq 0\to x\in P\vee x^{-1}\in P)\wedge\exists x(\neg x\in P)
+    \end{equation*}
+
+    in 3-sorted language, \((K,k,\Gamma_\infty)\), \(K\) valued field sort, \(k\) residue field sort, \(\Gamma_\infty\)
+    valued group sort
+
+    \(K,k\) is in \(\call_{rings}=\{+,-,\cdot,0,1\}\), \(\Gamma_\infty\) is in \(\call_{\OAG}=\{​+,-,<,0,\infty\}\)
+
+    with two addition function symbol
+    \begin{align*}
+    &v:K\to\Gamma_\infty\\
+    &res:K^2\to k
+    \end{align*}
+    1. \(K\) is an algebraically closed field
+    2. \(v\) is a nontrivial surjective valuation, \(v(0)=\infty\)
+    3.
+       \begin{equation*}
+       \res(a,b)=
+       \begin{cases}
+       \ove{a/b}&v(a)\ge v(b)\\
+       0&\text{otherwise}
+       \end{cases}
+       \end{equation*}
+
+
+    In terms of definability, the two languages are the same
+
+    We study \(\ACVF\) in the 1-sorted language. But \(\ACVF\) doesn't have QE in the 1-sorted
+    language
+    \begin{equation*}
+    v(x)\le v(y)\Leftrightarrow\exists z\in P(x\cdot z=y)
+    \end{equation*}
+    Therefore we need  a new language
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(A\) be a domain, \(\mid\) is a binary relation on \(A\), \(\mid\) is a *valuation
+    divisibility* relation if
+    1. \(0\nmid1\)
+    2. \(x\abs{}y\wedge y\abs{}z\Rightarrow x\abs{}z\)
+    3. \(x\mid y\wedge x\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(\call_{div}=\{0,1,+,-,\cdot,\mid\}\) be the language of ring with \(\mid\). We use \(\ACVF\) to denote the
+    theory \(K\) algebraically closed, \(\mid\) is a nontrivial valuation divisibility
+    #+END_definition
+
+    Our qe strategy
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    TFAE
+    1. \(T\) has QE
+    2. \(\forall M,N\vDash T\), \(N\) \(\abs{M}^+\)-saturated. Given any \(L\)-embedding
+       of \(i:A\hookrightarrow N\), \(A\subseteq M\), \(L\)-substructure, then \(i\) can be extended to an embedding
+       of \(M\hookrightarrow N\)
+    #+END_proposition
+
+    This is why \(\ACVF\) has no QE in \(\call_P\). Consider
+    \begin{align*}
+    &K\vDash\ACVF,\tchar(K)=0,\tchar(k_K)=0\\
+    &L\vDash\ACVF,\tchar(L)=0,\tchar(k_L)=p
+    \end{align*}

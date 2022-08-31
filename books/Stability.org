@@ -6,7 +6,8 @@
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
 #+LATEX_HEADER: \DeclareMathOperator{\GP}{\tf{GP}}
-
+#+LATEX_HEADER: \DeclareMathOperator{\rmod}{R-Mod}
+#+LATEX_HEADER: \DeclareMathOperator{\lrmod}{\mathcal{L}_{\rmod}}
 * Preface
     A combination of various notes from [[cite:&PillayNoteStability]] [[cite:&ChernNoteStability]]
     [[cite:&tent2012course]] [[cite:&DriesNoteStability]]
@@ -2641,6 +2642,147 @@
 
     #+END_proof
 
+* Example of stable groups
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A group \(G\) is *stable* if it is definable in a stable group, i.e., for some stable \(T\) and
+    some \(\calm\vDash T\) we have: the underlying set \(G\) is a definable subset of \(M^n\) for some \(n\in\omega\)
+    and the group operation \(\cdot:G(M^N)\times G(M^n)\to G(M^n)\) is a definable function. For simplicity of
+    notation we assume that \(n=1\), \(G(M)=M\) and that \(G\), \(\cdot\) are \(\emptyset\)-definable
+    #+END_definition
+** Quantifier elimination and stability in modules
+
+    Also check [[http://people.dm.unipi.it/berardu/Didattica/Modelli/2014SNS-modelli/Elaborati-studenti/model_theory_module.pdf][this]]
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(R\) be a (possibly non-commutative) ring with 1. An *\(R\)-module* \(\calm\) is a structure in
+    the language \(\call_{rmod}=\{0,+,-,(r)_{r\in R}\}\) with 0 a constant, +, - binary function symbols,
+    and \(r\) unary function symbols satisfying
+    1. \((M,+,-,0)\) is an abelian group
+    2. \(\forall x,y\;r(x+y)=r(x)+r(y)\)
+    3. \(\forall x\;(r+s)(x)=r(x)+s(x)\)
+    4. \(\forall x\;(rs)(x)=r(s(x))\)
+    5. \(\forall x\;1(x)=x\)
+    for all \(r,s\in R\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. An *equation* is an \(\call_{\rmod}\)-formula \(\phi(\barx)\) of the form \(r_1x_1+\dots+r_mx_m=0\)
+    2. A *positive primitive* formula (a *pp*-formula) is of the form
+       \begin{equation*}
+       \phi(\barx)=\exists\bary(\phi_1(\barx,\bary)\wedge\dots\wedge\phi_n(\barx,\bary))
+       \end{equation*}
+       where \(\phi_i(\barx,\bary)\) are equations
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Baur-Monk]
+    #+BEGIN_theorem
+    label:C5.1.3
+    For every ring \(R\) and any \(R\)-module \(\calm\), every \(\call_{\rmod}\)-formula is equivalent
+    (modulo the theory of \(M\)) to a Boolean combination of pp-formulas
+    #+END_theorem
+
+    #+BEGIN_remark
+    label:C5.1.4
+    1. The class of pp-formula is closed under \wedge
+    2. A pp-formula \(\phi(x_1,\dots,x_n)\) defines a subgroup \(\phi(M^n)\) of the product group \(M^n\) as
+       1. \(\calm\vDash\phi(0,\dots,0)\)
+       2. \(\calm\vDash\phi(x)\wedge\phi(y)\to\phi(x-y)\)
+    3. if \(\phi(x,y)\) is a pp-formula and \(a\in M^{\abs{y}}\), then \(\phi(M,a)\) is either empty or a
+       coset of \(\phi(M,0)\) as \(\calm\vDash\phi(x,a)\to(\phi(y,0)\leftrightarrow\phi(x+y,a))\)
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Every theory of an \(R\)-module is stable (hence, by compactness, the common theory of
+    all \(R\)-modules is stable). In particular, every abelian group \(\calg=(G,+,-,0)\) is stable (as a
+    \(\Z\)-module)
+    #+END_corollary
+
+    #+BEGIN_proof
+    It is enough to show that pp-formulas are stable. By ref:C5.1.4 (3), if \(\phi(x,y)\) is a
+    pp-formula, then for any \(a,b\in M^{\abs{y}}\) we have that \(\phi(M,a)\) and \(\phi(M,b)\) are either
+    equal or disjoint.
+    #+END_proof
+
+    Fix a group \(G\). A subset \(X\) of \(G\) is *\(G\)-big* if a finite number of translations
+    of \(X\) cover \(G\), else we say that \(X\) is \(G\)-small
+
+    #+ATTR_LATEX: :options [B.H. Neumann lemma]
+    #+BEGIN_fact
+    label:C5.1.6
+    Let \(H_i\) denote subgroups of some abelian group \(G\). If \(H_0+a_0\subseteq\bigcup_{i=1}^n(H_i+a_i)\)
+    and \(H_0/(H_0\cap H_i)\) is infinite for \(i>k\), then \(H_0+a_0\subseteq\bigcup_{i=1}^k(H_i+a_i)\)
+    #+END_fact
+
+    #+BEGIN_proof
+    Translating everything by \(-a_0\) and taking the intersection with \(H_0\), the hypothesis
+    reads \(H_0=\bigcup_{i=1}^n(H_i+a_i)\) with \(H_i\subseteq H_0\) and \(H_i\) is \(H_0\)-small for \(i>k\). We must
+    prove that we can throw away the small set.
+
+    Let \(C=H_0\setminus\bigcup_{i=1}^k(H_i+a_i)\). If \(C\) is empty we have finished. If it is not then \(C\) is
+    necessarily \(H_0\)-big. In fact \(H_1,\dots,H_k\) are \(H_0\)-big and \(H_1\cap\dots\cap H_k\) is \(H_0\)-big.
+    Let \(c\in C\), then \((H_1\cap\dots\cap H_k)+c\) is \(G\)-big and is contained in \(C\),
+    because \((\bigcap_{j=1}^kH_j+c)\cap(H_i+a_i)\subset(H_i+c)\cap(H_i+a_i)=\emptyset\) for \(i\le k\). But by
+    hypothesis \(C\subset\bigcup_{i=k+1}^n(H_i+a_i)\) and the latter is a finite union of small set, so it can't
+    contain a big set
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:C5.1.7
+    Let \(A_i\), \(i\le k\) be any sets. If \(A_0\) is finite, then \(A_0\subseteq\bigcup_{i=1}^kA_i\) iff
+    \begin{equation*}
+    \sum_{\Delta\subseteq\{1,\dots,k\}}(-1)^{\abs{\Delta}}\abs{A_0\cap\bigcap_{i\in\Delta}A_i}=0
+    \end{equation*}
+    #+END_lemma
+
+    #+BEGIN_proof
+    inclusion-exclusion principle
+    #+END_proof
+
+    #+ATTR_LATEX: :options [Proof of Theorem \ref{C5.1.3}]
+    #+BEGIN_proof
+    It is enough to show that if \(\psi(x,y)\) is equivalent to a Boolean combination of pp-formlas
+    in \(M\), then so is \(\forall x\psi\)
+
+    As pp-formulas are closed under conjunction, by propositional calculus \psi is equivalent to a
+    conjunction of formulas of the form \(\phi_0(x,y)\to\bigvee_{i=1}^n\phi_i(x,y)\) where \(\phi_i(x,y)\) are
+    pp-formulas
+
+    We may assume that \psi itself is of this form
+
+    Let \(H_i:=\phi_i(M,0)\), then \(\phi_i(M,y)\) is either empty or a coset of \(H_i\) for each \(y\).
+
+    Possibly re-enumerating \(\phi_i\), we may assume that \(H_0/(H_0\cap H_i)\) is finite for \(i=1,\dots,k\) and
+    infinite for \(i=k+1,\dots,n\) for some \(0\le k\le n\)
+
+    By Neumann's lemma, \(M\vDash\forall x\psi\leftrightarrow\forall x(\phi_0(x,y)\to\phi_1(x,y)\vee\dots\vee\phi_k(x,y))\)
+
+    Let \(A_i:=\phi_i(M,y)/(H_0\cap\dots\cap H_k)\)
+
+    Applying Lemma ref:C5.1.7, \(\phi_0(M,y)\cap\bigcap_{i\in\Delta}\phi_i(M,y)\) is empty or consists of \(N_\Delta\) cosets
+    of \(H_0\cap\dots\cap H_k\), where
+    \begin{equation*}
+    N_\Delta=\abs{\left( H_0\cap\bigcap_{i\in\Delta}H_i \right)/(H_0\cap\dots\cap H_k)}
+    \end{equation*}
+    Hence
+    \begin{equation*}
+    M\vDash\forall x\psi\leftrightarrow\sum_{\Delta\in\caln}(-1)^{\abs{\Delta}}N_\Delta=0
+    \end{equation*}
+    where \(\caln=\{\Delta\subseteq\{1,\dots,k\}:\exists x(\phi_0(x,y)\wedge\bigwedge_{i\in\Delta}\phi_i(x,y))\}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    1. We say that \(T\) is \kappa-stable if \(f_T(\kappa)=\kappa\)
+    2. If \(T\) is countable and stable, then one of the following holds
+       1. \(T\) is \kappa-stable for all infinite \kappa
+       2. \(T\) is \kappa-stable for all \(\kappa\ge 2^{\aleph_0}\) (superstable)
+       3. \(T\) is strictly stable
+    #+END_definition
+** Algebraic groups
 
 * TODO Problems
     | [[Problem1]] | [[Problem2]] | [[Problem3]] | [[Problem4]] | [[Problem5]]  |
