@@ -61,7 +61,8 @@
   :bind (("C-s" . swiper)
          ("C-x b" . ivy-switch-buffer)
          :map org-mode-map
-         ("M-." . counsel-org-goto)))
+         ("M-." . counsel-org-goto)
+         ("C-u C-SPC" . org-mark-ring-goto)))
 
 
 (use-package smartparens
@@ -110,6 +111,19 @@
  ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
+
+;; ;; Make verbatim with highlight text background.
+;; (add-to-list 'org-emphasis-alist
+;;            '("=" (:background "#fef7ca")))
+;; ;; Make deletion(obsolote) text foreground with dark gray.
+;; (add-to-list 'org-emphasis-alist
+;;            '("+" (:foreground "dark gray"
+;;                   :strike-through t)))
+;; ;; Make code style around with box.
+;; (add-to-list 'org-emphasis-alist
+;;            '("~" (:box (:line-width 1
+;;                         :color "grey75"
+;;                         :style released-button))))
 
 (use-package auctex
   :init
@@ -183,7 +197,7 @@ parent."
 (setq org-element-use-cache nil)
 (add-hook 'org-mode-hook '(lambda () (setq fill-column 100)))
 (add-hook 'org-mode-hook 'auto-fill-mode)
-(add-hook 'org-mode-hook 'valign-mode)
+;;(add-hook 'org-mode-hook 'valign-mode)
 ;;(setq org-highlight-latex-and-related '(native script entities))
 ;;very bad perfomance
 (setq org-highlight-latex-and-related '(entities))
@@ -192,8 +206,11 @@ parent."
 ;;(setq org-highlight-latex-and-related '(latex script entities))
 (require 'org-indent)
 (org-indent-mode -1)
-  (setq org-hide-emphasis-markers t)
+(setq org-hide-emphasis-markers t)
 (setq org-startup-indented nil)
+(setq org-latex-listings 'minted
+      ;;org-latex-packages-alist '(("" "minted"))
+      )
 (setq org-latex-pdf-process
       (quote
        ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f" "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
@@ -274,7 +291,12 @@ parent."
         bibtex-autokey-titlewords 2
         bibtex-autokey-titlewords-stretch 1
         bibtex-autokey-titleword-length 5
-        reftex-default-bibliography '("~/notes/references.bib"))
+        reftex-default-bibliography '("~/notes/references.bib")
+        ;; https://github.com/jkitchin/org-ref/issues/974
+        org-ref-activate-ref-links nil
+        org-ref-activate-cite-links nil
+        org-ref-validate-bibliography nil
+        )
   (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
   (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
   (define-key org-mode-map (kbd "s-[") 'org-ref-insert-link-hydra/body)
@@ -287,7 +309,7 @@ parent."
 
 
 (require 'org-ref)
-
+;;(add-hook 'org-mode-hook #'org-modern-mode)
 (use-package mixed-pitch
   :hook
   ;; If you want it in all text modes:
@@ -431,7 +453,7 @@ parent."
 (defun svg-font-lock-progress_percent (value)
   (svg-image (svg-lib-concat
               (svg-lib-progress-bar (/ (string-to-number value) 100.0)
-                                nil :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
+                                    nil :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
               (svg-lib-tag (concat value "%")
                            nil :stroke 0 :margin 0)) :ascent 'center))
 
@@ -439,11 +461,11 @@ parent."
   (let* ((seq (mapcar #'string-to-number (split-string value "/")))
          (count (float (car seq)))
          (total (float (cadr seq))))
-  (svg-image (svg-lib-concat
-              (svg-lib-progress-bar (/ count total) nil
-                                :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
-              (svg-lib-tag value nil
-                           :stroke 0 :margin 0)) :ascent 'center)))
+    (svg-image (svg-lib-concat
+                (svg-lib-progress-bar (/ count total) nil
+                                      :margin 0 :stroke 2 :radius 3 :padding 2 :width 12)
+                (svg-lib-tag value nil
+                             :stroke 0 :margin 0)) :ascent 'center)))
 
 ;; Activate
 (push 'display font-lock-extra-managed-props)
@@ -458,3 +480,103 @@ parent."
 (use-package rime
   :custom
   (default-input-method "rime"))
+
+
+;; (use-package leetcode
+;;   :custom
+;;   (setq leetcode-prefer-language "c++"
+;;         leetcode-prefer-sql "mysql"
+;;         leetcode-save-solutions t
+;;         leetcode-directory "~/miscellaneous/leetcode"))
+
+(use-package shrface
+  :defer t
+  :config
+  (shrface-basic)
+  (shrface-trial)
+  (shrface-default-keybindings) ; setup default keybindings
+  (setq shrface-href-versatile t))
+
+(require 'xterm-color)
+(defun my-set-tab-mode ()
+  (when (and (stringp buffer-file-name)
+             (string-match "\\.log\\'" buffer-file-name))
+    (xterm-color-colorize-buffer)))
+
+(add-hook 'find-file-hook 'my-set-tab-mode)
+
+
+(use-package eww
+  :defer t
+  :init
+  (add-hook 'eww-after-render-hook #'shrface-mode)
+  :config
+  (require 'shrface))
+
+(use-package nov
+  :defer t
+  :init
+  (add-hook 'nov-mode-hook #'shrface-mode)
+  :config
+  (require 'shrface)
+  (setq nov-shr-rendering-functions '((img . nov-render-img) (title . nov-render-title)))
+  (setq nov-shr-rendering-functions (append nov-shr-rendering-functions shr-external-rendering-functions)))
+
+
+;; BLOG THINGS
+(require 'ox-publish)
+
+(setq org-publish-project-alist
+      `(("pages"
+         :base-directory "~/miscellaneous/wugouzi.github.io/org"
+         :base-extension "org"
+         :recursive nil
+         :publishing-directory "~/miscellaneous/wugouzi.github.io/"
+         :publishing-function org-html-publish-to-html
+         ;;:auto-sitemap t
+         ;;:sitemap-filename "sitemap.org"
+         :html-doctype "html5"
+         :html-html5-fancy t
+         :html-preamble "<nav>
+  <a href=\"/\">&lt; Home</a>
+</nav>
+<div id=\"updated\">Updated: %C</div>"
+         :html-head "<link rel=\"stylesheet\" href=\"/style.css\" type=\"text/css\"/>"
+         )
+        ("blogs"
+         :base-directory "~/miscellaneous/wugouzi.github.io/org/blog/"
+         :base-extension "org"
+         :recursive t
+         :publishing-directory "~/miscellaneous/wugouzi.github.io/html/"
+         :publishing-function org-html-publish-to-html
+         ;;:auto-sitemap t
+         ;;:sitemap-filename "sitemap.org"
+         :html-doctype "html5"
+         :html-html5-fancy t
+         :html-preamble "<nav>
+  <a href=\"/\">&lt; Home</a>
+</nav>
+<div id=\"updated\">Updated: %C</div>"
+         :html-head "<link rel=\"stylesheet\" href=\"/style.css\" type=\"text/css\"/>"
+         )
+
+        ("static"
+         :base-directory "~/miscellaneous/wugouzi.github.io/org"
+         :base-extension "css\\|txt\\|jpg\\|gif\\|png"
+         :recursive t
+         :publishing-directory  "~/miscellaneous/wugouzi.github.io/html/"
+         :publishing-function org-publish-attachment)
+
+        ("wugouzi.github.io" :components ("pages" "blogs" "static"))))
+
+
+(defun compileandrun()
+  (interactive)
+  (let* ((src (file-name-nondirectory (buffer-file-name)))
+         ;;;(exe (file-name-sans-extension src))
+         (exe "test"))
+    (compile (concat "g++ " src " -o " exe " && ./" exe))))
+
+
+(add-hook 'c-mode-common-hook 'google-set-c-style)
+(add-hook 'c-mode-common-hook 'google-make-newline-indent)

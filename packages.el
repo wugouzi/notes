@@ -66,13 +66,22 @@
 (package! valign)
 (package! svg-lib
   :recipe (:host github :repo "rougier/svg-lib"))
-(package! nano-emacs
-  :recipe (:host github :repo "rougier/nano-emacs"))
+(package! nano-theme
+  :recipe (:host github :repo "rougier/nano-theme"))
 (package! rime)
 (package! ivy-bibtex)
 (package! with-editor)
 (package! ghub)
-(package! tintin-mode
-  :recipe (:host github :repo "matthewrsilver/tintin-mode"))
-(package! outshine)
+;; (package! tintin-mode
+;;   :recipe (:host github :repo "matthewrsilver/tintin-mode"))
+;; (package! outshine)
 (package! navi)
+;; (package! org-modern
+;;   :recipe (:host github :repo "minad/org-modern"))
+;; (package! leetcode)
+;; (package! shrface)
+(package! riscv-mode)
+(package! git-timemachine)
+;; (package! realgud-lldb)
+(package! xterm-color)
+(package! google-c-style)

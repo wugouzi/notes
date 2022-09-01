@@ -3,7 +3,11 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(ghub with-editor)))
+ '(custom-safe-themes
+   '("f0eb51d80f73b247eb03ab216f94e9f86177863fb7e48b44aacaddbfe3357cf1" default))
+ '(org-agenda-files '("~/notes/course/Computability/report.org"))
+ '(package-selected-packages '(ghub with-editor))
+ '(warning-suppress-types '(((flycheck syntax-checker)) ((flycheck syntax-checker)))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -20,5 +24,6 @@
  '(org-level-5 ((t (:bold t :weight bold :foreground "#bc5cba"))))
  '(org-level-6 ((t (:bold t :weight bold :foreground "#9fbbf8"))))
  '(org-level-7 ((t (:bold t :weight bold :foreground "#d292d1"))))
- '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc")))))
+ '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
+ '(variable-pitch ((t (:family "Source Han Serif SC" :height 120)))))
 (put 'customize-group 'disabled nil)
