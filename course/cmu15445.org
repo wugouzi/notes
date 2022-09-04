@@ -1,4 +1,4 @@
-#+title: Notes
+#+title: 15445
 #+EXPORT_FILE_NAME: ../latex/15445/15445.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
@@ -1490,6 +1490,172 @@ SELECT R.id, S.cdate
     - assume hash distributes records evenly. Use a "fudge factor" \(f>1\) for that: we
       need \(B\cdot\sqrt{fN}\)
 
-      What happens if we do not have enough memory to fit the entire hash table?
+    What happens if we do not have enough memory to fit the entire hash table?
 
-      we do not want to let the buffer pool manager swap out the hash table pages at random
+    we do not want to let the buffer pool manager swap out the hash table pages at random
+
+    Hash join when tables do not fit in memory
+    - Build Phase: Hash both tables on the join attribute into partitions
+    - Probe Phase: Compares tuples in corresponding partitions for each table
+
+    Cost: \(3(M+N)\)
+
+    partition: \(2(M+N)\)
+
+    probing \(M+N\)
+
+    | algorithm               | IO cost           |
+    | simple nested loop join | \(M+(m\cdot N)\)      |
+    | block nested loop join  | \(M+(M\cdot N)\)      |
+    | index nested loop join  | \(M+(M\cdot C)\)      |
+    | Sort-Merge join         | \(M+N+\)sort cost |
+    | hash join               | \(3(M+N)\)           |
+* Query execution 1
+** Processing Models
+    A DBMS's *processing model* defines how the system executes a query plan
+    - different trade-offs for different workloads
+*** Iterator Model
+    Each query plan operator implements a ~next()~ function
+    - on each invocation, the operator returns either a single tuple or a ~null~ marker if there are
+      no more tuples
+    - the operator implements a loop that call ~next()~ on its children to retrieve their tuples and
+      then process them
+    Also called *volcano* or *pipeline* model
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/24.png]]
+
+    This is used in almost every DBMS. Allows for tuple *pipelining*
+
+    some operators must block until their children emit all their tuples
+    - joins, subqueries, order by
+
+    output control works easily with this approach
+*** Materialization Model
+    Each operator processes its input all at once and then emits its output all at once
+    - the operator "materializes" its output as a single result
+    - the BDMS can push down hints (e.g. ~LIMIT~) to avoid scanning too many tuples
+    - can send either a materialized row or a single column
+
+    The output can be either whole tuples (NSM) or subsets of columns (DSM)
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/25.png]]
+
+    better for OLTP workloads because queries only access a small number of tuples at a time
+    - lower execution / coordinaten overhead
+    - fewer function calls
+
+    not good for OLAP queires with large intermediate results
+*** Vectorized/Batch Model
+    like the iterator model where each operator implements a ~next()~ function, but
+
+    each operator emits a *batch* of tuples instead of single tuple
+    - the operator's internal loop processes multiple tuples at a time
+    - the size of the batch can vary based on hardware or query properties
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/26.png]]
+    Ideal for OLAP queries because it greatly reduces the number of invocations per operator
+
+    Allows for operators to more easily use vectorized (SIMD) instructions to process batches of
+    tuples
+
+    *Plan processing direction*
+    * top-to-bottom
+      - start with the root and "pull" data up from its children
+      - tuples are always passed with function calls
+    * bottom-to-top
+      - start with leaf nodes and push data to their parents
+      - allows for tighter control of caches/registers in pipelines
+** Access Methods
+    An *access method* is the way that the DBMS accesses the data stored in a table
+    - not defined in relational algebra
+*** Sequential scan
+    for each page in the table
+    - retrieve it from the buffer pool
+    - iterate over each tuple and check whether to include it
+
+    for page in table.pages:
+        for t in page.tuples:
+            if evalPred(t)
+                // do something
+
+    The DBMS maintains an internal *cursor* that tracks the last page/slot it examined
+
+    *optimizations*:
+    - prefetching
+    - buffer pool bypass
+    - parallelization
+    - heap clustering
+    - zone maps
+    - late meterialization
+
+    *zone maps*:
+    pre-computed aggregates for the attributes values in a page. DBMS checks the zone map first to
+    decide whether it wants to access the page
+
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/27.png]]
+
+    *late meterialization*:
+    DSM DBMSs can delay stitching together tuples until the upper parts of the query plan
+
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/28.png]]
+*** Index scan
+    The DBMS picks an index to find the tuples that the query needs
+
+    which index to use depends on
+    - what attributes the index contains
+    - what attributes the query references
+    - the attribute's value domains
+    - predicate composition
+    - whether the index has unique or non-unique keys
+
+    suppose that we have a single table with 100 tuples and two indexes: ~age~, ~dept~
+    #+begin_src sql
+SELECT * FROM students
+ WHERE age < 30
+   AND dept = 'CS'
+   AND country = 'US'
+    #+end_src
+
+    scenario 1: there are 99 people under the age of 30 but only 2 people in the CS department
+
+    scenario 2: there are 99 people in the CS department but only 2 people under the age of 30
+
+    if there are multiple indexes that the DBMS can use for a query:
+    - compute sets of Record IDs using each matching index
+    - Combine these sets based on the query's predicates (union vs. intersect)
+    - retrieve the records and apply any remaining predicates
+
+    Postgres calls this *Bitmap Scan*
+
+    With an index on ~age~ and an index on ~dept~
+    - we can retrieve the Record IDs satisfying ~age<30~ using the first
+    - then retrieve the Record IDs satisfying ~dept='CS'~ using the second
+    - take their intersection
+    - retrieve records and check ~country='US'~
+
+    set intersection can be done with bitmaps, hash tables, or Bloom filters
+** Modification Queries
+    Operators that modify the database (~INSERT~, ~UPDATE~, ~DELETE~) are responsible for checking the
+    constraints and updating indexes
+
+    ~UPDATE/DELETE~:
+    - child operators pass Record IDs for the target tuples
+    - must keep track of previously seen tuples
+
+    ~INSERT~:
+    - choice 1: materialize tuples inside of the operator
+    - choice 2: operator inserts any tuple passed in from child operators
+** Expression Evaluation
