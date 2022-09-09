@@ -3,6 +3,59 @@
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
+* SOME NOTES FROM COMPUTER NETWORKING TOP-DOWN
+* Transport Layer
+** Transport-layer services
+    two transport protocols available to internet applications: TCP, UDP
+
+    network layer: logical communication between hosts
+
+    transport layer: logical communication between processes
+
+    TCP: transmission control protocol
+    - reliable, in-order dilivery
+    - congestion control
+    - flow control
+    - connection setup
+
+    UDP: user datagram protocol
+    - unreliable, unordered delivery
+    - no-frills extension of "best-effort" IP
+** Multiplexing and demultiplexing
+    use port
+** Connectionless transport: UDP
+    connectionless:
+    - no handshaking between UDP sender, receiver
+    - each UDP segment handled independently of others
+
+    Why is there a UDP
+    - no connection establishment (which can add RTT delay)
+    - simple: no connection state at sender, receiver
+    - small header size
+    - no congestion control
+      - UDP can blast away as fast as desired
+      - can function in the face of congestion
+
+    UDP use:
+    * streaming
+    * DNS
+    * SNMP
+    * HTTP/3
+
+    If reliable transfer needed over UDP
+    * add needed reliability at application layer
+    * add congestion control at application layer
+
+    checksum:
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/cs144/1.png]]
+** Principles of reliable data transfer
+** Connection-oriented transport: TCP
+** Principles of congestion control
+** TCP congestion control
+** Evolution of transport-layer functionality
 
 * TCP lab
 ** Receiver
@@ -10,4 +63,22 @@
     direction) over unreliable datagrams. Two parties participate in the TCP connection, and
     *each party* acts as both “sender” (of its own outgoing byte-stream) and “receiver” (of an
     incoming byte-stream) at the same time. The two parties are called the “endpoints” of the
-    connection, or the “peers.”
+    connection, or the "peers."
+
+    *acknowledgment* means, “What’s the index of the next byte that the receiver needs
+    so it can reassemble more of the ByteStream?” This tells the sender what bytes it
+    needs to send or resend.
+
+    *Flow control* means, “What range of indices is the receiver interested and willing to receive?”
+    (usually as a  function of its remaining capacity). This tells the sender how much it’s allowed
+    to send.
+** Sender
+    It will be your ~TCPSender~'s responsibility to:
+    * Keep track of the receiver’s window (processing incoming ~ackno~ s and ~window size~ s)
+    * Fill the window when possible, by reading from the ByteStream, creating new TCP segments
+      (including ~SYN~ and ~FIN~ flags if needed), and sending them. The sender should /keep sending
+      segments/ until either the window is full or the ByteStream is empty.
+    * Keep track of which segments have been sent but not yet acknowledged by the receiver - we call
+      these "outstanding" segments
+    * Re-send outstanding segments if enough time passes since they were sent, and they haven't been
+      acknowledged yet

@@ -1658,4 +1658,53 @@ SELECT * FROM students
     ~INSERT~:
     - choice 1: materialize tuples inside of the operator
     - choice 2: operator inserts any tuple passed in from child operators
+
+    Halloween Problem: anomaly where an update operation changes the physical location of a tuple,
+    which causes a scan operator to visit the tuple multiple times
 ** Expression Evaluation
+    The DBMS represents a ~WHERE~ clause as an *expression tree*
+
+    #+begin_src sql
+SELECT R.id, S.cdata
+  FROM R JOIN S
+    ON R.id = S.id
+ WHERE S.value > 100
+    #+end_src
+
+    The nodes in the tree represent different expression types:
+    - comparisons (~=~, ~<~, ~>~, ~!=~)
+    - conjunctions ~AND~, disjunction ~OR~
+    - arithmetic operators (~+~, ~-~, ~*~, ~/~, ~%~)
+    - constant values
+    - tuple attribute references
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/29.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/30.png]]
+* Query Execution 2
+    Parallel DBMSs
+    - resources are physically close to each other
+    - resources communicate over high-speed interconnect
+    - communication is assumed to be cheap and reliable
+
+    Distributed DBMSs
+    - resources can be far from each other
+    - resources communicate using slow interconnect
+    - communication cost and problems cannot be ignored
+** Process Models
+    A DBMS's *process model* defines how the system is architected to support concurrent requests from
+    a multi-user application
+
+    A *worker* is the DBMS component that is responsible for executing tasks on behalf of the client
+    and returning the results
+    1. Process per DBMS Worker
+    2. Process Pool
+    3. Thread per DBMS Worker
+** Execution Parallelism
+** I/O Parallelism
