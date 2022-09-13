@@ -1,0 +1,119 @@
+% Created 2022-09-12 Mon 19:33
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\makeindex
+\usepackage{minted}
+\author{wu}
+\date{\today}
+\title{6 824}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={6 824},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{map reduce}
+\label{sec:org236059c}
+
+\subsection{programming model}
+\label{sec:org45c4afd}
+the computation takes a set of \textbf{input} key/value pairs, and produces a set of \textbf{output} key/value
+pairs. The user of the MapReduce library expresses the computation as two functions: \textbf{Map} and
+\textbf{Reduce}
+
+\textbf{Map}, written by the user, takes an input pair and produces a set of \textbf{intermediate} key/value
+pairs. The MapReduce library groups together all intermediate values associated with the same
+intermediate key \(I\) and passes them to the \textbf{Reduce} function
+
+The \textbf{Reduce} function, also written by the user, accepts an intermediate key \(I\)  and a set of
+values for that key. It merges together these values to form a possibly smaller set of values.
+Typically just zero or one output value is produced per Reduce invocation.
+
+\subsubsection{example}
+\label{sec:orgbb4932d}
+\begin{minted}[]{python}
+map(String key, String value):
+  // key: document name
+  // value: document contents
+  for each word w in value:
+    EmitIntermediate(w, "1")
+
+reduce(String key, Iterator values):
+  // key: a word
+  // values: a list of counts
+  int result = 0;
+  for each v in values:
+    results += ParseInt(v)
+  Emit(AsString(result))
+\end{minted}
+The \texttt{map} function emits each word plus an associated count of occurrences. The \texttt{reduce} function
+sums together all counts emitted for a particular word
+
+\subsubsection{Types}
+\label{sec:org08c98b3}
+\begin{alignat*}{3}
+&\text{map}&&\texttt{(k1,v1)}&&\to\texttt{list(k2,v2)}\\
+&\text{reduce}\quad&&\texttt{(k2,list(v2))}&&\to\texttt{list(v2)}\\
+\end{alignat*}
+
+\subsubsection{More examples}
+\label{sec:org856baf5}
+\textbf{Distributed Grep}: the map function emits a line if it matches a supplied pattern. The reduce
+function is an identity function that just copies the supplied intermediate data to the output
+
+\textbf{Count of URL Access Frequency}: the map function processes logs of web page requests an outputs
+\(\la\texttt{URL,1}\ra\). The reduce function adds together all values for the same URL and emits
+a \(\la\texttt{URL,total count}\ra\) pair
+
+\textbf{Term-vector per Host}: A term vector summarizes the most important words that occur in a document
+ or a set of documents as a list of \(\la word,frequency\ra\) pairs. The map function emits a
+ \(\la\texttt{hostname,term vector}\ra\) pair for each input document. The reduce function is passed
+ all per-document term vectors for a given host. It add these term vectors together, throwing
+ away infrequent terms, and then emits a final \(\la\texttt{hostname,term vector}\ra\) pair
+
+\subsection{Implementation}
+\label{sec:org574dc79}
+\subsubsection{Execution Overview}
+\label{sec:org7b5f65f}
+The \emph{Map} invocations are distributed across multiple machines by automatically partitioning the
+input data into a set of \(M\) \emph{splits}. The input splits can be processed in parallel by
+different machines. \emph{Reduce} invocations are distributed by partitioning the intermediate key
+space into \(R\) pieces using a partitioning function (e.g., \(hash(key)\mod R\)). The number of
+partitions and the partitioning function are specified by the user
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../images/6.824/1.png}
+\label{}
+\end{figure}
+
+When the user program calls the \texttt{MapReduce} function, the following sequence of actions occurs
+\begin{enumerate}
+\item the MapReduce library in the user program first splits the input files into \(M\) pieces and
+starts up many copies of the program on a cluster of machines
+\item one of the copies of the program is special - the master. The rest are workers that are
+assigned work by the master. there are \(M\) map tasks and \(R\) reduce tasks to assign. The
+master picks idle workers and assigns each one a map task or a reduce task
+\item 
+\end{enumerate}
+\end{document}

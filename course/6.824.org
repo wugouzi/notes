@@ -1,0 +1,117 @@
+#+title: 6 824
+
+#+EXPORT_FILE_NAME: ../latex/6.824/6.824.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \usepackage{minted}
+
+* map reduce
+
+** programming model
+    the computation takes a set of *input* key/value pairs, and produces a set of *output* key/value
+    pairs. The user of the MapReduce library expresses the computation as two functions: *Map* and
+    *Reduce*
+
+    *Map*, written by the user, takes an input pair and produces a set of *intermediate* key/value
+    pairs. The MapReduce library groups together all intermediate values associated with the same
+    intermediate key \(I\) and passes them to the *Reduce* function
+
+    The *Reduce* function, also written by the user, accepts an intermediate key \(I\)  and a set of
+    values for that key. It merges together these values to form a possibly smaller set of values.
+    Typically just zero or one output value is produced per Reduce invocation.
+
+*** example
+#+begin_src python
+map(String key, String value):
+  // key: document name
+  // value: document contents
+  for each word w in value:
+    EmitIntermediate(w, "1")
+
+reduce(String key, Iterator values):
+  // key: a word
+  // values: a list of counts
+  int result = 0;
+  for each v in values:
+    results += ParseInt(v)
+  Emit(AsString(result))
+#+end_src
+    The ~map~ function emits each word plus an associated count of occurrences. The ~reduce~ function
+    sums together all counts emitted for a particular word
+
+*** Types
+    \begin{alignat*}{3}
+    &\text{map}&&\texttt{(k1,v1)}&&\to\texttt{list(k2,v2)}\\
+    &\text{reduce}\quad&&\texttt{(k2,list(v2))}&&\to\texttt{list(v2)}\\
+    \end{alignat*}
+
+*** More examples
+    *Distributed Grep*: the map function emits a line if it matches a supplied pattern. The reduce
+    function is an identity function that just copies the supplied intermediate data to the output
+
+    *Count of URL Access Frequency*: the map function processes logs of web page requests an outputs
+    \(\la\texttt{URL,1}\ra\). The reduce function adds together all values for the same URL and emits
+    a \(\la\texttt{URL,total count}\ra\) pair
+
+    *Term-vector per Host*: A term vector summarizes the most important words that occur in a document
+     or a set of documents as a list of \(\la word,frequency\ra\) pairs. The map function emits a
+     \(\la\texttt{hostname,term vector}\ra\) pair for each input document. The reduce function is passed
+     all per-document term vectors for a given host. It add these term vectors together, throwing
+     away infrequent terms, and then emits a final \(\la\texttt{hostname,term vector}\ra\) pair
+
+** Implementation
+*** Execution Overview
+    The /Map/ invocations are distributed across multiple machines by automatically partitioning the
+    input data into a set of \(M\) /splits/. The input splits can be processed in parallel by
+    different machines. /Reduce/ invocations are distributed by partitioning the intermediate key
+    space into \(R\) pieces using a partitioning function (e.g., \(hash(key)\mod R\)). The number of
+    partitions and the partitioning function are specified by the user
+
+    #+ATTR_LATEX: :width \textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/1.png]]
+
+    When the user program calls the ~MapReduce~ function, the following sequence of actions occurs
+    1. the MapReduce library in the user program first splits the input files into \(M\) pieces and
+       starts up many copies of the program on a cluster of machines
+    2. one of the copies of the program is special - the master. The rest are workers that are
+       assigned work by the master. there are \(M\) map tasks and \(R\) reduce tasks to assign. The
+       master picks idle workers and assigns each one a map task or a reduce task
+    3. a worker who is assigned a map task reads the contents of the corresponding input split. It
+       parses key/value pairs out of the input data and passes each pair to the user-defined /Map/
+       function. The intermediate key/value pairs produced by the /Map/ function are buffered in memory
+    4. periodically, the buffered pairs are written to local disk, partitioned into \(R\) regions by
+       the partitioning function. The locations of these buffered pairs on the local disk are passed
+       back to the master, who is responsible for forwarding these locations to the reduce workers
+    5. when a reduce worker is notified by the master about these locations, it uses remote
+       procedure calls to read the buffered data from the local disks of the map workers. When a
+       reduce worker has read all intermediate data, it *sorts* it by the intermediate keys so that
+       all occurrences of the same key are grouped together. The sorting is needed because typically
+       many different keys map to the same reduce task. If the amount of intermediate data is too
+       large to fit in memory, an external sort is used
+    6. the reduce worker iterates over the sorted intermediate data and for each unique intermediate
+       key encountered, it passes the key and the corresponding set of intermediate values to the
+       user's /Reduce/ function. The output of the /Reduce/ function is appended to a final output file
+       for this reduce partition
+    7. when all map tasks and reduce tasks have been completed, the master wakes up the user
+       program. At this point, the /MapReduce/ call in the user program returns back the user code
+*** Master data structures
+    for each map task and reduce task, it stores the state (/idle/, /in-progress/, or /completed/),
+    identity of the worker machine.
+
+    For each completed map task, the master stores the locations and sizes of the \(R\) intermediate
+    file regions produced by the map task. Updates to this location and size information are
+    received as map tasks are completed
+*** Fault tolerance
+**** worker failure
+    The master pings every worker periodically. If no response is received from a worker in a
+    certain amount of time, the master marks the worker as failed.
+
+    Completed map tasks are re-executed on a failure because their output is stored on the local
+    disk(s) of the failed machine and is therefore inaccessible
+**** master failure
+    It is easy to make the master write periodic checkpoints of the master data structures described
+    above.
+**** Semantics in the presence of failures

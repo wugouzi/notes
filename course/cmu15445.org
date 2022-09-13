@@ -2,7 +2,14 @@
 #+EXPORT_FILE_NAME: ../latex/15445/15445.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \usepackage{minted}
 #+LATEX_HEADER: \makeindex
+
+| Query Planning      |
+| Operator Execution  |
+| Access Methods      |
+| Buffer Pool Manager |
+| Disk Manager        |
 * Introduction and the relational model
     Data model:
 
@@ -1704,7 +1711,518 @@ SELECT R.id, S.cdata
     A *worker* is the DBMS component that is responsible for executing tasks on behalf of the client
     and returning the results
     1. Process per DBMS Worker
+
+       each worker is a separate OS process
+       - relies on OS scheduler
+       - use shared-memory for global data structures
+       - a process crash doesn't take down entire system
+       - examples: IBM DB2, Postgres, oracle
     2. Process Pool
+
+       a worker uses any free process from the pool
+       - still relies on OS scheduler and shared memory
+       - bad for cpu cache locality
+       - examples: IBM DB2, Postgres(2015)
     3. Thread per DBMS Worker
+
+       single process with multiple worker threads
+       - DBMS manages its own scheduling
+       - may or may not use a dispatcher thread
+       - thread crash (may) kill the entire system
+       - examples: IBM DB2, MSSQL, MySQL, Oracle(2014)
+
+
+    Advantages of a multi-threaded architecture
+    - less overhead per context switch
+    - do not have to manage shared memory
+
+    The thread per worker model does *not* mean that the DBMS supports intra-query parallelism
+
+    For each query plan, the DBMS decides where, when, and how to execute it
+    - how many tasks should i use
+    - how many CPU cores should it use
+    - what CPU core should the tasks execute on
+    - where should a task store its output
+
+    The DBMS *always* knows more than the OS
+
+    *Inter-query*: different queries are executed concurrently
+    - increases throughput and reduces latency
+    - if queries are read-only, then this requires little coordination between queries
+    - if multiple queries are updating the database at the same time, then this is hard to do correctly
+
+    *Intra-query*: execute the operations of a single query in parallel
+    - decreases latency for long-running queries
+    - think of organization of operators in terms of *producer/consumer* paradigm
+    - there are parallel versions of every operator: can either have multiple threads access
+      centralized data structures or use partitioning to divide work up
+
+    e.g., for parallel grace hash join, use a separate worker to perform the join for each level of
+    buckets for \(R\) and \(S\) after partitioning
+
+    *intra-query parallelism*:
+*** intra-operator (horizontal)
+    decompose operators into independent *fragments* that perform the same function on different
+    subsets of data
+
+    the DBMS inserts an *exchange* operator into the query plan to coalesce/split results from
+    multiple children/parent operators
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/31.png]]
+
+    *exchange operator*
+    1. exchange type 1 - *gather*: combine the results from multiple workers into a single output stream
+    2. exchange type 2 - *distribute*: split a single stream into multiple output streams
+    3. exchange type 3 - *repartition*: shuffle multiple input streams across multiple output streams
+
+    #+ATTR_LATEX: :width .4\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/32.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/33.png]]
+*** inter-operator (vertical)
+    operations are overlapped in order to pipeline data from one stage to the next without
+    materialization
+
+    workers execute operators from different segments of a query plan at the same time
+
+    also called *pipeline parallelism*
+
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/34.png]]
+*** bushy
+    bybrid of intra- and inter-operator parallelism where workers execute multiple operators from
+    different segments of a query plan at the same time
+
+    still need exchange operators to combine intermediate results from segments
+
+    for
+    #+begin_src sql
+SELECT *
+FROM A JOIN B JOIN C JOIN D
+    #+end_src
+
+    #+ATTR_LATEX: :width .4\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/35.png]]
 ** Execution Parallelism
+*** I/O parallelism
+    split the DBMS across multiple storage devices
+    - multiple disks per database
+    - one database per disk
+    - one relation per disk
+    - split relation across multiple disks
+
+    partitioning: split single logical table into disjoint physical segments that are stored/managed
+    separately
+
+    partitioning should be transparent to the application
+    - the application should only access logical tables and not have to worry about how things are
+      physically stored
+
+    *vertical partitioning*: store a table's attributes in a separate location
+
+
 ** I/O Parallelism
+* Optimization 1
+    *Heuristics/Rules*
+    - rewrite the query to remove stupid/inefficient things
+    - these techniques may need to examine catalog, but they do *not* need to examine data
+
+    *Cost-based search*
+    - use a model to estimate the cost of executing a plan
+    - evaluate multiple equivalence plans for a query and pick the one with the lowest cost
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/37.png]]
+
+    the optimizer generates a mapping of a logical algebra expression to the optimal equivalent
+    physical algebra expression
+
+    physical operators define a specific execution strategy using an access path
+    - they can depend on the physical format of the data that they process
+    - not always a 1:1 mapping from logical to physical
+
+    query optimization is NP-Hard
+** Relational Algebra Equivalences
+    Two relational algebra expressions are *equivalent* if they generate the same set of tuples
+
+    This is often called *query rewriting*
+
+    #+begin_src sql
+SELECT s.name, e.cid
+  FROM student AS s, enrolled AS e
+ WHERE s.sid = e.sid
+   AND e.grade = 'A'
+    #+end_src
+    \(\pi_{\text{name},\text{cid}}(\sigma_{\text{grade='A'}}(\text{student}\bowtie\text{enrolled}))\),
+    which is equivalent to
+    \(\pi_{\text{name},\text{cid}}(\text{student}\bowtie(\sigma_{\text{grade='A'}}(\text{enrolled})))\),
+
+    *Selections*:
+    - perform filters as early as possible
+    - break a complex predicate, and push down
+      \begin{equation*}
+      \sigma_{p_1\wedge\dots\wedge p_n}(R)=\sigma_{p_1}(\sigma_{p_2}(\dots\sigma_{p_n}(R)))
+      \end{equation*}
+
+    *Joins*:
+    - commutative, associative
+
+    The number of different join orderings for an \(n\)-way join is a *Catalan Number*
+
+    *Projections*:
+    - perform them early to create smaller tuples and reduce intermediate results
+    - project out all attributes except the ones requested or required
+
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/38.png]]
+** Logical Query Optimization
+    Transform a logical plan into an equivalent logical plan using pattern matching rules
+
+    The goal is to increase the likelihood of enumerating the optimal plan in the search
+*** Split Conjunctive Predicates
+    Consider
+    #+begin_src sql
+SELECT ARTIST.NAME
+  FROM ARTIST, APPEARS, ALBUM
+ WHERE ARTIST.ID = APPEARS.ARTIST_ID
+   AND APPEARS.ALBUM_ID = ALBUM.ID
+   AND ALBUM.NAME="Andy's OG Remix"
+    #+end_src
+
+    Decompose predicates into their simplest forms to make it easier for the optimizer to move them
+    around
+    #+ATTR_LATEX: :width .4\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/39.png]]
+*** Predicate Pushdown
+    Move the predicate to the lowest applicable point in the plan
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/40.png]]
+*** Replace Cartesian Products with Joins
+    Replace all Cartesian Products with inner joins using the join predicates
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/41.png]]
+*** Projection Pushdown
+    Eliminate redundant attributes before pipeline breakers to reduce materialization cost
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/42.png]]
+** Nested Queries
+    The DBMS treats nested sub-queries in the where clause as functions that take parameters and
+    return a single value or set of values
+
+    Two approaches
+    - rewrite to de-correlate and/or flattern them
+    - decompose nested query and store result to temporary table
+*** Rewrite
+    #+begin_src sql
+SELECT name FROM sailors AS S
+ WHERE EXISTS (
+    SELECT * FROM reserves AS R
+     WHERE S.sid = R.sid
+       AND R.day = '2018-10-15'
+)
+    #+end_src
+
+    #+begin_src sql
+SELECT name
+  FROM sailors AS S, reserves AS R
+ WHERE S.sid = R.sid
+   AND R.day = '2018-10-15'
+    #+end_src
+*** Decompose
+    #+begin_src sql
+SELECT S.sid, MIN(R.day)
+FROM sailors S, reserves R, boats B
+WHERE S.sid = R.sid
+AND R.bid = B.bid
+AND B.color = 'red'
+AND S.rating = (SELECT MAX(S2.rating)
+GROUP BY S.sid HAVING COUNT(*) > 1
+    #+end_src
+    For each sailor with the highest rating (over all sailors) and at least two reservations for red
+    boats, find the sailor id and the earliest data on which the sailor has a reservation for a red
+    boat
+
+    For harder queries, the optimizer breaks up queries into blocks and then concentrate on one
+    block at a time. Sub-queries are written to a temporary table that are discarded after the query finishes
+** Expression Rewriting
+    An optimizer transforms a query's expressions (e.g., ~WHERE~ clause predicates) into the
+    optimal/minimal set of expressions
+
+    Implemented using if/then/else clauses or a pattern-matching rule engine
+    - search for expressions that match a pattern
+    - when a match is found, rewrite the expression
+    - halt if there are no more rules that match
+
+    Impossible/unnecessary predicates
+
+    join elimination
+    #+begin_src sql
+SELECT A1.*
+  FROM A AS A1 JOIN A AS A2
+    ON A1.id = A2.id;
+    #+end_src
+
+    join elimination with sub-query
+    #+begin_src sql
+SELECT * FROM A AS A1
+ WHERE EXISTS (SELECT val FROM A AS A2
+                WHERE A1.id = A2.id);
+    #+end_src
+
+    merging predicates
+    #+begin_src sql
+SELECT * FROM A
+ WHERE val BETWEEN 1 AND 100
+    OR val BETWEEN 50 AND 150;
+    #+end_src
+** Cost Model
+    1. Physical costs
+       - predict CPU cycles, I/O, cache misses, RAM consumption, pre-fetching, etc
+       - depends heavily on hardware
+    2. logical costs
+       - estimate result sizes per operator
+       - independent of the operator algorithm
+       - need estimations for operator result sizes
+    3. algorithmetic costs
+
+    *disk-based DBMS cost model*: the number of disk accesses will always dominate the execution time
+     of a query
+     - CPU costs are negligible
+     - must consider sequential vs. random I/O
+
+    The is easier to model if the DBMS has full control over buffer management
+
+    postgres cost model: use a combination of CPU and I/O costs that are weighted by "magic"
+    constant factors
+
+    default settings are for a disk-resident database without a lot of memory
+    - processing a tuple in memory is 400x faster than reading a tuple from disk
+    - sequential I/O is 4x faster than random I/O
+
+    IBM DB2 cost model:
+    - database characteristics in system catalogs
+    - hardware environment
+    - storage device characteristics
+    - communications bandwidth
+    - memory resources
+    - concurrency environment
+** More cost estimation
+    The DBMS stores internal statistics about tables, attributes, and indexes in its internal
+    catalog
+
+    different systems update them at different times
+
+    manual invocations:
+    - postgres/sqlite: ~ANALYZE~
+    - oracle/mysql: ~ANALYZE TABLE~
+    - SQL server: ~UPDATE STATISTICS~
+    - DB2: ~RUNSTATS~
+
+    For each relation \(R\), the DBMS maintains the following information
+    - \(N_R\): number of tuples in \(R\)
+    - \(V(A,R)\): number of distinct values for attribute \(A\)
+
+    The *selection cardinality* \(SC(A,R)\) is the average number of records with a value for an
+    attribute \(A\) given \(N_R/V(A,R)\)
+
+    Equality predicates on unique keys are easy to estimate
+    #+begin_src sql
+SELECT * FROM people
+ WHERE id = 123
+    #+end_src
+    computing the logical cost of complex predicates is more difficult
+    #+begin_src sql
+SELECT * FROM people
+ WHERE val > 1000
+    #+end_src
+
+    The *selectivity* (~sel~) of a predicate \(P\) is the fraction of tuples that qualify
+
+    Formula depends on type of predicate:
+    - equality
+    - range
+    - negation
+    - conjunction
+    - disjunction
+
+    Assume that ~V(age,people)~ has five distinct values (0-4) and \(N_R=5\)
+
+    *Equality Predicate*: ~A=constant~
+    - \(sel(A=constant)=SC(P)/N_R\)
+
+    *Range Predicate*:
+    - \(sel(A\ge a)=(A_{max}-a+1)/(A_{max}-A_{min}+1)\)
+
+    *Negation Query*:
+    - \(sel(\neg P)=1-sel(P)\)
+
+    *Conjunction*:
+    - \(sel(P_1\wedge P_2)=sel(P_1)\cdot sel(P_2)\)
+    - assumes predicates are *independent*
+
+    *Disjunction*:
+    - \(sel(P_1\vee P_2)=sel(P_1)+sel(P_2)-sel(P_1)\cdot sel(P_2)\)
+    - also assumes independence
+
+    Given a join of \(R\) and \(S\), what is the range of possible result sizes in # of tuples. In
+    other words, for a given tuple of \(R\), how many tuples of \(S\) will it match?
+
+    Assume each key in the inner relation will exist in the outer table.
+
+    General case: \(R_{cols}\cap S_{cols}=\{A\}\), where \(A\) is not a primary key for either table
+    - match each \(R\)-tuple with \(S\)-tuples:
+      \begin{equation*}
+      estSize\approx N_r\cdot N_s/V(A,S)
+      \end{equation*}
+    - for \(S\)
+      \begin{equation*}
+      estSize\approx N_r\cdot N_s/V(A,R)
+      \end{equation*}
+
+    Overall, \(estSize\approx N_R\cdot N_s/\max(\{V(A,S),V(A,R)\})\)
+
+    For select cardinality, we have three assumptions
+    1. uniform data
+    2. independent predicates
+    3. inclusion principle
+
+       the domain of join keys overlap s.t. each key in the inner relation will also exist in the
+       outer table
+
+
+    For correlated attributes, consider a database of automobiles, # of Makes=10, # of Models = 100
+    and the following query ~make="Honda" AND model="Accord"~
+
+    With the independent and uniformity assumptions, the selectivity is
+    \begin{equation*}
+    1/10\times 1/100=0.001
+    \end{equation*}
+    But since only Honda makes Accords the real selectivity is 0.01
+
+    For non-uniform data, we may use equi-width histogram, and we can vary the width of buckets so
+    that the total number of occurrences for each bucket is roughly the same
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/43.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/44.png]]
+
+    Sketches is a probabilistic data structures that generate approximate statistics about a data
+    set. And Cost-model can replace histogram with sketches to improve its selectivity estimate
+    accuracy
+
+    Most common examples:
+    - _Count-Min Sketch_
+    - _HyperLogLog_
+
+
+    Modern DBMSs also collect samples from tables to estimate selectivities. Update samples when the
+    underlying tables changes significantly
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/45.png]]
+
+** plan enumeration
+    Now that we can (roughly) estimate the selectivity of predicates, and subsequently the cost of
+    query plans, what can we do with them?
+
+    After performing rule-based rewriting, the DBMS will enumerate different plans for the query and
+    estimate their costs.
+    - single relation
+    - multiple relations
+    - nested sub-queries
+*** single relation
+    For single-relation query planning, pick the best access method
+    - sequential scan
+    - binary search
+    - index scan
+    Simple heuristics are often good enough for this. OLTP queries are especially easy
+
+    Query planning for OLTP queries is easy because they are *sargable* (Search Argument Able)
+    - it is usually just picking the best index
+    - joins are almost always on foreign key relationships with a small cardinality
+    - can be implemented with simple heuristics
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/46.png]]
+*** multi-relation
+    fundamental decision in System R: only consider left-deep join trees
+
+    use *dynamic programming* to reduce the number of cost estimations
+
+    how to generate plans for search algorithm:
+    - enumerate relation orderings
+    - enumerate join algorithm choices
+    - enumerate access method choices
+
+    No real DBMSs does it this way. It's actually more messy
+
+    Postgres optimizer examines all types of joins trees, and has two optimizer implementations
+    1. traditional dynamic programming approach
+    2. genetic query optimizer
+
+    Postgres uses the traditional algorithm when # of tables in query is *less* than 12 and switches
+    to GEQO when there are 12 or more
+* Concurrency Control
+* Lab notes
+** project 3
+    We will use the iterator query processing model (i.e., the Volcano model). Recall that in this
+    model, every query plan executor implements a Next function. When the DBMS invokes an executor's
+    Next function, the executor returns either
+    1. a single tuple or
+    2. an indicator that there are
+    no more tuples. With this approach, each executor implements a loop that continues calling Next
+    on its children to retrieve tuples and process them one-by-one.
+
+    In BusTub's implementation of the iterator model, the Next function for each executor returns a
+    record identifier (RID) in addition to a tuple. A record identifier serves as a unique
+    identifier for the tuple relative to the table to which it belongs.
+* Homework
+** 3
+    1. sorting algorithms
+       1. 10
+       2. 120m
+       3. 2450
+       4. 15
+       5. 154472232
+    2. Join algorithms
+       1. 56400
+       2. 55400
+       3. 7200 3600
+       4. b
+       5.
+          1. 5600
+          2. 8800
+          3. 3600
+          4. 3160000
+          5. 3000
