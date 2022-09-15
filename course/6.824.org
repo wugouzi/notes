@@ -1,4 +1,4 @@
-#+title: 6 824
+#+title: 6.824
 
 #+EXPORT_FILE_NAME: ../latex/6.824/6.824.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
@@ -115,3 +115,138 @@ reduce(String key, Iterator values):
     It is easy to make the master write periodic checkpoints of the master data structures described
     above.
 **** Semantics in the presence of failures
+* Raft paper
+    Raft is a consensus algorithm for managing a replicated log.
+** Introduction
+    Consensus algorithms allow a collection of machines to work as a coherent group that can survive
+    the failures of some of its members
+** Replicated state machines
+    Replicated state machines are typically implemented using a replicated log, as shown in figure
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/2.png]]
+    Each server stores a log containing a series of commands, which its state machine executes in
+    order. Each log contains the same commands in the same order, so each state machine processes
+    the same sequence of commands. Since the state machines are deterministic, each computes the
+    same state and the same sequence of outputs. Once commands are properly replicated, each
+    server’s state machine processes them in log order, and the outputs are returned to clients.
+
+    Consensus algorithms for practical systems typically have the following properties:
+    * they ensure *safety* (never returning an incorrect result) under all non-Byzantine conditions,
+      including network delays, partitions, and packet loss, duplication, and reordering
+    * they are fully functional as long as any majority of the servers are operational and can
+      communicate with each other and with clients. Thus a typical cluster of five servers can
+      tolerate the failure of any two servers
+    * they do not depend on timing to ensure the consistency of the logs
+    * in the common case, a command can complete as soon as a majority of the cluster has responded
+      to a single round of remote procedure calls
+** The Raft consensus algorithm
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/3.pdf]]
+
+
+    Raft implements consensus by first electing a distinguished *leader*, then giving the leader
+    complete responsibility for managing the replicated log. The leader accepts log entries from
+    clients, replicates them on other servers, and tell servers when it is safe to apply log entries
+    to their state machines.
+
+    Given the leader approach, Raft decomposes the consensus problem into three relatively
+    independent subproblems:
+    * *leader election*
+    * *log replication*
+    * *safty* : the key safety property for Raft is the State Machine Safety Property: if any server
+      has applied a particular log entry to its state machine, then no other server may apply a
+      different command for the same log index
+      * *Election Safety*: at most one leader can be elected
+      * *Leader Append-Only*: a leader never overwrites or deletes entries in its log; it only append
+        new entries
+      * *Log Matching*: if two logs contain an entry with the same index and term, then logs are
+        identical in all entries up through the given index
+      * *Leader Completeness*: if a log entry is commited in a given term, then that entry will be
+        present in the logs of the leaders for all higher-numbered terms
+      * *State Machine Safety*: if a server has applied a log entry at a given index to its state
+        machine, no other server will ever apply a different log entry for the same index
+*** Raft basics
+    At any given time each server is in one of three states: *leader*, *follower* or *candidate*. In
+    normal operation there is exactly one leader and all of the other servers are followers.
+    * Followers are passive: they issue no requests on their own but simply respond to requests from
+      leaders and candidates.
+    * The leader handles all client requests (if a client contacts a follower, the follower
+      redirects it to the leader)
+    * Candidate is used to elect a new leader
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/4.png]]
+
+    Raft divides time into *terms* of arbitrary length:
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/5.png]]
+    Terms are numbered with consecutive integers. Each term begins with an *election*, in which one or
+    more candidates attempt to become leader. If a candidate wins the election, then it serves as
+    leader for the rest of the term. In some situations an election will result in a split vote, in
+    this case the term will end with no leader; a new term (with a new election) will begin shortly.
+    Raft ensures that there is at most one leader in a given term
+
+    Different severs may observe the transitions between terms at different times, and in some
+    situations a server may not observe an election or even entire terms. Terms act as a logical
+    clock in Raft, and they allow servers to detect obsolete information such as stable leaders.
+
+    Each server stores a *current term* number, which increases monotonically over time. Current terms
+    are exchanged whenever servers communicate; if one server's current term is smaller than the
+    other's, then it updates its current term to the larger value. If a candidate or leader
+    discovers that its term is out of data, it immediately reverts to follower state. If a server
+    receives a request with a stale term number, it rejects the request.
+
+    Raft servers communicate using remote procedure calls(RPCs), and the basic consensus algorithm
+    requires only two types of RPCs. RequestVote RPCs are initiated by candidates during elections,
+    and AppendEntries RPCs are initiated by leaders to replicate log entries and to provide a form
+    of heartbeat
+*** Leader Election
+    Raft uses a heartbeat mechanism to trigger leader election.
+
+    When servers start up, they begin as followers. A server remains in follower state as long as it
+    receives valid RPCs from a leader or candidate. Leaders send periodic heartbeats (AppendEntries
+    RPCs that carry no log entries) to all followers in order to maintain their authority. If a
+    follower receives no communication over a period of time called the *election timeout*, then it
+    assumes there is no viable leader and begins an election to choose a new leader
+
+    To begin an election, a follower increments its current term and transitions to candidate state.
+    It then votes for itself and issues RequestVote RPCs in parallel to each of the other servers in
+    the cluster. A candidate continues in this state until one of three things happens:
+    1. it wins the election
+    2. another server establishes itself as leader
+    3. a period of time goes by with no winner
+
+    A candidate wins an election if it receives votes from a majority of the servers in the full
+    cluster for the same term. Each server will vote for at most one candidate in a given term, on a
+    first-come-first-served basis (5.4 adds an additional restriction on votes). The majority rules
+    ensures that at most one candidate can win the election for a particular term (the *Election*
+    *Safe Property*) Once a candidate wins the election, it becomes leader. It then sends heartbeat
+    messages to all of the other servers to establish its authority and prevent new elections
+
+    While waiting for votes, a candidate may receive an AppendEntries RPC from another server claiming
+    to be leader. If the leader's term is at least as large as the candidate's current term, then
+    the candidate recognizes the leader as legitimate and returns to follower state. If the term in
+    the RPC is smaller than the candidate's current term, then the candidate rejects the RPC and
+    continues in candidate state.
+
+    The third possible outcome is that a candidate neither wins nor loses the election: if many
+    followers become candidates at the same time, votes could be split so that no candidate obtains
+    a majority. When this happens, each candidate will time out and start a new election by
+    incrementing its term and initiating another round of RequestVote RPCs. However, without extra
+    measures split votes could repeat indefinitely.
+
+    Raft uses randomized election timeouts to ensure that split votes are rare and that they are
+    resolved quickly. To prevent split votes in the first place, election timeouts are chosen
+    randomly from a fixed interval (e.g., 150-300ms). This spreads out the servers so that in most
+    cases only a single server will time out; it wins the election and sends single server will time
+    out.
+
+    The same mechanism is used to handle split votes. Each candidate restarts its randomized
+    election timeout at the start of an election, and it waits for that timeout to elapse before
+    starting the next election;

@@ -1,4 +1,4 @@
-% Created 2022-09-12 Mon 19:33
+% Created 2022-09-15 Thu 14:13
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -33,10 +33,10 @@
 
 
 \section{map reduce}
-\label{sec:org236059c}
+\label{sec:orgec9e8b2}
 
 \subsection{programming model}
-\label{sec:org45c4afd}
+\label{sec:orgd3308cf}
 the computation takes a set of \textbf{input} key/value pairs, and produces a set of \textbf{output} key/value
 pairs. The user of the MapReduce library expresses the computation as two functions: \textbf{Map} and
 \textbf{Reduce}
@@ -50,7 +50,7 @@ values for that key. It merges together these values to form a possibly smaller 
 Typically just zero or one output value is produced per Reduce invocation.
 
 \subsubsection{example}
-\label{sec:orgbb4932d}
+\label{sec:orgd0217e6}
 \begin{minted}[]{python}
 map(String key, String value):
   // key: document name
@@ -70,14 +70,14 @@ The \texttt{map} function emits each word plus an associated count of occurrence
 sums together all counts emitted for a particular word
 
 \subsubsection{Types}
-\label{sec:org08c98b3}
+\label{sec:orgef673b6}
 \begin{alignat*}{3}
 &\text{map}&&\texttt{(k1,v1)}&&\to\texttt{list(k2,v2)}\\
 &\text{reduce}\quad&&\texttt{(k2,list(v2))}&&\to\texttt{list(v2)}\\
 \end{alignat*}
 
 \subsubsection{More examples}
-\label{sec:org856baf5}
+\label{sec:org6dfeb5d}
 \textbf{Distributed Grep}: the map function emits a line if it matches a supplied pattern. The reduce
 function is an identity function that just copies the supplied intermediate data to the output
 
@@ -92,9 +92,9 @@ a \(\la\texttt{URL,total count}\ra\) pair
  away infrequent terms, and then emits a final \(\la\texttt{hostname,term vector}\ra\) pair
 
 \subsection{Implementation}
-\label{sec:org574dc79}
+\label{sec:orgfd4a734}
 \subsubsection{Execution Overview}
-\label{sec:org7b5f65f}
+\label{sec:org4a33d44}
 The \emph{Map} invocations are distributed across multiple machines by automatically partitioning the
 input data into a set of \(M\) \emph{splits}. The input splits can be processed in parallel by
 different machines. \emph{Reduce} invocations are distributed by partitioning the intermediate key
@@ -114,6 +114,130 @@ starts up many copies of the program on a cluster of machines
 \item one of the copies of the program is special - the master. The rest are workers that are
 assigned work by the master. there are \(M\) map tasks and \(R\) reduce tasks to assign. The
 master picks idle workers and assigns each one a map task or a reduce task
-\item 
+\item a worker who is assigned a map task reads the contents of the corresponding input split. It
+parses key/value pairs out of the input data and passes each pair to the user-defined \emph{Map}
+function. The intermediate key/value pairs produced by the \emph{Map} function are buffered in memory
+\item periodically, the buffered pairs are written to local disk, partitioned into \(R\) regions by
+the partitioning function. The locations of these buffered pairs on the local disk are passed
+back to the master, who is responsible for forwarding these locations to the reduce workers
+\item when a reduce worker is notified by the master about these locations, it uses remote
+procedure calls to read the buffered data from the local disks of the map workers. When a
+reduce worker has read all intermediate data, it \textbf{sorts} it by the intermediate keys so that
+all occurrences of the same key are grouped together. The sorting is needed because typically
+many different keys map to the same reduce task. If the amount of intermediate data is too
+large to fit in memory, an external sort is used
+\item the reduce worker iterates over the sorted intermediate data and for each unique intermediate
+key encountered, it passes the key and the corresponding set of intermediate values to the
+user's \emph{Reduce} function. The output of the \emph{Reduce} function is appended to a final output file
+for this reduce partition
+\item when all map tasks and reduce tasks have been completed, the master wakes up the user
+program. At this point, the \emph{MapReduce} call in the user program returns back the user code
 \end{enumerate}
+\subsubsection{Master data structures}
+\label{sec:orge922224}
+for each map task and reduce task, it stores the state (\emph{idle}, \emph{in-progress}, or \emph{completed}),
+identity of the worker machine.
+
+For each completed map task, the master stores the locations and sizes of the \(R\) intermediate
+file regions produced by the map task. Updates to this location and size information are
+received as map tasks are completed
+\subsubsection{Fault tolerance}
+\label{sec:orgac7ce40}
+\begin{enumerate}
+\item worker failure
+\label{sec:orgbfbabd8}
+The master pings every worker periodically. If no response is received from a worker in a
+certain amount of time, the master marks the worker as failed.
+
+Completed map tasks are re-executed on a failure because their output is stored on the local
+disk(s) of the failed machine and is therefore inaccessible
+\item master failure
+\label{sec:orgeb0e6db}
+It is easy to make the master write periodic checkpoints of the master data structures described
+above.
+\item Semantics in the presence of failures
+\label{sec:org49ea0b4}
+\end{enumerate}
+\section{Raft paper}
+\label{sec:orge38ebfd}
+Raft is a consensus algorithm for managing a replicated log.
+\subsection{Introduction}
+\label{sec:org8f75c8f}
+Consensus algorithms allow a collection of machines to work as a coherent group that can survive
+the failures of some of its members
+\subsection{Replicated state machines}
+\label{sec:org50fe155}
+Replicated state machines are typically implemented using a replicated log, as shown in figure
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.7\textwidth]{../images/6.824/2.png}
+\label{}
+\end{figure}
+Each server stores a log containing a series of commands, which its state machine executes in
+order. Each log contains the same commands in the same order, so each state machine processes
+the same sequence of commands. Since the state machines are deterministic, each computes the
+same state and the same sequence of outputs. Once commands are properly replicated, each
+server’s state machine processes them in log order, and the outputs are returned to clients.
+
+Consensus algorithms for practical systems typically have the following properties:
+\begin{itemize}
+\item they ensure \textbf{safety} (never returning an incorrect result) under all non-Byzantine conditions,
+including network delays, partitions, and packet loss, duplication, and reordering
+\item they are fully functional as long as any majority of the servers are operational and can
+communicate with each other and with clients. Thus a typical cluster of five servers can
+tolerate the failure of any two servers
+\item they do not depend on timing to ensure the consistency of the logs
+\item in the common case, a command can complete as soon as a majority of the cluster has responded
+to a single round of remote procedure calls
+\end{itemize}
+\subsection{The Raft consensus algorithm}
+\label{sec:orgcc2971c}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.9\linewidth]{../images/6.824/3.pdf}
+\label{}
+\end{figure}
+
+
+Raft implements consensus by first electing a distinguished \textbf{leader}, then giving the leader
+complete responsibility for managing the replicated log. The leader accepts log entries from
+clients, replicates them on other servers, and tell servers when it is safe to apply log entries
+to their state machines.
+
+Given the leader approach, Raft decomposes the consensus problem into three relatively
+independent subproblems:
+\begin{itemize}
+\item \textbf{leader election}
+\item \textbf{log replication}
+\item \textbf{safty} : the key safety property for Raft is the State Machine Safety Property: if any server
+has applied a particular log entry to its state machine, then no other server may apply a
+different command for the same log index
+\begin{itemize}
+\item \textbf{Election Safety}: at most one leader can be elected
+\item \textbf{Leader Append-Only}: a leader never overwrites or deletes entries in its log; it only append
+new entries
+\item \textbf{Log Matching}: if two logs contain an entry with the same index and term, then logs are
+identical in all entries up through the given index
+\item \textbf{Leader Completeness}: if a log entry is commited in a given term, then that entry will be
+present in the logs of the leaders for all higher-numbered terms
+\item \textbf{State Machine Safety}: if a server has applied a log entry at a given index to its state
+machine, no other server will ever apply a different log entry for the same index
+\end{itemize}
+\end{itemize}
+\subsubsection{Raft basics}
+\label{sec:org70f41e5}
+At any given time each server is in one of three states: \textbf{leader}, \textbf{follower} or \textbf{candidate}. In
+normal operation there is exactly one leader and all of the other servers are followers.
+\begin{itemize}
+\item Followers are passive: they issue no requests on their own but simply respond to requests from
+leaders and candidates.
+\item The leader handles all client requests (if a client contacts a follower, the follower
+redirects it to the leader)
+\item Candidate is used to elect a new leader
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.7\textwidth]{../images/6.824/4.png}
+\label{}
+\end{figure}
 \end{document}

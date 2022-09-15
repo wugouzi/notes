@@ -2194,6 +2194,451 @@ SELECT * FROM people
     Postgres uses the traditional algorithm when # of tables in query is *less* than 12 and switches
     to GEQO when there are 12 or more
 * Concurrency Control
+    Motivation:
+
+    We both change the same record in a table at the same time. *How to avoid race condition?*
+    (Concurrency Control)
+
+    You transfer $100 between bank accounts but there is a power failure. *What is the correct
+    database state* (Recovery)
+
+    They are based on the concept of transactions with *ACID* properties
+
+    A *transaction* is the execution of a sequence of one or more operations on a database to perform
+    some higher-level function
+
+    It is the basic unit of changes in a DBMS:
+    - partial transactions are not allowed
+
+    Example: Move $100 from Lin' bank account to his promotor's account
+
+    Transaction:
+    - check whether Lin has $100
+    - Deduct $100 from his account
+    - Add $100 to his promotor account
+
+    Strawman system:
+
+    Execute each txn one-by-one as they arrive at the DBMS
+    - One and only one txn can be running at the same time in the DBMS
+
+    Before a txn starts, copy the entire database to a new file and make all changes to that file
+    - if the txn completes successfully, overwrite the original file with the new one
+    - if the txn fails, just remove the dirty copy
+
+    Problem Statements: how to allow concurrent execution of independent transactions with better
+    utilization/throughput and increasing response times to users
+
+    We need formal correctness criteria to determine whether an interleaving is valid
+
+    A *Database* is a fixed set of named data objects, \(A,B,C,\dots\)
+
+    A *transaction* is a sequence of read and write operation \((R(A))\), \(W(B)\)
+
+    A new txn starts with the ~BEGIN~ command and stops with either ~COMMIT~ or ~ABORT~:
+    - if commit, the DBMS either saves all the txn's changes or aborts it
+    - if abort, all changes are undone so that it's like as if the txn never executed at all
+
+    Abort can be either self-inflicted or caused by the DBMS
+
+    Correctness Criteria: *ACID*
+    * *Atomicity*: all actions in the txn happen, or none happen
+
+      "all or nothing"
+    * *Consistency*: if each txn is consistent and the DB starts consistency, then it ends up
+      consistency
+
+      "it looks correct to me"
+    * *Isolation*: execution of one txn is isolated from that of other txns
+
+      "as if alone"
+    * *Durability*: if a txn commits, its effects persist
+
+      "survive failures"
+** Atomicity
+    Two possible outcomes of executing a txn
+    - commit after completing all its actions
+    - abort (or be aborted by the DBMS) after executing some actions
+
+    DBMS guarantees that txns are *atomic*
+    - from user's point of view: txn always either executes all its actions or executes no actions
+      at all
+
+    Scenario 1: we take $100 out of Lin's account but then the DBMS aborts the txn before we
+    transfer it
+
+    Scenario 2: We take $100 out of Lin's account but then there is a power failure before we
+    transfer it
+
+    Approach 1: *logging*
+    - DBMS logs all actions so that it can undo the actions of aborted transactions
+    - maintain undo records both in memory and on disk
+
+    Logging is used by almost every DBMS
+
+    Approach 2: *Shadow Paging*
+    - DBMS makes copies of pages and txns make changes to those copies. Only when the txn commits it
+      the page made visible to others
+    - Originally from System R
+
+    Few systems do this: CouchDB, LMDB
+** Consistency
+    database consistency, transaction consistency
+
+** Isolation
+    isolation of transactions, users submit txns, and each txn executes as if it was running by
+    itself
+
+    But the DBMS achieves concurrency by interleaving the actions (read/writes of DB objects) of
+    txns
+
+    We need a way to interleave txns but still make it appear as if they ran one-at-a-time
+
+    A *concurrency control* protocol is how the DBMS decides the proper interleaving of operations
+    from multiple transactions
+
+    Two categories of protocols:
+    - *pessimistic*: don't let problems arise in the first place
+    - *optimistic*: assume conflicts are rare, deal with them after they happen
+
+    Assume at first \(A\) and \(B\) each have $1000
+    #+begin_src sql
+/* T1 */
+BEGIN
+A = A + 100
+B = B - 100
+COMMIT
+
+/* T2 */
+BEGIN
+A = A * 1.06
+B = B * 1.06
+COMMIT
+    #+end_src
+    The outcome depends on whether ~T1~ executes before ~T2~ or vice versa
+
+    We interleave txns to maximize concurrency
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/47.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/48.png]]
+
+    How do we judge whether a schedule is correct?
+
+    If the schedule is *equivalent* to some *serial execution*
+
+    *Serial Schedule*: a schedule that does not interleave the actions of different transactions
+
+    *Equivalent Schedules*: for any database state, the effect of executing the first schedule is
+    identicial to the effect of executing the second schedule
+
+    If each transaction preserves consistency, every serializable schedule preserves consistency
+
+    Two operations *conflict* if
+    1. they are by different transactions
+    2. they are on the same object and at least one of them is a write
+
+    So we have read-write conflicts, write-read conflicts and write-write conflicts
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/49.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/50.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/51.png]]
+
+    Given these conflicts, we now can understand what it means for a schedule to be serializable
+    - this is to check whether schedules are correct
+
+    The are different levels of serializability
+    - conflict serializability (Most DBMSs try to support this)
+    - view serializability (No DBMS can do this)
+
+    Two schedules are *conflict equivalent* iff
+    - they involve the same actions of the same transactions
+    - every pair of conflicting actions is ordered the same way
+
+    Schedule \(S\) is *conflict serializable* if \(S\) is conflict equivalent to some serial schedule,
+    that is, if you can transform \(S\) into a serial schedule by swapping consecutive
+    non-conflicting operations of different transactions
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/52.png]]
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/53.png]]
+
+    Swapping operations is easy when there are only two txns in the schedule. It's cumbersome when
+    there are many txns? *Dependency Graphs*
+
+    One node per txn. Edge from \(T_i\) to \(T_j\)if
+    - an operation \(O_i\) of \(T_i\) conflicts with an operation \(O_j\) of \(T_J\)
+    - \(O_i\) appears earlier in the schedule than \(O_j\)
+    Also known as a *prescedence graph*
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/54.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/55.png]]
+
+    Schedules \(S_1\) and \(S_2\) are view equivalent if
+    - if \(T_1\) reads initial value of \(A\) in \(S_1\), then \(T_1\) also reads initial value
+      of \(A\) in \(S_2\)
+    - if \(T_1\) reads value of \(A\) written by \(T_2\) in \(S_1\), then \(T_1\) also reads value
+      of \(A\) written by \(T_2\) in \(S_2\)
+    - If \(T_1\) writes final value of \(A\) in \(S_1\), then \(T_1\) also writes final value of \(A\)
+      in \(S_2\)
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/56.png]]
+
+    *View Serializability* allows for more schedules than *Conflict Serializability* does, but is
+    difficult to enforce efficiently
+
+    In practice, *Conflict Serializability* is what systems support because it can be enforced efficiently
+
+
+    Serial \(\subseteq\) Conflict Serializable \(\subseteq\) View Serializable
+** Durability
+    All the changes of committed transactions should be persistent
+* Two-Phase Locking
+** Lock Types
+    *S-LOCK*: shared locks for reads
+
+    *X-LOCK*: exclusive locks for writes
+
+    |           | shared         | exclusive |
+    | shared    | \(\checkmark\) | \(\times\)     |
+    | exclusive | \(\times\)          | \(\times\)  |
+
+** Two-Phase Locking
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/57.png]]
+    Two-phase locking (2PL) is a concurrency control protocol that determines whether a txn can
+    access an object in the database on the fly
+
+    The protocol does *not* need to know all the queries that a txn will execute ahead of time
+
+    *Phase 1: Growing*
+    - each txn requests the locks that it needs from the DBMS's lock manager
+    - the lock manager grants/denies lock requests
+
+    *Phase 2: Shrinking*
+    - the txn is allowed to only release locks that it previously acquired. It cannot acquire new
+      locks
+
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/58.png]]
+
+    2PL on its own is sufficient to guarantee conflict serializability
+    - it generates schedules whose precedence graph is acylic
+
+      But it is subject to *cascading aborts*
+
+      #+ATTR_LATEX: :width .8\textwidth
+      #+NAME:
+      #+CAPTION:
+      [[../images/15445/59.png]]
+
+      There are potential schedules that are serializable but would not be allowed by 2PL
+      - locking limits concurrency
+
+    may still have "dirty reads"
+    - solution: *Strong Strict 2PL* (aka *Rigorous 2PL*)
+
+    May lead to deadlock
+    - solution: *Detection* or *Prevention*
+
+    Strong strict two-phase locking: the txn is only allowed to release locks after it has ended,
+    i.e., committed or aborted
+
+    Allows only conflict serializable schedules, but it is often stronger than needed for some apps
+
+    A schedule is *strict* if a value written by a txn is not read or overwritten by other txns until
+    that txn finishes
+
+    Advantages:
+    - does not incur cascading aborts
+    - aborted txns can be undone by just restoring original values of modified tuples
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/60.png]]
+** Deadlock Detection + Prevention
+
+    #+ATTR_LATEX: :width .5\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/61.png]]
+
+    A *deadlock* is a cycle of transactions waiting for locks to be released by each other
+
+    Two ways of dealing with deadlocks
+    1. deadlock detection
+    2. deadlock prevention
+*** Deadlock detection
+    The DBMS creates a *wait-for* graph to keep track of what locks each txn is waiting to acquire:
+    - nodes are transactions
+    - each from \(T_i\) to \(T_j\) if \(T_i\) is waiting for \(T_j\) to release a lock
+
+
+    When the DBMS detects a deadlock, it will select a "victim" txn to rollback to break the cycle
+
+    The victim txn will either restart or abort depending on how it was invoked
+
+    There is a trade-off between the frequency of checking for deadlocks and how long txns have to
+    wait before deadlocks are broken
+
+    Selecting the proper victim depends on a lot of different variables
+    - by age
+    - by progress
+    - by the # of items already locked
+    - by the # of txns that we have to rollback with it
+
+    After select a victim txn to abort, the DBMS can also decide on how far to rollback the txn's
+    changes - completely/minimally
+*** Deadlock prevention
+    When a txn tried to acquire a lock that is held by another txn, the DBMS kills one of them to
+    prevent a deadlock
+
+    This approach does /not/ require a *waits-for* graph or detection algorithm
+
+    Assign priorities based on timestamps: old timestamp = higher priority
+
+    *Wait-Die* (Old Waits for Young)
+    - if /requesting txn/ has higher priority than /holding txn/, then /requesting txn/ waits for /holding
+      txn/
+    - otherwise /requesting txn/ aborts
+    *Wound-Wait* (Yound waits for old)
+    - if /requesting txn/ has higher priority than /holding txn/, then /holding txn/ aborts and releases lock
+    - otherwise /requesting txn/ aborts
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/62.png]]
+
+    Why do these schemes guarantee no deadlocks?
+
+    only one "type" of direction allowed when waiting for a lock
+
+    When a txn restarts, what is its priority?
+
+    Its original timestamp(so you have enough priority)
+** Hierarchical Locking
+    All these examples have a one-to-one mapping from database objects to locks.
+
+    If a txn wants to update one billion tuples, then it must acquire one billion locks
+
+    Acquiring locks is a more expensive operation than acquiring a latch even if that lock is
+    available
+
+    When a txn wants to acquire a "lock", the DBMS can decide the granularity of that lock
+
+    The DBMS should ideally obtain fewest number of locks that a txn needs
+
+    Trade-off between _parallelism_ versus _overhead_
+    - fewer locks, larger granularity vs. More Lockers, smaller granularity
+
+    Database lock hierarchy:
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/63.png]]
+
+
+    An *intention lock* allows a higher-level node to be locked in *shared* or *exclusive* mode without
+    having to check all descendent nodes
+
+    If a node is locked in an intention mode, then some txn is doing explicit locking at a lower
+    level in the tree
+
+    Intention locks:
+    * *intention-shared* (~IS~): indicates explicit locking at lower level with shared locks
+    * *intention-exclusive* (~IX~): indicates explicit locking at lower level with exclusive locks
+    * *shared+intention-exclusive* (~SIX~): the subtree rooted by that node is is locked explicitly in
+      *shared* mode and explicit is being done at a lower level with *exclusive-mode* locks
+
+    |     | IS             | IX             | S              | SIX            | X     |
+    | IS  | \(\checkmark\) | \(\checkmark\) | \(\checkmark\) | \(\checkmark\) | \(\times\) |
+    | IX  | \(\checkmark\) | \(\checkmark\) | \(\times\)          | \(\times\)          | \(\times\) |
+    | S   | \(\checkmark\) | \(\times\)          | \(\checkmark\) | \(\times\)          | \(\times\) |
+    | SIX | \(\checkmark\) | \(\times\)          |                | \(\times\)          | \(\times\) |
+    | X   | \(\times\)          | \(\times\)          | \(\times\)          | \(\times\)          | \(\times\) |
+
+    Locking protocol:
+    - each txn obtains appropriate lock at highest level of the database hierarchy
+    - to get ~S~ or ~IS~ lock on a node, the txn must hold at least \(IS\)  on parent node
+    - to get ~X~, ~IX~, or ~SIX~ on a node, must hold at least \(IX\) on parent node
+
+    Example:
+
+    \(T_1\): Get the balance of Lin's shady off-shore bank account
+
+    \(T_2\): Increase Andrew's bank account balance by 1%
+
+    - exclusive + shared for leaf nodes of lock tree
+    - special intention locks for higher levels
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/64.png]]
+
+    Assume three txns execute at same time:
+    - \(T_1\): scan ~R~ and update few tuples
+    - \(T_2\): read a single tuple in ~R~
+    - \(T_3\): Scan all tuples in ~R~
+
+      #+ATTR_LATEX: :width .7\textwidth
+      #+NAME:
+      #+CAPTION:
+      [[../images/15445/65.png]]
+
+      Hierarchical locks are useful in practice as each txn only needs a few locks
+
+      Intention locks help improve concurrency:
+      - intention-shared: intent to get S locks at finer granularity
+      - intention-exclusive: intent to get X locks at finer granularity
+      - shared+intention-exclusive: like S and IX at the same time
+** Conclusion
+    2PL is used in almost DBMS
+
+    Automatically generates correct interleaving:
+    - locks + protocol (2PL, SS2PL)
+    - deadlock detection + handling
+    - deadlock prevention
+
+
 * Lab notes
 ** project 3
     We will use the iterator query processing model (i.e., the Volcano model). Recall that in this
