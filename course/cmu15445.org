@@ -2540,7 +2540,7 @@ COMMIT
     - otherwise /requesting txn/ aborts
     *Wound-Wait* (Yound waits for old)
     - if /requesting txn/ has higher priority than /holding txn/, then /holding txn/ aborts and releases lock
-    - otherwise /requesting txn/ aborts
+    - otherwise /requesting txn/ waits
 
     #+ATTR_LATEX: :width .8\textwidth
     #+NAME:
@@ -2638,6 +2638,223 @@ COMMIT
     - deadlock detection + handling
     - deadlock prevention
 
+* Timestamp Ordering Concurrency Control
+    Concurrency control approaches:
+    - Two-Phase locking (pessimistic)
+    - Timestamp Ordering (optimistic)
+
+    Use timestamps to determine the serializability order of txns
+
+    If \(TS(T_i)<TS(T_j)\), then the DBMS must ensure that the execution schedule is equivalent to a
+    serial schedule where \(T_i\) appears before \(T_j\)
+
+    Each txn \(T_i\) is assigned a unique fixed timestamp that is monotonically increasing
+    - let \(TS(T_i)\) be the timestamp allocated to txn \(T_i\)
+    - different schemes assign timestamps at different times during the txn
+
+    Multiple implementation strategies
+    - system lock
+    - logical counter
+    - hybrid
+** Basic Timestamp Ordering (T/O) protocol
+    Txns read and write objects without locks
+
+    Each object \(X\) is tagged with timestamp of the last txn that successfully did read/write:
+    - ~W-TS(X)~ write timestamp on \(X\)
+    - ~R-TS(X)~ read timestamp on \(X\)
+
+    Check timestamps for every operation: if txn tries to access an object "from the future", it
+    aborts and restarts
+
+    *Read*:
+
+    If ~TS(T_i)~ < ~W-TS(X)~, this violates timestamp order of \(T_i\) with regard to the write of \(X\),
+    then abort \(T_i\) and restart it with a new _TS_
+
+    Else, allow \(T_i\) to read \(X\), update ~R-TS(X)~ with ~max(R-TS(X),TS(T_i))~, make a local copy
+    of \(X\) to ensure repeatable reads for \(T_i\)
+
+    *Writes*:
+
+    If ~TS(T_i)~ < ~R-TS(X)~ or ~TS(T_i)~ < ~W-TS(X)~, abort and restart \(T_i\)
+
+    Else, allow \(T_i\) to write \(X\) and update ~W-TS(X)~, also make a local copy of \(X\) to ensure
+    repeatable reads
+
+    Thomas write rule:
+
+    If ~TS(T_i)~ < ~R-TS(X)~: Abort and restart \(T_i\)
+
+    If ~TS(T_i)~ < ~W-TS(X)~: ignore the write to allow the txn to continue executing without aborting,
+    which violates timestamp order of \(T_i\)
+
+    Else: allow \(T_i\) to write \(X\) and update ~W-TS(X)~
+
+    Basic T/O: generates a schedule that is conflict serializable if do *not* use the _Thomas Write
+    Rule_
+    - no deadlocks because no txn ever waits
+    - possibility of starvation for long txns if short txns keep causing conflicts
+
+    Permits schedules that are not recoverable
+
+    Check [[https://www.javatpoint.com/dbms-recoverability-of-schedule][link]] for better explanation..
+
+    A schedule is *recoverable* if txns commits only after all txns whose changes they read, commit
+
+    Otherwise, the DBMS cannot guarantee that txns read data that will be restored after recovering
+    from a crash
+
+    Performance issues:
+    1. high overhead from copying data to txn's workspace and from updating timestamps
+    2. long running txns can get starved - the likelihood that a txn will read something from a
+       newer txn increases
+** Optimistic Concurrency Control
+    If you assume that conflicts between txns are *rare* and that most txns are *short-lived*, then
+    forcing txns to wait to acquire locks adds a lot of overhead
+
+    A better approach is to optimize for the nonconflict case
+
+    The DBMS creates a private workspace for each txn
+    - any object read is copied into workspace
+    - modifications are applied to workspace
+
+    When a txn commits, the DBMS compares workspace write set to see whether it conflicts with other
+    txns
+
+    1. *Read Phase*: track the read/write sets of txns and store their writes in a private workspace
+    2. *Validation Phase*: when a txn commits, check whether it conflicts with other txns
+    3. *Write Phase*: if validation succeeds, apply private changes to database. Otherwise abort and
+       restart the txn
+*** Read
+       Track the read/write sets of txns and store their writes in a private workspace
+
+       The DBMS copies every tuple that the txn accesses from the shared database to its workspace
+       ensure repeatable reads
+*** Validation
+       When txn \(T_i\) invokes ~COMMIT~, the DBMS checks if it conflicts with other txns
+       - the DBMS needs to guarantee only serializable schedules are permitted
+       - checks other txns for RW and WW conflicts and ensure that conflicts are in one diretion
+
+    Two methods: backward validation, forward validation
+
+    Backward validation:
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/66.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/67.png]]
+
+    Forward validation:
+
+    Each txn's timestamp is assigned at the beginning of the validation phase
+
+    Check the timestamp ordering of the comitting txn with all other running txns
+
+    If ~TS(T_i)~ < ~TS(T_j)~, then one of the following conditions must hold
+    1. \(T_i\) completes all three phases before \(T_j\) begins
+    2. \(T_i\) completes before \(T_j\) starts its _Write_ phase, and \(T_i\) does not write to any
+       object read by \(T_j\)
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/68.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/69.png]]
+    3. [@3] \(T_i\) completes its _Read_ phase before \(T_j\) completes its _Read_ phase and \(T_i\) does
+       not write any object that is either read or written by \(T_j\)
+       #+ATTR_LATEX: :width .8\textwidth
+       #+NAME:
+       #+CAPTION:
+       [[../images/15445/70.png]]
+*** Write
+    The DBMS propagate the changes in the txn's write set to the database and makes them visible to
+    other txns
+
+    Assume that only one txn can be in the write phase at a time
+    - use write latches to support parallel validation/writes
+*** Miscellaneous
+    OOC works well when the # of conflicts is low
+
+    if the database is large the workload is not skewed, then there is a low probability of
+    conflict, so again locking is wasteful
+
+    High overhead for copying data locally
+
+    Validation/Write phase bottlenecks
+
+    Aborts are more wasteful than in 2PL because they only occur _after_ a txn has already executed
+*** The phantom problem
+    Recall that so far we have only dealing with transactions that read and update existing objects
+    in the database
+
+    But now if we have insertions, updates, and deletions, we have new problems
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/15445/71.png]]
+    Unrepeatable reads
+
+    Conflict serializability on reads and writes of individual items guarantees serializability *only*
+    if the set of objects is fixed
+
+    Approach:
+
+    *Re-execute scans*: the DBMS tracks the ~WHERE~ clause for all queries that the txn executes: have
+    to retain the scan set for every range query in a txn
+
+    Upon commit, re-execute just the scan portion of each query and check whether it generates the
+    same result
+
+    *Predicate locking*: shared lock on the predicate in a ~WHERE~ clause of a ~SELECT~ query, exclusive
+    lock on the predicate in a ~WHERE~ clause of any ~UPDATE~, ~INSERT~ or ~DELETE~ query
+
+    *Index locking*: if there is an index on the status attribute then the txn can lock index page
+    containing the data with ~status='lit'~
+
+    If there are no records with ~status='lit'~, the txn must lock the index page where such a data
+    entry would be, if it existed
+
+    If there is no suitable index, then the txn must obtain:
+    - a lock on every page in the table to prevent a record's ~status='lit'~ from being changed to ~lit~
+    - the lock for the table itself to prevent records with ~status='lit'~ from being added or deleted
+** Isolation Levels
+    Serializability is useful because it allows programmers to ignore concurrency issues
+
+    But enforcing it may allow too little concurrency and limit performance
+
+    we may want to use a weaker level of consistency to improve scalability
+
+    we can controls the extent that a txn is exposed to the actions of other concurrent txns
+
+    Provides for greater concurrency at the cost of exposing txns to uncommitted changes
+    - dirty reads
+    - unrepeatable reads
+    - phantom reads
+
+    *Isolation levels*:
+    1. *SERIALIZABLE*: no phantoms, all reads repeatable, no dirty reads
+
+       Obtain all locks first; plus index locks, plus strict 2PL
+    2. *REPEATABLE READS*: phantom may happen
+
+       Same as above, but no index locks
+    3. *READ COMMITED*: Phantoms and unrepeatable reads may happen
+
+       Same as above, but ~S~ locks are released immediately
+    4. *READ UNCOMMITTED*: All of them may happen
+
+       Same as above but allows dirty reads (no ~S~ locks)
+
+
 
 * Lab notes
 ** project 3
@@ -2671,3 +2888,36 @@ COMMIT
           3. 3600
           4. 3160000
           5. 3000
+** 4
+    1.
+       1. no
+       2. yes
+       3. yes
+       4. no ?
+       5. yes
+    2.
+       1. no
+       2. B
+       3. no
+       4. T1 T2 T3
+       5. yes
+    3. deadlock detection and prevention
+       1.
+          1. S(A) S(B) X(B)
+          2. C D
+       2.
+          1. g g  b g b b
+          2. a
+          3. d
+       3.
+          1. g b b g b b
+          2. d
+          3. b
+          4. g a a g g -
+          5. g b b g a -
+    4.
+       1. c
+       2. c b
+       3. a
+       4. d
+       5. c a

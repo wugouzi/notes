@@ -1,4 +1,4 @@
-% Created 2022-09-15 Thu 14:13
+% Created 2022-09-21 Wed 09:40
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -18,10 +18,10 @@
 \usepackage{minted}
 \author{wu}
 \date{\today}
-\title{6 824}
+\title{6.824}
 \hypersetup{
  pdfauthor={wu},
- pdftitle={6 824},
+ pdftitle={6.824},
  pdfkeywords={},
  pdfsubject={},
  pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
@@ -33,10 +33,10 @@
 
 
 \section{map reduce}
-\label{sec:orgec9e8b2}
+\label{sec:orgd6a4550}
 
 \subsection{programming model}
-\label{sec:orgd3308cf}
+\label{sec:orgab3d4a3}
 the computation takes a set of \textbf{input} key/value pairs, and produces a set of \textbf{output} key/value
 pairs. The user of the MapReduce library expresses the computation as two functions: \textbf{Map} and
 \textbf{Reduce}
@@ -50,7 +50,7 @@ values for that key. It merges together these values to form a possibly smaller 
 Typically just zero or one output value is produced per Reduce invocation.
 
 \subsubsection{example}
-\label{sec:orgd0217e6}
+\label{sec:org8c4b11d}
 \begin{minted}[]{python}
 map(String key, String value):
   // key: document name
@@ -70,14 +70,14 @@ The \texttt{map} function emits each word plus an associated count of occurrence
 sums together all counts emitted for a particular word
 
 \subsubsection{Types}
-\label{sec:orgef673b6}
+\label{sec:orge88bcd9}
 \begin{alignat*}{3}
 &\text{map}&&\texttt{(k1,v1)}&&\to\texttt{list(k2,v2)}\\
 &\text{reduce}\quad&&\texttt{(k2,list(v2))}&&\to\texttt{list(v2)}\\
 \end{alignat*}
 
 \subsubsection{More examples}
-\label{sec:org6dfeb5d}
+\label{sec:org8deaa08}
 \textbf{Distributed Grep}: the map function emits a line if it matches a supplied pattern. The reduce
 function is an identity function that just copies the supplied intermediate data to the output
 
@@ -92,9 +92,9 @@ a \(\la\texttt{URL,total count}\ra\) pair
  away infrequent terms, and then emits a final \(\la\texttt{hostname,term vector}\ra\) pair
 
 \subsection{Implementation}
-\label{sec:orgfd4a734}
+\label{sec:orga02270e}
 \subsubsection{Execution Overview}
-\label{sec:org4a33d44}
+\label{sec:orge92d02a}
 The \emph{Map} invocations are distributed across multiple machines by automatically partitioning the
 input data into a set of \(M\) \emph{splits}. The input splits can be processed in parallel by
 different machines. \emph{Reduce} invocations are distributed by partitioning the intermediate key
@@ -134,7 +134,7 @@ for this reduce partition
 program. At this point, the \emph{MapReduce} call in the user program returns back the user code
 \end{enumerate}
 \subsubsection{Master data structures}
-\label{sec:orge922224}
+\label{sec:orgd1fc5ce}
 for each map task and reduce task, it stores the state (\emph{idle}, \emph{in-progress}, or \emph{completed}),
 identity of the worker machine.
 
@@ -142,31 +142,31 @@ For each completed map task, the master stores the locations and sizes of the \(
 file regions produced by the map task. Updates to this location and size information are
 received as map tasks are completed
 \subsubsection{Fault tolerance}
-\label{sec:orgac7ce40}
+\label{sec:org17fc2f5}
 \begin{enumerate}
 \item worker failure
-\label{sec:orgbfbabd8}
+\label{sec:orga4032f6}
 The master pings every worker periodically. If no response is received from a worker in a
 certain amount of time, the master marks the worker as failed.
 
 Completed map tasks are re-executed on a failure because their output is stored on the local
 disk(s) of the failed machine and is therefore inaccessible
 \item master failure
-\label{sec:orgeb0e6db}
+\label{sec:org27dab95}
 It is easy to make the master write periodic checkpoints of the master data structures described
 above.
 \item Semantics in the presence of failures
-\label{sec:org49ea0b4}
+\label{sec:orgd58a163}
 \end{enumerate}
 \section{Raft paper}
-\label{sec:orge38ebfd}
+\label{sec:orgefeb416}
 Raft is a consensus algorithm for managing a replicated log.
 \subsection{Introduction}
-\label{sec:org8f75c8f}
+\label{sec:org29cb004}
 Consensus algorithms allow a collection of machines to work as a coherent group that can survive
 the failures of some of its members
 \subsection{Replicated state machines}
-\label{sec:org50fe155}
+\label{sec:org2f1a595}
 Replicated state machines are typically implemented using a replicated log, as shown in figure
 \begin{figure}[htbp]
 \centering
@@ -191,7 +191,7 @@ tolerate the failure of any two servers
 to a single round of remote procedure calls
 \end{itemize}
 \subsection{The Raft consensus algorithm}
-\label{sec:orgcc2971c}
+\label{sec:org025247c}
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.9\linewidth]{../images/6.824/3.pdf}
@@ -225,7 +225,7 @@ machine, no other server will ever apply a different log entry for the same inde
 \end{itemize}
 \end{itemize}
 \subsubsection{Raft basics}
-\label{sec:org70f41e5}
+\label{sec:org1157358}
 At any given time each server is in one of three states: \textbf{leader}, \textbf{follower} or \textbf{candidate}. In
 normal operation there is exactly one leader and all of the other servers are followers.
 \begin{itemize}
@@ -240,4 +240,120 @@ redirects it to the leader)
 \includegraphics[width=.7\textwidth]{../images/6.824/4.png}
 \label{}
 \end{figure}
+
+Raft divides time into \textbf{terms} of arbitrary length:
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.7\textwidth]{../images/6.824/5.png}
+\label{}
+\end{figure}
+Terms are numbered with consecutive integers. Each term begins with an \textbf{election}, in which one or
+more candidates attempt to become leader. If a candidate wins the election, then it serves as
+leader for the rest of the term. In some situations an election will result in a split vote, in
+this case the term will end with no leader; a new term (with a new election) will begin shortly.
+Raft ensures that there is at most one leader in a given term
+
+Different severs may observe the transitions between terms at different times, and in some
+situations a server may not observe an election or even entire terms. Terms act as a logical
+clock in Raft, and they allow servers to detect obsolete information such as stable leaders.
+
+Each server stores a \textbf{current term} number, which increases monotonically over time. Current terms
+are exchanged whenever servers communicate; if one server's current term is smaller than the
+other's, then it updates its current term to the larger value. If a candidate or leader
+discovers that its term is out of data, it immediately reverts to follower state. If a server
+receives a request with a stale term number, it rejects the request.
+
+Raft servers communicate using remote procedure calls(RPCs), and the basic consensus algorithm
+requires only two types of RPCs. RequestVote RPCs are initiated by candidates during elections,
+and AppendEntries RPCs are initiated by leaders to replicate log entries and to provide a form
+of heartbeat
+\subsubsection{Leader Election}
+\label{sec:org7b03e5c}
+Raft uses a heartbeat mechanism to trigger leader election.
+
+When servers start up, they begin as followers. A server remains in follower state as long as it
+receives valid RPCs from a leader or candidate. Leaders send periodic heartbeats (AppendEntries
+RPCs that carry no log entries) to all followers in order to maintain their authority. If a
+follower receives no communication over a period of time called the \textbf{election timeout}, then it
+assumes there is no viable leader and begins an election to choose a new leader
+
+To begin an election, a follower increments its current term and transitions to candidate state.
+It then votes for itself and issues RequestVote RPCs \textbf{in parallel} to each of the other servers in
+the cluster. A candidate continues in this state until one of three things happens:
+\begin{enumerate}
+\item it wins the election
+\item another server establishes itself as leader
+\item a period of time goes by with no winner
+\end{enumerate}
+
+A candidate wins an election if it receives votes from a majority of the servers in the full
+cluster for the same term. Each server will vote for at most one candidate in a given term, on a
+first-come-first-served basis (5.4 adds an additional restriction on votes). The majority rules
+ensures that at most one candidate can win the election for a particular term (the \textbf{Election}
+\textbf{Safe Property}) Once a candidate wins the election, it becomes leader. It then sends heartbeat
+messages to all of the other servers to establish its authority and prevent new elections
+
+While waiting for votes, a candidate may receive an AppendEntries RPC from another server claiming
+to be leader. If the leader's term is at least as large as the candidate's current term, then
+the candidate recognizes the leader as legitimate and returns to follower state. If the term in
+the RPC is smaller than the candidate's current term, then the candidate rejects the RPC and
+continues in candidate state.
+
+The third possible outcome is that a candidate neither wins nor loses the election: if many
+followers become candidates at the same time, votes could be split so that no candidate obtains
+a majority. When this happens, each candidate will time out and start a new election by
+incrementing its term and initiating another round of RequestVote RPCs. However, without extra
+measures split votes could repeat indefinitely.
+
+Raft uses randomized election timeouts to ensure that split votes are rare and that they are
+resolved quickly. To prevent split votes in the first place, election timeouts are chosen
+randomly from a fixed interval (e.g., 150-300ms). This spreads out the servers so that in most
+cases only a single server will time out; it wins the election and sends single server will time
+out.
+
+The same mechanism is used to handle split votes. Each candidate restarts its randomized
+election timeout at the start of an election, and it waits for that timeout to elapse before
+starting the next election;
+\subsubsection{Log replication}
+\label{sec:org6961b5e}
+Each client request contains a command to be executed by the replicated state machines. The
+leader appends the command to its log as a new entry, then issues AppendEntries RPCs in parallel
+to each of the other servers to replicate the entry. When the entry has been safely replicated,
+the leader applies the entry to its state machine and returns the result of that execution to
+the client. If followers crash or run slowly, or if network packets are lost, the leader retries
+AppendEntries RPCs indefinitely (even after it has responded to the client) until all followers
+eventually store all log entries.
+
+Los are organized as below
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.7\textwidth]{../images/6.824/6.png}
+\label{}
+\end{figure}
+Each log entry stores a state machine command along with the term number when the entry was
+received by the leader. The term numbers in log entries are used to detect inconsistencies
+between logs and to ensure some of the properties. Each log entry also has an integer index
+identifying its position in the log
+
+The leader decides when it is safe to apply a log entry to the state machines; such an entry is
+called \textbf{committed}. A log entry is committed once the leader that created the entry has replicated
+it on a majority of the servers. This also commits all preceding entries in the leader's log,
+including entries created by previous leaders. The leader keeps track of the highest index it
+knows to be committed, and it includes that index in future AppendEntries RPCs (including
+heartbeats) so that the other servers eventually find out. Once a follower learns that a log
+entry is committed, it applies the entry to its local state machine
+
+Raft maintains the following properties, which together constitute the Log Machine Property:
+\begin{itemize}
+\item If two entries in different logs have the same index and term, then they store the same command
+\item If two entries in different logs have the same index and term, then the logs are identical in
+all preceding entries
+\end{itemize}
+
+The first property follows from the fact that a leader creates at most one entry with a given
+log index in a given term, and log entries never change their position in the log.
+
+The second property is guaranteed by a simple consistency check performed by AppendEntries. When
+sending an AppendEntries RPC, the leader includes the index and the term in its log that
+immediately precedes the new entries
 \end{document}

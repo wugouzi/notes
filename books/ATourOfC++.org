@@ -1263,3 +1263,49 @@ void user() {
     programming
 
     The ~shared_ptr~ is similar to ~unique_ptr~ except that ~shared_ptr~ s are copied rather than moved.
+* Concurrency
+** Waiting for Events
+    Consider the classical example of two ~thread~​s communicating by passing messages through a ~queue~.
+    #+begin_src c++
+class Message {
+
+};
+
+queue<Message> mqueue;
+condition_variable mcond;
+mutex mmutex;
+
+void consumer() {
+  while (true) {
+    unique_lock lck{mmutex};  //acquire mmutex
+    mcond.wait(lck, []{return !mqueue.empty();});
+    // release lck and wait
+    // re-acquire lck upon wakeup
+    // don't wake up unless mqueue is non-empty
+    auto m = mqueue.front();
+    mqueue.pop();
+    lck.unlock();
+  }
+}
+    #+end_src
+
+    I used a ~unique_lock~ rather than a ~scoped_lock~ for two reasons:
+    * we need to pass the lock to the ~condition_variable~'s ~wait()~. A ~scoped_lock~ cannot be copied,
+      but a ~unique_lock~ can be
+    * we want to unlock the ~mutex~ protecting the condition variable before processing the message. A
+      ~unique_lock~ offers operations, such as ~lock()~ and ~unlock()~, for low-level control of
+      synchronization.
+
+    On the other hand, ~unique_lock~ can only handle a single ~mutex~
+
+    #+begin_src c++
+void producer() {
+  while (true) {
+    Message m;
+
+    scoped_lock lck{mmutex};
+    mqueue.push(m);
+    mcond.notify_one();
+  }
+}
+    #+end_src

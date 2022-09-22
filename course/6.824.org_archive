@@ -1,0 +1,98 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /Users/wu/notes/course/6.824.org
+
+
+* Log replication [4/15]
+:PROPERTIES:
+:ARCHIVE_TIME: 2022-09-21 Wed 13:41
+:ARCHIVE_FILE: ~/notes/course/6.824.org
+:ARCHIVE_OLPATH: Raft paper/The Raft consensus algorithm
+:ARCHIVE_CATEGORY: 6.824
+:END:
+    Each client request contains a command to be executed by the replicated state machines.
+    1. [ ] The leader appends the command to its log as a new entry, then issues AppendEntries RPCs in
+       parallel to each of the other servers to replicate the entry.
+    2. [ ] When the entry has been safely replicated, the leader applies the entry to its state machine
+       and returns the result of that execution to the client.
+    3. [ ] If followers crash or run slowly, or if network packets are lost, the leader retries
+       AppendEntries RPCs indefinitely (even after it has responded to the client) until all
+       followers
+    eventually store all log entries.
+
+    Los are organized as below
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/6.png]]
+    Each log entry stores a state machine command along with the term number when the entry was
+    received by the leader. The term numbers in log entries are used to detect inconsistencies
+    between logs and to ensure some of the properties. Each log entry also has an integer index
+    identifying its position in the log
+
+    The leader decides when it is safe to apply a log entry to the state machines; such an entry is
+    called *committed*.
+    * [ ] A log entry is committed once the leader that created the entry has replicated it on a
+      majority of the servers. This also commits all preceding entries in the leader's log,
+      including entries created by previous leaders.
+    * [ ] The leader keeps track of the highest index it knows to be committed, and it includes that
+      index in future AppendEntries RPCs (including heartbeats) so that the other servers eventually
+      find out.
+    * [ ] Once a follower learns that a log entry is committed, it applies the entry to its local state machine
+
+    Raft maintains the following properties, which together constitute the Log Machine Property:
+    * If two entries in different logs have the same index and term, then they store the same command
+    * If two entries in different logs have the same index and term, then the logs are identical in
+      all preceding entries
+
+    The first property follows from the fact that a leader creates at most one entry with a given
+    log index in a given term, and log entries never change their position in the log.
+
+    The second property is guaranteed by a simple consistency check performed by AppendEntries.
+    1. [ ] When sending an AppendEntries RPC, the leader includes the index and the term in its log that
+       immediately precedes the new entries.
+    2. [ ] If the follower does not find an entry in its log with the same index and term, then it
+       refuses the new entries
+    The consistency check acts as an induction
+
+    During normal operation, the logs of the leader and followers stay consistent, so the
+    AppendEntries consistency check never fails.
+
+    However, leader crashes can leave the log inconsistent,
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/7.png]]
+
+    In Raft, the leader handles inconsistencies by forcing the follower' log to duplicate its own.
+    This means that conflicting entries in follower logs will be overwritten with entries from the
+    leader's log
+
+    To bring a follower's log into consistency with its own, the leader must
+    1. [ ] find the latest log entry where the two logs agree
+    2. [ ] delete any entries in the follower's log after that point
+    3. [ ] send the follower all of the leader's entries after that point
+    All of these actions happen in response to the consistency check performed by AppendEntries
+    RPCs.
+
+    The leader maintains a ~nextIndex~ for each follower, which is the index of the next log entry the
+    leader will send to that follower
+    1. [X] When a leader first comes to power, it initializes all ~nextIndex~ values to the index just
+      after the last one in its log (11 in figure)
+    2. [X] If a follower's log is inconsistent with the leader's, the AppendEntries consistency check
+      will fail in the next AppendEntries RPC.
+    3. [X] After a rejection, the leader decrements ~nextIndex~ and retries the AppendEntries RPC.
+      Eventually ~nextIndex~ will reach a point where the leader and follower logs match.
+    4. [X] When this happens, AppendEntries will succeed, which removes any conflicting entries in the
+      follower's log and appends entries from the leader's log.
+
+    Once AppendEntries succeeds, the follower's log is consistent with the leader's, and it will
+    remain that way for the rest of the term
+
+    If desired, the protocol can be optimized to reduce the number of rejected AppendEntries RPCs.
+    * When rejecting an AppendEntries request, the follower can include the term of the conflicting
+      entry and the first index it stores for that term. With this information, the leader can
+      decrement ~nextIndex~ to bypass all of the conflicting entries in that term
+    * One AppendEntries RPC will be required for each term with conflicting entries, rather than one
+      RPC per entry
