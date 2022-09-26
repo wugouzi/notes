@@ -142,6 +142,8 @@ reduce(String key, Iterator values):
     * in the common case, a command can complete as soon as a majority of the cluster has responded
       to a single round of remote procedure calls
 ** The Raft consensus algorithm
+    [[https://eli.thegreenplace.net/2020/implementing-raft-part-3-persistence-and-optimizations/][link]]
+
     #+NAME:
     #+CAPTION:
     [[../images/6.824/3.pdf]]
@@ -351,3 +353,42 @@ reduce(String key, Iterator values):
 
     The RequestVote RPC implements this restriction: the RPC includes information about candidate's
     log, and the voter denies its vote if its own log is more up-to-date than that of the candidate
+
+    Raft determines which of two logs is more up-to-date by comparing the index and term of the last
+    entries in the logs.
+*** Committing entries from previous terms
+    * A leader knows that an entry from its current term is committed once that entry is stored on
+       a majority of the serves.
+    * If a leader crashes before committing an entry, future leaders will attempt to finish
+      replicating the entry.
+    * However, a leader cannot immediately conclude that an entry from a previous term is committed
+      once it is stored on a majority of servers
+
+    Below is an illustration:
+    #+ATTR_LATEX: :width .7\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/8.png]]
+
+    To eliminate problems like the one in figure, Raft never commits log entries from previous terms
+    by counting replicas. Once an entry from the current term has been committed, then all prior
+    entries are committed indirectly because of the Log Machting Property
+*** Safety argument
+    We argue the Leader Completeness Property here (if a log entry is commited in a given term, then
+    that entry will be present in the logs of the leaders for all higher-numbered terms)
+
+    We assume that the Leader Completeness Property does not hold, then we prove a contradiction.
+
+    Suppose the leader for term T (leader\textsubscript{T}) commits a log entry from its term, but
+    that log entry is not stored by the leader of some future term. Consider the smallest term U>T
+    whose leader (leader\textsubscript{U}) does not store the entry
+    1. The committed entry must have been absent from leader\textsubscript{U}'s log at the time of
+       its election (leaders never delete or overwrite entries)
+    2. leader\textsubscript{T} replicated the entry on a majority of the cluster, and
+       leader\textsubscript{U} received votes from a majority of the cluster. Thus at least one
+       server ("the voter") both accepted the entry from leader\textsubscript{T} and votes for
+       leader\textsubscript{U}.
+       #+ATTR_LATEX: :width .6\textwidth
+       #+NAME:
+       #+CAPTION:
+       [[../images/6.824/9.png]]

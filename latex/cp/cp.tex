@@ -1,0 +1,106 @@
+% Created 2022-09-26 Mon 10:32
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\makeindex
+\usepackage{minted}
+\renewcommand*{\proofname}{Solution}
+\author{wu}
+\date{\today}
+\title{Competitive programming}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={Competitive programming},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+
+\section{Dynamic Programming}
+\label{sec:org5a5fa17}
+\subsection{Digit DP}
+\label{sec:org91a95a5}
+\begin{problem}[LeetCode 788: Rotated Digits]
+An integer x is a \textbf{good} if after rotating each digit individually by 180 degrees, we get a valid
+number that is different  from x. Each digit must be rotated - we cannot choose to leave it alone.
+
+A number is valid if each digit remains a digit after rotation. For example:
+\begin{itemize}
+\item 0, 1, and 8 rotate to themselves,
+\item 2 and 5 rotate to each other (in this case they are rotated in a different direction, in other
+words, 2 or 5 gets mirrored)
+\item 6 and 9 rotate to each other, and
+\item the rest of the numbers do not rotate to any other number and become invalid.
+\end{itemize}
+
+Given an integer n, return the number of good integers in the range [1, n].
+\end{problem}
+
+\begin{proof}
+Given \(n\).
+Let \(f(pos,bound,diff)\) be the number of good numbers satisfying
+\begin{enumerate}
+\item Only consider \(pos\)th digit and \(pos\) starts from left, which means 0th digit is the
+highest digit. And we assume the first \(pos-1\)
+digits are fixed
+\item If digits in \([0,pos-1]\) are first \(pos\) digits of \(n\), then \(bound\) is \texttt{true}
+\item If digits in \([0,pos-1]\) has at least one 2/5/6/9, then \(diff\) is \texttt{true}
+\end{enumerate}
+
+Therefore the answer is \(f(0, true, false)\), and the transition formula is
+\begin{equation*}
+f(pos,bound,diff)=\sum f(pos+1,bound',diff')
+\end{equation*}
+\begin{itemize}
+\item \(bound'\) is true iff \(bound\) is true and the digit we choose is the \(pos\)th digit
+of \(n\)
+\item \(diff'\) is true iff \(diff\) is true or we chose 2/5/6/9
+\end{itemize}
+\end{proof}
+\section{Trick and Bit}
+\label{sec:org86f5b04}
+\subsection{Bit operation}
+\label{sec:org228ec7c}
+\begin{problem}[\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
+You are given an array with all the numbers from 1 to N appearing exactly once, except for two
+number that is missing. How can you find the missing number in \(O(N)\) time and \(O(1)\) space?
+
+You can return the missing numbers in any order.
+
+\begin{center}
+\begin{tabular}{ll}
+Input & Output\\
+\hline
+\texttt{[1]} & \texttt{[2,3]}\\
+\texttt{[2,3]} & \texttt{[1,4]}\\
+\end{tabular}
+\end{center}
+
+
+\texttt{nums.length <= 30000}
+\end{problem}
+
+\begin{proof}
+Suppose the missing two numbers are \(x_1\) and \(x_2\), and if we add \(1,\dots,N\) to the end of the
+array \(A\), then \(x=\bigoplus A=x_1\oplus x_2\).
+
+By \texttt{x\&-x} we can get the lowest bit of \(x\), assume it's in \(l\)th bit. Then we can
+assume \(x_1\)'s \(l\)th bit is 0, and \(x_2\)'s \(l\)th bit is 1, and we can partition \(A\) into
+\(A_1\) and \(A_2\) by whether the elements' \(l\)th bit is 1, then \(\bigoplus A_1=x_1\) and \(\bigoplus A_2=x_2\)
+\end{proof}
+\end{document}
