@@ -392,3 +392,40 @@ reduce(String key, Iterator values):
        #+NAME:
        #+CAPTION:
        [[../images/6.824/9.png]]
+** Log compaction
+    In snapshotting, the entire current system state is written to a *snapshot* on stable storage,
+    then the entire log up to that point is discarded.
+
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/10.png]]
+
+    Figure 12 shows that basic idea of snapshotting in Raft. Each server takes snapshots
+    independently, covering just the committed entries in its log. Most of the work consists of the
+    state machine writing its current state to the snapshot. Raft also includes a small amount of
+    metadata in the snapshot: the *last included index* is the index of the last entry in the log that
+    the snapshot replaces (the last entry the state machine had applied), and the *last included term*
+    is the term of this entry. These are preserved to support the AppendEntries consistency check
+    for the first log entry following the snapshot, since that entry needs a previous log index and
+    term.
+
+    Although servers normally take snapshots independently, the leader must occasionally send
+    snapshots to followers that lag behind. This happens when the leader has already discarded the
+    next log entry that it needs to send to a follower.
+
+    The leader uses a new RPC called InstallSnapshot to send snapshots to followers that are too far
+    behind
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/6.824/11.png]]
+
+    This snapshotting approach departs from Raft's strong leader principle, since followers can take
+    snapshots without the knowledge of the leader.
+
+    While having a leader helps avoid conflicting decisions in reaching consensus, consensus has
+    already been reached when snapshotting, so no decisions conflict. Data still only flows from
+    leaders to followers
+
+    One simple strategy is to take a snapshot when the log reaches a fixed size in byte

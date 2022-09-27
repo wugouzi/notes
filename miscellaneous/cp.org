@@ -1,13 +1,34 @@
 #+title: Competitive programming
 
 #+EXPORT_FILE_NAME: ../latex/cp/cp.tex
+#+LATEX_HEADER: \AddToHook{cmd/section/before}{\clearpage}
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
 #+LATEX_HEADER: \usepackage{minted}
 #+LATEX_HEADER: \renewcommand*{\proofname}{Solution}
+#+LATEX_HEADER: \let\OldTexttt\texttt
+#+LATEX_HEADER: \renewcommand{\texttt}[1]{\OldTexttt{\color{MidnightBlue} #1}}
 
 * Dynamic Programming
+** General
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/find-all-good-indices/}{LeetCode: Find All Good Indices}]
+    #+BEGIN_problem
+    You are given a /0-indexed/ integer array nums of size \(n\) and a positive integer \(k\).
+
+    We call an index \(i\) in the range \(k\le i< n-k\) good if the following conditions are satisfied:
+    * The \(k\) elements that are just before the index \(i\) are in non-increasing order.
+    * The \(k\) elements that are just after the index \(i\) are in non-decreasing order.
+
+    Return an array of all good indices sorted in increasing order.
+    #+END_problem
+
+    #+BEGIN_proof
+    For \(j\), suppose the non-increasing elements before \(j\) (including \(j\)) is \(left_j\), the
+    non-decreasing elements after \(j\) (including \(j\)) is \(right_j\), then \(i\) is good iff
+    \(left_{i-1}\ge k\) and \(right_{i+1}\ge k\)
+    #+END_proof
+
 ** Digit DP
     #+ATTR_LATEX: :options [LeetCode 788: Rotated Digits]
     #+BEGIN_problem
@@ -43,7 +64,68 @@
 
 
     #+END_proof
-* Trick and Bit
+* Graph
+** Union find
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
+    #+BEGIN_problem
+    There is a tree (i.e. a connected, undirected graph with no cycles) consisting of \(n\) nodes
+    numbered from 0 to \(n-1\) and exactly \(n - 1\) edges.
+
+    You are given a 0-indexed integer array ~vals~ of length \(n\) where ~vals[i]~ denotes the value of the
+    \(i\)th node. You are also given a 2D integer array edges where ~edges[i] = [ai,bi]~ denotes that
+    there exists an undirected edge connecting nodes \(a_i\) and \(b_i\).
+
+    A good path is a simple path that satisfies the following conditions:
+    1. The starting node and the ending node have the same value.
+    1. All nodes between the starting node and the ending node have values less than or equal to the
+       starting node (i.e. the starting node's value should be the maximum value along the path).
+
+    /Return the number of distinct good paths./
+
+    Note that a path and its reverse are counted as the same path. For example, ~0 -> 1~ is considered
+    to be the same as ~1 -> 0~. A single node is also considered as a valid path.
+    #+END_problem
+
+    #+BEGIN_proof
+    First, to solve the problem, we can enumerate the paths from the nodes with largest ~vals~, and
+    then delete these nodes and continue; this requires \(O(n^2)\) time
+
+    If we reverse the direction, we are merging nodes with values from low to high, so what comes to
+    our mind? Union find.
+
+    For each node \(s\) and its neighbor \(t\):
+    1. if ~vals[s]<vals[t]~, then pass
+    2. if ~vals[s]=vals[find[t]]~, then add ~size[find[s]]*size[find[t]]~
+    3. merge ~s~ and ~t~
+    #+END_proof
+
+* General
+** Intervals
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/count-days-spent-together/}{LeetCode: Count Days Spent Together}]
+    #+BEGIN_problem
+    Alice and Bob are traveling to Rome for separate business meetings.
+
+    You are given 4 strings ~arriveAlice~, ~leaveAlice~, ~arriveBob~, and ~leaveBob~. Alice will be in the
+    city from the dates ~arriveAlice~ to ~leaveAlice~ (inclusive), while Bob will be in the city from
+    the dates ~arriveBob~ to ~leaveBob~ (inclusive). Each will be a 5-character string in the format
+    "MM-DD", corresponding to the month and day of the date.
+
+    Return the total number of days that Alice and Bob are in Rome together.
+
+    You can assume that all dates occur in the same calendar year, which is not a leap year. Note
+    that the number of days  per month can be represented as: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31].
+
+    #+END_problem
+
+    #+BEGIN_proof
+    First we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
+    Bob's interval is \([c,d]\), then we need to calculate the intersection of these intervals.
+
+    \([a,b]\cap[c,d]\neq\emptyset\) iff \(b\ge c\wedge d\ge a\).
+
+    \([a,b]\cap[c,d]=\min(b,d)-\max(a,c)+1\)
+    #+END_proof
+
 ** Bit operation
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
     #+BEGIN_problem
@@ -69,4 +151,87 @@
     By ~x&-x~ we can get the lowest bit of \(x\), assume it's in \(l\)th bit. Then we can
     assume \(x_1\)'s \(l\)th bit is 0, and \(x_2\)'s \(l\)th bit is 1, and we can partition \(A\) into
     \(A_1\) and \(A_2\) by whether the elements' \(l\)th bit is 1, then \(\bigoplus A_1=x_1\) and \(\bigoplus A_2=x_2\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/find-a-value-of-a-mysterious-function-closest-to-target/}{LeetCode: Find a Value of a Mysterious Function Closest to Target}]
+    #+BEGIN_problem
+    ​
+    #+begin_src c++
+func(arr, l, r) {
+  if (r < l) {
+    return -10000000000;
+  }
+  ans = arr[l];
+  for (i = l + 1; i <= r; i++) {
+    ans = ans & arr[i];
+  }
+  return ans;
+}
+    #+end_src
+    Winston was given the above mysterious function ~func~. He has an integer array ~arr~ and an integer
+    ~target~ and he wants to find the values ~l~ and ~r~ that make the value ~|func(arr, l, r) - target|~
+    minimum possible.
+
+    Return the minimum possible value of ~|func(arr, l, r) - target|~.
+
+    Notice that func should be called with the values l and r where ~0 <= l, r < arr.length~.
+
+    Constraints:
+    * ~1 <= arr.length <= 10^5~
+    * ~1 <= arr[i] <= 10^6~
+    * ~0 <= target <= 10^7~
+    #+END_problem
+
+    #+BEGIN_proof
+    If we fix \(r\)
+    * \(f\) is a non-decreasing function
+    * there is at most 20 different values for \(f(arr,l,r)\) as \(arr[r]\le 10^6<2^{20}\), since from
+      right to left, 0 won't be transformed into 1
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/smallest-subarrays-with-maximum-bitwise-or/}{LeetCode: Smallest Subarrays With Maximum Bitwise OR}]
+    #+BEGIN_problem
+    You are given a /0-indexed/ array nums of length \(n\), consisting of non-negative integers. For
+    each index \(i\) from 0 to \(n-1\), you must determine the size of the minimum sized non-empty
+    subarray of nums starting at \(i\) (inclusive) that has the maximum possible bitwise OR.
+
+    Return an integer array answer of size \(n\) where answer[i] is the length of the minimum sized subarray
+    starting at \(i\) with maximum bitwise OR.
+
+    A subarray is a contiguous non-empty sequence of elements within an array.
+    #+END_problem
+
+    #+BEGIN_proof
+    Induction and we build a new array \(A=\{a_i:a_i=nums[i]\}\). In the \(i\)th round, for
+    each \(j<i\), check whether \(a_j|a_i>a_j\). If so, \(a_j|a_i\) is the new possible maximum
+    for \(a_j\) and the possible \(answer[j]\ge i-j+1\).
+
+    If \(a_j|a_i=a_j\), then \(a_i\subseteq a_j\) in the sense of bits and for
+    each \(k<j\), \(a_k|a_i=a_k|a_j\). So we don't need to consider \(k<j\)
+    #+END_proof
+** Hard to say
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
+    #+BEGIN_problem
+    You are given a 0-indexed 2D integer array transactions, where ~transactions[i] = [costi, cashbacki]~.
+
+    The array describes transactions, where each transaction must be completed exactly once in some
+    order. At any given moment, you have a certain amount of money. In order to complete transaction
+    \(i\), ~money >= cost_i~ must hold true. After performing a transaction, money becomes ~money-cost_i+cashback_i~.
+
+    Return the minimum amount of money required before any transaction so that all of the
+    transactions can be completed regardless of the order of the transactions.
+    #+END_problem
+
+    #+BEGIN_proof
+    The worst case is, we put money-losing transaction first and then put the transaction with
+    highest cost after it (erase the transaction before if necessary, and assume its index is \(i\))
+
+    Suppose \(total\) is the total lose, then if the transaction is money-losing, then the money we need is
+    \begin{equation*}
+    total-(cost[i]-cashback[i])+cost[i] = total+cashback[i]
+    \end{equation*}
+    Otherwise
+    \begin{equation*}
+    total+cost[i]
+    \end{equation*}
     #+END_proof

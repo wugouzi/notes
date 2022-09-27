@@ -1,4 +1,4 @@
-% Created 2022-09-26 Mon 10:32
+% Created 2022-09-27 Tue 15:48
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -12,11 +12,14 @@
 \usepackage{amssymb}
 \usepackage{capt-of}
 \usepackage{hyperref}
+\AddToHook{cmd/section/before}{\clearpage}
 \graphicspath{{../../books/}}
 \input{../preamble.tex}
 \makeindex
 \usepackage{minted}
 \renewcommand*{\proofname}{Solution}
+\let\OldTexttt\texttt
+\renewcommand{\texttt}[1]{\OldTexttt{\color{MidnightBlue} #1}}
 \author{wu}
 \date{\today}
 \title{Competitive programming}
@@ -30,11 +33,33 @@
 \begin{document}
 
 \maketitle
+\tableofcontents
+
 
 \section{Dynamic Programming}
-\label{sec:org5a5fa17}
+\label{sec:org75b41e6}
+\subsection{General}
+\label{sec:org291f299}
+\begin{problem}[\href{https://leetcode.cn/problems/find-all-good-indices/}{LeetCode: Find All Good Indices}]
+You are given a \emph{0-indexed} integer array nums of size \(n\) and a positive integer \(k\).
+
+We call an index \(i\) in the range \(k\le i< n-k\) good if the following conditions are satisfied:
+\begin{itemize}
+\item The \(k\) elements that are just before the index \(i\) are in non-increasing order.
+\item The \(k\) elements that are just after the index \(i\) are in non-decreasing order.
+\end{itemize}
+
+Return an array of all good indices sorted in increasing order.
+\end{problem}
+
+\begin{proof}
+For \(j\), suppose the non-increasing elements before \(j\) (including \(j\)) is \(left_j\), the
+non-decreasing elements after \(j\) (including \(j\)) is \(right_j\), then \(i\) is good iff
+\(left_{i-1}\ge k\) and \(right_{i+1}\ge k\)
+\end{proof}
+
 \subsection{Digit DP}
-\label{sec:org91a95a5}
+\label{sec:org8153b9a}
 \begin{problem}[LeetCode 788: Rotated Digits]
 An integer x is a \textbf{good} if after rotating each digit individually by 180 degrees, we get a valid
 number that is different  from x. Each digit must be rotated - we cannot choose to leave it alone.
@@ -72,10 +97,75 @@ of \(n\)
 \item \(diff'\) is true iff \(diff\) is true or we chose 2/5/6/9
 \end{itemize}
 \end{proof}
-\section{Trick and Bit}
-\label{sec:org86f5b04}
+\section{Graph}
+\label{sec:org4eecb4b}
+\subsection{Union find}
+\label{sec:org4ef00cf}
+\begin{problem}[\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
+There is a tree (i.e. a connected, undirected graph with no cycles) consisting of \(n\) nodes
+numbered from 0 to \(n-1\) and exactly \(n - 1\) edges.
+
+You are given a 0-indexed integer array \texttt{vals} of length \(n\) where \texttt{vals[i]} denotes the value of the
+\(i\)th node. You are also given a 2D integer array edges where \texttt{edges[i] = [ai,bi]} denotes that
+there exists an undirected edge connecting nodes \(a_i\) and \(b_i\).
+
+A good path is a simple path that satisfies the following conditions:
+\begin{enumerate}
+\item The starting node and the ending node have the same value.
+\item All nodes between the starting node and the ending node have values less than or equal to the
+starting node (i.e. the starting node's value should be the maximum value along the path).
+\end{enumerate}
+
+\emph{Return the number of distinct good paths.}
+
+Note that a path and its reverse are counted as the same path. For example, \texttt{0 -> 1} is considered
+to be the same as \texttt{1 -> 0}. A single node is also considered as a valid path.
+\end{problem}
+
+\begin{proof}
+First, to solve the problem, we can enumerate the paths from the nodes with largest \texttt{vals}, and
+then delete these nodes and continue; this requires \(O(n^2)\) time
+
+If we reverse the direction, we are merging nodes with values from low to high, so what comes to
+our mind? Union find.
+
+For each node \(s\) and its neighbor \(t\):
+\begin{enumerate}
+\item if \texttt{vals[s]<vals[t]}, then pass
+\item if \texttt{vals[s]=vals[find[t]]}, then add \texttt{size[find[s]]*size[find[t]]}
+\item merge \texttt{s} and \textasciitilde{}\textasciitilde{}t
+\end{enumerate}
+\end{proof}
+
+\section{General}
+\label{sec:orgbf5dcdf}
+\subsection{Intervals}
+\label{sec:orgde2c8c6}
+\begin{problem}[\href{https://leetcode.cn/problems/count-days-spent-together/}{LeetCode: Count Days Spent Together}]
+Alice and Bob are traveling to Rome for separate business meetings.
+
+You are given 4 strings \texttt{arriveAlice}, \texttt{leaveAlice}, \texttt{arriveBob}, and \texttt{leaveBob}. Alice will be in the
+city from the dates \texttt{arriveAlice} to \texttt{leaveAlice} (inclusive), while Bob will be in the city from
+the dates \texttt{arriveBob} to \texttt{leaveBob} (inclusive). Each will be a 5-character string in the format
+``MM-DD'', corresponding to the month and day of the date.
+
+Return the total number of days that Alice and Bob are in Rome together.
+
+You can assume that all dates occur in the same calendar year, which is not a leap year. Note
+that the number of days  per month can be represented as: [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31].
+\end{problem}
+
+\begin{proof}
+First we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
+Bob's interval is \([c,d]\), then we need to calculate the intersection of these intervals.
+
+\([a,b]\cap[c,d]\neq\emptyset\) iff \(b\ge c\wedge d\ge a\).
+
+\([a,b]\cap[c,d]=\min(b,d)-\max(a,c)+1\)
+\end{proof}
+
 \subsection{Bit operation}
-\label{sec:org228ec7c}
+\label{sec:org5cf1463}
 \begin{problem}[\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
 You are given an array with all the numbers from 1 to N appearing exactly once, except for two
 number that is missing. How can you find the missing number in \(O(N)\) time and \(O(1)\) space?
@@ -102,5 +192,90 @@ array \(A\), then \(x=\bigoplus A=x_1\oplus x_2\).
 By \texttt{x\&-x} we can get the lowest bit of \(x\), assume it's in \(l\)th bit. Then we can
 assume \(x_1\)'s \(l\)th bit is 0, and \(x_2\)'s \(l\)th bit is 1, and we can partition \(A\) into
 \(A_1\) and \(A_2\) by whether the elements' \(l\)th bit is 1, then \(\bigoplus A_1=x_1\) and \(\bigoplus A_2=x_2\)
+\end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/find-a-value-of-a-mysterious-function-closest-to-target/}{LeetCode: Find a Value of a Mysterious Function Closest to Target}]
+​
+\begin{minted}[]{c++}
+func(arr, l, r) {
+  if (r < l) {
+    return -10000000000;
+  }
+  ans = arr[l];
+  for (i = l + 1; i <= r; i++) {
+    ans = ans & arr[i];
+  }
+  return ans;
+}
+\end{minted}
+Winston was given the above mysterious function \texttt{func}. He has an integer array \texttt{arr} and an integer
+\texttt{target} and he wants to find the values \texttt{l} and \texttt{r} that make the value \texttt{|func(arr, l, r) - target|}
+minimum possible.
+
+Return the minimum possible value of \texttt{|func(arr, l, r) - target|}.
+
+Notice that func should be called with the values l and r where \texttt{0 <= l, r < arr.length}.
+
+Constraints:
+\begin{itemize}
+\item \texttt{1 <= arr.length <= 10\textasciicircum{}5}
+\item \texttt{1 <= arr[i] <= 10\textasciicircum{}6}
+\item \texttt{0 <= target <= 10\textasciicircum{}7}
+\end{itemize}
+\end{problem}
+
+\begin{proof}
+If we fix \(r\)
+\begin{itemize}
+\item \(f\) is a non-decreasing function
+\item there is at most 20 different values for \(f(arr,l,r)\) as \(arr[r]\le 10^6<2^{20}\), since from
+right to left, 0 won't be transformed into 1
+\end{itemize}
+\end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/smallest-subarrays-with-maximum-bitwise-or/}{LeetCode: Smallest Subarrays With Maximum Bitwise OR}]
+You are given a \emph{0-indexed} array nums of length \(n\), consisting of non-negative integers. For
+each index \(i\) from 0 to \(n-1\), you must determine the size of the minimum sized non-empty
+subarray of nums starting at \(i\) (inclusive) that has the maximum possible bitwise OR.
+
+Return an integer array answer of size \(n\) where answer[i] is the length of the minimum sized subarray
+starting at \(i\) with maximum bitwise OR.
+
+A subarray is a contiguous non-empty sequence of elements within an array.
+\end{problem}
+
+\begin{proof}
+Induction and we build a new array \(A=\{a_i:a_i=nums[i]\}\). In the \(i\)th round, for
+each \(j<i\), check whether \(a_j|a_i>a_j\). If so, \(a_j|a_i\) is the new possible maximum
+for \(a_j\) and the possible \(answer[j]\ge i-j+1\).
+
+If \(a_j|a_i=a_j\), then \(a_i\subseteq a_j\) in the sense of bits and for
+each \(k<j\), \(a_k|a_i=a_k|a_j\). So we don't need to consider \(k<j\)
+\end{proof}
+\subsection{Trick}
+\label{sec:org48f972d}
+\begin{problem}[\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
+You are given a 0-indexed 2D integer array transactions, where \texttt{transactions[i] = [costi, cashbacki]}.
+
+The array describes transactions, where each transaction must be completed exactly once in some
+order. At any given moment, you have a certain amount of money. In order to complete transaction
+\(i\), \texttt{money >= cost\_i} must hold true. After performing a transaction, money becomes \texttt{money-cost\_i+cashback\_i}.
+
+Return the minimum amount of money required before any transaction so that all of the
+transactions can be completed regardless of the order of the transactions.
+\end{problem}
+
+\begin{proof}
+The worst case is, we put money-losing transaction first and then put the transaction with
+highest cost after it (erase the transaction before if necessary, and assume its index is \(i\))
+
+Suppose \(total\) is the total lose, then if the transaction is money-losing, then the money we need is
+\begin{equation*}
+total-(cost[i]-cashback[i])+cost[i] = total+cashback[i]
+\end{equation*}
+Otherwise
+\begin{equation*}
+total+cost[i]
+\end{equation*}
 \end{proof}
 \end{document}
