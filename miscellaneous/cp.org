@@ -29,6 +29,62 @@
     \(left_{i-1}\ge k\) and \(right_{i+1}\ge k\)
     #+END_proof
 
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/get-kth-magic-number-lcci/}{LeetCode: Get Kth Magic Number}]
+    #+BEGIN_problem
+    Design an algorithm to find the kth number such that the only prime factors are 3, 5, and 7.
+    Note that 3, 5, and 7 do not have to be factors, but it should not have any other prime factors.
+    For example, the first several multiples would be (in order) 1, 3, 5, 7, 9, 15, 21.
+    #+END_problem
+
+    #+BEGIN_proof
+    We can use heap: for each element \(x\) took out, add \(3x,5x,7x\) into the heap. Also we need
+    to eliminate the duplicates
+
+    Define \(dp[i]\) is the \(i\)th number, so \(dp[1]=1\), and let \(p_3=p_5=p_7=1\) initially, then
+    for \(2 \le i\le k\)
+    \begin{equation*}
+    dp[i]=\min(dp[p_3]\cdot 3, dp[p_5]\cdot 5, dp[p_7]\cdot 7)
+    \end{equation*}
+    and increment the corresponding \(p_k\) where \(k\in\{3,5,7\}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/remove-boxes/}{LeetCode: Remove Boxes}]
+    #+BEGIN_problem
+    You are given several boxes with different colors represented by different positive numbers.
+
+    You may experience several rounds to remove boxes until there is no box left. Each time you can
+    choose some continuous boxes with the same color (i.e., composed of \(k\) boxes, \(k\ge 1\)), remove
+    them and get \(k^2\) points.
+
+    /Return the maximum points you can get./
+    #+END_problem
+
+    #+BEGIN_proof
+    Let \(dp(l,r,k)\) denote the maximum points we can get in boxes \([l,r]\) if we have extra \(k\)
+    boxes which is the same color with \(boxes[l]\) in the left side.
+
+    For example, if ~boxes=[3,3,1,3,3]~, then \(dp(3,4,2)\) is the maximum we can get in ~boxes[3,4]~ if
+    we have extra 2 boxes the same color with ~boxes[3]~ in the left side
+
+    Since \((a+b)^2>a^2+b^2\) where \(a>0,b>0\), it's better to greedy to remove all contiguous boxes
+    of the same color, instead of split them. So we increase both \(l\) and \(k\) while
+    ~boxes[l+1]==boxes[l]~
+
+    Now we have some options:
+    * remove all boxes which has the same color with boxes \(l\), total points we can get is
+      \(dp(l+1,r,0)+(k+1)^2\)
+    * merge non-contiguous boxes of the same color together, by
+      * find the index \(j\) where \(l+1\le j\le r\) so that ~boxes[j]==boxes[l]~
+      * total points we can get is \(dp(j,r,k+1)+dp(l+1,j-1,0)\)
+
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/cp/1.png]]
+    #+END_proof
+
+
+
 ** Digit DP
     #+ATTR_LATEX: :options [LeetCode 788: Rotated Digits]
     #+BEGIN_problem
@@ -234,4 +290,38 @@ func(arr, l, r) {
     \begin{equation*}
     total+cost[i]
     \end{equation*}
+    #+END_proof
+
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/sparse-similarity-lcci/}{LeetCode: Sparse Similarity}]
+    #+BEGIN_problem
+    The similarity of two documents (each with distinct words) is defined to be the size of the
+    intersection divided by the size of the union. For example, if the documents consist of
+    integers, the similarity of {1, 5, 3} and {1, 7, 2, 3} is 0.4, because the intersection has size
+    2 and the union has size 5. We have a long list of documents (with distinct values and each with
+    an associated ID) where the similarity is believed to be "sparse". That is, any two arbitrarily
+    selected documents are very likely to have similarity 0. Design an algorithm that returns a list
+    of pairs of document IDs and the associated similarity.
+
+    Input is a 2D array docs, where docs[i] is the document with id i. Return an array of strings,
+    where each string represents a pair of documents with similarity greater than 0. The string
+    should be formatted as  {id1},{id2}: {similarity}, where id1 is the smaller id in the two
+    documents, and similarity is the similarity rounded to four decimal places. You can return the
+    array in any order.
+
+    return in any order.
+
+    #+END_problem
+
+    #+BEGIN_proof
+    Assume we have \(D\) documents and each document has at most \(W\) words
+
+    Brute force: given two documents \(A, B\), answer
+    is \((\abs{A}+\abs{B}-\abs{A\cup B})/\abs{A\cup B}\), \(O(D^2W)\)
+
+    We use inverted index to optimize \(D^2\). We can build a hash table with key the elements of
+    documents and the value the index of the document.
+
+    Then to find the document with similarity > 0 with \(A\), we only need to check the hash value
+    for each element of \(A\)
     #+END_proof

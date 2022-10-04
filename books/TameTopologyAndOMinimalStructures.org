@@ -535,9 +535,45 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
+    label:w3.4
+    If \(f:I\to R\) is definable
     1. It can't be that: \(\forall a\in I\), \(\Phi_{++}(a)\)
     2. It can't be that: \(\forall a\in I\), \(\Phi_{--}(a)\)
     #+END_lemma
+
+    #+BEGIN_proof
+    1. Assume \(\forall x\Phi_{++}(x)\)
+
+       \(\Psi_{+-}(a)\Leftrightarrow\exists y,\epsilon\), if \(x\in(a-\epsilon,a)\), then \(f(x)>y\), \(x\in (a,a+\epsilon), f(x)<y\)
+
+        Let \(I=(a,b)\), \(S=\{x\in I\mid \exists x'\in I, x'>x,f(x')<f(x)\}\)
+
+        *Case 1*: \((\exists \epsilon)(b-\epsilon,b)\cap S=\emptyset\). Then on the interval \((b-\epsilon,b)\), \(f\) is
+        increasing, \(\Phi_{++}(x)\) doesn't hold
+
+        *Case 2*: \((\exists\epsilon)(b-\epsilon,b)\subseteq S\)
+
+        Take \(x_0\in(b-\epsilon,b)\), \(x_0\in S\), and we could get a decreasing sequence
+
+        Let \(D=\{x\in I:f(x)>f(x_0)\}\). So there are infinitely many points \(<x_0\) in \(D\), and
+       infinitely many points \(>x_0\) not in \(D\)
+
+       \(\exists c\) s.t. \((c-\epsilon,c)\subseteq D\), \((c,c+\epsilon)\cap D=\emptyset\). So \(\Psi_{+-}(c)\) is true
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\exists J\subseteq I\), \(\forall x\in J\), \(\Psi_{+-}(x)\),
+    #+END_lemma
+
+    #+BEGIN_proof
+    \(S=\{x\in I:\Psi_{+-}(x)\}\). If \(S\) is finite, replace \(I\) with \(I'\subseteq I\setminus S\), replace \(f\)
+    with \(f|_{I'}\), apply previous lemma, get \(c\in I'\), \(\Psi_{+-}(c)\), a contradiction
+    #+END_proof
+
+    Similarly,     \(\exists J\subseteq I\), \(\forall x\in J\), \(\Psi_{-+}(x)\)
+
+    Combine these, get \(I\supseteq I'\supseteq I''\), \(\forall x\in I'\), \(\Psi_{+-}(x)\), and \(\forall x\in I''\), \(\Psi_{+-}(x)\), a contradiction
 
     #+ATTR_LATEX: :options []
     #+BEGIN_lemma
@@ -591,6 +627,88 @@
 
     Then the monotonicity theorem follows from the proof of Lemma ref:w3.6 (modify the boundary to
     include the discontinuous points)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(f:(a,b)\to R\) definable, \(\lim_{x\to a^+}f(x)\) exists in \(R_{\infty}\)
+    #+END_corollary
+
+    #+BEGIN_proof
+    1. Take \epsilon, \(f|_{a,a+\epsilon}\) is continuous and monotone. Then \(\lim_{x\to a^+}f(x)\)
+       is \(\sup\{f(x):x\in(a,a+\epsilon)\}\) or \(\inf\{f(x):x\in(a,a+\epsilon)\}\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    If \(f:[a,b]\to R\) is definable and continuous, then \(\max_{x\in[a,b]f(x)}\)
+    and \(\min_{x\in[a,b]}f(x)\) exist
+    #+END_corollary
+
+    #+BEGIN_proof
+    Take maximum for each piece and combine
+    #+END_proof
+
+    *Uniform Finiteness*
+
+    Suppose \(D\subseteq R^n\times R\), for \(\bara\in R^n\), \(D_{\bara}=\{y\in R:(a,y\}\in D\)
+
+    #+ATTR_LATEX: :options [Uniform Finitness]
+    #+BEGIN_theorem
+    Suppose \(\forall\bara\), \(\abs{D_{\bara}<\infty}\). Then \(\exists N<\infty\forall\bara\abs{D_{\bara}}<N\)
+    #+END_theorem
+
+    For now, consider \(n=1\).
+
+    Fix \(D\subseteq R^2\) definable, \(\abs{D_a}<\infty\) for all \(a\in R\)
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \((a,b)\subseteq R\times R_{\infty}\) is *normal* if either
+    * \((a,b)\notin\cl(D)\), \((\exists \epsilon)(a-\epsilon,a+\epsilon)\times(b-\epsilon,b+\epsilon)\cap D=\emptyset\)
+    * \((a,b)\in D\) and \((\exists\epsilon,\delta)D\cap(a-\epsilon,a+\epsilon)\times(b-\delta,b+\delta)\) is \(\Gamma(f)\) for some continuous
+      function \(f\)
+
+    Otherwise \((a,b)\) is abnormal
+    #+END_definition
+
+    #+BEGIN_remark
+    \(\{(x,y)\text{ normal}\}\) is open, \(\{(x,y)\text{ abnormal}\}\) is closed.
+    #+END_remark
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    \(a\in R\) is *good* if \(\forall b\in R_\infty\), \((a,b)\) is normal, is *bad* if \(\exists b\in R_\infty\), \((a,b)\) is abnormal
+    #+END_definition
+
+    This is a definable definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    \(\{x\in R:x\text{ is bad}\}\) is finite
+    #+END_lemma
+
+    #+BEGIN_proof
+    Otherwise, take \(I\subseteq B\), \(\forall x\in I\), \(\{y\in R_\infty:(x,y)\text{ abnormal}\}\) is closed, nonempty.
+
+    Let \(f(x)=\min\{y\in R_\infty:(x,y)\text{ abnormal}\}\), \(f:I\to R_\infty\) definable.
+
+    \(\forall x\), break into cases based on these questions
+    - \(f(x)=-\infty\) vs \(f(x)\in R\) vs \(f(x)=+\infty\)
+    - \((x,f(x))\in D\) vs not
+    - whether \(\exists y>f(x)\), \((x,y)\in D\)
+    - whether \(\exists y<f(x)\), \((x,y)\in D\)
+
+    So 24 pieces
+
+    Shrink \(I\) to make all the answers constant
+
+    Assume \(\forall x\in I\), \(f(x)\in R\), \((x,f(x))\in D\), \((\exists y<f(x))(x,y)\in D\), \((\exists z>f(x))(x,z)\in D\)
+
+    Let \(g(x)=\max\{y:y<f(x), (x,y)\in D\}\), \(h(x)=\min\{y:y>f(x),(x,y)\in D\}\)
+
+    Idea: apply monotonicity theorem, get \(f,g,h\) continuous, then \((x,f(x))\) is normal
+    #+END_proof
+
 
 
 

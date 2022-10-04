@@ -429,3 +429,70 @@ reduce(String key, Iterator values):
     leaders to followers
 
     One simple strategy is to take a snapshot when the log reaches a fixed size in byte
+** Implementing linearizable semantics
+    From[[ cite:&ongaro2014consensus]]
+
+    Raft provides at-least-once semantics for clients; the replicated state machine may apply a
+    command multiple times: For example, suppose a client submits a command to a leader
+    and the leader appends the command to its log and commits the log entry, but then it crashes before
+    responding to the client. Since the client receives no acknowledgment, it resubmits the command to
+    the new leader, which in turn appends the command as a new entry in its log and also commits this
+    new entry.
+
+    To achieve linearizability in Raft, servers must filter out duplicate requests. The basic idea
+    is that servers save the results of client operations and use them to skip executing the same
+    request multiple times. To implement this, each client is given a unique identifier, and clients
+    assign unique serial numbers to every command. Each server’s state machine maintains a session
+    for each client. The session tracks the latest serial number processed for the client, along
+    with the associated response. If a server receives a command whose serial number has already
+    been executed, it responds immediately without re-executing the request.
+* ZooKeeper
+    ZooKeeper provides a per client guarantee of FIFO execution of requests and linearizability of
+    all requests that change the ZooKeeper state.
+** Introduction
+    ZooKeeper implements an API that manipulates simple /wait-free/ data objects organized
+    hierarchically as in file systems.
+
+    We find that guaranteeing both /FIFO client ordering/ of all operations and /lineariable writes/
+    enables an efficient implementation of the service and it is sufficient to implement
+    coordination primitives
+
+    To guarantee that update operations satisfy linearizability, we implement a leader-based atomic
+    broadcast protocol, called Zab
+
+    Caching data on the client side is an important technique to increase the performance of reads,
+    e.g., current leader. ZooKeeper uses a watch mechanism to enable clients to cache data without
+    managing the client cache directly
+
+    Summary:
+    * *Coordination kernel*: we propose a wait-free coordination service with relaxed consistency
+      guarantees for use in distributed systems. In particular, we describe our design and
+      implementation of a *coordination kernel*, which we have used in many critical applications to
+      implement various coordination techniques
+    * *Coordination recipes*: We show how ZooKeeper can be used to build higher level coordination
+      primitives, even blocking and strongly consistent primitives, that are often used in
+      distributed applications
+** The ZooKeeper service
+    Clients submit requests to ZooKeeper through a client API using a ZooKeeper client library. In
+    addition to exposing the ZooKeeper service interface through the client API, the client library
+    also manages the network connections between the client and ZooKeeper servers.
+
+    In this paper, we use *client* to denote a user of the ZooKeeper service, *server* to denote a
+    process providing the ZooKeeper service, and *znode* to denote an in-memory data node in the
+    ZooKeeper data, which is organized in a hierarchical namespace referred to as the *data tree*. We
+    also use the terms update and write to refer to any operation that modifies the state of the
+    data tree. Clients establish a *session* when they connect to ZooKeeper and obtain a session
+    handle through which they issue requests.
+*** Service overview
+    To refer to a given znode, we use the standard UNIX notation for file system paths. For example,
+    we use ~/A/B/C~ to denote the path to znode ~C~. All znodes store data, and all znodes, except for
+    ephemeral znodes, can have children
+
+    There are two types of znodes that a client can create
+    * *Regular*: Clients manipulate regular znodes by creating and deleting them explicitly
+    * *Ephemeral*: Clients create such znodes, and they either delete them explicitly, or let the
+      system remove them automatically when the session that creates them terminates
+
+    Additionally, when creating a new znode, a client can set a *sequential* flag. Nodes created with
+    the sequential flag set have the value of a monotonically increasing counter appended to its
+    name. If \(n\) is the new znode and \(p\) is the parent znode
