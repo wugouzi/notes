@@ -83,6 +83,41 @@
     [[../images/cp/1.png]]
     #+END_proof
 
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/k-inverse-pairs-array/}{LeetCode: K Inverse Pairs Array}]
+    #+BEGIN_problem
+    For an integer array nums, an *inverse pair* is a pair of integers \((i,j)\)
+    where \(0\le i<j<len(nums)\) and \(nums[i]>nums[j]\)
+
+    Given two integers \(n\) and \(k\), return the number of different arrays consist of numbers
+    from 1 to \(n\) such that there are exactly \(k\) inverse pairs. Since the answer can be huge,
+    return it modulo \(10^9+7\).
+
+    #+END_problem
+
+    #+BEGIN_proof
+    Let \(f(i,j)\) denote the number of different arrays consisting of numbers from 1 to \(i\) s.t.
+    there are exactly \(j\) inverse pairs.
+
+    Suppose we fix \(k\) as the last element of the array, then the number of inverse pairs is the sum of
+    * the inverse pairs between \(k\) and other numbers
+    * the inverse pairs among other numbers
+
+    The first part is \(i-k\), therefore the second part should be \(j-(i-k)\).
+    \begin{equation*}
+    f(i,j)=\sum_{k=1}^if(i-1,j-(i-k))=\sum_{k=0}^{i-1}f(i-1,j-k)
+    \end{equation*}
+    But the above formula's complexity is \(O(n^2k)\).
+
+    Note that
+    \begin{align*}
+    f(i,j-1)&=\sum_{k=0}^{i-1}f(i-1,j-1-k)\\
+    f(i,j)&=\sum_{k=0}^{i-1}f(i-1,j-k)
+    \end{align*}
+    Therefore
+    \begin{equation*}
+    f(i,j)=f(i,j-1)-f(i-1,j-i)+f(i-1,j)
+    \end{equation*}
+    #+END_proof
 
 
 ** Digit DP
@@ -153,6 +188,40 @@
     1. if ~vals[s]<vals[t]~, then pass
     2. if ~vals[s]=vals[find[t]]~, then add ~size[find[s]]*size[find[t]]~
     3. merge ~s~ and ~t~
+    #+END_proof
+
+* Greedy
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
+    #+BEGIN_problem
+    There are \(n\) different online courses numbered from 1 to \(n\). You are given an array courses where
+    \(courses[i]=[duration_i,lastDay_i]\) indicate that the \(i\)th course should be taken continuously for
+    \(duration_i\) days and must be finished before or on \(lastDay_i\)
+
+    You will start on the 1st day and you cannot take two or more courses simultaneously.
+
+    Return the maximum number of courses that you can take.
+    #+END_problem
+
+    #+BEGIN_proof
+    For any two courses \((t_1,d_1)\) and \((t_2,d_2)\), if \(d_1\le d_2\), then it's optimal to study the
+    first before the latter. Then "we can study 2 and then 1" always implies "we can study 1 and
+    then 2"
+
+    Now we prove by induction.
+
+    Given \(i\) courses, sort them by lastDay. Suppose we choose \(k\) courses \((t_{x_1},d_{x_1}),(t_{x_2},d_{x_2}),\dots,(t_{x_k},d_{x_k})\) where \(x_1<x_2<\dots<x_k\) from
+    the first \(i-1\) courses which is optimal for the first \(i-1\) courses. Then
+
+    \begin{equation*}
+    \begin{cases}
+    t_{x_1}\le d_{x_1}\\
+    t_{x_1}+t_{x_2}\le d_{x_2}\\
+    \vdots\\
+    t_{x_1}+\dots+t_{x_k}\le d_{x_k}
+    \end{cases}
+    \end{equation*}
+    Then we can build the optimal plan for the first \(i\) courses based on this and \((t_i,d_i)\)
+    * if \(t_1+\dots+t\)
     #+END_proof
 
 * General
