@@ -580,3 +580,39 @@ parent."
 
 (add-hook 'c-mode-common-hook 'google-set-c-style)
 (add-hook 'c-mode-common-hook 'google-make-newline-indent)
+
+
+;; ;; ssh-deploy - prefix = C-c C-z, f = forced upload, u = upload, d = download, x = diff, t = terminal, b = browse, h = shell
+;; ;; (add-to-list 'load-path "~/.emacs.d/ssh-deploy/")
+;; (require 'ssh-deploy)
+;; (ssh-deploy-line-mode) ;; If you want mode-line feature
+;; (ssh-deploy-add-menu) ;; If you want menu-bar feature
+;; (ssh-deploy-add-after-save-hook) ;; If you want automatic upload support
+;; (ssh-deploy-add-find-file-hook) ;; If you want detecting remote changes support
+;; (global-set-key (kbd "C-c C-z") 'ssh-deploy-prefix-map)
+
+(when (memq window-system '(mac ns x))
+  (exec-path-from-shell-initialize))
+
+
+(defun clear-latex-temp-files () (shell-command "rm -rf _minted*"))
+
+(dirvish-override-dired-mode)
+
+;; (with-eval-after-load 'flycheck
+  ;;(flycheck-grammarly-setup))
+
+;; (setq flycheck-grammarly-check-time 0.8)
+
+(use-package dante
+  :ensure t
+  :after haskell-mode
+  :commands 'dante-mode
+  :init
+  (add-hook 'haskell-mode-hook 'flycheck-mode)
+  ;; OR for flymake support:
+  (add-hook 'haskell-mode-hook 'flymake-mode)
+  (remove-hook 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
+
+  (add-hook 'haskell-mode-hook 'dante-mode)
+  )
