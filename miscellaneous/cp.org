@@ -2,6 +2,7 @@
 
 #+EXPORT_FILE_NAME: ../latex/cp/cp.tex
 #+LATEX_HEADER: \AddToHook{cmd/section/before}{\clearpage}
+#+LATEX_HEADER: %\AddToHook{cmd/subsection/before}{\clearpage}
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
@@ -119,6 +120,92 @@
     \end{equation*}
     #+END_proof
 
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/minimum-swaps-to-make-sequences-increasing/}{LeetCode: Minimum Swaps To Make Sequences Increasing}]
+    #+BEGIN_problem
+    You are given two integer arrays of the same length \(nums1\) and \(nums2\). In one operation, you are
+    allowed to swap \(nums1[i]\) with \(nums2[i]\).
+
+    For example, if \(nums1 = [1,2,3,8]\), and \(nums2 = [5,6,7,4]\), you can swap the element at \(i = 3\) to
+    obtain \(nums1 = [1,2,3,4]\) and \(nums2 = [5,6,7,8]\).
+
+    Return the minimum number of needed operations to make \(nums1\) and \(nums2\) strictly increasing. The
+    test cases are generated so that the given input always makes it possible.
+
+    An array arr is strictly increasing if and only if \(arr[0] < arr[1] < arr[2] <\dots < arr[arr.length - 1]\)
+    #+END_problem
+
+    #+BEGIN_proof
+    For each \(i\), one of the following is true
+    1. \(nums_1[i]>nums_1[i-1]\) and \(nums_2[i]>nums_2[i-1]\)
+    2. \(nums_1[i]>nums_2[i-1]\) and \(nums_2[i]>nums_1[i-1]\)
+
+    Use \(dp[i][0]\) to denote the minimum number of needed operations for \([0,i]\) and we don't do
+    the exchange at \(i\). Use \(dp[i][1]\) to denote the number that we exchange at \(i\).
+
+    Case \(1\wedge \neg2\):
+    \begin{equation*}
+    \begin{cases}
+    dp[i][0]=dp[i-1][0]\\
+    dp[i][1]=dp[i-1][1]+1\\
+    \end{cases}
+    \end{equation*}
+
+    Case \(\neg1\wedge 2\):
+    \begin{equation*}
+    \begin{cases}
+    dp[i][0]=dp[i-1][1]\\
+    dp[i][1]=dp[i-1][0]+1
+    \end{cases}
+    \end{equation*}
+
+    Case \(1\wedge 2\):
+    \begin{equation*}
+    \begin{cases}
+    dp[i][0]=\min\{dp[i-1][0],dp[i-1][1]\}\\
+    dp[i][1]=\min\{dp[i-1][1],dp[i-1][0]\}+1
+    \end{cases}
+    \end{equation*}
+
+    and we set \(dp[0][0]=dp[0][1]=1\)
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/count-ways-to-build-rooms-in-an-ant-colony/}{LeetCode: Count Ways to Build Rooms i nan Ant Colony}]
+    #+BEGIN_problem
+    You are an ant tasked with adding n new rooms numbered \(0\) to \(n-1\) to your colony. You are given
+    the expansion plan as a \(0\)-indexed integer array of length \(n\), \(prevRoom\), where \(prevRoom[i]\)
+    indicates that you must build room \(prevRoom[i]\) before building room \(i\), and these two rooms must
+    be connected directly. Room \(0\) is already built, so \(prevRoom[0]=-1\). The expansion plan is given
+    such that once all the rooms are built, every room will be reachable from room \(0\).
+
+    You can only build one room at a time, and you can travel freely between rooms you have already
+    built only if they are connected. You can choose to build any room as long as its previous
+    room is already built.
+
+    Return the number of different orders you can build all the rooms in. Since the answer may be
+    large, return it modulo \(10^9 + 7\).
+
+    Every room is reachable from room \(0\) once all the rooms are built.
+    #+END_problem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_problem
+    Suppose there are \(a_0\) 0's, \(a_1\) 1's, \(\dots\), \(a_{n-1}\) \(n-1\)'s, then the number of
+    different plan to put them in a row is
+    \begin{equation*}
+    \frac{(a_0+\dots+a_{n-1})!}{a_0!\cdot a_1!\cdot\dots\cdot a_{n-1}!}
+    \end{equation*}
+
+    \(a^{\varphi(m)}\equiv 1\mod m\), when \(p\) is prime, we have \(a^{p-1}\equiv 1\mod p\)
+
+    Define \(f(i)\) to be the number of different topological sort for the subtree with the
+    root \(i\). Suppose \(i\) has child \(c_{i,0},\dots,c_{i,k}\), and let \(cnt(i)\) denote the number of
+    nodes in the subtree, then
+    \begin{equation*}
+    f(i)=\prod_cf(c)\times\frac{(cnt(i)-1)!}{\prod_ccnt(c)!}
+    \end{equation*}
+    #+END_problem
+
+
 
 ** Digit DP
     #+ATTR_LATEX: :options [LeetCode 788: Rotated Digits]
@@ -190,6 +277,36 @@
     3. merge ~s~ and ~t~
     #+END_proof
 
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/bricks-falling-when-hit/}{LeetCode: Bricks Falling When Hit}]
+    #+BEGIN_problem
+    You are given an \(m\times n\)binary grid, where each 1 represents a brick and 0 represents an empty
+    space. A brick is stable if:
+    * It is directly connected to the top of the grid, or
+    * At least one other brick in its four adjacent cells is stable.
+
+    You are also given an array \(hits\), which is a sequence of erasures we want to apply. Each time we
+    want to erase the brick at the location \(hits[i] = (row_i, col_i)\). The brick on that location (if
+    it exists) will disappear. Some other bricks may no longer be stable because of that erasure and
+    will fall. Once a brick falls, it is immediately erased from the grid (i.e., it does not land on
+    other stable bricks).
+
+    Return an array result, where each \(result[i]\) is the number of bricks that will fall after the ith erasure is applied.
+
+    Note that an erasure may refer to a location with no brick, and if it does, no bricks drop.
+
+    #+END_problem
+
+    #+BEGIN_proof
+    In essence, think the problem in reverse direction
+
+    Method 1: union find
+
+    Method 2: dfs
+
+
+    #+END_proof
+
+
 * Greedy
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
     #+BEGIN_problem
@@ -221,7 +338,8 @@
     \end{cases}
     \end{equation*}
     Then we can build the optimal plan for the first \(i\) courses based on this and \((t_i,d_i)\)
-    * if \(t_1+\dots+t\)
+    * if \(t_{x_1}+\dots+t_{x_k}+t_i\le d_i\), then we can put \((t_i,d_i)\) into our plan, which is optimal.
+    * if \(t_{x_1}+\dots+t_{x_k}+t_i>d_i\)
     #+END_proof
 
 * General
@@ -243,7 +361,7 @@
     #+END_problem
 
     #+BEGIN_proof
-    First we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
+    First, we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
     Bob's interval is \([c,d]\), then we need to calculate the intersection of these intervals.
 
     \([a,b]\cap[c,d]\neq\emptyset\) iff \(b\ge c\wedge d\ge a\).
@@ -251,7 +369,87 @@
     \([a,b]\cap[c,d]=\min(b,d)-\max(a,c)+1\)
     #+END_proof
 
+** Binary search
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/maximum-running-time-of-n-computers/}{LeetCode: Maximum Running Time of N Computers}]
+    #+BEGIN_problem
+    You have \(n\) computers. You are given the integer \(n\) and a 0-indexed integer array batteries where
+    the \(i\)th battery can run a computer for \(batteries[i]\) minutes. You are interested in running all \(n\)
+    computers simultaneously using the given batteries.
+
+    Initially, you can insert at most one battery into each computer. After that and at any integer
+    time, you can remove a battery from a computer and insert another battery any number of
+    times. The inserted battery can be a new battery or a battery from another computer. You
+    may assume that the removing and inserting processes take no time.
+
+    Note that the batteries cannot be recharged.
+
+    Return the maximum number of minutes you can run all the n computers simultaneously.
+    #+END_problem
+
+    #+BEGIN_proof
+    Suppose the maximum is \(k\), then we can draw a \(n\times k\) matrix \(A\) where \(A[i,j]\in[0,m)\)
+    and \(m\) is the length of the batteries, meaning the \(j\)th computer uses battery \(A[i,j]\)
+    in \(i\)th minute.
+
+    By the problem constraints, each row's elements are distinct, and each \(x\in[0,m)\) should
+    appear less than \(batteries[x]\) times. Therefore in overall, the number of appearance of \(x\)
+    should less than or equal to \(\min(batteries[x],k)\)
+
+    We can use binary search to determine the \(k\) since if we can run them for \(k\) minutes, we can
+    run them for \(k-1,k-2,\dots\) minutes. Therefore there is \(k'\) s.t. \(\le k'\) works and \(>k'\)
+    doesn't.
+
+    In each step, suppose we need to check \(mid\). Then the appearance time of each \(x\) shouldn't
+    be greater than \(occ(x)=\min(batteries[x],mid)\). If \(\sum_{x=0}^{m-1} occ(x)<mid\times n\), then it
+    is impossible.
+
+    Otherwise, we have a strategy to fill the matrix: fill the column one by one by contiguous block
+    of \(x\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/kth-smallest-number-in-multiplication-table/}{LeetCode: Kth Smallest Number in Multiplication Table}]
+    #+BEGIN_problem
+    Nearly everyone has used the Multiplication Table. The multiplication table of size \(m\times n\) is an
+    integer matrix mat where \(mat[i][j] == i\times j\) (1-indexed).
+
+    Given three integers \(m\), \(n\), and \(k\), return the \(k\)th smallest element in the \(m\times n\) multiplication table.
+    #+END_problem
+
+    #+BEGIN_proof
+    Consider: given \(x\), how small is it?
+
+    There are
+    \begin{equation*}
+    \sum_{i=1}^m\min(\floor{\frac{x}{i}},n)
+    \end{equation*}
+    numbers less than \(x\). Since \(i\le\floor{\frac{x}{n}}\Rightarrow\floor{\frac{x}{i}}\ge n\), we can simplify
+    the above equation to
+    \begin{equation*}
+    \floor{\frac{x}{n}}\cdot n+\sum_{i=\floor{\frac{x}{n}}+1}^m\floor{\frac{x}{i}}
+    \end{equation*}
+    #+END_proof
+
+    Now let's see a generalization of the above problem:
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/kth-smallest-product-of-two-sorted-arrays/}{LeetCode: Kth Smallest Product of Two Sorted Arrays}]
+    #+BEGIN_problem
+    Given two sorted 0-indexed integer arrays \(nums1\) and \(nums2\) as well as an integer \(k\), return the
+    \(k\)th (1-based) smallest product of \(nums1[i]\times nums2[j]\) where \(0\le i < nums1.length\) and
+    \(0\le j<nums2.length\)
+    #+END_problem
+
+    #+BEGIN_proof
+
+    #+END_proof
+
+
+
 ** Bit operation
+    Get all subsets of a bit mask:
+    #+begin_src c++
+    for (int subset=state; subset>0; subset=(subset-1)&state) {}
+    #+end_src
+
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
     #+BEGIN_problem
     You are given an array with all the numbers from 1 to N appearing exactly once, except for two
@@ -334,6 +532,23 @@ func(arr, l, r) {
     If \(a_j|a_i=a_j\), then \(a_i\subseteq a_j\) in the sense of bits and for
     each \(k<j\), \(a_k|a_i=a_k|a_j\). So we don't need to consider \(k<j\)
     #+END_proof
+
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/triples-with-bitwise-and-equal-to-zero/}{LeetCode: Triples with Bitwise AND Equal to Zero}]
+    #+BEGIN_problem
+    Given an integer array nums, return the number of AND triples.
+
+    An AND triple is a triple of indices \((i, j, k)\) such that:
+    * ~0 <= i < nums.length~
+    * ~0 <= j < nums.length~
+    * ~0 <= k < nums.length~
+    * ~nums[i] & nums[j] & nums[k] == 0~, where & represents the bitwise-AND operator.
+
+    #+END_problem
+
+    #+BEGIN_proof
+
+    #+END_proof
+
 ** Hard to say
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
     #+BEGIN_problem
@@ -394,3 +609,17 @@ func(arr, l, r) {
     Then to find the document with similarity > 0 with \(A\), we only need to check the hash value
     for each element of \(A\)
     #+END_proof
+* Miscellaneous Topics
+** Tricks
+    *Compute the modular multiplicative inverse*:
+
+    By Fermat's little theorem, \(a^{-1}\equiv 1\mod p\) for prime \(p\).
+
+    Note that
+    \begin{equation*}
+    aba^{-1}b^{-1}\equiv 1\mod p
+    \end{equation*}
+    therefore
+    \begin{equation*}
+    ((n-1)!)^{-1}\equiv(n!)^{-1}\cdot n\mod p
+    \end{equation*}

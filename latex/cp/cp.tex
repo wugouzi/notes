@@ -1,4 +1,4 @@
-% Created 2022-10-02 Sun 11:33
+% Created 2022-10-09 Sun 18:53
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -13,6 +13,7 @@
 \usepackage{capt-of}
 \usepackage{hyperref}
 \AddToHook{cmd/section/before}{\clearpage}
+%\AddToHook{cmd/subsection/before}{\clearpage}
 \graphicspath{{../../books/}}
 \input{../preamble.tex}
 \makeindex
@@ -37,9 +38,9 @@
 
 
 \section{Dynamic Programming}
-\label{sec:org4c535ef}
+\label{sec:org028aee4}
 \subsection{General}
-\label{sec:orgc2f70cc}
+\label{sec:orgce1993e}
 \begin{problem}[\href{https://leetcode.cn/problems/find-all-good-indices/}{LeetCode: Find All Good Indices}]
 You are given a \emph{0-indexed} integer array nums of size \(n\) and a positive integer \(k\).
 
@@ -115,10 +116,96 @@ Now we have some options:
 \end{figure}
 \end{proof}
 
+\begin{problem}[\href{https://leetcode.cn/problems/k-inverse-pairs-array/}{LeetCode: K Inverse Pairs Array}]
+For an integer array nums, an \textbf{inverse pair} is a pair of integers \((i,j)\)
+where \(0\le i<j<len(nums)\) and \(nums[i]>nums[j]\)
+
+Given two integers \(n\) and \(k\), return the number of different arrays consist of numbers
+from 1 to \(n\) such that there are exactly \(k\) inverse pairs. Since the answer can be huge,
+return it modulo \(10^9+7\).
+\end{problem}
+
+\begin{proof}
+Let \(f(i,j)\) denote the number of different arrays consisting of numbers from 1 to \(i\) s.t.
+there are exactly \(j\) inverse pairs.
+
+Suppose we fix \(k\) as the last element of the array, then the number of inverse pairs is the sum of
+\begin{itemize}
+\item the inverse pairs between \(k\) and other numbers
+\item the inverse pairs among other numbers
+\end{itemize}
+
+The first part is \(i-k\), therefore the second part should be \(j-(i-k)\).
+\begin{equation*}
+f(i,j)=\sum_{k=1}^if(i-1,j-(i-k))=\sum_{k=0}^{i-1}f(i-1,j-k)
+\end{equation*}
+But the above formula's complexity is \(O(n^2k)\).
+
+Note that
+\begin{align*}
+f(i,j-1)&=\sum_{k=0}^{i-1}f(i-1,j-1-k)\\
+f(i,j)&=\sum_{k=0}^{i-1}f(i-1,j-k)
+\end{align*}
+Therefore
+\begin{equation*}
+f(i,j)=f(i,j-1)-f(i-1,j-i)+f(i-1,j)
+\end{equation*}
+\end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/minimum-swaps-to-make-sequences-increasing/}{LeetCode: Minimum Swaps To Make Sequences Increasing}]
+You are given two integer arrays of the same length \(nums1\) and \(nums2\). In one operation, you are
+allowed to swap \(nums1[i]\) with \(nums2[i]\).
+
+For example, if \(nums1 = [1,2,3,8]\), and \(nums2 = [5,6,7,4]\), you can swap the element at \(i = 3\) to
+obtain \(nums1 = [1,2,3,4]\) and \(nums2 = [5,6,7,8]\).
+
+Return the minimum number of needed operations to make \(nums1\) and \(nums2\) strictly increasing. The
+test cases are generated so that the given input always makes it possible.
+
+An array arr is strictly increasing if and only if \(arr[0] < arr[1] < arr[2] <\dots < arr[arr.length - 1]\)
+\end{problem}
+
+\begin{proof}
+For each \(i\), one of the following is true
+\begin{enumerate}
+\item \(nums_1[i]>nums_1[i-1]\) and \(nums_2[i]>nums_2[i-1]\)
+\item \(nums_1[i]>nums_2[i-1]\) and \(nums_2[i]>nums_1[i-1]\)
+\end{enumerate}
+
+Use \(dp[i][0]\) to denote the minimum number of needed operations for \([0,i]\) and we don't do
+the exchange at \(i\). Use \(dp[i][1]\) to denote the number that we exchange at \(i\).
+
+Case \(1\wedge \neg2\):
+\begin{equation*}
+\begin{cases}
+dp[i][0]=dp[i-1][0]\\
+dp[i][1]=dp[i-1][1]+1\\
+\end{cases}
+\end{equation*}
+
+Case \(\neg1\wedge 2\):
+\begin{equation*}
+\begin{cases}
+dp[i][0]=dp[i-1][1]\\
+dp[i][1]=dp[i-1][0]+1
+\end{cases}
+\end{equation*}
+
+Case \(1\wedge 2\):
+\begin{equation*}
+\begin{cases}
+dp[i][0]=\min\{dp[i-1][0],dp[i-1][1]\}\\
+dp[i][1]=\min\{dp[i-1][1],dp[i-1][0]\}+1
+\end{cases}
+\end{equation*}
+
+and we set \(dp[0][0]=dp[0][1]=1\)
+\end{proof}
+
 
 
 \subsection{Digit DP}
-\label{sec:orgfe04150}
+\label{sec:orgb5eb137}
 \begin{problem}[LeetCode 788: Rotated Digits]
 An integer x is a \textbf{good} if after rotating each digit individually by 180 degrees, we get a valid
 number that is different  from x. Each digit must be rotated - we cannot choose to leave it alone.
@@ -157,9 +244,9 @@ of \(n\)
 \end{itemize}
 \end{proof}
 \section{Graph}
-\label{sec:org57a33e6}
+\label{sec:org51d0080}
 \subsection{Union find}
-\label{sec:orgf58b309}
+\label{sec:orgbe9d772}
 \begin{problem}[\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
 There is a tree (i.e. a connected, undirected graph with no cycles) consisting of \(n\) nodes
 numbered from 0 to \(n-1\) and exactly \(n - 1\) edges.
@@ -196,10 +283,75 @@ For each node \(s\) and its neighbor \(t\):
 \end{enumerate}
 \end{proof}
 
+\begin{problem}[\href{https://leetcode.cn/problems/bricks-falling-when-hit/}{LeetCode: Bricks Falling When Hit}]
+You are given an \(m\times n\)binary grid, where each 1 represents a brick and 0 represents an empty
+space. A brick is stable if:
+\begin{itemize}
+\item It is directly connected to the top of the grid, or
+\item At least one other brick in its four adjacent cells is stable.
+\end{itemize}
+
+You are also given an array \(hits\), which is a sequence of erasures we want to apply. Each time we
+want to erase the brick at the location \(hits[i] = (row_i, col_i)\). The brick on that location (if
+it exists) will disappear. Some other bricks may no longer be stable because of that erasure and
+will fall. Once a brick falls, it is immediately erased from the grid (i.e., it does not land on
+other stable bricks).
+
+Return an array result, where each \(result[i]\) is the number of bricks that will fall after the ith erasure is applied.
+
+Note that an erasure may refer to a location with no brick, and if it does, no bricks drop.
+\end{problem}
+
+\begin{proof}
+In essence, think the problem in reverse direction
+
+Method 1: union find
+
+Method 2: dfs
+\end{proof}
+
+
+\section{Greedy}
+\label{sec:orgbe3c62e}
+\begin{problem}[\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
+There are \(n\) different online courses numbered from 1 to \(n\). You are given an array courses where
+\(courses[i]=[duration_i,lastDay_i]\) indicate that the \(i\)th course should be taken continuously for
+\(duration_i\) days and must be finished before or on \(lastDay_i\)
+
+You will start on the 1st day and you cannot take two or more courses simultaneously.
+
+Return the maximum number of courses that you can take.
+\end{problem}
+
+\begin{proof}
+For any two courses \((t_1,d_1)\) and \((t_2,d_2)\), if \(d_1\le d_2\), then it's optimal to study the
+first before the latter. Then ``we can study 2 and then 1'' always implies ``we can study 1 and
+then 2''
+
+Now we prove by induction.
+
+Given \(i\) courses, sort them by lastDay. Suppose we choose \(k\) courses \((t_{x_1},d_{x_1}),(t_{x_2},d_{x_2}),\dots,(t_{x_k},d_{x_k})\) where \(x_1<x_2<\dots<x_k\) from
+the first \(i-1\) courses which is optimal for the first \(i-1\) courses. Then
+
+\begin{equation*}
+\begin{cases}
+t_{x_1}\le d_{x_1}\\
+t_{x_1}+t_{x_2}\le d_{x_2}\\
+\vdots\\
+t_{x_1}+\dots+t_{x_k}\le d_{x_k}
+\end{cases}
+\end{equation*}
+Then we can build the optimal plan for the first \(i\) courses based on this and \((t_i,d_i)\)
+\begin{itemize}
+\item if \(t_{x_1}+\dots+t_{x_k}+t_i\le d_i\), then we can put \((t_i,d_i)\) into our plan, which is optimal.
+\item if \(t_{x_1}+\dots+t_{x_k}+t_i>d_i\)
+\end{itemize}
+\end{proof}
+
 \section{General}
-\label{sec:org6106e7a}
+\label{sec:org809b9ae}
 \subsection{Intervals}
-\label{sec:orge624c25}
+\label{sec:orgd333b04}
 \begin{problem}[\href{https://leetcode.cn/problems/count-days-spent-together/}{LeetCode: Count Days Spent Together}]
 Alice and Bob are traveling to Rome for separate business meetings.
 
@@ -215,7 +367,7 @@ that the number of days  per month can be represented as: [31, 28, 31, 30, 31, 3
 \end{problem}
 
 \begin{proof}
-First we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
+First, we can convert the string to \(i\)th day of the year, then Alice's interval is \([a,b]\),
 Bob's interval is \([c,d]\), then we need to calculate the intersection of these intervals.
 
 \([a,b]\cap[c,d]\neq\emptyset\) iff \(b\ge c\wedge d\ge a\).
@@ -223,8 +375,81 @@ Bob's interval is \([c,d]\), then we need to calculate the intersection of these
 \([a,b]\cap[c,d]=\min(b,d)-\max(a,c)+1\)
 \end{proof}
 
+\subsection{Binary search}
+\label{sec:orgf350507}
+\begin{problem}[\href{https://leetcode.cn/problems/maximum-running-time-of-n-computers/}{LeetCode: Maximum Running Time of N Computers}]
+You have \(n\) computers. You are given the integer \(n\) and a 0-indexed integer array batteries where
+the \(i\)th battery can run a computer for \(batteries[i]\) minutes. You are interested in running all \(n\)
+computers simultaneously using the given batteries.
+
+Initially, you can insert at most one battery into each computer. After that and at any integer
+time, you can remove a battery from a computer and insert another battery any number of
+times. The inserted battery can be a new battery or a battery from another computer. You
+may assume that the removing and inserting processes take no time.
+
+Note that the batteries cannot be recharged.
+
+Return the maximum number of minutes you can run all the n computers simultaneously.
+\end{problem}
+
+\begin{proof}
+Suppose the maximum is \(k\), then we can draw a \(n\times k\) matrix \(A\) where \(A[i,j]\in[0,m)\)
+and \(m\) is the length of the batteries, meaning the \(j\)th computer uses battery \(A[i,j]\)
+in \(i\)th minute.
+
+By the problem constraints, each row's elements are distinct, and each \(x\in[0,m)\) should
+appear less than \(batteries[x]\) times. Therefore in overall, the number of appearance of \(x\)
+should less than or equal to \(\min(batteries[x],k)\)
+
+We can use binary search to determine the \(k\) since if we can run them for \(k\) minutes, we can
+run them for \(k-1,k-2,\dots\) minutes. Therefore there is \(k'\) s.t. \(\le k'\) works and \(>k'\)
+doesn't.
+
+In each step, suppose we need to check \(mid\). Then the appearance time of each \(x\) shouldn't
+be greater than \(occ(x)=\min(batteries[x],mid)\). If \(\sum_{x=0}^{m-1} occ(x)<mid\times n\), then it
+is impossible.
+
+Otherwise, we have a strategy to fill the matrix: fill the column one by one by contiguous block
+of \(x\).
+\end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/kth-smallest-number-in-multiplication-table/}{LeetCode: Kth Smallest Number in Multiplication Table}]
+Nearly everyone has used the Multiplication Table. The multiplication table of size \(m\times n\) is an
+integer matrix mat where \(mat[i][j] == i\times j\) (1-indexed).
+
+Given three integers \(m\), \(n\), and \(k\), return the \(k\)th smallest element in the \(m\times n\) multiplication table.
+\end{problem}
+
+\begin{proof}
+Consider: given \(x\), how small is it?
+
+There are
+\begin{equation*}
+\sum_{i=1}^m\min(\floor{\frac{x}{i}},n)
+\end{equation*}
+numbers less than \(x\). Since \(i\le\floor{\frac{x}{n}}\Rightarrow\floor{\frac{x}{i}}\ge n\), we can simplify
+the above equation to
+\begin{equation*}
+\floor{\frac{x}{n}}\cdot n+\sum_{i=\floor{\frac{x}{n}}+1}^m\floor{\frac{x}{i}}
+\end{equation*}
+\end{proof}
+
+Now let's see a generalization of the above problem:
+
+\begin{problem}[\href{https://leetcode.cn/problems/kth-smallest-product-of-two-sorted-arrays/}{LeetCode: Kth Smallest Product of Two Sorted Arrays}]
+Given two sorted 0-indexed integer arrays \(nums1\) and \(nums2\) as well as an integer \(k\), return the
+\(k\)th (1-based) smallest product of \(nums1[i]\times nums2[j]\) where \(0\le i < nums1.length\) and
+\(0\le j<nums2.length\)
+\end{problem}
+
+\begin{proof}
+
+\end{proof}
+
+
+
 \subsection{Bit operation}
-\label{sec:org3cf19cd}
+\label{sec:org9fb1492}
 \begin{problem}[\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
 You are given an array with all the numbers from 1 to N appearing exactly once, except for two
 number that is missing. How can you find the missing number in \(O(N)\) time and \(O(1)\) space?
@@ -312,7 +537,7 @@ If \(a_j|a_i=a_j\), then \(a_i\subseteq a_j\) in the sense of bits and for
 each \(k<j\), \(a_k|a_i=a_k|a_j\). So we don't need to consider \(k<j\)
 \end{proof}
 \subsection{Hard to say}
-\label{sec:org41234af}
+\label{sec:orgb1961dd}
 \begin{problem}[\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
 You are given a 0-indexed 2D integer array transactions, where \texttt{transactions[i] = [costi, cashbacki]}.
 
