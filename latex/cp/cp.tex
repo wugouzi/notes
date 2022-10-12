@@ -1,4 +1,4 @@
-% Created 2022-10-09 Sun 18:53
+% Created 2022-10-12 Wed 13:05
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -38,9 +38,9 @@
 
 
 \section{Dynamic Programming}
-\label{sec:org028aee4}
+\label{sec:org2288490}
 \subsection{General}
-\label{sec:orgce1993e}
+\label{sec:org7393962}
 \begin{problem}[\href{https://leetcode.cn/problems/find-all-good-indices/}{LeetCode: Find All Good Indices}]
 You are given a \emph{0-indexed} integer array nums of size \(n\) and a positive integer \(k\).
 
@@ -202,10 +202,89 @@ dp[i][1]=\min\{dp[i-1][1],dp[i-1][0]\}+1
 and we set \(dp[0][0]=dp[0][1]=1\)
 \end{proof}
 
+\begin{problem}[\href{https://leetcode.cn/problems/count-ways-to-build-rooms-in-an-ant-colony/}{LeetCode: Count Ways to Build Rooms i nan Ant Colony}]
+You are an ant tasked with adding n new rooms numbered \(0\) to \(n-1\) to your colony. You are given
+the expansion plan as a \(0\)-indexed integer array of length \(n\), \(prevRoom\), where \(prevRoom[i]\)
+indicates that you must build room \(prevRoom[i]\) before building room \(i\), and these two rooms must
+be connected directly. Room \(0\) is already built, so \(prevRoom[0]=-1\). The expansion plan is given
+such that once all the rooms are built, every room will be reachable from room \(0\).
+
+You can only build one room at a time, and you can travel freely between rooms you have already
+built only if they are connected. You can choose to build any room as long as its previous
+room is already built.
+
+Return the number of different orders you can build all the rooms in. Since the answer may be
+large, return it modulo \(10^9 + 7\).
+
+Every room is reachable from room \(0\) once all the rooms are built.
+\end{problem}
+
+\begin{problem}[]
+Suppose there are \(a_0\) 0's, \(a_1\) 1's, \(\dots\), \(a_{n-1}\) \(n-1\)'s, then the number of
+different plan to put them in a row is
+\begin{equation*}
+\frac{(a_0+\dots+a_{n-1})!}{a_0!\cdot a_1!\cdot\dots\cdot a_{n-1}!}
+\end{equation*}
+
+\(a^{\varphi(m)}\equiv 1\mod m\), when \(p\) is prime, we have \(a^{p-1}\equiv 1\mod p\)
+
+Define \(f(i)\) to be the number of different topological sort for the subtree with the
+root \(i\). Suppose \(i\) has child \(c_{i,0},\dots,c_{i,k}\), and let \(cnt(i)\) denote the number of
+nodes in the subtree, then
+\begin{equation*}
+f(i)=\prod_cf(c)\times\frac{(cnt(i)-1)!}{\prod_ccnt(c)!}
+\end{equation*}
+\end{problem}
+
+\begin{problem}[\href{https://leetcode.cn/problems/valid-permutations-for-di-sequence/}{LeetCode: Valid Permutations for DI sequence}]
+You are given a string s of length \(n\) where \(s[i]\) is either:
+\begin{itemize}
+\item 'D' means decreasing, or
+\item 'I' means increasing.
+\end{itemize}
+A permutation perm of \(n + 1\) integers of all the integers in the range \([0, n]\) is called a valid
+permutation if for all valid \(i\):
+\begin{itemize}
+\item If \(s[i]='D'\), then \(perm[i] > perm[i + 1]\), and
+\item If \(s[i] == 'I'\), then \(perm[i] < perm[i + 1]\).
+\end{itemize}
+Return the number of valid permutations perm. Since the answer may be large, return it modulo \(10^9 + 7\).
+\end{problem}
+
+\begin{proof}
+Define o\(dp(i,j)\) to be the number of possible permutations of first \(i+1\) digits where
+the \(i+1\)th digit is \(j+1\)th smallest in the rest of unused digits
+
+Let's see an example of ``DID''
+\begin{center}
+  \begin{tikzpicture}[every text node part/.style={align=center}]
+    \node (00) at (0,0) {\(dp(0,0)=1\) \\ 0};
+    \node (01) at (0,1.5) {\(dp(0,1)=1\) \\ 1};
+    \node (02) at (0,3) {\(dp(0,2)=1\) \\ 2};
+    \node (03) at (0,4.5) {\(dp(0,3)=1\) \\ 3};
+    \node (10) at (3,1) {\(dp(1,0)=3\) \\ 10,20,30};
+    \node (11) at (3,2.5) {\(dp(1,1)=2\) \\ 21,31};
+    \node (12) at (3,4) {\(dp(1,2)=1\) \\ 32};
+    \node (20) at (7,1.5) {\(dp(2,0)=3\) \\ 102,201,301};
+    \node (21) at (7,3) {\(dp(2,1)=5\) \\ 103,203,302,213,312};
+    \node (30) at (11,2.5) {\(dp(3,0)=5\) \\ 1032,2031,3021,2130,3120};
+    \draw[->] (01) to (10);
+    \draw[->] (02) to (10);
+    \draw[->] (03) to (10);
+    \draw[->] (02) to (11);
+    \draw[->] (03) to (11);
+    \draw[->] (03) to (12);
+    \draw[->] (10) to (20);
+    \draw[->] (10) to (21);
+    \draw[->] (11) to (21);
+    \draw[->] (20) to (30);
+  \end{tikzpicture}
+\end{center}
+\end{proof}
 
 
 \subsection{Digit DP}
-\label{sec:orgb5eb137}
+\label{sec:orga5e0c42}
 \begin{problem}[LeetCode 788: Rotated Digits]
 An integer x is a \textbf{good} if after rotating each digit individually by 180 degrees, we get a valid
 number that is different  from x. Each digit must be rotated - we cannot choose to leave it alone.
@@ -244,9 +323,39 @@ of \(n\)
 \end{itemize}
 \end{proof}
 \section{Graph}
-\label{sec:org51d0080}
+\label{sec:org81040f5}
+\subsection{General}
+\label{sec:org7815ab4}
+\begin{problem}[\href{https://leetcode.cn/problems/hSRGyL/}{LeetCode: Navigation Device}]
+Given a binary tree \(T\), find minimum number of nodes (device) \(n_1,\dots,n_k\) s.t. for each node \(m\) in
+tree, \((d_1,\dots,d_k)\) is unique where \(d_i\) is the distance between \(m\) and \(n_i\).
+\end{problem}
+
+\begin{proof}
+Observation: Given a subtree of the form
+\begin{center}\begin{tikzpicture}[level distance=23pt,sibling distance=20pt]
+\Tree
+[.​
+        [.1
+            [.2 \edge[roof]; {} ]
+            [.3 \edge[roof]; {} ]
+        ]
+]
+\end{tikzpicture}\end{center}
+Then there are at least two device on subtree 2, subtree 3 and parent of 1.
+
+Therefore if we know that ancestors of 1 have device and 1's two childs don't have device, we
+should put a device in either 2 or 3.
+
+Now since we are assuming the root has device, we need to check whether it needs.
+\begin{enumerate}
+\item the left and right subtree has device: don't need
+\item only one of the subtree has device: if the subtree has two device, then we don't need
+\item none of the subtree has device: need
+\end{enumerate}
+\end{proof}
 \subsection{Union find}
-\label{sec:orgbe9d772}
+\label{sec:org7499ab6}
 \begin{problem}[\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
 There is a tree (i.e. a connected, undirected graph with no cycles) consisting of \(n\) nodes
 numbered from 0 to \(n-1\) and exactly \(n - 1\) edges.
@@ -310,9 +419,8 @@ Method 1: union find
 Method 2: dfs
 \end{proof}
 
-
 \section{Greedy}
-\label{sec:orgbe3c62e}
+\label{sec:org964a24b}
 \begin{problem}[\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
 There are \(n\) different online courses numbered from 1 to \(n\). You are given an array courses where
 \(courses[i]=[duration_i,lastDay_i]\) indicate that the \(i\)th course should be taken continuously for
@@ -349,9 +457,9 @@ Then we can build the optimal plan for the first \(i\) courses based on this and
 \end{proof}
 
 \section{General}
-\label{sec:org809b9ae}
+\label{sec:org258c883}
 \subsection{Intervals}
-\label{sec:orgd333b04}
+\label{sec:orga0e16ae}
 \begin{problem}[\href{https://leetcode.cn/problems/count-days-spent-together/}{LeetCode: Count Days Spent Together}]
 Alice and Bob are traveling to Rome for separate business meetings.
 
@@ -376,7 +484,7 @@ Bob's interval is \([c,d]\), then we need to calculate the intersection of these
 \end{proof}
 
 \subsection{Binary search}
-\label{sec:orgf350507}
+\label{sec:orgeba42f8}
 \begin{problem}[\href{https://leetcode.cn/problems/maximum-running-time-of-n-computers/}{LeetCode: Maximum Running Time of N Computers}]
 You have \(n\) computers. You are given the integer \(n\) and a 0-indexed integer array batteries where
 the \(i\)th battery can run a computer for \(batteries[i]\) minutes. You are interested in running all \(n\)
@@ -449,7 +557,12 @@ Given two sorted 0-indexed integer arrays \(nums1\) and \(nums2\) as well as an 
 
 
 \subsection{Bit operation}
-\label{sec:org9fb1492}
+\label{sec:org6368b30}
+Get all subsets of a bit mask:
+\begin{minted}[]{c++}
+    for (int subset=state; subset>0; subset=(subset-1)&state) {}
+\end{minted}
+
 \begin{problem}[\href{https://leetcode.cn/problems/missing-two-lcci/}{Leetcode: Missing Two LCCI}]
 You are given an array with all the numbers from 1 to N appearing exactly once, except for two
 number that is missing. How can you find the missing number in \(O(N)\) time and \(O(1)\) space?
@@ -536,8 +649,25 @@ for \(a_j\) and the possible \(answer[j]\ge i-j+1\).
 If \(a_j|a_i=a_j\), then \(a_i\subseteq a_j\) in the sense of bits and for
 each \(k<j\), \(a_k|a_i=a_k|a_j\). So we don't need to consider \(k<j\)
 \end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/triples-with-bitwise-and-equal-to-zero/}{LeetCode: Triples with Bitwise AND Equal to Zero}]
+Given an integer array nums, return the number of AND triples.
+
+An AND triple is a triple of indices \((i, j, k)\) such that:
+\begin{itemize}
+\item \texttt{0 <= i < nums.length}
+\item \texttt{0 <= j < nums.length}
+\item \texttt{0 <= k < nums.length}
+\item \texttt{nums[i] \& nums[j] \& nums[k] == 0}, where \& represents the bitwise-AND operator.
+\end{itemize}
+\end{problem}
+
+\begin{proof}
+
+\end{proof}
+
 \subsection{Hard to say}
-\label{sec:orgb1961dd}
+\label{sec:org6cd8756}
 \begin{problem}[\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
 You are given a 0-indexed 2D integer array transactions, where \texttt{transactions[i] = [costi, cashbacki]}.
 
@@ -594,4 +724,20 @@ documents and the value the index of the document.
 Then to find the document with similarity > 0 with \(A\), we only need to check the hash value
 for each element of \(A\)
 \end{proof}
+\section{Miscellaneous Topics}
+\label{sec:orga1ee72c}
+\subsection{Tricks}
+\label{sec:org72ff072}
+\textbf{Compute the modular multiplicative inverse}:
+
+By Fermat's little theorem, \(a^{-1}\equiv 1\mod p\) for prime \(p\).
+
+Note that
+\begin{equation*}
+aba^{-1}b^{-1}\equiv 1\mod p
+\end{equation*}
+therefore
+\begin{equation*}
+((n-1)!)^{-1}\equiv(n!)^{-1}\cdot n\mod p
+\end{equation*}
 \end{document}

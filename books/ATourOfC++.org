@@ -1547,6 +1547,437 @@ Vector f() {
     reference to its argument from which we may move - an *rvalue reference*
 ** Resource Management
 
+    By defining constructors, copy operations, move operations, and a destructor, a programmer can
+    provide complete control of the lifetime of a contained resource
+
+    Consider a standard-library ~thread~ representing a concurrent activity and a ~Vector~ of
+    a million doubles. We can't copy the former and don't want to copy the latter.
+    #+begin_src c++
+std::vector<thread> my_threads;
+
+Vector init(int n)
+{
+  thread t {heartbeat};               // run heartbeat concurrently (in a separate thread)
+  my_threads.push_back(std::move(t)); //move t into my_threads
+  // ... more initialization ...
+  
+  Vector vec(n);
+  for (int i=0; i!=vec.size(); ++i)
+    vec[i] = 777;
+  return vec;                         // move vec out of init()
+}
+auto v = init(1'000'000);             // start heartbeat and initialize v
+    #+end_src
+
+    In very much the same way that ~new~ and ~delete~ disappear from application code, we can make
+    pointers disappear into resource handles. In both cases, the result is simpler and more
+    maintainable code, without added overhead. In particular, we can achieve *strong resource safety*;
+    that is, we can eliminate resource leaks for a general notion of a resource. Examples are
+    \texttt{vector}s holding memory, \texttt{thread}s holding system threads, and \texttt{fstream}s
+    holding file handles.
+
+    Before resorting to garbage collection, systematically use resource handles: let each resource
+    have an owner in some scope and by default be released at the end of its owners scope.
+** Conventional Operations
+*** Comparisons
+** Advice
+    1. By default, declare single-argument constructors ~explicit~
+    2. If a class member has a reasonable default value, provide it as a data member initializer
+    3. Far large operands, use ~const~ reference argument types
+* Template
+** Parameterized Types
+    We can generalize our vector-of-doubles type to a vector-of-anything type by making it a
+    ~template~ and replacing the specific type ~double~ with a type parameter. For example
+    #+begin_src c++
+template<typename T>
+class Vector {
+ private:
+  T∗ elem;  // elem points to an array of sz elements of type T
+  int sz;
+ public:
+  explicit Vector(int s);           // constructor: establish invariant, acquire resources
+  ~Vector() { delete[] elem; }      // destructor: release resources
+  // ... copy and move operations ...
+  T& operator[](int i);             // for non-const Vectors
+  const T& operator[](int i) const; // for const Vectors
+  int size() const { return sz; }
+};
+    #+end_src
+
+    The ~template<typename T>~ prefix makes ~T~ a parameter of the declaration it prefixes. It is C++'s
+    version of the mathematical "for all T" or more precisely "for all types T."
+
+    The member functions might be defined similarly
+    #+begin_src c++
+template<typename T>
+Vector<T>::Vector(int s)
+{
+  if (s<0)
+    throw Negative_size{};
+  elem = new T[s];
+  sz = s;
+}
+template<typename T>
+const T& Vector<T>::operator[](int i) const {
+  if (i<0 || size()<=i)
+    throw out_of_range{"Vector::operator[]"};
+  return elem[i];
+}
+    #+end_src
+
+    Given these definitions, we can define \texttt{Vector}s like this:
+    #+begin_src c++
+Vector<char> vc(200);      // vector of 200 characters
+Vector<string> vs(17);     // vector of 17 strings
+Vector<list<int>> vli(45); // vector of 45 lists of integers
+    #+end_src
+
+    We can use \texttt{Vector}s like this
+    #+begin_src c++
+void write(const Vector<string>& vs) { // Vector of some strings
+  for (int i = 0; i!=vs.size(); ++i)
+    cout << vs[i] << '\n';
+}
+    #+end_src
+
+    To support the range-~for~ loop for our ~Vector~, we must define suitable ~begin()~ and ~end()~
+    functions:
+    #+begin_src c++
+template<typename T>
+T∗ begin(Vector<T>& x)
+{
+  return x.size() ? &x[0] : nullptr;   // pointer to first element or nullptr
+}
+
+template<typename T>
+T∗ end(Vector<T>& x) {
+  return x.size() ? &x[0]+x.size() : nullptr; // pointer to one-past-last element
+}
+    #+end_src
+
+  Given those, we can write
+  #+begin_src c++
+void f2(Vector<string>& vs)    // Vector of some strings
+{
+  for (auto& s : vs)
+    cout << s << '\n';
+}
+  #+end_src
+
+  Templates are a compile-time mechanism, so their use incurs no run-time overhead compared to
+  hand-crafted code.
+
+  A template plus a set of template arguments is called an *instantiation* or a *specialization*. Late
+  in the compilation process, at *instantiation time*, code is generated for each instantiation used
+  in a program
+*** Contrained Template Arguments (C++20)
+    Most often, a template will make sense only for template arguments that meet certain criteria.
+    For example, a ~Vector~ typically offers a copy operation, and if it does, it must require that
+    its elements must be copyable. That is, we must require that ~Vector~'s template argument is not
+    just a ~typename~ but an ~Element~ where "~Element~" specifies the requirements of a type that can
+    be an element:
+    #+begin_src c++
+template<Element T>
+class Vector {
+ private:
+  T∗ elem; // elem points to an array of sz elements of type T
+  int sz;
+  // ...
+};
+    #+end_src
+    This ~template<Element T>~ prefix is C++'s version of mathematic's "for all T such that
+    ~Element(T)~"; that is, ~Element~ is a predicate that checks whether T has all the properties that
+    a ~Vector~ requires. Such a predicate is called a *concept*. A template argument for which a concept
+    is specified is called a *constrained argument* and a template for which an argument is
+    constrained is called a *constrained template*.
+*** Value Template Arguments
+    In addition to type arguments, a template can take value arguments. For example
+    #+begin_src c++
+template<typename T, int N>
+struct Buffer
+{
+  using value_type = T;
+  constexpr int size() { return N; }
+  T[N];
+  // ...
+};
+    #+end_src
+    The alias (~value_type~) and the ~constexpr~ function are provided to allow users access to the
+    template arguments.
+
+    Value arguments are useful in many contexts. For example, ~Buffer~ allows us to create arbitrarily
+    sized buffers with no use of the free store (dynamic memory):
+*** Template Argument Deduction
+    Consider using the standard-library template ~pair~
+    #+begin_src c++
+pair<int,double> p = {1,5.2};
+    #+end_src
+
+    Many have found the need to specify the template argument types tedious, so the standard library
+    offers a function, ~make_pair()~, that deduces the template arguments of the ~pair~ it returns from
+    its function arguments:
+    #+begin_src c++
+auto p = make_pair(1,5.2); // p is a pair<int,double>
+    #+end_src
+    This leads to the obvious question "Why can’t we just deduce template parameters from
+    constructor arguments?" So, in C++17, we can. That is:
+    #+begin_src c++
+pair p = {1,5.2}; // p is a pair<int,double>
+    #+end_src
+
+    Consider a simple example:
+    #+begin_src c++
+template<typename T>
+class Vector {
+ public:
+  Vector(int);
+  Vector(initializer_list<T>); // initializer-list constructor
+  // ...
+  
+};
+
+Vector v1 {1,2,3}; // deduce v1’s element type from the initializer element type
+Vector v2 = v1; // deduce v2’s element type from v1’s element type
+
+auto p = new Vector{1,2,3}; // p points to a Vector<int>
+
+Vector<int> v3(1); // here we need to be explicit about the
+                   // element type (no element type is mentioned)
+    #+end_src
+
+    Clearly, this simplifies notation and can eliminate annoyances caused by mistyping redundant
+    template argument types. However, deduction can cause surprises
+    #+begin_src c++
+Vector<string> vs1 {"Hello", "World"}; // Vector<string>
+Vector vs {"Hello", "World"};          // deduces to Vector<const char*> (Surprise?)
+Vector vs2 {"Hello"s, "World"s};       // deduces to Vector<string>
+Vector vs3 {"Hello"s, "World"};        // error: the initializer list is not homogenous
+    #+end_src
+    The type of a C-style string literal is ~const char*~. If that was not what was intended, use the
+    ~s~ suffix to make it a proper ~string~.
+
+    When a template argument cannot be deduced from the constructor arguments, we can help by
+    providing a *deduction guide*. Consider
+    #+begin_src c++
+template<typename T>
+class Vector2 {
+ public:
+  using value_type = T;
+  // ...
+  Vector2(initializer_list<T>);   // initializer-list constructor
+  
+  template<typename Iter>
+  Vector2(Iter b, Iter e);        // [b:e) range constructor
+  // ...
+};
+
+Vector2 v1 {1,2,3,4,5};           // element type is int
+Vector2 v2(v1.begin(),v1.begin()+2);
+    #+end_src
+
+    Obviously, v2 should be a ~Vector2<int>~, but without help, the compiler cannot deduce that. The
+    code only states that there is a constructor from a pair of values of the same type. Without
+    language support for concepts, the compiler cannot assume anything about the types. To allow
+    deduction, we can add a *deduction guide* after the declaration of ~Vector2~:
+    #+begin_src c++
+emplate<typename Iter>
+Vector2(Iter,Iter) −> Vector2<typename Iter::value_type>;
+    #+end_src
+** Parameterized Operations
+*** Function Templates
+    #+begin_src c++
+template<typename Sequence, typename Value>
+Value sum(const Sequence& s, Value v)
+{
+  for (auto x : s)
+    v+=x;
+  return v;
+}
+    #+end_src
+*** Function Objects
+    One particularly useful kind of template is the *function object* (sometimes called a *functor*),
+    which is used to define objects that can be called like functions.
+    #+begin_src c++
+template<typename T>
+class Less_than {
+  const T val; // value to compare against
+ public:
+  Less_than(const T& v) :val{v} { }
+  bool operator()(const T& x) const { return x<val; } // call operator
+};
+    #+end_src
+    The function called ~operator()~ implements the "function call", "call" or "application" operator
+    ~()~.
+
+    We can define named variables of type ~Less_than~ for some argument type:
+    #+begin_src c++
+Less_than lti {42};               // lti(i) will compare i to 42 using < (i<42)
+Less_than lts {"Backus"s};        // lts(s) will compare s to "Backus" using < (s<"Backus")
+Less_than<string> lts2 {"Naur"};  // "Naur" is a C-style string, so we need <string>
+                                  // to get the right <
+    #+end_src
+
+    Such function objects are widely used as arguments to algorithms. For example, we can count the
+    occurrences of values for which a predicate returns ~true~:
+    #+begin_src c++
+template<typename C, typename P>
+// requires Sequence<C> && Callable<P,Value_type<P>>
+int count(const C& c, P pred) {
+  int cnt = 0;
+  for (const auto& x : c)
+    if (pred(x))
+      ++cnt;
+  return cnt;
+}
+    #+end_src
+
+    A *predicate* is something that we can invoke to return ~true~ or ~false~. For example:
+    #+begin_src c++
+void f(const Vector<int>& vec, const list<string>& lst, int x, const string& s)
+{
+  cout << "number of values less than " << x << ": " << count(vec,Less_than{x}) << '\n';
+  cout << "number of values less than " << s << ": " << count(lst,Less_than{s}) << '\n';
+}
+    #+end_src
+
+    The beauty of these function objects is that they carry the value to be compared against with
+    them.
+    1. We don't have to write a separate function for each value (and each type),
+    2. we don’t have to introduce nasty global variables to hold values.
+    3. for a simple function object like ~Less_than~, inlining is simple, so a call of ~Less_than~ is
+       far more efficient than an indirect function call. The ability to carry data plus their
+       efficiency makes function objects particularly useful as arguments to algorithms.
+
+    Function objects used to specify the meaning of key operations of a general algorithm are often
+    referred to as *policy objects*.
+*** Lambda Expression
+    The notation ~[&](int a){ return a<x; }~ is called a lambda expression. It generates a function
+    object exactly like ~Less_than<int>{x}~. The ~[&]~ is a *capture list* specifying that all local names
+    used in the lambda body (such as ~x~) will be accessed through references.
+
+    Had we wanted to "capture" only ~x~, we could have said so: ~[&x]~. Had we wanted to give the
+    generated object a copy of ~x~, we could have said so: ~[=x]~. Capturing nothing is ~[]~, capture all
+    local names by reference is ~[&]~, and capture all local nmaes used by value is ~[=]~.
+
+    Like a function, a lambda can be generic. For example:
+    #+begin_src c++
+template<class S>
+void rotate_and_draw(vector<S>& v, int r) {
+  for_all(v,[](auto& s){ s−>rotate(r); s−>draw(); });
+}
+    #+end_src
+    Here, like in variable declarations, ~auto~ means that any type is accepted as an initializer (an
+    argument is considered to initialize the formal parameter in a call). This makes a lambda with
+    an ~auto~ parameter a template, a ~generic lambda~. For reasons lost in standards committee
+    politics, this use of ~auto~ is not currently allowed for function arguments.
+** Template Mechanisms
+*** Variable Templates
+    When we use a type, we often want constants and values of that type. This is of course also the
+    case when we use a class template: when we define a ~C<T>~, we often want constants and variables
+    of type ~T~ and other types depending on ~T~.
+
+    #+begin_src c++
+template <class T>
+constexpr T viscosity = 0.4;
+
+template <class T>
+constexpr space_vector<T> external_acceleration = { T{}, T{−9.8}, T{} };
+
+auto vis2 = 2∗viscosity<double>;
+auto acc = external_acceleration<float>;
+    #+end_src
+    Here ~space_vector~ is a three-dimensional vector.
+
+    <<Problem1>>
+    Naturally, we can use arbitrary expressions of suitable type as initializers. Consider:
+    #+begin_src c++
+template<typename T, typename T2>
+constexpr bool Assignable = is_assignable<T&,T2>::value;
+// is_assignable is a type trait 
+
+template<typename T> void testing()
+{
+  static_assert(Assignable<T&,double>, "can't assign a double");
+  static_assert(Assignable<T&,string>, "can't assign a string");
+}
+    #+end_src
+*** Alias
+    It is very common for a parameterized type to provide an alias for types related to their
+    template arguments. For example:
+    #+begin_src c++
+template<typename T> class Vector {
+ public:
+  using value_type = T;
+  // ...
+};
+    #+end_src
+
+    In fact, every standard-library container provides ~value_type~ as the name of its value type.
+    This allows us to write code that will work for every container that follows this convention.
+
+    #+begin_src c++
+template<typename C>
+using Value_type = typename C::value_type; // the type of C’s elements
+template<typename Container>
+void algo(Container& c)
+{
+  Vector<Value_type<Container>> vec; // keep results here
+  // ...
+}
+    #+end_src
+    The aliasing mechanism can be used to define a new template by binding some or all template
+    arguments. For example:
+
+    #+begin_src c++
+template<typename Key, typename Value>
+class Map {
+  // ...
+};
+template<typename Value>
+using String_map = Map<string,Value>;
+
+String_map<int> m; // m is a Map<string,int>
+    #+end_src
+*** Compile-Time ~if~
+    Consider writing an operation that can use one of two operations ~slow_and_safe(T)~ or
+    ~simple_and_fast(T)~. The traditional solution is to write a pair of overloaded functions and
+    select the most appropriate based on a trait (ref:trait), such as the standard-library ~is_pod~.
+    If a class hierarchy is involved, a base class can provide the ~slow_and_safe~ general operation
+    and a derived class can override with a ~simple_and_fast~ implementation.
+
+    In C++17, we can use a compile-time ~if~:
+    #+begin_src c++
+template<typename T>
+void update(T& target) {
+  // ...
+  if constexpr(is_pod<T>::value)
+      simple_and_fast(target); // for "plain old data"
+  else
+    slow_and_safe(target);
+  // ...
+}
+    #+end_src
+    The ~is_pod<T>~ is a type trait that tells us whether a type can be trivially copied
+
+    Only the selected branch of an ~if constexpr~ is instantiated.
+
+    Importantly, an ~if constexpr~ is not a text-manipulation mechanism and cannot be used to break
+    the usual rules of grammar, type and scope.
+** Advice
+    1. There is no separate compilation of templates: ~#include~ template definitions in every
+       translation unit that uses them
+* Concepts and Generic Programming
+** Concepts
+    Consider the ~sum()~
+    #+begin_src c++
+template<typename Seq, typename Num>
+Num sum(Seq s, Num v)
+{
+for (const auto& x : s) v+=x;
+return v;
+}
+    #+end_src
+
 * Utilities
 ** Resource Management
 *** ~unique_ptr~ and ~shared_ptr~
@@ -1600,3 +2031,6 @@ void producer() {
   }
 }
     #+end_src
+* Problems
+    | ref      | status |
+    | [[Problem1]] |        |

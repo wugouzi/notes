@@ -205,6 +205,48 @@
     \end{equation*}
     #+END_problem
 
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/valid-permutations-for-di-sequence/}{LeetCode: Valid Permutations for DI sequence}]
+    #+BEGIN_problem
+    You are given a string s of length \(n\) where \(s[i]\) is either:
+    * 'D' means decreasing, or
+    * 'I' means increasing.
+    A permutation perm of \(n + 1\) integers of all the integers in the range \([0, n]\) is called a valid
+    permutation if for all valid \(i\):
+    * If \(s[i]='D'\), then \(perm[i] > perm[i + 1]\), and
+    * If \(s[i] == 'I'\), then \(perm[i] < perm[i + 1]\).
+    Return the number of valid permutations perm. Since the answer may be large, return it modulo \(10^9 + 7\).
+    #+END_problem
+
+    #+BEGIN_proof
+    Define o\(dp(i,j)\) to be the number of possible permutations of first \(i+1\) digits where
+    the \(i+1\)th digit is \(j+1\)th smallest in the rest of unused digits
+
+    Let's see an example of "DID"
+    \begin{center}
+      \begin{tikzpicture}[every text node part/.style={align=center}]
+        \node (00) at (0,0) {\(dp(0,0)=1\) \\ 0};
+        \node (01) at (0,1.5) {\(dp(0,1)=1\) \\ 1};
+        \node (02) at (0,3) {\(dp(0,2)=1\) \\ 2};
+        \node (03) at (0,4.5) {\(dp(0,3)=1\) \\ 3};
+        \node (10) at (3,1) {\(dp(1,0)=3\) \\ 10,20,30};
+        \node (11) at (3,2.5) {\(dp(1,1)=2\) \\ 21,31};
+        \node (12) at (3,4) {\(dp(1,2)=1\) \\ 32};
+        \node (20) at (7,1.5) {\(dp(2,0)=3\) \\ 102,201,301};
+        \node (21) at (7,3) {\(dp(2,1)=5\) \\ 103,203,302,213,312};
+        \node (30) at (11,2.5) {\(dp(3,0)=5\) \\ 1032,2031,3021,2130,3120};
+        \draw[->] (01) to (10);
+        \draw[->] (02) to (10);
+        \draw[->] (03) to (10);
+        \draw[->] (02) to (11);
+        \draw[->] (03) to (11);
+        \draw[->] (03) to (12);
+        \draw[->] (10) to (20);
+        \draw[->] (10) to (21);
+        \draw[->] (11) to (21);
+        \draw[->] (20) to (30);
+      \end{tikzpicture}
+    \end{center}
+    #+END_proof
 
 
 ** Digit DP
@@ -239,10 +281,36 @@
     * \(bound'\) is true iff \(bound\) is true and the digit we choose is the \(pos\)th digit
       of \(n\)
     * \(diff'\) is true iff \(diff\) is true or we chose 2/5/6/9
-
-
     #+END_proof
 * Graph
+** General
+    #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/hSRGyL/}{LeetCode: Navigation Device}]
+    #+BEGIN_problem
+    Given a binary tree \(T\), find minimum number of nodes (device) \(n_1,\dots,n_k\) s.t. for each node \(m\) in
+    tree, \((d_1,\dots,d_k)\) is unique where \(d_i\) is the distance between \(m\) and \(n_i\).
+    #+END_problem
+
+    #+BEGIN_proof
+    Observation: Given a subtree of the form
+    \begin{center}\begin{tikzpicture}[level distance=23pt,sibling distance=20pt]
+    \Tree
+    [.​
+            [.1
+                [.2 \edge[roof]; {} ]
+                [.3 \edge[roof]; {} ]
+            ]
+    ]
+    \end{tikzpicture}\end{center}
+    Then there are at least two device on subtree 2, subtree 3 and parent of 1.
+
+    Therefore if we know that ancestors of 1 have device and 1's two childs don't have device, we
+    should put a device in either 2 or 3.
+
+    Now since we are assuming the root has device, we need to check whether it needs.
+    1. the left and right subtree has device: don't need
+    2. only one of the subtree has device: if the subtree has two device, then we don't need
+    3. none of the subtree has device: need
+    #+END_proof
 ** Union find
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
     #+BEGIN_problem
@@ -305,7 +373,6 @@
 
 
     #+END_proof
-
 
 * Greedy
     #+ATTR_LATEX: :options [\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
