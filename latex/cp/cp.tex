@@ -1,4 +1,4 @@
-% Created 2022-10-12 Wed 13:05
+% Created 2022-10-18 Tue 15:19
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -38,9 +38,9 @@
 
 
 \section{Dynamic Programming}
-\label{sec:org2288490}
+\label{sec:orgc8d194f}
 \subsection{General}
-\label{sec:org7393962}
+\label{sec:orge0fe9e4}
 \begin{problem}[\href{https://leetcode.cn/problems/find-all-good-indices/}{LeetCode: Find All Good Indices}]
 You are given a \emph{0-indexed} integer array nums of size \(n\) and a positive integer \(k\).
 
@@ -282,9 +282,35 @@ Let's see an example of ``DID''
 \end{center}
 \end{proof}
 
+\begin{problem}[\href{https://leetcode.cn/problems/distinct-subsequences-ii/}{LeetCode: Distinct Subsequences \rom{2}}]
+Given a string \(s\), return the number of distinct non-empty subsequences of \(s\). Since the answer
+may be very large, return it modulo \(10^9 + 7\).
+
+A subsequence of a string is a new string that is formed from the original string by deleting
+some (can be none) of the characters without disturbing the relative positions of the remaining
+characters. (i.e., ``ace'' is a subsequence of ``abcde'' while ``aec'' is not.
+\end{problem}
+
+\begin{proof}
+Define \(F(i)\) to be the subsequences ends in character \(s[i]\), and \(f(i)=\abs{F(i)}\)
+
+How do we eliminate the duplicates? Note that if \(s[i]=s[j]\) and \(i<j\),
+then \(F(i)\subseteq F(j)\), therefore for each character, we only need to care about the last appearance.
+\begin{equation*}
+f(i)=1+\sum_{0\le k<26,last[k]\neq-1}f(last[k])
+\end{equation*}
+
+Note that we only needs 26 values, define \(g[26]\), then
+\begin{equation*}
+g(c)=1+\sum_{i=0}^{25}g(i)
+\end{equation*}
+Then, we only need to store \(total=\sum g(i)\).
+\end{proof}
+
+
 
 \subsection{Digit DP}
-\label{sec:orga5e0c42}
+\label{sec:org7e78ed9}
 \begin{problem}[LeetCode 788: Rotated Digits]
 An integer x is a \textbf{good} if after rotating each digit individually by 180 degrees, we get a valid
 number that is different  from x. Each digit must be rotated - we cannot choose to leave it alone.
@@ -322,10 +348,38 @@ of \(n\)
 \item \(diff'\) is true iff \(diff\) is true or we chose 2/5/6/9
 \end{itemize}
 \end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/numbers-at-most-n-given-digit-set/}{LeetCode: Numbers at most N given digit set}]
+Given an array of digits which is sorted in non-decreasing order. You can write numbers using
+each \(digits[i]\) as many times as we want. For example, if digits = ['1','3','5'], we may write
+numbers such as '13', '551', and '1351315'.
+
+Return the number of positive integers that can be generated that are less than or equal to a
+given integer \(n\).
+\end{problem}
+
+\begin{proof}
+Suppose we have \(m\) digits.
+
+Define \(dp(i,0)\) to be the number of different number in \(i\) digits that is less than the
+first \(i\) digits of \(n\), and \(dp(i,1)\) to be the number of \(i\) digits that is equal to
+the first \(i\) digits of \(n\).
+
+Let \(C(i)\) to be the number of digits that is less than \(i\)th digit of \(n\). Then
+\begin{equation*}
+dp(i,0)=
+\begin{cases}
+C(i)&i=1\\
+m+dp(i-1,0)\times m+dp(i-1,1)\times C(i)&i>1
+\end{cases}
+\end{equation*}
+where \(dp(0,0)=0\) and \(dp(0,1)=1\)
+\end{proof}
+
 \section{Graph}
-\label{sec:org81040f5}
-\subsection{General}
-\label{sec:org7815ab4}
+\label{sec:orgc49dbf6}
+\subsection{Tree}
+\label{sec:org9fe9787}
 \begin{problem}[\href{https://leetcode.cn/problems/hSRGyL/}{LeetCode: Navigation Device}]
 Given a binary tree \(T\), find minimum number of nodes (device) \(n_1,\dots,n_k\) s.t. for each node \(m\) in
 tree, \((d_1,\dots,d_k)\) is unique where \(d_i\) is the distance between \(m\) and \(n_i\).
@@ -354,8 +408,28 @@ Now since we are assuming the root has device, we need to check whether it needs
 \item none of the subtree has device: need
 \end{enumerate}
 \end{proof}
+
+\begin{problem}[\href{https://leetcode.cn/problems/smallest-missing-genetic-value-in-each-subtree/}{LeetCode: Smallest Missing Genetic Value in Each Subtree}]
+There is a family tree rooted at 0 consisting of \(n\) nodes numbered 0 to \(n - 1\). You are given a
+0-indexed integer array parents, where \(parents[i]\) is the parent for node \(i\). Since node \(0\) is the
+root, \(parents[0] = -1\).
+
+There are \(10^5\) genetic values, each represented by an integer in the inclusive range \([1, 10^5]\).
+You are given a 0-indexed integer array nums, where \(nums[i]\) is a distinct genetic value for
+node \(i\).
+
+Return an array ans of length \(n\) where \(ans[i]\) is the smallest genetic value that is missing from
+the subtree rooted at node \(y\).
+
+The subtree rooted at a node \(x\) contains node \(x\) and all of its descendant nodes.
+\end{problem}
+
+\begin{proof}
+Start from the node with num 1 and go up.
+\end{proof}
+
 \subsection{Union find}
-\label{sec:org7499ab6}
+\label{sec:orgc35e16d}
 \begin{problem}[\href{https://leetcode.cn/problems/number-of-good-paths/}{LeetCode: Number of Good Paths}]
 There is a tree (i.e. a connected, undirected graph with no cycles) consisting of \(n\) nodes
 numbered from 0 to \(n-1\) and exactly \(n - 1\) edges.
@@ -420,7 +494,7 @@ Method 2: dfs
 \end{proof}
 
 \section{Greedy}
-\label{sec:org964a24b}
+\label{sec:org2793247}
 \begin{problem}[\href{https://leetcode.cn/problems/course-schedule-iii/}{LeetCode: Course Schedule \rom{3}}]
 There are \(n\) different online courses numbered from 1 to \(n\). You are given an array courses where
 \(courses[i]=[duration_i,lastDay_i]\) indicate that the \(i\)th course should be taken continuously for
@@ -457,9 +531,9 @@ Then we can build the optimal plan for the first \(i\) courses based on this and
 \end{proof}
 
 \section{General}
-\label{sec:org258c883}
+\label{sec:org7be9c47}
 \subsection{Intervals}
-\label{sec:orga0e16ae}
+\label{sec:orgdf6ed4c}
 \begin{problem}[\href{https://leetcode.cn/problems/count-days-spent-together/}{LeetCode: Count Days Spent Together}]
 Alice and Bob are traveling to Rome for separate business meetings.
 
@@ -484,7 +558,7 @@ Bob's interval is \([c,d]\), then we need to calculate the intersection of these
 \end{proof}
 
 \subsection{Binary search}
-\label{sec:orgeba42f8}
+\label{sec:org3df76a3}
 \begin{problem}[\href{https://leetcode.cn/problems/maximum-running-time-of-n-computers/}{LeetCode: Maximum Running Time of N Computers}]
 You have \(n\) computers. You are given the integer \(n\) and a 0-indexed integer array batteries where
 the \(i\)th battery can run a computer for \(batteries[i]\) minutes. You are interested in running all \(n\)
@@ -557,7 +631,7 @@ Given two sorted 0-indexed integer arrays \(nums1\) and \(nums2\) as well as an 
 
 
 \subsection{Bit operation}
-\label{sec:org6368b30}
+\label{sec:orga734698}
 Get all subsets of a bit mask:
 \begin{minted}[]{c++}
     for (int subset=state; subset>0; subset=(subset-1)&state) {}
@@ -667,7 +741,7 @@ An AND triple is a triple of indices \((i, j, k)\) such that:
 \end{proof}
 
 \subsection{Hard to say}
-\label{sec:org6cd8756}
+\label{sec:org6ddb10e}
 \begin{problem}[\href{https://leetcode.cn/problems/minimum-money-required-before-transactions/}{LeetCode: Minimum Money Required Before Transactions}]
 You are given a 0-indexed 2D integer array transactions, where \texttt{transactions[i] = [costi, cashbacki]}.
 
@@ -725,9 +799,9 @@ Then to find the document with similarity > 0 with \(A\), we only need to check 
 for each element of \(A\)
 \end{proof}
 \section{Miscellaneous Topics}
-\label{sec:orga1ee72c}
+\label{sec:orgfac7eb6}
 \subsection{Tricks}
-\label{sec:org72ff072}
+\label{sec:org74f2850}
 \textbf{Compute the modular multiplicative inverse}:
 
 By Fermat's little theorem, \(a^{-1}\equiv 1\mod p\) for prime \(p\).
