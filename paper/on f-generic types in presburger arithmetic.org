@@ -4,6 +4,117 @@
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
+* Definable types and f-generics in presburger arithmetic
+    Presburger arithmetic: the complete first-order theory of the ordered group of
+    integers \((\Z,+,<,0)\).
+
+    Let \(T\) be a complete theory, with a monster model \(M\). We also work with a larger monster
+    model \(M^*\) in which we can take realizations of global types over \(M\).
+
+    Suppose \(G=G(M)\) is a definbale group in \(T\), let \(S_G(M)\) denote the space of global
+    types containing the formula defining \(G\). Given \(p\in S_G(M)\) and \(g\in G\), we let \(gp\)
+    denote the translate \(\{\varphi(g^{-1}x):\varphi(x)\in p\}\) of \(p\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(p\in S_G(M)\) be a global \(G\)-type.
+    1. \(p\) is *definable (over \(G\))* if, for any formula \(\varphi(\barx,\bary)\) there is a
+       formula \(d_p[\varphi](\bary)\) over \(G\) s.t., for any \(\barb\in G\), \(\varphi(\barx,\barb)\in p\)
+       iff \(G\vDash d_p[\varphi](\barb)\)
+    2. \(p\) is *\(f\)-generic* if, for every formula \(\phi(x)\in p\) there is a small
+       model \(M_0\) s.t. no translate \(\phi(gx)\) of \(\phi(x)\) forks over \(M_0\)
+    3. \(p\) is *strongly \(f\)-generic* if there is a small model \(M_0\) s.t. no translate \(gp\)
+       of \(p\) forks over \(M_0\)
+    4. \(p\) is *definably \(f\)-generic* if there is a small model \(M_0\) s.t. every translate
+        \(gp\) is definable over \(M_0\)
+    #+END_definition
+
+    Assume \(\call\) contains a symbol <, \(T\) is *definably complete* if any nonempty definable subset
+    of \(M\), with an upper bound in \(M\), has a least upper bound in \(M\), and similarly for
+    lower bounds.
+
+    If \(T\) is definably complete, and we further assume that \(M\) is discretely ordered by <,
+    then it follows that definable subsets of \(M\) contain their least upper bound and greatest
+    lower bound. We will say \(T\) is *discretely ordered* to indicate that the ordering < on \(M\) is
+    discrete.
+
+    In a totally ordered structure, algebraic closure and definable closure coincide. (If it's
+    dense, and if it's not dense)
+
+    Given a tuple \(\bara\in(M^*)^n\), we let \(M(\bara)=\dcl(M\bara)\).
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Given subsets \(A\subseteq B\) of \(M^*\), we say \(B\) is an *end extension* of \(A\) if, for
+    all \(b\in B\setminus A\), either \(b<a\) for all \(a\in A\) or \(b>a\) for all \(a\in A\).
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    Suppose \(T\) is discretely ordered and definably complete. Fix a non-isolated
+    type \(p\in S_n(M)\) and a realization \(\bara\) in \(M^*\). If \(M(\bara)\) is not an end
+    extension of \(M\) then
+    1. \(p\) is not definable
+    2. \(p\) has at least two distinct coheirs to \(M^*\)
+    #+END_lemma
+
+    #+BEGIN_proof
+    Since \(M(\bara)\) is not an end extension of \(M\), we may fix an \(M\)-definable
+    function \(f:(M^*)^n\to M^*\), and \(m_1,m_2\in M\) s.t. \(f(\bara)\notin M\) and \(m_1<f(\bara)<m_2\). Define
+    the upwards closed set
+    \begin{equation*}
+    X=\{m\in M:p\vDash f(\barx)<m\}
+    \end{equation*}
+    Then \(m_1\) and \(m_2\) witness that \(X\) is nonempty and not all of \(M\). If \(X\) has a
+    minimal element \(m_0\) and \(m_0^-\) is the immediate predecessor of \(m_0\) in \(M\), then we
+    must have \(m_0^-\le f(\bara)<m_0\) and so \(f(\bara)=m_0^-\in M\), which is a contradiction. So \(X\)
+    has no minimal element, and therefore cannot be \(M\)-definable. This proves part 1.
+
+    Now define
+    \begin{equation*}
+    C=\{c\in M^*:m<c<m'\text{ for all }m\in M\setminus X\text{ and }m'\in X\}
+    \end{equation*}
+    Then \(f(\bara)\in C\), and so \(C\neq\emptyset\). We define the following partial types over \(M^*\):
+    \begin{align*}
+    q_1&=p\cup\{m<f(\barx)<c:m\in M\setminus X,c\in C\}\\
+    q_2&=p\cup\{c<f(\barx)<m:c\in C,m\in X\}
+    \end{align*}
+    Note that \(q_1\) and \(q_2\) are distinct since \(C\neq\emptyset\). If we can show that they are each
+    finitely satisfiable in \(M\), then they will extend to distinct coheirs of \(p\), which proves
+    part 2. So we show \(q_1\) is finitely satisfiable in \(M\).
+
+    Fix a formula \(\varphi(\barx)\in p\) and some \(m\in M\setminus X\) (which exists since \(X\) is not all
+    of \(M\)) . Set
+    \begin{equation*}
+    A=\{m'\in f(\varphi(M^n)):m<m'\}
+    \end{equation*}
+    Then \(A\) is an \(M\)-definable subset of \(M\), which is nonempty since \(f(\barb)\in A(M^*)\).
+    Since \(A\) is bounded below by \(m\), we may fix a minimal element \(m_0\in A\). By
+    elementarity, \(m_0\) is the minimal element of \(A(M^*)\). In particular, \(m_0<f(\bara)\), and
+    so \(m_0\in M\setminus X\). In particular, \(m_0<f(\bara)\), and so \(m_0\in M\setminus X\). By definition
+    of \(A\), \(m_0=f(\bara')\) for some \(\bara'\in M^n\) s.t. \(M\vDash\varphi(\bara')\). Altogether, we
+    have \(M\vDash\varphi(\bara')\) and \(m<f(\bara')<c\) for any \(c\in C\).
+    #+END_proof
+
+    Suppose \(T\) is discretely ordered and definably complete. If, moreover, \(\dcl(\emptyset)\) is
+    nonempty, then \(T\) has definable Skolem functions by picking out either the maximal element of
+    a definable set or the least element greater than some \(\emptyset\)-definable constant.
+
+    It follows that \(M(\bara)\) is the unique prime model over \(M\bara\).
+
+    Let \(T=\Th(\Z,+,<,0)\). Let \(G\) denote a sufficiently saturated model of \(T\), and
+    let \(G^*\) denote a larger elementary extension of \(G\), which is sufficiently saturated
+    w.r.t. \(G\). We treat types over \(G\) as /global types/, but use \(G^*\) as an even larger
+    monster model in which we can realize such types.
+
+    Note that \(T\) satisfies the properties discussed above: it is discretely ordered and definably
+    complete, with \(\dcl(\emptyset)\) nonempty. Therefore, for \(\bara\in G^*\), \(G(\bara)\) is the prime
+    model over \(G\bara\). Recall that \(T\) has quantifier elimination in the expanded language
+    \(\call^*=\{+,<,0,1,(D_n)_{n<\omega}\}\) where \(D_n\) is a unary predicate interpreted as \(n\Z\).
+    Consequently, given \(\bara\in G^*\), \(G(\bara)\) is the divisible hull of the subgroup
+    of \(G^*\) generated by \(G\bara\)
+
+
 
 * Introduction and Preliminaries
 ** Introduction
@@ -55,6 +166,120 @@
     formula \(\psi(x,y)\) and \(a\in\M\), there is an eventual truth value of \(\psi(a,b_i)\) as \(i\to\infty\).
 
     A type definable over a subgroup \(H\le G\) has bounded index
-    if \(\abs{G/H}<2^{\abs{T}+\abs{A}}\). For groups definbale
+    if \(\abs{G/H}<2^{\abs{T}+\abs{A}}\). For groups definbale in NIP structures, the smallest
+    type-definable subgroup \(G^{00}\) exists. Namely, the intersection of all type-definable
+    subgroup of bounded index still has bounded index. We call \(G^{00}\) the *type-definable
+    connected component* of \(G\). Another model theoretic invariant is \(G^0\), called the
+    definably-connected component of \(G\), which is the intersection of all definable subgroup
+    of \(G\) of finite index.
 
-    We call \(G^{00}\) the type-definable connected component of \(G\).
+    The Keisler measure over \(M\) on \(X\), with \(X\) a definable set over \(M\), is a finitely
+    additive measure on the Boolean algebra of definable subsets of \(X\) over \(M\).
+
+    A definable group \(G\) is *definably amenable* if it admits a global (left) \(G\)-invariant
+    probability Keisler measure
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_fact
+    Assuming NIP, a nip group \(G\) is definably amenable iff it admits a global type \(p\in S_G(\M)\)
+    with bounded \(G\)-orbit.
+    #+END_fact
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_fact
+    For a definable amenable NIP group \(G\), we have
+    * weakly generic definable subsets, formulas and types coincide with \(f\)-generic definable
+      subsets, formulas, and types, respectively
+    * \(p\in S_G(\M)\) is \(f\)-generic iff it has bounded \(G\)-orbit
+    * \(p\in S_G(\M)\) is \(f\)-generic iff it is \(G^{00}\)-invariant
+    * A type-definable subgroup \(H\) fixing a global \(f\)-generic type is exactly \(G^{00}\)
+    #+END_fact
+
+    #+BEGIN_remark
+    Assuming that \(G\) is definable amenable NIP group
+    #+END_remark
+
+    Assume that \(T=\Th(\Z,+,\{D_n\}_{n\in\N^+},<,0)\) is the first order theory of integers in Presburger
+    language \(L_{Pres}=(+,\{D_n\}_{n\in\N^+},<,0)\) where each \(D_n\) is a unary predicate symbol
+    for the set of elements divisible by \(n\). \(\M\) is the monster model of \(T\).
+
+    \(T\) has quantifier elimination and cell decomposition.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    We call a function \(f:X\subseteq M^m\to M\) *linear* if there is a constant \(\gamma\in M\) and
+    integers \(a_i\), \(0\le c_i<n_i\) for \(i=1,\dots,m\) s.t. \(D_{n_i}(x_i-c_i)\) and
+    \begin{equation*}
+    f(x)=\sum_{1\le i\le m}a_i(\frac{x_i-c_i}{n})+\gamma
+    \end{equation*}
+    for all \(x=(x_1,\dots,x_m)\in X\). We call \(f\) *piecewise linear* if there is a finite partition \(\calp\)
+    of \(X\) s.t. all restrictions \(f|_A\), \(A\in\calp\) are linear.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    * A (0)-cell is a point \(\{a\}\subset M\).
+    * An (1)-cell is a set with infinite cardinality of the form
+      \begin{equation*}
+      \{x\in M|a\Box_1x\Box_2b,D_n(x-c)\}
+      \end{equation*}
+      with \(a,b\in M\), integers \(0\le c<n\) and \(\Box_i\) either \(\le\) or no condition.
+    * Let \(i_j\in\{0,1\}\) for \(j=1,\dots,m\) and \(x=(x_1,\dots,x_m)\). A \((i_1,\dots,i_m,1)\)-cell is a set \(A\)
+      of the form
+      \begin{equation*}
+      \{(x,t)\in M^{m+1}\mid x\in D,f(x)\Box_1t\Box_2g(x), D_n(t-c)\}
+      \end{equation*}
+      with \(D=\pi_m(A)\) an \((i_1,\dots,i_m)\)-cell. \(f,g:D\to M\) linear functions, \(\Box_i\) either \(\le\)
+      or no condition and integers \(0\le c<n\) s.t. the cardinality of the
+      fibers \(A_x=\{t\in M\mid (x,t)\in A\}\) can not be bounded uniformly in \(x\in D\) by an integers.
+    * An \((i_1,\dots,i_m,0)\)-cell is a set \(A\) of the form
+      \begin{equation*}
+      \{(x,t)\in M^{m+1}\mid x\in D,t=g(x)\}
+      \end{equation*}
+      with \(g:D\to M\) a linear function and \(D\in M^m\) an \((i_1,\dots,i_m)\)-cell
+    #+END_definition
+
+    #+ATTR_LATEX: :options [\cite{10.2307/4147737}Cell Decomposition Theorem]
+    #+BEGIN_fact
+    Let \(X\subset M^m\) and \(f:X\to G\) be definable. Then there exists a finite partition \(\calp\) of \(X\)
+    into cells, s.t. the restriction \(f|_A:A\to M\) is linear for each cell \(A\in\calp\). Moreover,
+    if \(X\) and \(f\) are \(S\)-definable, then the parts \(A\) can be taken \(S\)-definable.
+    #+END_fact
+
+    By the Cell Decomposition Theorem, we conclude that every definable subset of \(M^n\) is a finite
+    union of cells. So every definable subset \(X\subseteq M\) is a finite union of points and intervals mod
+    some \(n\in\N\). This implies that \(T\) has NIP.
+
+    From now on, we assume that \(G=(\M,+)\) is the additive group of the Presburger arithmetic.
+    Namely, \(G\) is defined by the formula "\(x=x\)", \(G=\M\) as a set, and \(G(M)=M\) for
+    any \(M\prec\M\). For any \(n\)-tuple \(x=(x_1,\dots,x_n)\), by \(D_m(x)\) we mean \(\bigwedge_{1\le i\le n}D_m(x_i)\).
+    For any \(\alpha\in\M\), and \(A\subseteq\M\), by \(\alpha>A\) we mean \(\alpha>a\) for all \(a\in\acl(A)\).
+
+    \(\dcl(A)=\acl(A)\) since \(\M\) is a linear order  <<Problem1>>
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_fact
+    For every \(n\in\N\)
+    * \(G^n\) is definably amenable;
+    * the type-definable connected component of \(G^n\) is \(\bigcap_{m\in\N^+}D_m(\M^n)\)
+    #+END_fact
+
+    #+BEGIN_proof
+    Let \(x=(x_1,\dots,x_n)\) be an \(n\)-tuple. Let \(\Pi(x)\) be the partial type of form
+    \begin{align*}
+    \{x_1>\M\}&\wedge\{x_2>\dcl(\M,x_1)\}\wedge\dots\\
+    &\wedge\{x_n>\dcl(\M,x_1,\dots,x_{n-1})\}\wedge\{D_m(x):m\in\N^+\}
+    \end{align*}
+    By the cell decomposition theorem, and induction on \(n\), it is easy to see that \Pi determines a
+    unique type \(p\in S_{G^n}(\M)\). Moreover, \Pi is invariant under \(\bigcap_{m\in\N^+}D_m(\M^n)\).
+
+    Since \(D_m(\M^n)\) is a definable subgroup of \(G^n\) of finite index, \(G^{00}\le\bigcap_{m\in\N^+}D_m(\M^n)\).
+    Thus \(p\) is \(G^{00}\)-invariant and hence has a bounded orbit.
+
+    Therefore \(G^n\) is definably amenable and \(G^{00}=\bigcap_{m\in\N^+}D_m(\M^n)\)
+    #+END_proof
+
+    wefawefajweofij
+* Problem
+    | [[Problem1]] |   |   |
+    |          |   |   |
