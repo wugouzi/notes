@@ -1,0 +1,254 @@
+% Created 2022-11-05 Sat 14:32
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\makeindex
+\usepackage[UTF8]{ctex}
+\author{wu}
+\date{\today}
+\title{Trivial Big Data}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={Trivial Big Data},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{一元线性回归}
+\label{sec:org4b67fb4}
+方差
+\begin{equation*}
+S^2_x=\frac{1}{n}\sum_{i=1}^n(x_i-\barx)^2
+\end{equation*}
+标准差
+\begin{equation*}
+S_x=\sqrt{\frac{1}{n}\sum_{i=1}^n(x_i-\barx)^2}
+\end{equation*}
+协方差
+\begin{equation*}
+Cov=\frac{1}{n}\sum_{i=1}^n(x_i-\barx)(y_i-\bary)
+\end{equation*}
+相关系数
+\begin{equation*}
+\rho=\frac{Cov}{S_xS_y}
+\end{equation*}
+
+一元线性回归：找一条直线，拟合数据点
+\begin{equation*}
+y=\beta_0+\beta_1x
+\end{equation*}
+最小二乘法
+\begin{equation*}
+\min_{\beta_0,\beta_1}\sum_{i=1}^n((\beta_0+\beta_1x_i)-y_i)^2
+\end{equation*}
+
+\begin{equation*}
+f(\beta_0,\beta_1)=\sum_{i=1}^n((\beta_0+\beta_1x_i)-y_i)^2
+\end{equation*}
+
+\begin{align*}
+&\frac{\partial f}{\partial\beta_0}=2\sum_{i=1}^n(\beta_0+\beta_1x_i-y_i)=0\\
+&\Rightarrow n\beta_0+\beta_1\sum_{i=1}^nx_i-\sum_{i=1}^ny_i=0\\
+&\Rightarrow\beta_0+\beta_1\barx-\bary=0
+\end{align*}
+
+\begin{gather*}
+\frac{\partial f}{\partial\beta_1}=2\sum_{i=1}^nx_i(\beta_0+\beta_1x_i-y_i)=0\\
+\sum_{i=1}^nx_i(\beta_0+\beta_1x_i-y_i)=0
+\end{gather*}
+
+注意到
+\begin{equation*}
+\sum_{i=1}^n\barx(\beta_0+\beta_1x_i-y_i)=\barx(n\beta_0+\beta_1\sum x_i-\sum y_i)=0
+\end{equation*}
+所以
+\begin{equation*}
+\sum_{i=1}^n(x_i-\barx)(\beta_0+\beta_1x_i-y_i)=0
+\end{equation*}
+而
+\begin{equation*}
+\sum_{i=1}^n(x_i-\barx)(\beta_0+\beta_1\barx-\bary)=(\beta_0+\beta_1\barx-\bary)\sum_{i=1}^n(x_i-\barx)=0
+\end{equation*}
+所以
+\begin{equation*}
+\sum_{i=1}^n(x_i-\barx)(\beta_1(x_i-\barx)-(y_i-\bary))=0
+\end{equation*}
+\begin{align*}
+\beta_1&=\frac{\sum_{i=1}^n(x_i-\barx)(y_i-\bary)}{\sum_{i=1}^n(x_i-\barx)^2}=
+\frac{\frac{1}{n}\sum_{i=1}^n(x_i-\barx)(y_i-\bary)}{\frac{1}{n}
+\sum_{i=1}^n(x_i-\barx)^2}=\frac{Cov}{S_x^2}\\
+&=
+\frac{\frac{1}{n}\sum_{i=1}^n(x_i-\barx)(y_i-\bary)}
+{\sqrt{\frac{1}{n}\sum_{i=1}^n(x_i-\barx)^2}\sqrt{\frac{1}{n}\sum_{i=1}^n(y_i-\bary)^2}}
+\frac{\sqrt{\frac{1}{n}\sum_{i=1}^n(y_i-\bary)^2}}{\sqrt{\frac{1}{n}\sum_{i=1}^n(x_i-\barx)^2}}=
+\rho\frac{S_y}{S_x}
+\end{align*}
+因此
+\begin{equation*}
+y=\bary-\beta_1\barx+\beta_1x\Rightarrow y-\bary=\beta_1(x-\barx)=\rho\frac{S_y}{S_x}(x-\barx)
+\end{equation*}
+
+\section{多元线性回归}
+\label{sec:org6a5b1b7}
+\begin{equation*}
+y=\beta_0+\beta_1x_1+\dots+\beta_mx_m
+\end{equation*}
+最小二乘法
+\begin{equation*}
+\min_{\beta_0,\dots,\beta_m}\sum_{i=1}^n((\beta_0+\beta_1x_{i1}+\dots+\beta_mx_{im})-y_i)^2
+\end{equation*}
+令
+\begin{equation*}
+\beta=
+\begin{pmatrix}
+\beta_0\\\beta_1\\\vdots\\\beta_m
+\end{pmatrix}\hspace{1cm}
+X=
+\begin{pmatrix}
+1&x_{11}&x_{12}&\dots&x_{1m}\\
+1&x_{21}&x_{22}&\dots&x_{2m}\\
+\vdots&\vdots&\vdots&\dots&\vdots\\
+1&x_{n1}&x_{n2}&\dots&x_{nm}\\
+\end{pmatrix}\hspace{1cm}
+y=
+\begin{pmatrix}
+y_1\\y_2\\\vdots\\y_n
+\end{pmatrix}
+\end{equation*}
+最小二乘形式
+\begin{equation*}
+\min_{\beta}\norm{X\beta-y}^2
+\end{equation*}
+
+\begin{equation*}
+g(\beta)=\la w,\beta\ra=w^T\beta=\sum_{i=0}^mw_i\beta_i
+\end{equation*}
+
+\begin{equation*}
+\nabla g=
+\begin{pmatrix}
+\frac{\partial g}{\partial \beta_0}\\
+\frac{\partial g}{\partial \beta_1}\\
+\vdots\\
+\frac{\partial g}{\partial \beta_m}\\
+\end{pmatrix}=
+\begin{pmatrix}
+w_0\\w_1\\\vdots\\w_m
+\end{pmatrix}=w
+\end{equation*}
+
+假设\(A=A^T\)
+\begin{equation*}
+h(\beta)=\la A\beta,\beta\ra=\beta^AA\beta=\sum_{i,j}a_{ij}\beta_i\beta_j
+\end{equation*}
+定义\(p(u,v)=\la Au,v\ra=\la Av,u\ra\)
+令
+\begin{equation*}
+u(\beta)=\beta,v(\beta)=\beta\Rightarrow h(\beta)=p(u(\beta),v(\beta))
+\end{equation*}
+\begin{equation*}
+\nabla h=\frac{\partial p}{\partial u}\frac{\partial u}{\partial\beta}+\frac{\partial p}{\partial v}\frac{\partial v}{\partial \beta}=Av(\beta)+Au(\beta)=2A\beta
+\end{equation*}
+
+\begin{align*}
+f(\beta)&=(X\beta-y)^T(X\beta-y)\\
+&=(\beta^TX^T-y^T)(X\beta-y)\\
+&=\beta^TX^TX\beta-\beta^TX^Ty-y^TX\beta+y^Ty
+\end{align*}
+
+\begin{equation*}
+\nabla_\beta f=2X^TX\beta-X^Ty-X^Ty=2(X^TX\beta-X^Ty)=0
+\end{equation*}
+
+因此
+\begin{equation*}
+\beta=(X^TX)^{-1}X^Ty
+\end{equation*}
+
+为了增加鲁棒性，通常会最小化如下目标函数
+\begin{equation*}
+\norm{X\beta-y}^2+\lambda\norm{\beta}^2(\lambda>0)
+\end{equation*}
+此时
+\begin{equation*}
+\beta=(X^TX+\lambda I)^{-1}X^Ty
+\end{equation*}
+
+\section{逻辑回归}
+\label{sec:org9c78f73}
+分类问题建模：
+\begin{gather*}
+f:\R^m\to\{0,1\}\\
+f(x)=\sigma(\beta^Tx)
+\end{gather*}
+\(\sigma\)的一种取法：
+\begin{equation*}
+\sigma(z)=
+\begin{cases}
+1&z\ge 0\\
+0&z<0
+\end{cases}
+\end{equation*}
+问题：\(\sigma\)在0点处间断
+
+光滑化：逻辑函数（Logistic Function）
+\begin{gather*}
+\sigma(z)=\frac{1}{1+e^{-z}}\\
+f(x)=\sigma(\beta^Tx)=\frac{1}{1+e^{-z}}
+\end{gather*}
+
+求解如下优化问题：
+\begin{equation*}
+\min_\beta\sum_{i=1}^n\left( \frac{1}{1+e^{-\beta^Tx_i}}-y_i \right)^2
+\end{equation*}
+对于输入\(x\)，当\(f(x)\ge 0.5\)时预测1，当\(f(x)<0.5\)时预测\(y=0\)。
+
+如何求\(\beta\): \textbf{梯度下降法}
+
+\begin{gather*}
+\min_\beta C(\beta)\\
+\beta_{m+1}=\beta_m-\lambda\nabla C(\beta_m)\\
+C(x)\approx C(x')+\nabla C(x')(x-x')\\
+\end{gather*}
+\begin{align*}
+C(\beta_{m+1})&=C(\beta_m-\lambda\nabla C(\beta_m))\\
+&\approx C(\beta_m)-\lambda\norm{\nabla C(\beta_m)}^2\\
+&\le C(\beta_m)
+\end{align*}
+
+混淆矩阵
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+ & & \multicolumn{2}{l|}{Actual class} \\
+\hline
+ & & positive & negative \\
+ & & class & class \\
+\hline
+Predicted & positive & True & False \\
+class & class & Posotive(TP) & Positive(FP) \\
+\cline{2-4}
+ & negative & False & True \\
+ & class & Negative(FN) & Negative(TN) \\
+\hline
+\end{tabular}
+\end{center}
+\end{document}

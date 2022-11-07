@@ -348,15 +348,14 @@
 
     #+BEGIN_proof
     Observation: Given a subtree of the form
-    \begin{center}\begin{tikzpicture}[level distance=23pt,sibling distance=20pt]
-    \Tree
-    [.​
-            [.1
-                [.2 \edge[roof]; {} ]
-                [.3 \edge[roof]; {} ]
+    \begin{center}\begin{forest}
+    [​
+            [1
+                [2 [] []]
+                [3 [] []]
             ]
     ]
-    \end{tikzpicture}\end{center}
+    \end{forest}\end{center}
     Then there are at least two device on subtree 2, subtree 3 and parent of 1.
 
     Therefore if we know that ancestors of 1 have device and 1's two childs don't have device, we
@@ -773,6 +772,86 @@ func(arr, l, r) {
     for each element of \(A\)
     #+END_proof
 * Miscellaneous Topics
+** Bottom-up segment tree
+    Suppose we are given interval \([1,3]\), we treat it as \([1,4]\), and then the tree is like
+    \begin{center}\begin{forest}
+    [{1:[1,4]}
+        [{2:[1,2]}
+            [4:1]
+            [5:2] ]
+        [{3:[3:4]}
+            [6:3]
+            [7:4] ]
+    ]
+    \end{forest}\end{center}
+    Then the elements starting from \(m=4\) is the leaf nodes. And we can initial our leaf nodes
+    there and climb the tree.
+
+    Here is an example
+
+    #+ATTR_LATEX: :options [\href{https://cses.fi/problemset/task/1749/}{CSES: List Removals}]
+    #+BEGIN_problem
+    You are given a list consisting of \(n\) integers. Your task is to remove elements from the list at
+    given positions, and report the removed elements.
+
+    The first input line has an integer \(n\): the initial size of the list. During the process, the
+    elements are numbered \(1,2,\dots,k\) where \(k\) is the current size of the list.
+
+    The second line has \(n\) integers \(x_1,\dots,x_n\): the contents of the list.
+
+    The last line has \(n\) integers \(p_1,\dots,p_n\): the positions of the elements to be removed.
+    #+END_problem
+
+    #+BEGIN_proof
+    #+begin_src c++
+int seg[1000000];
+
+// x is the sum we want
+int query(int x, const int &m) {
+  int i = 1;
+  while (i < m) {
+    i <<= 1;
+    // ensures we find the minimum index satisfying the condition
+    if (seg[i] < x) {
+      x -= seg[i];
+      i++;
+    }
+    // since the leaf nodes -1
+    seg[i]--;
+  }
+  return i - m;
+}
+
+int main(void) {
+  ios_base::sync_with_stdio(0);
+  cin.tie(0);
+  int n, x, p;
+  cin >> n;
+  int m = 1;
+  int arr[n];
+  while (m < n) {
+    m <<= 1;
+  }
+
+  // initialize leaf nodes
+  for (int i = 0; i < n; i++) {
+    cin >> arr[i];
+    seg[i+m] = 1;
+  }
+
+  // initialize internal and root nodes
+  for (int i = m-1; i; i--) {
+    seg[i] = seg[i*2] + seg[i*2+1];
+  }
+
+  for (int i = 0; i < n; i++) {
+    cin >> p;
+    cout << arr[query(p, m)] << "\n";
+  }
+    #+end_src
+    #+END_proof
+
+
 ** Tricks
     *Compute the modular multiplicative inverse*:
 

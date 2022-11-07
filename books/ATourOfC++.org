@@ -1967,16 +1967,72 @@ void update(T& target) {
     1. There is no separate compilation of templates: ~#include~ template definitions in every
        translation unit that uses them
 * Concepts and Generic Programming
-** Concepts
+** Concepts (C++20)
     Consider the ~sum()~
     #+begin_src c++
 template<typename Seq, typename Num>
 Num sum(Seq s, Num v)
 {
-for (const auto& x : s) v+=x;
-return v;
+  for (const auto& x : s) v+=x;
+  return v;
 }
     #+end_src
+
+    ~sum()~ requires that its first template argument is some kind of sequence and its second template
+    argument is some kind of number. We call such requirements *concepts*.
+*** Use of Concepts
+    Consider the ~sum()~ again.
+    #+begin_src c++
+template<Sequence Seq, Number Num>
+Num sum(Seq s, Num v)
+{
+  for (const auto& x : s)
+    v+=x;
+  return v;
+}
+    #+end_src
+
+    Once we have defined what the concepts ~Sequence~ and ~Number~ mean, the compiler can reject bad
+    calls by looking at ~sum()~'s interface only, rather than looking at its implementation. This
+    improves error reporting.
+
+    However, the specification of ~sum()~'s interface is not complete: we should be able to add
+    elements of a ~Sequence~ to a ~Number~. We can do that
+    #+begin_src c++
+template<Sequence Seq, Number Num>
+requires Arithmetic<Value_type<Seq>,Num>
+Num sum(Seq s, Num n);
+    #+end_src
+
+    The ~Value_type~ of a sequence is the type of the elements in the sequence. ~Arithmetic<X,Y>~ is a
+    concept specifying that we can do arithmetic with numbers of types ~X~ and ~Y~. This saves us from
+    accidentally trying to calculate the ~sum()~ of a ~vector<string>~ or a ~vector<int∗>~ while still
+    accepting ~vector<int>~ and ~vector<complex<double>>~.
+
+    Unsurprisingly, ~requires Arithmetic<Value_type<Seq>,Num>~ is called a ~requirements~-clause. The
+    ~template<Sequence Seq>~ notation is simply a shorthand for an explicit use of ~requires
+    Sequence<Seq>~. If I liked verbosity, I could equivalently have written
+    #+begin_src c++
+template<typename Seq, typename Num>
+requires Sequence<Seq> && Number<Num> && Arithmetic<Value_type<Seq>,Num>
+Num sum(Seq s, Num n);
+    #+end_src
+    On the other hand, we could also use the equivalence between the two notations to write:
+    #+begin_src c++
+template<Sequence Seq, Arithmetic<Value_type<Seq>> Num>
+Num sum(Seq s, Num n);
+    #+end_src
+    Where we cannot yet use concepts, we have to make do with naming conventions and comments.
+    #+begin_src c++
+template<typename Sequence, typename Number>
+// requires Arithmetic<Value_type<Sequence>,Number>
+Numer sum(Sequence s, Number n);
+    #+end_src
+*** Concept-based Overloading
+    Once we have properly specified templates with their interfaces, we can overload based on their
+    properties, much as we do for functions. Consider a slightly simplified standard-library
+    function advance() that advances an iterator
+* Library Overview
 
 * Utilities
 ** Resource Management
