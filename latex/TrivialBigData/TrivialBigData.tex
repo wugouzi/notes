@@ -1,4 +1,4 @@
-% Created 2022-11-05 Sat 14:32
+% Created 2022-11-07 Mon 21:57
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -33,7 +33,7 @@
 
 
 \section{一元线性回归}
-\label{sec:org4b67fb4}
+\label{sec:org86d6c6d}
 方差
 \begin{equation*}
 S^2_x=\frac{1}{n}\sum_{i=1}^n(x_i-\barx)^2
@@ -107,7 +107,7 @@ y=\bary-\beta_1\barx+\beta_1x\Rightarrow y-\bary=\beta_1(x-\barx)=\rho\frac{S_y}
 \end{equation*}
 
 \section{多元线性回归}
-\label{sec:org6a5b1b7}
+\label{sec:org1d83bbd}
 \begin{equation*}
 y=\beta_0+\beta_1x_1+\dots+\beta_mx_m
 \end{equation*}
@@ -157,7 +157,7 @@ w_0\\w_1\\\vdots\\w_m
 
 假设\(A=A^T\)
 \begin{equation*}
-h(\beta)=\la A\beta,\beta\ra=\beta^AA\beta=\sum_{i,j}a_{ij}\beta_i\beta_j
+h(\beta)=\la A\beta,\beta\ra=\beta^TA\beta=\sum_{i,j}a_{ij}\beta_i\beta_j
 \end{equation*}
 定义\(p(u,v)=\la Au,v\ra=\la Av,u\ra\)
 令
@@ -193,7 +193,7 @@ f(\beta)&=(X\beta-y)^T(X\beta-y)\\
 \end{equation*}
 
 \section{逻辑回归}
-\label{sec:org9c78f73}
+\label{sec:orgf56edb9}
 分类问题建模：
 \begin{gather*}
 f:\R^m\to\{0,1\}\\
@@ -251,4 +251,108 @@ class & class & Posotive(TP) & Positive(FP) \\
 \hline
 \end{tabular}
 \end{center}
+
+\begin{align*}
+&\text{accuracy}=\frac{TP+TN}{TP+TN+FP+FN}\\
+&\text{precision}=\frac{TP}{TP+FP}\\
+&\text{recall}=\frac{TP}{TP+FP}\\
+&F_1=\frac{2}{\frac{1}{\text{precision}}+\frac{1}{\text{recall}}}
+\end{align*}
+
+
+
+\section{深度学习}
+\label{sec:orgd2d4274}
+单个神经元
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.5\textwidth]{../images/TrivialBigData/1.png}
+\label{}
+\end{figure}
+
+\begin{equation*}
+y=\sigma_\beta(x_1,\dots,x_n)=\sigma(\beta_1x_1+\dots+\beta_nx_n)=\sigma(\beta^Tx)
+\end{equation*}
+激活函数：\(\sigma(z)=\frac{1}{1+e^{-z}}\)或者\(\sigma(z)=\max\{z,0\}\)或\(\dots\)
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.6\textwidth]{../images/TrivialBigData/2.png}
+\label{}
+\end{figure}
+
+神经网络参数\(\beta=(\beta^L,\beta^{L-1},\dots,\beta^1)\)的计算方法：
+\begin{gather*}
+y=f_\beta(x)=\sigma_{\beta^L}(\sigma_{\beta^{L-1}}(\cdots\sigma_{\beta^1}(x)))\\
+C(\beta)=\sum_{i=1}^n(f_\beta(x_i)-y_i)\\
+\min_\beta(C(\beta))=\min_\beta\sum_{i=1}^n(f_\beta(x_i)-y_i)^2
+\end{gather*}
+
+梯度下降法：
+\begin{gather*}
+\min_\beta C(\beta)\\
+\beta^{k,m+1}=\beta^{k,m}-\lambda\nabla C(\beta^{k,m}),\quad k=1,2,\dots,L
+\end{gather*}
+记
+\begin{equation*}
+\beta^{*​,m}=(\beta^{1,m},\beta^{2,m},\dots,\beta^{L,m})
+\end{equation*}
+\begin{align*}
+C(x)&\approx C(x')+\nabla C(x')(x-x')\\
+C(\beta^{*​,m+1})&=C(\beta^{*,m}-\lambda\nabla C(\beta^{*,m}))\\
+&\approx C(\beta^{*,m})-\lambda\norm{\nabla(\beta^{*,m})}^2\\
+&\le C(\beta^{*,m})
+\end{align*}
+关键在于计算\(C\)关于\(\beta\)的导数，以1维为例，并省略上标\(m\)
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=.8\textwidth]{../images/TrivialBigData/3.png}
+\label{}
+\end{figure}
+
+\begin{equation*}
+x=a^0\to z^1\to a^1\to\dots\to a^{L-1}\to z^L\to z^L
+\end{equation*}
+其中
+\begin{align*}
+&z^{i+1}=\beta^{i+1}a^i, i=0,1,\dots,L-1\\
+&a^i=\sigma(z^i), i=1,\dots,L\\
+&C(\beta)=(a^L-y)^2
+\end{align*}
+\textbf{需要计算}
+\begin{equation*}
+\frac{\partial C}{\partial\beta^L},\frac{\partial C}{\partial\beta^{L-1}},\dots,\frac{\partial C}{\partial\beta^1}
+\end{equation*}
+
+\begin{align*}
+&\frac{\partial C}{\partial a^L}=2(a^L-y)\\
+&\frac{\partial C}{\partial\beta^L}=\frac{\partial C}{\partial a^L}\frac{\partial a^L}{\partial z^L}\frac{\partial z^L}{\partial\beta^L}=
+2(a^L-y)\cdot \sigma'(z^L)\cdot a^{L-1}
+\end{align*}
+
+\begin{align*}
+&\frac{\partial C}{\partial a^{L-1}}=\frac{\partial C}{\partial a^L}\frac{\partial a^L}{\partial z^L}\frac{\partial z^L}{\partial a^{L-1}}=
+2(a^L-y)\cdot \sigma'(z^L)\cdot \beta^L\\
+&\frac{\partial C}{\partial\beta^{L-1}}=\frac{\partial C}{\partial a^{L-1}}\frac{\partial a^{L-1}}{\partial z^{L-1}}\frac{\partial z^{L-1}}{\partial\beta^{L-1}}=
+2(a^L-y)\sigma'(z^L)\beta^L\cdot \sigma'(z^{L-1})\cdot a^{L-2}
+\end{align*}
+
+因此
+\begin{align*}
+&\frac{\partial C}{\partial a^i}=\frac{\partial C}{\partial a^{i+1}}\frac{\partial a^{i+1}}{\partial z^{i+1}}\frac{\partial z^{i+1}}{\partial a^i}=
+\frac{\partial C}{\partial a^{i+1}}\sigma'(z^{i+1})\beta^{i+1}, \quad i=0,1,\dots,L-1\\
+&\frac{\partial C}{\partial\beta^i}=\frac{\partial C}{\partial a^i}\frac{\partial a^i}{\partial z^i}\frac{\partial z^i}{\partial\beta^i}=\frac{\partial C}{\partial a^i}
+\sigma'(z^i)a^{i-1},\quad i=1,2,\dots,L
+\end{align*}
+其中，\(\sigma\)为激活函数，当\(\sigma(z)=\frac{1}{1+e^{-z}}\)时，\(\sigma'(z)=\frac{e^{-z}}{(1+e^{-z})^2}=\sigma(z)(1-\sigma(z))\)
+
+反向传播：
+\begin{enumerate}
+\item 根据\(\frac{\partial C}{\partial a^L}=2(a^L-y)\)
+和\(\frac{\partial C}{\partial a^i}=\frac{\partial C}{\partial a^{i+1}}\sigma'(z^{i+1})\beta^{i+1}\), \(i=0,1,2,\dots,L-1\)，反向计算出
+\(\frac{\partial C}{\partial a^L},\frac{\partial C}{\partial a^{L-1}},\dots,\frac{\partial C}{\partial a^0}\)
+\item 根据\(\frac{\partial C}{\partial\beta^i}=\frac{\partial C}{\partial a^i}\sigma'(z^i)a^{i-1}\), \(i=1,2,\dots,L\)，依次计算出
+\(\frac{\partial C}{\partial\beta^L},\frac{\partial C}{\partial\beta^{L-1}},\dots,\frac{\partial C}{\partial\beta^1}\)
+\item 根据\(\beta^i\leftarrow\beta^i-\lambda\frac{\partial C}{\partial\beta^i}\), \(i=1,2,\dots,L\)对参数进行更新，并重复上述步骤直至收敛。
+\end{enumerate}
 \end{document}

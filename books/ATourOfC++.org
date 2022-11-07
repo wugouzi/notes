@@ -1580,6 +1580,47 @@ auto v = init(1'000'000);             // start heartbeat and initialize v
     have an owner in some scope and by default be released at the end of its owners scope.
 ** Conventional Operations
 *** Comparisons
+    To give identical treatment to both operands of a binary operator, such as ~==~, it is best
+    defined as a free-standing function in the namespace of its class. For example:
+    #+begin_src c++
+namespace NX {
+class X {
+  // ...
+};
+bool operator==(const X&, const X&);
+// ...
+};
+    #+end_src
+*** Container Operations
+*** Input and Output Operations
+*** User-Defined Literals
+    Constructors provide initialization that equals or exceeds the flexibility and efficiency of
+    built-in type initialization, but for built-in types, we have literals:
+    * ~"Surpriese"~ is a ~std::string~
+    * ~123s~ is \texttt{second}s
+    * ~12.7i~ is ~imaginary~ so that ~12.7i+47~ is a ~complex number~
+
+    | ~<chrono>~     | ~std::literals::chrono_literals~  | ~h,min,s,ms,us,ns~ |
+    | ~<string>~     | ~std::literals::string_literals~  | ~s~                |
+    | ~<string_view>~ | ~std::literals::string_literals~  | ~sv~               |
+    | ~<complex>~    | ~std::literals::complex_literals~ | ~i,il,if~          |
+
+    literals with user-defined suffixes are called *user-defined literals* or *UDLs*. Such literals
+    are defined using *literal operators*. A literal operator converts a literal of its argument type,
+    followed by a subscript, into its return type. For example, the ~i~ for ~imaginary~ suffix might be
+    implemented like this:
+    #+begin_src c++
+constexpr complex<double> operator""i(long double arg)
+{
+  return {0,arg};
+}
+    #+end_src
+    Here
+    * The ~operator""~ indicates that we are defining a literal operator.
+    * The ~i~ after the "literal indicator" ~""~ is the suffix to which the operator gives a meaning.
+    * The argument type, ~long double~, indicates that the suffix (~i~) is being defined for a floating-
+        point literal.
+    * The return type, ~complex<double>~, specifies the type of the resulting literal.
 ** Advice
     1. By default, declare single-argument constructors ~explicit~
     2. If a class member has a reasonable default value, provide it as a data member initializer
@@ -2033,6 +2074,253 @@ Numer sum(Sequence s, Number n);
     properties, much as we do for functions. Consider a slightly simplified standard-library
     function advance() that advances an iterator
 * Library Overview
+* Strings and Regular Expressions
+** Strings
+    ~string~ is a ~Regular~ type for owning and manipulating a sequence of characters of various
+    character types.
+*** ~string~ Implementation
+    ~string~ is usually implemented using the *short-string optimization*. That is, short string values
+    are kept in the ~string~ object itself and only longer strings are placed on free store. Consider
+    #+begin_src c++
+string s1 {"Annemarie"}; // short string
+string s2 {"Annemarie Stroustrup"}; // long string
+    #+end_src
+    The memory layout will be something like this:
+    #+ATTR_LATEX: :width .6\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ATourOfC++/3.png]]
+    When a ~string~'s value changes from a short to a long string (and vice versa) its representation
+    adjusts appropriately.
+
+    The actual performance of \texttt{string}s can depend critically on the runtime environment. In
+    particular, in multi-threaded implementations, memory allocation can be relatively costly. Also,
+    when lots of strings of differing lengths are used, memory fragmentation can result. These are the
+    main reasons that the short-string optimization has become ubiquitous.
+
+    To handle multiple character sets, string is really an alias for a general template ~basic_string~
+    with the character type ~char~:
+    #+begin_src c++
+template<typename Char>
+class basic_string {
+  // ... string of Char ...
+};
+
+using string = basic_string<char>;
+    #+end_src
+
+    A user can define strings of arbitrary character types. For example, assuming we have a Japanese
+    character type ~Jchar~, we can write:
+    #+begin_src c++
+using Jstring = basic_string<Jchar>;
+    #+end_src
+** String Views
+    There are extra complexities when we want to pass a substring.
+
+    To address this, the standard library offers ~string_view~; a ~string_view~ is basically a
+    (pointer,length) pair denoting a sequence of characters:
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ATourOfC++/5.png]]
+
+    A ~string_view~ gives access to a contiguous sequence of characters. The characters can be stored
+    in many possible ways, including in a ~string~ and in a C-style string. A ~string_view~ is like a
+    pointer or a reference in that it does not own the characters it points to. In that, it
+    resembles an STL pair of iterators.
+
+    Consider
+    #+begin_src c++
+string cat(string_view sv1, string_view sv2)
+{
+  string res(sv1.length()+sv2.length());
+  char∗ p = &res[0];
+  for (char c : sv1) // one way to copy
+    ∗p++ = c;
+  copy(sv2.begin(),sv2.end(),p); // another way
+  return res;
+}
+    #+end_src
+
+    We can call this ~cat()~:
+    #+begin_src c++
+string king = "Harold";
+auto s1 = cat(king,"William");            // string and const char*
+auto s2 = cat(king,king);                 // string and string
+auto s3 = cat("Edward","Stephen"sv);      // const char * and string_view
+auto s4 = cat("Canute"sv,king);
+auto s5 = cat({&king[0],2},"Henry"sv);    // HaHenr y
+auto s6 = cat({&king[0],2},{&king[2],4}); // Harold
+    #+end_src
+    This ~cat()~ has three advantages over the ~compose()~ that takes const ~string&~ arguments :
+    * It can be used for character sequences managed in many different ways.
+    * No temporary string arguments are created for C-style string arguments.
+    * We can easily pass substrings.
+
+    Note the use of the ~sv~ ("string view") suffix. To use that we need to using namespace
+    #+begin_src c++
+std::literals::string_view_literals;
+    #+end_src
+    Why bother? The reason is that when we pass ~"Edward"~ we need to construct a ~string_view~ from a
+    ~const char∗~ and that requires counting the characters. For ~"Stephen"sv~ the length is computed at
+    compile time.
+
+    One significant restriction of ~string_view~ is that it is a read-only view of its characters.
+
+    The behavior of out-of-range access to a ~string_view~ is unspecified. If you want guaranteed range
+    checking, use ~at()~, which throws ~out_of_range~ for attempted out-of-range access, use a
+    ~gsl::string_span~, or ‘‘just be careful.’’
+** Regular Expressions
+    In ~<regex>~, the standard library provides support for regular expressions in the form of the
+    ~std::regex~ class and its supporting functions.
+
+    #+begin_src c++
+regex pat {R"(\w{2}\s∗\d{5}(−\d{4})?)"}; // U.S. postal code pattern: XXddddd-dddd and variants
+    #+end_src
+
+    To express the pattern, I use a raw string literal starting with ~R"~(~ and terminated by ~)"~. This
+    allows backslashes and quotes to be used directly in the string. Raw strings are particularly
+    suitable for regular expressions because they tend to contain a lot of backslashes.
+*** Searching
+    #+begin_src c++
+int lineno = 0;
+for (string line; getline(cin,line); ) {   // read into line buffer
+  ++lineno;
+  smatch matches;                          // matched strings go here
+  if (regex_search(line,matches,pat))      // search for pat in line
+    cout << lineno << ": " << matches[0] << '\n';
+}
+    #+end_src
+    The ~regex_search(line,matches,pat)~ searches the line for anything that matches the regular
+    expression stored in ~pat~ and if it finds any matches, it stores them in matches. If no match was
+    found, ~regex_search(line,matches,pat)~ returns false. The matches variable is of type ~smatch~. The
+    ‘‘s’’ stands for ‘‘sub’’ or ‘‘string,’’ and an ~smatch~ is a vector of submatches of type string.
+    The first element, here ~matches[0]~, is the complete match. The result of a ~regex_search()~ is a
+    collection of matches, typically represented as an ~smatch~:
+    #+begin_src c++
+void use() {
+  ifstream in("file.txt");   // input file
+  if (!in)                   // check that the file was opened
+    cerr << "no file\n";
+  regex pat {R"(\w{2}\s∗\d{5}(−\d{4})?)"}; // U.S. postal code pattern
+                                           
+  int lineno = 0;
+  for (string line; getline(in,line); ) {
+    ++lineno;
+    smatch matches; // matched strings go here
+    if (regex_search(line, matches, pat)) {
+      cout << lineno << ": " << matches[0] << '\n'; // the complete match
+      if (1<matches.size() && matches[1].matched)   // if there is a sub-pattern
+                                                    // and if it is matched
+        cout << "\t: " << matches[1] << '\n';       // submatch
+    }
+  }
+}
+    #+end_src
+
+* Input and Output
+** Introduction
+    An ~ostream~ converts typed objects to a stream of characters (bytes):
+
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ATourOfC++/6.png]]
+
+    An ~istream~ converts a stream of characters (bytes) to typed objects:
+    #+ATTR_LATEX: :width .8\textwidth
+    #+NAME:
+    #+CAPTION:
+    [[../images/ATourOfC++/7.png]]
+
+    The I/O stream classes all have destructors that free all resources owned (such as buffers and
+    file handles). That is, they are examples of "Resource Acquisition Is Initialization"
+** I/O State
+    An ~iostream~ has a state that we can examine to determine whether an operation succeeded.
+
+    #+begin_src c++
+vector<int> read_ints(istream& is)
+{
+  vector<int> res;
+  for (int i; is>>i; )
+    res.push_back(i);
+  return res;
+}
+    #+end_src
+
+    What is happening here is that the operation ~is>>i~ returns a reference to is, and testing an
+    ~iostream~ yields ~true~ if the stream is ready for another operation.
+
+    In general, the I/O state holds all the information needed to read or write, such as formatting
+    information, error state (e.g., has end-of-input been reached?), and what kind of
+    buffering is used. In particular, a user can set the state to reflect that an error has occurred
+    and clear the state if an error wasn’t serious.
+
+    For example, we could imagine a version of read_ints() that accepted a terminating string:
+    #+begin_src c++
+vector<int> read_ints(istream& is, const string& terminator) {
+  vector<int> res;
+  for (int i; is >> i; )
+    res.push_back(i);
+  if (is.eof())
+    return res;
+  if (is.fail()) {   // we failed to read an int; was it the terminator?
+    is.clear();      // reset the state to good()
+    is.unget();      // put the non-digit back into the stream
+    string s;
+    if (cin>>s && s==terminator)
+      return res;
+    cin.setstate(ios_base::failbit); // add fail() to cin’s state
+  }
+  return res;
+}
+
+auto v = read_ints(cin,"stop");
+    #+end_src
+** I/O of User-Defined Types
+    Consider
+    #+begin_src c++
+struct Entry {
+  string name;
+  int number;
+};
+    #+end_src
+    We can define a simple output operator to write an ~Entry~ using a {"name",number} format similar
+    to the one we use for initialization in code:
+    #+begin_src c++
+ostream& operator<<(ostream& os, const Entry& e)
+{
+  return os << "{\"" << e.name << "\", " << e.number << "}";
+}
+    #+end_src
+
+    The corresponding input operator is more complicated because it has to check for correct for-
+    matting and deal with errors:
+    #+begin_src c++
+istream& operator>>(istream& is, Entry& e)
+    // read { "name" , number } pair. Note: formatted with { " " , and }
+{
+  char c, c2;
+  if (is>>c && c=='{' && is>>c2 && c2=='"') { // start with a { "
+    string name;                // the default value of a string is the empty string: ""
+    while (is.get(c) && c!='"') // anything before a " is part of the name
+      name+=c;
+    if (is>>c && c==',') { int number = 0;
+      if (is>>number>>c && c=='}') { // read the number and a }
+        e = {name,number};           // assign to the entry
+        return is;
+      }
+    }
+  }
+  is.setstate(ios_base::failbit); // register the failure in the stream return is;
+}
+    #+end_src
+
+    The ~is>>c~ skips whitespace by default, but ~is.get(c)~ does not, so this ~Entry~-input operator
+    ignores (skips) whitespace outside the name string, but not within it. For example:
+** Formatting
+
 
 * Utilities
 ** Resource Management
