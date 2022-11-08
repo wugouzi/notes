@@ -1545,6 +1545,9 @@ Vector f() {
 
     The standard-library function ~move()~ doesn't actually move anything. Instead, it returns a
     reference to its argument from which we may move - an *rvalue reference*
+
+    [[https://stackoverflow.com/questions/9779079/why-does-c11-have-implicit-moves-for-value-parameters-but-not-for-rvalue-para][Implicit Move]]: The only time a && variable will be implicitly moved from (ie: without ~std::move~)
+    is when you return it.
 ** Resource Management
 
     By defining constructors, copy operations, move operations, and a destructor, a programmer can
@@ -2320,8 +2323,37 @@ istream& operator>>(istream& is, Entry& e)
     The ~is>>c~ skips whitespace by default, but ~is.get(c)~ does not, so this ~Entry~-input operator
     ignores (skips) whitespace outside the name string, but not within it. For example:
 ** Formatting
+    The ~iostream~ library provides a large set of operations for controlling the format of input and
+    out- put. The simplest formatting controls are called ~manipulators~ and are found in ~<ios>~,
+    ~<istream>~, ~<ostream>~, and ~<iomanip>~ (for manipulators that take arguments). For example, we can
+    output integers as decimal (the default), octal, or hexadecimal numbers:
+    #+begin_src c++
+cout << 1234 << ',' << hex << 1234 << ',' << oct << 1234 << '\n';
+// print 1234, 4d2, 2322
+    #+end_src
 
-
+    Precision is an integer that determines the number of digits used to display a floating-point number:
+    * The *general* format (~defaultfloat~) lets the implementation choose a format that presents a
+      value in the style that best preserves the value in the space available. The precision
+      specifies the maximum number of digits.
+    * The *scientific* format (~scientific~) presents a value with one digit before a decimal point and
+      an exponent. The precision specifies the maximum number of digits after the decimal point.
+    • The *fixed* format (~fixed~) presents a value as an integer part followed by a decimal point and
+      a fractional part. The precision specifies the maximum number of digits after the decimal point.
+** String Streams
+    In ~<sstream>~, the standard library provides streams to and from a ~string~.
+    * \texttt{istringstream}s for reading from a ~string~
+    * \texttt{ostringstream}s for writing to a ~string~.
+    * \texttt{stringstream}s for reading from and writing to a ~string~.
+** C-style I/O
+    If you don't use C-style I/O and care about I/O performance, call
+    #+begin_src c++
+ios_base::sync_with_stdio(false); // avoid significant overhead
+    #+end_src
+    Without that call, \texttt{iostream}s can be significantly slowed down to be compatible with the
+    C-style I/O.
+* Algorithms
+** Use of Iterators
 * Utilities
 ** Resource Management
 *** ~unique_ptr~ and ~shared_ptr~
