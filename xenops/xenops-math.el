@@ -72,8 +72,8 @@ This determines the size of the image in the image file that is
     ";"))
 
 (defvar xenops-math-environment-delimited-inline-math-delimiters
-  '("\\\\begin{\\(align\\|equation\\|tikzpicture\\|gather\\|alignat\\)\\*?}"
-    "\\\\end{\\(align\\|equation\\|tikzpicture\\|gather\\|alignat\\)\\*?}"))
+  '("\\\\begin{\\(align\\|equation\\|gather\\|alignat\\)\\*?}"
+    "\\\\end{\\(align\\|equation\\|gather\\|alignat\\)\\*?}"))
 
 ;; Silence compiler: defined elsewhere
 (defvar xenops-cache-directory)
@@ -600,7 +600,7 @@ is the start event of the mouse drag."
        #'xenops-math-parse-hetero-delimited-inline-element-at-point
        (list xenops-math-paren-delimited-inline-math-delimiters
              xenops-math-square-bracket-delimited-inline-math-delimiters
-             xenops-math-tikz-inline-math-delimiters
+             ;; xenops-math-tikz-inline-math-delimiters
              xenops-math-environment-delimited-inline-math-delimiters))))
 
 (defun xenops-math-parse-hetero-delimited-inline-element-at-point (delimiters)

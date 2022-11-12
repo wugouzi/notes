@@ -668,22 +668,22 @@ parent."
     magit-delta-hide-plus-minus-markers nil)
   (magit-delta-mode))
 
-;; (after! lsp-clangd
-;;   (setq lsp-clients-clangd-args
-;;         '("-j=3"
-;;           "--background-index"
-;;           "--clang-tidy"
-;;           "--completion-style=detailed"
-;;           "--header-insertion=never"
-;;           "--header-insertion-decorators=0"))
-;;   (set-lsp-priority! 'clangd 2))
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
 
-;; (add-to-list 'load-path "/Users/wu/.doom.d/lsp-bridge")
+(add-to-list 'load-path "/Users/wu/.doom.d/lsp-bridge")
 
-;; (require 'lsp-bridge)
-;; (global-lsp-bridge-mode)
-;; (remove-hook! '(c-mode-local-vars-hook
-;;                c++-mode-local-vars-hook
-;;                objc-mode-local-vars-hook
-;;                cmake-mode-local-vars-hook)
-;;              :append #'lsp!)
+(require 'lsp-bridge)
+(global-lsp-bridge-mode)
+(remove-hook! '(c-mode-local-vars-hook
+               c++-mode-local-vars-hook
+               objc-mode-local-vars-hook
+               cmake-mode-local-vars-hook)
+             :append #'lsp!)

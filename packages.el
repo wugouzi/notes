@@ -91,3 +91,9 @@
 (package! dirvish)
 (package! flycheck-grammarly)
 (package! dante)
+(package! wakatime-mode)
+;; (package! vdiff)
+;; (package! vdiff-magit)
+(package! magit-delta)
+;; (package! bison
+;;   :recipe (:host github :repo "manateelazycat/bison"))
