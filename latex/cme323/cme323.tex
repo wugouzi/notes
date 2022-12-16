@@ -1,0 +1,516 @@
+% Created 2022-12-15 Thu 21:07
+% Intended LaTeX compiler: pdflatex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\graphicspath{{../../books/}}
+\input{../preamble.tex}
+\makeindex
+\DeclareMathOperator{\SpeedUp}{\texttt{SpeedUp}}
+\DeclareMathOperator{\AllPrefixSum}{\texttt{AllPrefixSum}}
+%\DeclareMathOperator{\Pr}{\text{Pr}}
+\author{Reza Zadeh}
+\date{\today}
+\title{Distributed Algorithms and Optimizations}
+\hypersetup{
+ pdfauthor={Reza Zadeh},
+ pdftitle={Distributed Algorithms and Optimizations},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+
+\section{Overview, Models of Computation, Brent's Theorem}
+\label{sec:org435d4a1}
+\subsection{Parallel RAM model}
+\label{sec:orgf5716d1}
+In a Parallel RAM (PRAM) Model, we always have multiple processors. But how these processors
+interact with the memory module(s) may have different variants, explained in the caveat below:
+
+\begin{center}
+when two processors want to access the same location in memory at the same time (whether its
+read or write), we need to come up with a resolution.
+\end{center}
+
+What type of resolution we come up with dictates what kind of parallel model we use. The
+different ways a PRAM model can be set up is the subset of the following combinations:
+\begin{equation*}
+\{\text{Exclusive,Concurrent}\}\times\{\text{Read, Write}\}
+\end{equation*}
+
+\begin{center}
+\begin{tabular}{lll}
+ & Exclusive Read & Concurrent Read\\
+Exclusive Write &  & \\
+Concurrent Write & Never considered & \\
+\end{tabular}
+\end{center}
+
+The \textbf{most popular model} is the concurrent read and exclusive write mode.
+
+\textbf{Resolving Concurrent Writes}. When dealing with concurrent writes, there needs to be a way to
+ resolve when multiple processors attempt to write to the same memory cell at the same time.
+ Here are the ways to deal with concurrent write:
+\begin{itemize}
+\item \uline{Undefined/Garbage}. Machine could die or results could be garbage
+\item \uline{Arbitrary} There is no predetermined rule on which processor gets write-priority. For example,
+if \(p_1,\dots,p_j\) all try to write to same location, we randomly select arbitrarily \textbf{exactly one}
+of them to give reference to
+\item \uline{Priority} There is a predetermined rule on which processors gets to write
+\item \uline{Combination} We write a combination of the values being written, e.g., max or logical \texttt{or} of
+bit-values written.
+\end{itemize}
+\subsection{Generic PRAM Models}
+\label{sec:org4d37aab}
+Below, we depict two examples of PRAM models. On the left, we have a \textbf{multi-core} model, where
+multiple processors can access a single shared memory module. This is the model of computation
+used in our phones today. On the right, we have a machine with multiple processors connected to
+multiple memory modules via a bus. This generalizes to a model in which each processor can
+access memory from any of the memory modules, or a model in which each processor has its own
+memory module, which cannot be directly accessed by other processors but instead may be accessed
+indirectly by communicating with the corresponding processor.
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/cme323/1.png}
+\label{Examples of PRAM}
+\end{center}
+
+In practice, either \textbf{arbitrary} or \textbf{garbage} is used.
+\subsection{Defenestration of bounds on runtime}
+\label{sec:org5772b28}
+In a PRAM, we have to wait for the slowest processor to finish all of its computation before we
+can declare the entire computation to be done. This is known as the \textbf{depth} of an algorithm. We
+define
+ \begin{align*}
+T_1&=\text{amount of (wall-clock) time algorithm takes on one processor}\\
+T_p&=\text{amount of (wall-clock) time algorithm takes on \(p\) processors}
+ \end{align*}
+\subsection{Practical implications of work and depth}
+\label{sec:org28661e8}
+\begin{definition}[Work]
+The \textbf{work} of an algorithm is defined to be the amount of time required complete all computations
+times the number of processors used.
+\end{definition}
+
+\textbf{Fundamental lower bound \(T_p\)}:
+\begin{equation*}
+\frac{T_1}{p}\le T_p
+\end{equation*}
+\subsection{Representing algorithms as DAG's}
+\label{sec:org3ebaf40}
+\textbf{Constructing a DAG from an algorithm}: Specifically, each fundamental unit of computation is
+represented by a node. We draw a directed arc from node \(u\) to node \(v\) if
+computation \(u\) is required as an \textbf{input} to computation \(v\).
+
+\textbf{Operations in different layers of a DAG can \emph{not} be computed in parallel}. W.L.O.G., we will
+assume our DAG is a tree, so the levels of the tree are well-defined. Let the root of the tree
+have depth 0. Suppose \(m_i\) denotes the number of operations performed in level \(i\) of the
+DAG. Each of the \(m_i\) operations
+
+\textbf{How an algorithm is executed with an unlimited number of processors} At each level \(i\), if
+there are \(m_i\) operations we may use \(m_i\) processors to compute all results in constant
+time. So with an infinitude of processors, the compute time is given by the depth of the tree.
+We then define \textbf{depth} to be
+ \begin{equation*}
+T_\infty=\text{depth of computation DAG}
+ \end{equation*}
+\subsection{Brent's theorem}
+\label{sec:org9746c1b}
+\begin{theorem}[]
+With \(T_1,T_p,T_\infty\) defined as above, if we assume optimal scheduling, then
+\begin{equation*}
+\frac{T_1}{p}\le T_p\le \frac{T_1}{p}+T_\infty
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+On level \(i\) of our DAG, there are \(m_i\) operations. Hence \(T_1=\sum_{i=1}^nm_i\) where \(T_\infty=n\).
+For each level \(i\) of the DAG, the time taken by \(p\) processors is given by
+\begin{equation*}
+T_p^i=\ceil{\frac{m_i}{p}}\le\frac{m_i}{p}+1
+\end{equation*}
+\end{proof}
+\subsection{Parallel summation}
+\label{sec:orgca4e6e4}
+\(T_1=n\). We may partition the integers in each level, therefore
+\begin{equation*}
+T_p\le\frac{n}{p}+\log_2n
+\end{equation*}
+\(\log_2n\) is just like \(\log_mn\) with some constant \(m\).
+\section{Scalable algorithms, Scheduling, and a glance at All Prefix Sum}
+\label{sec:orgaa1c719}
+\subsection{Types of scaling}
+\label{sec:orgb6a9753}
+Another fundamental quantity to understand is the idea of how much speed-up we can hope to
+achieve given more processors. There are three different types of scalability:(1) Strong
+Scaling, (2) Weak Scaling, and (3) Embarrassingly Parallel
+
+Let \(T_{1,n}\) denote the run-time on one processor given an input of size \(n\). Suppose we
+have \(p\) processors. We define the speed up of a parallel algorithm as
+\begin{equation*}
+\texttt{SpeedUp}(p,n)=\frac{T_{1,n}}{T_{p,n}}
+\end{equation*}
+
+\begin{definition}[Strongly Scalable]
+If \(\texttt{SpeedUp}(p,n)=\Theta(p)\), we say that the algorithm is \textbf{strongly scalable}
+\end{definition}
+
+\begin{proposition}[]
+The parallel sum of \(n\) numbers on \(p\) processors is strongly scalable
+\end{proposition}
+
+\begin{proof}
+\(T_1=n\), \(T_\infty=\log_2n\), so \(\texttt{SpeedUp}(p,n)=\frac{n}{\frac{n}{p}+\log_2n}=\Theta(p)\).
+Specifically, both \(n\) and \(p\) are assumed to be going to infinity, but \(p\) grows much
+slower than \(n\), hence
+\begin{equation*}
+\frac{n}{\frac{n}{p}+\log_2n}\ge\frac{n}{\frac{n}{p}+\frac{n}{p}}\ge\frac{p}{2}
+\quad\text{ and }\quad
+\frac{n}{\frac{n}{p}+\log_2n}\le\frac{n}{\frac{n}{p}}=p
+\end{equation*}
+\end{proof}
+
+Note that we have used Brent's theorem to derive the scaling bounds. But Brent's theorem assumes
+optimal scheduling, which is NP-hard. Fortunately, the existence of a polynomial time constant
+approximation algorithm for optimal scheduling implies that these bounds still hold.
+
+\begin{definition}[Weakly Scalable]
+If \(\SpeedUp(p,np)=\Omega(1)\), then our algorithm is \textbf{weakly scalable}
+\end{definition}
+
+This metric characterizes the case where, for each processor we add, we add more data as well.
+
+\begin{definition}[Embarrassingly Parallel]
+When the DAG representing an algorithm has 0-depth, the algorithms is said to be \textbf{embarrasingly parallel}.
+\end{definition}
+\subsection{Scheduling}
+\label{sec:org0174fd2}
+Given a DAG of computations, at any level in the DAG there are a certain number of computations
+which can be required to execute (at the same time). The number of computations is not necessarily
+equal to the number of processors you have available to you, so you need to decide how to assign
+computations to processor—this is what is referred to as scheduling.
+\subsubsection{Problem definition}
+\label{sec:orgcf4f0f1}
+\begin{notation}[]
+We assume that the processors are identical. More formally, we are given \(p\) processors and an
+unordered set of \(n\) jobs with processing times \(J_1,\dots,J_n\in\R\). Say that the final schedule
+for processor \(i\) is defined by a set of indices of jobs assigned to processor \(i\). We call
+this set \(S_i\). The load for processor \(i\) is therefore \(L_i=\sum_{k\in S_i}J_k\). The goal is to
+minimize the \textbf{makespan} defined as \(L_{\max}=\max_{i\in\{1,\dots,p\}}L_i\)
+\end{notation}
+\subsubsection{The simple (greedy) algorithm}
+\label{sec:org64a22cf}
+Take the jobs one by one and assign each job to the processor that has the least load at that time.
+\subsubsection{Optimality of the greedy approach}
+\label{sec:org79c5899}
+In either of the cases, where jobs have dependencies or must be scheduled online, the problem is
+NP hard. So we use approximation algorithms. We claim that the simple algorithm has an
+\textbf{approximation ratio} of 2. For this analysis, we define the optimal makespan to be OPT and try to
+compare the output of the greedy algorithm to this. We also define \(L_{\max}\) as above to be
+the makespan
+
+\begin{claim}
+Greedy algorithm has an approximation ratio of 2
+\end{claim}
+
+\begin{proof}
+Obviously, \(OPT\ge\frac{1}{p}\sum_{i=1}^nJ_i\), and \(OPT\ge\max_iJ_i\)
+
+Now consider running the greedy algorithm and identifying the processor responsible for the
+makespan of the greedy algorithm. Let \(J_t\) be the load of the last job placed on this
+processor. Before the last job was placed on this processor, the load of this processor was
+thus \(L_{\max}-J_t\). Therefore, all other processors \emph{at this time} must have load at
+least \(L_{\max}-J_t\), i.e., \(L_{\max}-J_t\le L_i'\) for all \(i\). Hence summing the inequality
+over all \(i\)
+\begin{equation*}
+p(L_{\max}-J_t)\le\sum_{i=1}^pL_i'\le\sum_{i=1}^pL_i=\sum_{i=1}^nJ_i
+\end{equation*}
+
+Therefore
+\begin{equation*}
+L_{\max}\le\frac{1}{p}\sum_{i=1}^nJ_i+J_t\le OPT+OPT=2OPT
+\end{equation*}
+\end{proof}
+
+\textbf{What if we could see in the future?} We note that if we first sort the jobs in descending order
+and assign larger jobs first, we can naively get a 3/2 approximation. If we use the same
+algorithm with a tighter analysis, we get a 4/3 approximation.
+
+\textbf{What's realistic?}
+\section{All Prefix Sum}
+\label{sec:org14f6c3a}
+Given a list of integers, we want to find the sum of all prefixes of the list, i.e., the
+running sum. We are given an input array \(A\) of size \(n\) elements long. Out output is of
+size \(n+1\) elements long, and its first entry is \textbf{always} zero. As an example,
+suppose \(A=[3,5,3,1,6]\), then \(R=\AllPrefixSum(A)=[0,3,8,11,12,18]\)
+\subsection{Algorithm Design}
+\label{sec:org27a668f}
+\begin{algorithm}
+\caption{Prefix Sum}
+\begin{algorithmic}[1]
+%\State \textbf{Input}: All prefix sum for an array \(A\)
+\If{size of \(A\) is 1}
+    \State \textbf{return} only element of \(A\)
+\EndIf
+\State Let \(A'\) be the sum of adjecent pairs
+\State Comput \(R'=\AllPrefixSum(A')\)
+\State Fill in missing entries of \(R'\) using another \(\frac{n}{2}\) processors
+\end{algorithmic}
+\end{algorithm}
+
+The general idea is that we first take the sums of adjacent pairs of \(A\). So the size
+of \(A'\) is exactly half the size of \(A\).
+
+To compute the running sum for elements whose index is of odd parity in \(A\), i.e., set
+\begin{equation*}
+r_i=r_{i-1}=a_i
+\end{equation*}
+for \(i=1,3,5,\dots\) where we by convention let \(r_0=0\)
+\subsection{Algorithm Analysis}
+\label{sec:orgea1b28f}
+\textbf{Pairing entries}: in line 5, where we let \(A'\) be the sum of adjecent pairs, we must
+perform \(n/2\) summations, hence work is \(O(n)\).
+
+\textbf{Recursive call}: Line 6 is our recursive call, which is fed an input of half the size of \(A\).
+
+\textbf{Filling in missing entries}: In line 7, filling in missing entries, we can assign each of
+ the \(n/2\) missing entries of \(R\) to a processor and compute its corresponding value in
+ constant time. Hence line 7 has work \(n/2\), and depth \(O(1)\).
+
+\textbf{Total work and depth}: Let \(T_1=W(n)\), and \(T_\infty=D(n)\),
+ \begin{align*}
+W(n)&=W(n/2)+O(n)\Rightarrow W(n)=O(n)\\
+D(n)&=D(n/2)+O(1)\Rightarrow D(n)=O(\log(n))
+ \end{align*}
+\subsection{Mergesort}
+\label{sec:orgab84b8d}
+Suppose we parallelize the algorithm via the obvious divide-and-conquer approach, the work done
+is then
+\begin{equation*}
+W(n)=2(W/n)+O(n)=O(n\log n)
+\end{equation*}
+The depth is
+\begin{equation*}
+D(n)=D(n/2)+O(n)=O(n)
+\end{equation*}
+By Brent's theorem, we have that
+\begin{equation*}
+T_p\le O(n\log n)/p+O(n)
+\end{equation*}
+The bottleneck lies in \texttt{merge}.
+
+How do we merge \(L\) and \(R\) in parallel?
+
+\textbf{Use binary search to find the rank of an element}: Let's call the output of our algorithm \(M\).
+ For an element \(x\in R\), define \(\rank_M(x)\) to be the index of element \(x\) in
+ output \(M\). For an such element \(x\in R\), we know how many elements (say \(a\)) in \(R\) come
+ before \(x\) since we have sorted \(R\). But we don't know immediately.
+
+If we know how many elements (say \(b\)) in \(L\) are less than \(x\), then we know we should
+place \(x\) in the \((a+b)^{th}\) position in the merged array \(M\). It remains to find \(b\).
+We can find \(b\) by performing a binary search over \(L\). We perform the symmetric procedure
+for each \(l\in L\), so for a call to \texttt{merge} on an input of size \(n\), we perform \(n\) binary
+searches, each of which takes \(O(\log n)\) time.
+\subsection{Parallel merge}
+\label{sec:org0b5159c}
+\begin{algorithm}
+\caption{Parallel Merge}
+\begin{algorithmic}[1]
+\State \textbf{Input}: Two sorted arrays \(A,B\) each of length \(n\)
+\State \textbf{Output}: Merged array \(C\), consisting of elements of \(A\) and \(B\) in sorted order
+\For{each \(a\in A\)}
+    \State Do a binary search to find where \(a\) would be added into \(B\)
+    \State The final rank of \(a\) given by \(\rank_M(a)=\rank_A(a)+\rank_B(a)\)
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+To find the rank of an element \(x\in A\) in another sorted \(B\) requires \(O(\log n)\) work
+using a sequential processor. Hence in total, this parallel merge routine
+requires \(O(n\log n)\) work and \(O(\log n)\) depth.
+
+Hence when we use \texttt{parallelMerge} in our \texttt{mergeSort} algorithm,
+\begin{alignat*}{2}
+W(n)&=2W(n/2)+O(n\log n)&&\Rightarrow W(n)=O(n\log^2n)\\
+D(n)&=D(n/2)+\log n&&\Rightarrow D(n)=O(\log^2n)
+\end{alignat*}
+By Brent's Theorem, we get
+\begin{equation*}
+T_p\le O(n\log^2n)/p+O(\log^2n)
+\end{equation*}
+so for large \(p\) we significantly outperform the naive implementation.
+\subsection{Motivating Cole's mergesort}
+\label{sec:org46adfd3}
+Can we do better than binary sort?
+
+Let \(L_m\) denote the median index of array \(L\). We then find the corresponding index
+in \(R\) using binary search with logarithmic work. We then observe that all of the elements
+in \(L\) at or below \(L_m\) and all of the elements in \(R\)
+at \(\rank_R(\texttt{value}(L_m))\) are at most the value of \(L\)'s median element. Hence if we
+were to recursively merge-sort the first \(L_m\) elements in \(L\) along with the
+first \(\rank_R(\texttt{value}(L_m))\) elements in \(R\), and correspondingly for the upper
+parts of \(L\) and \(R\), we may simply append the results together to maintain sorted order.
+This leads us to Richard Cole\cite{doi:10.1137/0217049}. He works out all the intricate details
+in this approach nicely to achieve
+\begin{align*}
+W(n)&=O(n\log n)\\
+D(n)&=O(\log n)
+\end{align*}
+\section{Divide and Conquer Recipe, Parallel Selection}
+\label{sec:orge5e8705}
+\subsection{General Divide and Conquer Technique}
+\label{sec:org9792b02}
+\begin{align*}
+T_1&=W(n)=aW(\frac{n}{b})+w\\
+T_\infty&=D(n)=D(\frac{n}{b})+t
+\end{align*}
+\subsection{Parallel Quick Selection}
+\label{sec:orge4367a3}
+Suppose we have a list of unsorted integers, which we know nothing about. We wish to find
+the \(k^{\text{th}}\) largest element of the integers.
+
+Assume that our input array \(A\) has unique elements.
+
+\textbf{Idea}: From the input list \(A\) pick a value at random called a pivot \(p\). For each item
+in \(A\), put them into one of two sublists \(L\) and \(R\) s.t.:
+\begin{gather*}
+x\in L\Leftrightarrow x<p\\
+y\in R\Leftrightarrow y>p
+\end{gather*}
+
+Note that the rank of \(p\) is \emph{exactly} \(\abs{L}\). To find the \(k^{\text{th}}\) largest
+element in \(A\), call it \(z\), note the following:
+\begin{center}
+If \(\abs{L}<k\), then \(z\notin L\), we discard the values in \(L\).
+
+If \(\abs{L}>k\), then \(z\notin R\). We discard the values in \(R\).
+\end{center}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/cme323/2.png}
+\label{}
+\end{center}
+
+So we say that a \textbf{phase} in our algorithm ends as soon as we pick a pivot in the middle half of
+our array. Recognize that in phase \(k\), the array size is at
+most \(n\left( \frac{3}{4} \right)^k\). The maximum number of \emph{phases} before we can hit a base
+case is given by \(\ceil{\log_{4/3}n}\)
+\subsection{Analysis - Expected Work}
+\label{sec:org50b1f9b}
+Let \(X_k\) denote the number of times \texttt{Select} called with array of input size between
+\begin{equation*}
+n\left( \frac{3}{4} \right)^{k+1}\le\abs{A}<n\left( \frac{3}{4} \right)^k
+\end{equation*}
+Total work is given by the sum of the work done for each \(X_k\) multiplied by the number of
+calls of that size. Realize that total work done during phase \(k\) given by
+\begin{equation*}
+X_k\cdot cn\left( \frac{3}{4} \right)^k
+\end{equation*}
+for some constant \(c\in\R^+\). Total number of phases is \(\ceil{\log_{4/3}n}\). Let \(W\) be a
+random variable describing the total work done. Then
+\begin{equation*}
+W\le\sum_{k=0}^{\ceil{\log_{4/3}n}}\left( X_k\cdot cn\left( \frac{3}{4} \right)^k \right)=
+cn\sum_{k=0}^{\ceil{\log_{4/3}n}}\left( X_k\cdot\left( \frac{3}{4} \right)^k \right)
+\end{equation*}
+We are interested in the expected amount of total work, therefore
+\begin{equation*}
+\E[W]\le cn\sum_{k=0}^{\ceil{\log_{4/3}n}}\E[X_k]\left( \frac{3}{4} \right)^k
+\end{equation*}
+We now analyze \(\E[X_k]\). Recall that
+\begin{equation*}
+\E[X_k]=\sum_{i=0}^\infty i\cdot\Pr(X_k=i)
+\end{equation*}
+
+Note that
+\begin{equation*}
+\Pr(X_k=i)=\left( \frac{1}{2} \right)^{i-1}\cdot\frac{1}{2}=\frac{1}{2^i}
+\end{equation*}
+Hence
+\begin{equation*}
+\E[X_k]=\sum_{i=0}^\infty\frac{i}{2^i}=2
+\end{equation*}
+Ultimately,
+\begin{equation*}
+\E[W]\le cn\sum_{k=0}^{\ceil{\log_{4/3}n}}\E[X_k]\left( \frac{3}{4} \right)^k\le
+2cn\sum_{k=0}^\infty\left( \frac{3}{4} \right)^k=8cn=O(n)
+\end{equation*}
+So in expectation,
+\begin{equation*}
+T_1=O(n)
+\end{equation*}
+
+\textbf{Applying Markov's Inequality}: We can compute a bound on the probability that our total work
+ exceeds a multiple of our expected total work. For example, if we wanted to do analysis that
+ our total work will exceed 5 times our expected work:
+ \begin{equation*}
+P(\text{Total Work}\ge 5\times E[\text{Total Work}])\le\frac{E[\text{Total Work}]}{5\times E[\text{Total Work}]}=\frac{1}{5}
+ \end{equation*}
+\subsection{Parallelizing our Select Algorithm}
+\label{sec:org423ffac}
+\textbf{Constructing L and R with Small Depth}.
+
+\begin{algorithm}
+\caption{Constructing \(L\)(or \(R\))}
+\begin{algorithmic}[1]
+\State Allocate an empty array of size \(n\), with all value initially 0.
+\State Construct indicator list \(B_L[0,\dots,n-1]\) where \(b_i=1\) if \(a_i<p\)
+\State Compute \textbf{PrefixSum} on \(B_l\)\Comment{\(O(\log n)\) depth}
+\State Create the array \(L\) of size \textbf{PrefixSum}\((B_L[n-1])\)
+\For{i=1,2,\dots,n}
+    \If{B[i]=1}
+        \State \(L[\textbf{PrefixSum}(B_L[i])]\leftarrow a[i]\)\Comment{Can be done in parallel}
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+\begin{equation*}
+D(n)=D\left( \frac{n}{4/3} \right)+O(\log n)\Rightarrow D(n)=O(\log^2n)
+\end{equation*}
+\section{Memory Management and (Seemingly) Trivial Operations}
+\label{sec:orgd579bba}
+We assume that we can allocate memory in constant time, as long as we don't ask for the meomory
+to have special values in it.  That is, we can request a large chunk of memory (filled with
+garbage bit sequences) in constant time. However, requesting an array of zeros already
+requires \(\Theta(n)\) work since we must ensure the integrity of each entry. In the context of
+sequential algorithms, this is not a concern since reading in an input of \(n\) bits, or
+outputting \(n\) bits already requires \(\Theta(n)\) work, so zeroing out an array of size n does not
+dominate the operation count. However, in some parallel algorithms, no processor reads in the
+entire input, so naively zeroing out a large array can easily dominate the operation time of the
+algorithm.
+\section{QuickSort}
+\label{sec:orgb996174}
+\subsection{Analysis on Memory Management}
+\label{sec:orgb475a88}
+\begin{algorithm}
+\caption{QuickSort}
+\begin{algorithmic}[1]
+\Require An array \(A\)
+\Ensure Sorted A
+\State \(p\leftarrow\) element of \(A\) chosen uniformly at random
+\State \(L\leftarrow[a\mid a\in A,a<p]\)\Comment{Implicitely: \(B_L\leftarrow\bone\{a_i<p\}^n_{i=1}\), \texttt{prefixSum(\(B_L\))}}
+\State \(R\leftarrow[a\mid a\in A,a>p]\)\Comment{which requires \(\Theta(n)\) work and \(O(\log n)\) depth}
+\State \textbf{Return} [QuickSort(\(L\)), QuickSort(\(R\))]
+\end{algorithmic}
+\end{algorithm}
+
+\section{References}
+\label{sec:org64d08a1}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../references}
+\end{document}
