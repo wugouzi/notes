@@ -1,4 +1,4 @@
-% Created 2022-12-15 Thu 21:07
+% Created 2022-12-16 Fri 15:57
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -17,6 +17,7 @@
 \makeindex
 \DeclareMathOperator{\SpeedUp}{\texttt{SpeedUp}}
 \DeclareMathOperator{\AllPrefixSum}{\texttt{AllPrefixSum}}
+\DeclareMathOperator{\PrefixSum}{\texttt{PrefixSum}}
 %\DeclareMathOperator{\Pr}{\text{Pr}}
 \author{Reza Zadeh}
 \date{\today}
@@ -35,9 +36,9 @@
 
 
 \section{Overview, Models of Computation, Brent's Theorem}
-\label{sec:org435d4a1}
+\label{sec:orgfa8fec2}
 \subsection{Parallel RAM model}
-\label{sec:orgf5716d1}
+\label{sec:org9653dac}
 In a Parallel RAM (PRAM) Model, we always have multiple processors. But how these processors
 interact with the memory module(s) may have different variants, explained in the caveat below:
 
@@ -75,7 +76,7 @@ of them to give reference to
 bit-values written.
 \end{itemize}
 \subsection{Generic PRAM Models}
-\label{sec:org4d37aab}
+\label{sec:org9c45151}
 Below, we depict two examples of PRAM models. On the left, we have a \textbf{multi-core} model, where
 multiple processors can access a single shared memory module. This is the model of computation
 used in our phones today. On the right, we have a machine with multiple processors connected to
@@ -90,7 +91,7 @@ indirectly by communicating with the corresponding processor.
 
 In practice, either \textbf{arbitrary} or \textbf{garbage} is used.
 \subsection{Defenestration of bounds on runtime}
-\label{sec:org5772b28}
+\label{sec:org0f02bd7}
 In a PRAM, we have to wait for the slowest processor to finish all of its computation before we
 can declare the entire computation to be done. This is known as the \textbf{depth} of an algorithm. We
 define
@@ -99,7 +100,7 @@ T_1&=\text{amount of (wall-clock) time algorithm takes on one processor}\\
 T_p&=\text{amount of (wall-clock) time algorithm takes on \(p\) processors}
  \end{align*}
 \subsection{Practical implications of work and depth}
-\label{sec:org28661e8}
+\label{sec:orgff0e276}
 \begin{definition}[Work]
 The \textbf{work} of an algorithm is defined to be the amount of time required complete all computations
 times the number of processors used.
@@ -110,7 +111,7 @@ times the number of processors used.
 \frac{T_1}{p}\le T_p
 \end{equation*}
 \subsection{Representing algorithms as DAG's}
-\label{sec:org3ebaf40}
+\label{sec:org095ce42}
 \textbf{Constructing a DAG from an algorithm}: Specifically, each fundamental unit of computation is
 represented by a node. We draw a directed arc from node \(u\) to node \(v\) if
 computation \(u\) is required as an \textbf{input} to computation \(v\).
@@ -128,7 +129,7 @@ We then define \textbf{depth} to be
 T_\infty=\text{depth of computation DAG}
  \end{equation*}
 \subsection{Brent's theorem}
-\label{sec:org9746c1b}
+\label{sec:org0a0731e}
 \begin{theorem}[]
 With \(T_1,T_p,T_\infty\) defined as above, if we assume optimal scheduling, then
 \begin{equation*}
@@ -144,16 +145,16 @@ T_p^i=\ceil{\frac{m_i}{p}}\le\frac{m_i}{p}+1
 \end{equation*}
 \end{proof}
 \subsection{Parallel summation}
-\label{sec:orgca4e6e4}
+\label{sec:org8c7ceb8}
 \(T_1=n\). We may partition the integers in each level, therefore
 \begin{equation*}
 T_p\le\frac{n}{p}+\log_2n
 \end{equation*}
 \(\log_2n\) is just like \(\log_mn\) with some constant \(m\).
 \section{Scalable algorithms, Scheduling, and a glance at All Prefix Sum}
-\label{sec:orgaa1c719}
+\label{sec:org846260a}
 \subsection{Types of scaling}
-\label{sec:orgb6a9753}
+\label{sec:org79334a4}
 Another fundamental quantity to understand is the idea of how much speed-up we can hope to
 achieve given more processors. There are three different types of scalability:(1) Strong
 Scaling, (2) Weak Scaling, and (3) Embarrassingly Parallel
@@ -197,13 +198,13 @@ This metric characterizes the case where, for each processor we add, we add more
 When the DAG representing an algorithm has 0-depth, the algorithms is said to be \textbf{embarrasingly parallel}.
 \end{definition}
 \subsection{Scheduling}
-\label{sec:org0174fd2}
+\label{sec:org0a58389}
 Given a DAG of computations, at any level in the DAG there are a certain number of computations
 which can be required to execute (at the same time). The number of computations is not necessarily
 equal to the number of processors you have available to you, so you need to decide how to assign
 computations to processor—this is what is referred to as scheduling.
 \subsubsection{Problem definition}
-\label{sec:orgcf4f0f1}
+\label{sec:org74a455f}
 \begin{notation}[]
 We assume that the processors are identical. More formally, we are given \(p\) processors and an
 unordered set of \(n\) jobs with processing times \(J_1,\dots,J_n\in\R\). Say that the final schedule
@@ -212,10 +213,10 @@ this set \(S_i\). The load for processor \(i\) is therefore \(L_i=\sum_{k\in S_i
 minimize the \textbf{makespan} defined as \(L_{\max}=\max_{i\in\{1,\dots,p\}}L_i\)
 \end{notation}
 \subsubsection{The simple (greedy) algorithm}
-\label{sec:org64a22cf}
+\label{sec:orgac7c7d1}
 Take the jobs one by one and assign each job to the processor that has the least load at that time.
 \subsubsection{Optimality of the greedy approach}
-\label{sec:org79c5899}
+\label{sec:org3fee125}
 In either of the cases, where jobs have dependencies or must be scheduled online, the problem is
 NP hard. So we use approximation algorithms. We claim that the simple algorithm has an
 \textbf{approximation ratio} of 2. For this analysis, we define the optimal makespan to be OPT and try to
@@ -251,13 +252,13 @@ algorithm with a tighter analysis, we get a 4/3 approximation.
 
 \textbf{What's realistic?}
 \section{All Prefix Sum}
-\label{sec:org14f6c3a}
+\label{sec:org1df53dc}
 Given a list of integers, we want to find the sum of all prefixes of the list, i.e., the
 running sum. We are given an input array \(A\) of size \(n\) elements long. Out output is of
 size \(n+1\) elements long, and its first entry is \textbf{always} zero. As an example,
 suppose \(A=[3,5,3,1,6]\), then \(R=\AllPrefixSum(A)=[0,3,8,11,12,18]\)
 \subsection{Algorithm Design}
-\label{sec:org27a668f}
+\label{sec:org6345776}
 \begin{algorithm}
 \caption{Prefix Sum}
 \begin{algorithmic}[1]
@@ -280,7 +281,7 @@ r_i=r_{i-1}=a_i
 \end{equation*}
 for \(i=1,3,5,\dots\) where we by convention let \(r_0=0\)
 \subsection{Algorithm Analysis}
-\label{sec:orgea1b28f}
+\label{sec:orgfb9f726}
 \textbf{Pairing entries}: in line 5, where we let \(A'\) be the sum of adjecent pairs, we must
 perform \(n/2\) summations, hence work is \(O(n)\).
 
@@ -296,7 +297,7 @@ W(n)&=W(n/2)+O(n)\Rightarrow W(n)=O(n)\\
 D(n)&=D(n/2)+O(1)\Rightarrow D(n)=O(\log(n))
  \end{align*}
 \subsection{Mergesort}
-\label{sec:orgab84b8d}
+\label{sec:orga1315e8}
 Suppose we parallelize the algorithm via the obvious divide-and-conquer approach, the work done
 is then
 \begin{equation*}
@@ -325,7 +326,7 @@ We can find \(b\) by performing a binary search over \(L\). We perform the symme
 for each \(l\in L\), so for a call to \texttt{merge} on an input of size \(n\), we perform \(n\) binary
 searches, each of which takes \(O(\log n)\) time.
 \subsection{Parallel merge}
-\label{sec:org0b5159c}
+\label{sec:orgbb5e627}
 \begin{algorithm}
 \caption{Parallel Merge}
 \begin{algorithmic}[1]
@@ -353,7 +354,7 @@ T_p\le O(n\log^2n)/p+O(\log^2n)
 \end{equation*}
 so for large \(p\) we significantly outperform the naive implementation.
 \subsection{Motivating Cole's mergesort}
-\label{sec:org46adfd3}
+\label{sec:org88b764b}
 Can we do better than binary sort?
 
 Let \(L_m\) denote the median index of array \(L\). We then find the corresponding index
@@ -370,15 +371,15 @@ W(n)&=O(n\log n)\\
 D(n)&=O(\log n)
 \end{align*}
 \section{Divide and Conquer Recipe, Parallel Selection}
-\label{sec:orge5e8705}
+\label{sec:orgb1ee5c3}
 \subsection{General Divide and Conquer Technique}
-\label{sec:org9792b02}
+\label{sec:org3019df4}
 \begin{align*}
 T_1&=W(n)=aW(\frac{n}{b})+w\\
 T_\infty&=D(n)=D(\frac{n}{b})+t
 \end{align*}
 \subsection{Parallel Quick Selection}
-\label{sec:orge4367a3}
+\label{sec:org067af93}
 Suppose we have a list of unsorted integers, which we know nothing about. We wish to find
 the \(k^{\text{th}}\) largest element of the integers.
 
@@ -409,7 +410,7 @@ our array. Recognize that in phase \(k\), the array size is at
 most \(n\left( \frac{3}{4} \right)^k\). The maximum number of \emph{phases} before we can hit a base
 case is given by \(\ceil{\log_{4/3}n}\)
 \subsection{Analysis - Expected Work}
-\label{sec:org50b1f9b}
+\label{sec:org66d830e}
 Let \(X_k\) denote the number of times \texttt{Select} called with array of input size between
 \begin{equation*}
 n\left( \frac{3}{4} \right)^{k+1}\le\abs{A}<n\left( \frac{3}{4} \right)^k
@@ -459,7 +460,7 @@ T_1=O(n)
 P(\text{Total Work}\ge 5\times E[\text{Total Work}])\le\frac{E[\text{Total Work}]}{5\times E[\text{Total Work}]}=\frac{1}{5}
  \end{equation*}
 \subsection{Parallelizing our Select Algorithm}
-\label{sec:org423ffac}
+\label{sec:orgc908b1d}
 \textbf{Constructing L and R with Small Depth}.
 
 \begin{algorithm}
@@ -480,7 +481,7 @@ P(\text{Total Work}\ge 5\times E[\text{Total Work}])\le\frac{E[\text{Total Work}
 D(n)=D\left( \frac{n}{4/3} \right)+O(\log n)\Rightarrow D(n)=O(\log^2n)
 \end{equation*}
 \section{Memory Management and (Seemingly) Trivial Operations}
-\label{sec:orgd579bba}
+\label{sec:org427dfe1}
 We assume that we can allocate memory in constant time, as long as we don't ask for the meomory
 to have special values in it.  That is, we can request a large chunk of memory (filled with
 garbage bit sequences) in constant time. However, requesting an array of zeros already
@@ -491,23 +492,78 @@ dominate the operation count. However, in some parallel algorithms, no processor
 entire input, so naively zeroing out a large array can easily dominate the operation time of the
 algorithm.
 \section{QuickSort}
-\label{sec:orgb996174}
+\label{sec:org5376f1d}
 \subsection{Analysis on Memory Management}
-\label{sec:orgb475a88}
+\label{sec:org4ac3120}
 \begin{algorithm}
 \caption{QuickSort}
 \begin{algorithmic}[1]
 \Require An array \(A\)
 \Ensure Sorted A
 \State \(p\leftarrow\) element of \(A\) chosen uniformly at random
-\State \(L\leftarrow[a\mid a\in A,a<p]\)\Comment{Implicitely: \(B_L\leftarrow\bone\{a_i<p\}^n_{i=1}\), \texttt{prefixSum(\(B_L\))}}
+\State \(L\leftarrow[a\mid a\in A,a<p]\)\Comment{Implicitely: \(B_L\leftarrow\bbone\{a_i<p\}^n_{i=1}\), \texttt{prefixSum(\(B_L\))}}
 \State \(R\leftarrow[a\mid a\in A,a>p]\)\Comment{which requires \(\Theta(n)\) work and \(O(\log n)\) depth}
 \State \textbf{Return} [QuickSort(\(L\)), QuickSort(\(R\))]
 \end{algorithmic}
 \end{algorithm}
 
+We denote the size of our input array \(A\) by \(n\). To be precise, we can perform step 1
+in \(\Theta(\log n)\) work and \(O(1)\) depth. That is, to generate a number uniformly from the
+set \(\{1,\dots,n\}\) we can assign \(\log n\) processors to independently flip a bit ``on'' with
+probability \(1/2\).
+
+\textbf{Allocating storage for \(L\) and \(R\)}: Start by making a call to the OS to allocate an array
+of \(n\) elements; this requires \(O(1)\) work and depth, since we do not require the elements
+to be initialized. We compare each element in the array with the pivot, \(p\), and write a 1 to
+the corresponding element if the element belongs in \(L\) and a 0 otherwise. This
+requires \(\Theta(n)\) work but can be done in parallel, i.e., \(O(1)\) depth. We are left with an
+array of 1's and 0's indicating whether an element belongs in \(L\) or not, call
+it \(\bbone_L\),
+\begin{equation*}
+\bbone_L=\bbone\{a\in A:a<p\}
+\end{equation*}
+We then apply \texttt{PrefixSum} on the indicator array \(\bbone_L\), which requires \(O(n)\) work
+and \(O(\log n)\) depth. Then we may examine the value of the last element in the output array
+from \texttt{PrefixSum} to learn the size of \(L\). Looking up the last element in array \(\bbone_L\)
+requires \(O(1)\) work and depth. We can further allocate a new array for \(L\) in constant time
+and depth. Since we know \(\abs{L}\) and we know \(n\), we also know \(\abs{R}=n-\abs{L}\);
+computing \(\abs{R}\) and allocating corresponding storage requires \(O(1)\) work and depth.
+
+Thus allocating space for \(L\) and \(R\) requires \(O(n)\) work and \(O(\log n)\) depth.
+
+\textbf{Filling \(L\) and \(R\)}: Now we use \(n\) processors, assigning each to exactly one element in
+our input array \(A\), and in parallel we perform the following steps. Each
+processor \(1,2,\dots,n\) is assigned to its corresponding entry in \(A\).
+
+Suppose we fix attention to the \(k\)th processor, which is responsible for assigning
+the \(k\)th entry in \(A\) to its appropriate location in either \(L\) and \(R\). We first
+examine \(\bbone_L[k]\) to determine whether the element belongs in \(L\) or \(R\). In addition,
+examine the corresponding entry in \texttt{PrefixSum} output, denote this value
+by \(i=\PrefixSum(\bbone_L[k])\). If the \(k\)th entry of \(A\) belongs in \(L\), then it may be
+written to the position \(i\) in \(L\) immediately. If the \(k\)th entry instead belongs
+in \(R\), then realize that index \(i\) tells us that exactly \(i\) entries ``before''
+element \(k\) belong in \(L\). Hence exactly \(k-i\) elements belong in array \(R\) before
+element.
+
+The process of filling \(L\) and \(R\) requires \(O(n)\) work and \(O(1)\) depth
+
+Therefore we need \(O(n)\) work and \(O(\log n)\) depth.
+\subsection{Total Expected Work}
+\label{sec:orgdf669d8}
+The level of our computational DAG is \(n\) and there are \(\log_{4/3}n\) levels, therefore
+\begin{equation*}
+\E[T_1]=O(n\log n)
+\end{equation*}
+
+We define the random indicator variable \(X_{ij}\) to be one if the algorithm \emph{does compare}
+the \(i\)th \emph{smallest} and the \(j\)th \emph{smallest} elements of input array \(A\) during the course of
+its sorting routine, and zero otherwise. Let \(X\) denote the \emph{total} number of comparisons made
+by our algorithm. Then we have that
+\begin{equation*}
+X=\sum_{i=1}^{n-1}\sum_{j=i+1}^nX_{ij}
+\end{equation*}
 \section{References}
-\label{sec:org64d08a1}
+\label{sec:orgb962420}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 

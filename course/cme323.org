@@ -501,9 +501,196 @@
     \begin{equation*}
     \E[T_1]=O(n\log n)
     \end{equation*}
+
+    We define the random indicator variable \(X_{ij}\) to be one if the algorithm /does compare/
+    the \(i\)th /smallest/ and the \(j\)th /smallest/ elements of input array \(A\) during the course of
+    its sorting routine, and zero otherwise. Let \(X\) denote the /total/ number of comparisons made
+    by our algorithm. Then we have that
+    \begin{equation*}
+    X=\sum_{i=1}^{n-1}\sum_{j=i+1}^nX_{ij}
+    \end{equation*}
+    The only time in our ~QuickSort~ algorithm whereby we make a comparison of two elements is when we
+    construct \(L\) and \(R\). In doing so, we compare each element in the array to a fixed pivot
+    of \(p\), after which all elements in \(L\) less than \(p\) and all elements in \(R\) greater
+    than \(p\). Realize that pivot \(p\) is never compared to elements in \(L\) and \(R\) for the
+    remainder of the algorithm. Hence each of the \(\binom{n}{2}\) pairings are considered /at most/
+    once by our ~QuickSort~ algorithm.
+
+    Expectation operator \(\E\) is monotone, hence
+    \begin{equation*}
+    \E[X]\le\E\left[ \sum_{i=1}^{n-1}\sum_{j=n+1}^nX_{ij} \right]=\sum_{i=1}^{n-1}\sum_{j=i+1}^n\E[X_{ij}]
+    \end{equation*}
+    where \(\E[X_{ij}]=0\cdot\Pr(X_{ij}=0)+1\cdot\Pr(X_{ij}=1)=\Pr(X_{ij})\)
+
+    Consider any particular \(X_{ij}\) for \(i<j\) (i.e., one of interest). Denote the \(i\)th
+    smallest element of input array \(A\) by \(\rank_A^{-1}(i)\) for \(i=1,2,\dots,n\). For any one call
+    to ~QuickSort~, there are exactly /three/ cases to consider
+    1. \(p\in\{\rank^{-1}_A(i),\rank_A^{-1}(j)\}\). In this case, \(X_{ij}=1\)
+    2. \(\rank_A^{-1}(i)<p<\rank_A^{-1}(j)\). \(X_{ij}=0\)
+    3. \(p<\rank_A^{-1}(i)\) or \(p>\rank_A^{-1}(j)\): \(X_{ij}\) may be "flipped on" in another
+       recursive call to ~QuickSort~
+
+
+    If we ignore the case 3 temporarily, that is, the condition is 1 or 2, therefore
+    \begin{equation*}
+    \E[X]=\frac{2}{j-i+1}
+    \end{equation*}
+    and
+    \begin{equation*}
+    \E[X]=\sum_{i=1}^{n-1}\sum_{j=i+1}^n\frac{2}{j-i+1}=\sum_{i=1}^{n-1}2\left( \frac{1}{2}+\frac{1}{3}
+    +\dots+\frac{1}{n-i+1} \right)
+    \end{equation*}
+    We know that \(\sum_{i=1}^n\frac{1}{i}<\int_1^n\frac{1}{x}dx\) and \(\int_1^n\frac{1}{x}dx=\ln n\), therefore
+    \begin{equation*}
+    \E[X]<2n\ln n=O(n\log n)
+    \end{equation*}
+** Total Expected Depth
+    Similar to ~QuickSelect~, we consider the number of /recursive calls/ made to our algorithm when our
+    input array is of size
+    \begin{equation*}
+    \left( \frac{3}{4} \right)^{k+1}n<\abs{A}<\left( \frac{3}{4} \right)^kn
+    \end{equation*}
+    and denote this by \(X_k\). Then \(\E[X_k]=2\). Hence we need \(2c\log_{4/3}n\) recursive calls
+    and \(\E[D(n)]=O(\log^2n)\)
+* Matrix Multiplication: Strassen's algorithm
+** Idea - Block Matrix Multiplication
+    Assume \(A,B\in\R^{n\times n}\) and \(C=AB\), where \(n\) is a power of 2.
+
+    Write
+    \begin{equation*}
+    A=
+    \begin{pmatrix}
+    A_{11}&A_{12}\\A_{21}&A_{22}
+    \end{pmatrix},\quad
+    B=
+    \begin{pmatrix}
+    B_{11}&B_{12}\\B_{21}&B_{22}
+    \end{pmatrix},\quad
+    C=
+    \begin{pmatrix}
+    C_{11}&C_{12}\\C_{21}&C_{22}
+    \end{pmatrix}
+    \end{equation*}
+    where \(A_{ij}\) are of size \(n/2\times n/2\). Then
+    \begin{align*}
+    &C_{11}=A_{11}B_{11}+A_{12}B_{21}\\
+    &C_{12}=A_{11}B_{12}+A_{12}B_{22}\\
+    &C_{21}=A_{21}B_{11}+A_{22}B_{21}\\
+    &C_{22}=A_{22}B_{12}+A_{22}B_{22}
+    \end{align*}
+** Parallelizing the Algorithm
+    \begin{equation*}
+    W(n)=8W(n/2)+O(n^2)
+    \end{equation*}
+    Then, \(W(n)=O(n^{\log_28})=O(n^3)\)
+** Strassen's Algorithm
+    Let
+    \begin{align*}
+    &M_1=(A_{11}+A_{22})(B_{11}+B_{22})\\
+    &M_2=(A_{21}+A_{22})B_{11}\\
+    &M_3=A_{11}(B_{12}-B_{22})\\
+    &M_4=A_{22}(B_{21}-B_{11})\\
+    &M_5=(A_{11}+A_{12})B_{22}\\
+    &M_6=(A_{21}-A_{11})(B_{11}+B_{12})\\
+    &M_7=(A_{12}-A_{22})(B_{21}+B_{22})
+    \end{align*}
+    Then
+    \begin{align*}
+    &C_{11}=M_1+M_4-M_5+M_7\\
+    &C_{12}=M_3+M_5\\
+    &C_{21}=M_2+M_4\\
+    &C_{22}=M_1-M_2+M_3+M_6
+    \end{align*}
+    and
+    \begin{align*}
+    &W(n)=7W(n/2)+O(n^2)\Rightarrow W(n)=O(n^{\log_27})\\
+    &D(n)=D(n/2)+O(1)\Rightarrow D(n)=O(\log n)
+    \end{align*}
+** Drawbacks of Divide and Conquer
+    * We haven't considered communication bottlenecks; in real life communication is expensive
+    * Disk/RAM differences are a bottleneck for recursive algorithms
+    * PRAM assumes perfect scheduling
+* Minimum Spanning Tree Algorithms
+    We'll denote our /connected/ and /undirected/ graph by \(G=(V,E,w)\). The size of the vertex
+    size \(\abs{V}=n\), the size of the edge set \(\abs{E}=m\), and we assume that the
+    weights \(w:E\to\R\) are distinct for convenience. [fn:1]
+
+    A *tree* is an undirected graph \(G\) which satisfies any two of the three following statements,
+    such a graph also then satisfies the other property as well
+    1. \(G\) connected
+    2. \(G\) has no cycles
+    3. \(G\) has exactly \(n-1\) edges.
+
+    This *minimum spanning tree* (MST) of \(G\) is \(T^*=(V,E_T,w)\)
+    s.t. \(\sum_{e\in E_{T^*}}w(e)\le\sum_{e\in E^T}w(e)\) for any other spanning tree \(T\).
+** Sequential approaches and Kruskal's algorithm
+    \begin{algorithm}
+    \caption{Kruskal's MST algorithm}
+    \begin{algorithmic}[1]
+    \Require \(G=(V,E,w)\) an undirected and connected graph
+    \Ensure \(T^*\), the MST of \(G\)
+    \State Sort \(E\) in increasing order by edge weight \(T\)
+    \State \(T\leftarrow\emptyset\)
+    \While{\(T\) not yet a spanning tree}
+        \State \(e\leftarrow\) next edge in the queue
+        \If{\(T\cup\{e\}\) contains no cycles}
+            \State \(T\leftarrow T\cup\{e\}\)
+        \EndIf
+    \EndWhile
+    \State \textbf{Return} \(T\)
+    \end{algorithmic}
+    \end{algorithm}
+    Kruskal's algorithm is based on the *cut property* (or *red rule*)
+    #+ATTR_LATEX: :options [Cur-Property, Red-Rule]
+    #+BEGIN_theorem
+    Let \(G(V,E,w)\) be an undirected and connected graph. Then the edge with minimum weight leaving
+    any cut \(S\subset V\) is in the MST of \(G\)
+    #+END_theorem
+
+    #+BEGIN_proof
+    We are given a graph \(G\) and a cut \(S\subset V\). We say that an edge is in a cut \(S\) if exactly
+    one incident node is in \(S\) and the other incident node of the edge in \(V\setminus S\).
+    Let \(e^*=(u,v)\) be the minimum weight edge in a cut \(S\). Assume that the edge with minimum
+    weight leaving cut \(S\) is /not/ in the MST \(T\), i.e., \(e^*\notin T\) where \(T\) is the MST
+    of \(G\) and
+    \begin{equation*}
+    e^*=\argmin_{e\in S}w(e)
+    \end{equation*}
+    Suppose \(e^*=(u,v)\). Since \(T\) is a spanning tree of \(G\), we know that \(u\) and \(v\)
+    are connected in the edge set of \(T\). We construct a \(u\)-\(v\) path using depth first
+    search. Let \((x,y)=e'\) denote the edge in \(T\) which crosses cut \(S\) in the \(u\)-\(v\)
+    path. Replace \((x,y)\) with \((u,v)\). Call the result \(T'\).
+
+    We claim that \(T'=(T\setminus(x,y))\cup(u,v)\) is still a tree. We first claim \(T'\) retains connectivity
+    among all nodes. To see this, realize first that since \((x,y)\) and \((u,v)\) each have exactly
+    one incident node in \(S\) and one incident node in \(V\setminus S\), then it is /not/ possible that
+    either \((x,y)\) or \((u,v)\), when removed from \(T\), could result in \(S\) becoming
+    disconnected or \(V\setminus S\) becoming disconnected. Hence, without either of these edges, we can get
+    from all nodes in \(S\) to all other nodes in \(S\), and same goes for the set \(V\setminus S\). It
+    remains to show that we can still traverse from \(S\) to \(V\setminus S\). Realize that all paths
+    previously going from \(S\) to \(V\setminus S\) using \((x,y)\) can now simply utilize \((u,v)\)
+    instead.
+
+    Further, realize that we have not created any cycles. Specifically, when we add edge \((u,v)\)
+    to the tree \(T\), we include a cycle. But realize that the edge \((x,y)\) is part of the cycle,
+    and we immediately remove it.
+
+    Since \(e^*\) is the minimum weight edge in \(S\), and since it is not contained in \(T\), we
+    know that \(w(e^*)<w(e')\), but this implies that \(w(T')<w(T)\), a contradiction.
+    #+END_proof
+** Complexity Analysis for Kruskal's
+    *Sorting Edges*: \(\E[W(n)]=O(m\log m)=O(m\log n)\) since \(m\ge\binom{n}{2}\).
+
+    *Checking for Cycles*: We show a way to check cycles in \(O(\log n)\) work that is a bit more accessible.
+
 * References
 <<bibliographystyle link>>
 bibliographystyle:alpha
 
 <<bibliography link>>
 bibliography:/Users/wu/notes/references.bib
+
+* Footnotes
+
+[fn:1] If the edge weights are not distinct, then we may simply simply perturb each edge weight by a
+small random factor \(\epsilon>0\)  where \(\epsilon<1/n^3\).
