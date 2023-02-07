@@ -1,0 +1,61 @@
+#+title: Theory of Distributed Computing
+
+#+AUTHOR: James Aspnes
+
+#+EXPORT_FILE_NAME: ../latex/cs465/cs465.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\state}{\textsf{state}}
+#+LATEX_HEADER: \DeclareMathOperator{\buffer}{\textsf{buffer}}
+#+LATEX_HEADER: \DeclareMathOperator{\del}{\textsf{del}}
+#+LATEX_HEADER: \DeclareMathOperator{\comp}{\textsf{comp}}
+
+* Model
+
+** Basic message-passing model
+    We have a collection of \(n\) *processes* \(p_1,\dots,p_n\), each of which has a *state* consisting of a
+    state from state set \(Q_i\). We think of these processes as nodes in a directed *communication
+    graph*. The edges in this graph are a collection of point-to-point *channels* or
+    *buffers* \(b_{ij}\), representing messages that have been sent but that have not yet been
+    delivered.
+
+    A *configuration* of the system consists of a vector of states, one for each process and channel.
+    The configuration of the system is updated by an *event*, where
+    1. zero or more messages in channels \(b_{ij}\) are delivered to process \(p_j\)
+    2. \(p_j\) updates its state in response
+    3. zero or more message are added by \(p_j\) to outgoing channels \(b_{ji}\)
+    We generally think of these events as *delivery events* when at least one message is delivered,
+    and as *computation events* when none are. An *execution segment* is a sequence of alternating
+    configurations and events \(C_0,\phi_1,C_1,\phi_2,\dots\) where each triple \(C_i\phi_{i+1}C_{i+1}\) is
+    consistent with the transition rules for the event \(\phi_{i+1}\), and the last element of the
+    sequence is a configuration. If the first configuration \(C_0\) is an *initial configuration* of
+    the system, we have an *execution*. A *schedule* is an execution with the configurations removed.
+
+    Let \(P\) be the set of processes, \(Q\) the set of process states, and \(M\) the set of
+    possible messages.
+
+    Each process \(p_i\) has a state \(\state_i\in Q\). Each channel \(b_{ij}\) has a
+    state \(\buffer_{ij}\in\calp(M)\). We assume each process has a *transition
+    function* \(\delta:Q\times\calp(M)\to Q\times\calp(P\times M)\).
+
+    A delivery event \(\del(i,A)\), where \(A=\{(j_k,m_k)\}\) removes each message \(m_k\)
+    from \(b_{ji}\), updates \(\state_i\) according to \(\delta(\state_i,A)\) to the appropriate channels.
+    A computation event \(\comp(i)\) does the same thing, except that it applies \(\delta(\state_j,\emptyset)\).
+
+    Some implicit features in this definition:
+    * A process can't tell when its outgoing messages are delivered, because the channel states
+      aren't available as input to \delta
+    * Processes are *deterministic*
+    * It is possible to determine the accessible state of a process by looking only at events that
+      involve that process. Specifically, given a schedule \(S\), define the *restriction* \(S|i\) to
+      be the subsequence consisting of all \(\comp(i)\) and \(\del(i,A)\) events.
+
+** Asynchronous systems
+    In an *asynchronous* model, only minimal restrictions are placed on when messages are delivered
+    and when local computation occurs. A schedule is said to be *admissble* if
+    1. there are infinitely many computation steps for each process
+    2. every message is eventually delivered
+    The first condition assumes that processes do not explicitly terminate; an alternative, which we
+    will use when convenient, is to assume that every process either has infinitely many computation
+    steps or reaches an explicit halting state.

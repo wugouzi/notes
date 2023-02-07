@@ -1,4 +1,4 @@
-% Created 2022-05-25 Wed 11:16
+% Created 2022-12-28 Wed 14:37
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -34,11 +34,11 @@
 
 
 \section{Graph Algorithms}
-\label{sec:org0b44677}
+\label{sec:org1235130}
 \subsection{Elementary Graph Algorithms}
-\label{sec:orgabeb81f}
+\label{sec:org36620c5}
 \subsubsection{Topological sort}
-\label{sec:org6e2a44c}
+\label{sec:org9cf1671}
 \begin{algorithmic}[1]
 \Procedure{Topological-Sort}{$G$}
 \State call DFS\((G)\) to compute finishing times \(v.f\) for each vertex \(v\)
@@ -71,8 +71,91 @@ happens to this algorithm if \(G\) has cycles?
 \begin{proof}
 
 \end{proof}
+\subsection{Minimum Spanning Trees}
+\label{sec:org04b6b1f}
+\subsubsection{Growing a minimum spanning tree}
+\label{sec:org4fe7a6f}
+\begin{algorithmic}[1]
+\Procedure{Generic-MST}{$G,w$}
+\State \(A=\emptyset\)
+\While{\(A\) does not form a spanning tree}
+    \State find an edge \((u,v)\) that is safe for \(A\)
+    \State \(A=A\cup\{(u,v)\}\)
+\EndWhile
+\State \textbf{return }\(A\)
+\EndProcedure
+\end{algorithmic}
+We call an edge \textbf{safe} if it can be added safely to \(A\) while maintaining the invariant
+
+A \textbf{cut} \((S,V-S)\) of an undirected graph \(G=(V,E)\) is a partition of \(V\). Edge \((u,v)\in E\)
+\textbf{crosses} the cut \((S,V-S)\) if one of its endpoints belongs to \(S\) and the other belongs
+to \(V-S\). A cut \textbf{respects} a set \(A\) of edges if no edge in \(A\) crosses the cut. A edge is a
+\textbf{light edge} crossing a cut if its weight is the minimum of any edge crossing the cut.
+
+\begin{theorem}[]
+Let \(G=(V,E)\) be a connected, undirected graph with a real-valued weight function \(w\)
+defined on \(E\). Let \(A\) be a subset of \(E\) that is included in some minimum spanning tree
+for \(G\), let \((S,V-S)\) be any cut of \(G\) that respects \(A\), and let \((u,v)\) be a
+light edge crossing \((S,V-S)\). Then edge \((u,v)\) is safe for \(A\).
+\end{theorem}
+
+\begin{proof}
+Let \(T\) be a minimum spanning that includes \(A\), and assume that \(T\) does not contain the
+light edge \((u,v)\),since if it does, we are done. We'll construct another minimum spanning
+tree \(T'\) that includes \(A\cup\{(u,v)\}\) by using a cut-and-paste technique, thereby showing
+that \((u,v)\) is a safe edge for \(A\).
+
+\begin{center}
+\includegraphics[width=.5\textwidth]{../images/clrs/1.png}
+\label{}
+\end{center}
+
+The edge \((u,v)\) forms a cycle with the edges on the single path \(p\) from \(u\) to \(v\)
+in \(T\). Since \(u\) and \(v\) are on opposite sides of the cut \((S,V-S)\), at least one edge
+in \(T\) lies on the simple path \(p\)and also crosses the cut. Let \((x,y)\) be any such edge.
+The edge \((x,y)\) is not in \(A\), because the cut respects \(A\).Since \((x,y)\) is on the
+unique simple path from \(u\) to \(v\) in \(T\), removing \((x,y)\) breaks \(T\) into two
+components. Adding \((u,v)\) reconnected them to form a new spanning
+tree \(T'=(T-\{(x,y)\})\cup\{(u,v)\}\).
+
+We next show that \(T'\) is a minimum spanning tree. Since \((u,v)\) is a light edge
+crossing \((S,V-S)\) and \((x,y)\) also crosses this cut, \(w(u,v)\le w(x,y)\).
+Therefore \(w(T')\le w(T)\).
+\end{proof}
+
+\begin{corollary}[]
+Let \(G=(V,E)\) be a connected, undirected graph with a real-valued weight function \(w\)
+defined on \(E\). Let \(A\) be a subset of \(E\) that is included in some minimum spanning tree
+for \(G\), and let \(C=(V_C,E_C)\) be a connected component in the forest \(G_A=(V,A)\).
+If \((u,v)\) is a light edge connecting \(C\) to some other component in \(G_A\), then \((u,v)\)
+is safe for \(A\).
+\end{corollary}
+\subsubsection{The algorithms of Kruskal and Prim}
+\label{sec:org6718153}
+\begin{enumerate}
+\item Kruskal's algorithm
+\label{sec:orgb693735}
+\begin{algorithmic}[1]
+\Procedure{MST-Kruskal}{$G,w$}
+\State \(A=\emptyset\)
+\For{each vertex \(v\in G.V\)}
+    \State Make-Set\((v)\)
+\EndFor
+\State create a single list of the edges in \(G.E\)
+\State sort the list of edges into monotonically increasing order by weight \(w\)
+\For{each edge \((u,v)\) taken from the sorted list in order}
+    \If{Find-Set(\(u\))\(\neq\)Find-Set(\(v\))}
+        \State \(A=A\cup\{(u,v)\}\)
+        \State Union(\(u,v\))
+    \EndIf
+\EndFor
+\State \textbf{Return} \(A\)
+\EndProcedure
+\end{algorithmic}
+\end{enumerate}
+
 \subsection{Single-Source Shortest Paths}
-\label{sec:org73f43f2}
+\label{sec:org4296c50}
 \begin{algorithmic}[1]
 \Procedure{Initialize-single-source}{$G,s$}
 \For{\(v\in G.V\)}
@@ -93,7 +176,7 @@ happens to this algorithm if \(G\) has cycles?
 \end{algorithmic}
 
 \subsubsection{The Bellman-Ford algorithm}
-\label{sec:orgd1cc063}
+\label{sec:org5089956}
 \begin{algorithmic}[1]
 \Procedure{Initialize-single-source}{$G,s$}
     \For{\(i=1\) to \(\abs{G,V}-1\)}
@@ -164,7 +247,7 @@ But since \(\sum_{i=1}^kv_i.d=\sum_{i=1}^kv_{i-1}.d\), we have
 
 \end{exercise}
 \subsubsection{Single-source shortest paths in directed acyclic graphs}
-\label{sec:orgc9c5445}
+\label{sec:orgc67f19d}
 By relaxing the edges of a weighted dag \(G=(V,E)\) according to a topological sort of its
 vertices, we can compute shortest paths from a single source in \(\Theta(V+E)\) time. Shortest paths
 are always well defined in a dag
@@ -186,7 +269,7 @@ Given an efficient algorithm to count the total number of paths in a directed ac
 Analyze your algorithm
 \end{exercise}
 \subsubsection{Dijkstra's algorithm}
-\label{sec:orgd846e75}
+\label{sec:org888fca0}
 Dijkstra's algorithm solves the single-source shortest-paths problem on a weighted, directed
 graph \(G=(V,E)\) for the case in which all edge weights are nonnegative.
 \begin{algorithmic}[1]
@@ -202,8 +285,28 @@ graph \(G=(V,E)\) for the case in which all edge weights are nonnegative.
 \EndWhile
 \EndProcedure
 \end{algorithmic}
+
+\begin{theorem}[Correctness of Dijkstra's algorithm]
+Dijkstra's algorithm, run on a weighted, directed graph \(G=(V,E)\) with non-negative weight
+function \(w\) and source \(s\), terminates with \(u.d=\delta(s,u)\) for all vertices \(u\in V\)
+\end{theorem}
+
+\begin{proof}
+Let \(u\) be the first vertex for which \(u.d\neq\delta(s,u)\) when it is added to set \(S\).
+Then \(u\neq s\) and \(\delta(s,u)\neq\infty\). Because there is at least one path, there is a shortest
+path \(p\) from \(s\) to \(u\). Prior to adding \(u\) to \(S\), path \(p\) connects a vertex
+in \(S\), namely \(s\) to a vertex in \(V-S\), namely \(u\). Let us consider the first
+vertex \(y\) along \(p\) s.t. \(y\in V-S\), and let \(x\in S\) be \(y\)'s predecessor along \(p\).
+We can decompose path \(p\) into \(s\xrsa{p_1}x\to y\xrsa{p_2}u\)
+
+We claim that \(y.d=\delta(s,y)\) when \(u\) is added to \(S\). But \(y\) should be chosen after \(x\)
+\end{proof}
+
+\begin{exercise}
+
+\end{exercise}
 \subsubsection{Proofs of shortest-paths properties}
-\label{sec:org7335df6}
+\label{sec:orgc40bb34}
 \begin{lemma}[Triangle inequality]
 Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\) and source
 vertex \(s\). Then for all edges \(u,v)\in E\) we have

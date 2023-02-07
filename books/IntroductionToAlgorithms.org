@@ -44,6 +44,90 @@
     #+BEGIN_proof
 
     #+END_proof
+** Minimum Spanning Trees
+*** Growing a minimum spanning tree
+    \begin{algorithmic}[1]
+    \Procedure{Generic-MST}{$G,w$}
+    \State \(A=\emptyset\)
+    \While{\(A\) does not form a spanning tree}
+        \State find an edge \((u,v)\) that is safe for \(A\)
+        \State \(A=A\cup\{(u,v)\}\)
+    \EndWhile
+    \State \textbf{return }\(A\)
+    \EndProcedure
+    \end{algorithmic}
+    We call an edge *safe* if it can be added safely to \(A\) while maintaining the invariant
+
+    A *cut* \((S,V-S)\) of an undirected graph \(G=(V,E)\) is a partition of \(V\). Edge \((u,v)\in E\)
+    *crosses* the cut \((S,V-S)\) if one of its endpoints belongs to \(S\) and the other belongs
+    to \(V-S\). A cut *respects* a set \(A\) of edges if no edge in \(A\) crosses the cut. A edge is a
+    *light edge* crossing a cut if its weight is the minimum of any edge crossing the cut.
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(G=(V,E)\) be a connected, undirected graph with a real-valued weight function \(w\)
+    defined on \(E\). Let \(A\) be a subset of \(E\) that is included in some minimum spanning tree
+    for \(G\), let \((S,V-S)\) be any cut of \(G\) that respects \(A\), and let \((u,v)\) be a
+    light edge crossing \((S,V-S)\). Then edge \((u,v)\) is safe for \(A\).
+    #+END_theorem
+
+    #+BEGIN_proof
+    Let \(T\) be a minimum spanning that includes \(A\), and assume that \(T\) does not contain the
+    light edge \((u,v)\),since if it does, we are done. We'll construct another minimum spanning
+    tree \(T'\) that includes \(A\cup\{(u,v)\}\) by using a cut-and-paste technique, thereby showing
+    that \((u,v)\) is a safe edge for \(A\).
+
+    #+ATTR_LATEX: :width .5\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/clrs/1.png]]
+
+    The edge \((u,v)\) forms a cycle with the edges on the single path \(p\) from \(u\) to \(v\)
+    in \(T\). Since \(u\) and \(v\) are on opposite sides of the cut \((S,V-S)\), at least one edge
+    in \(T\) lies on the simple path \(p\)and also crosses the cut. Let \((x,y)\) be any such edge.
+    The edge \((x,y)\) is not in \(A\), because the cut respects \(A\).Since \((x,y)\) is on the
+    unique simple path from \(u\) to \(v\) in \(T\), removing \((x,y)\) breaks \(T\) into two
+    components. Adding \((u,v)\) reconnected them to form a new spanning
+    tree \(T'=(T-\{(x,y)\})\cup\{(u,v)\}\).
+
+    We next show that \(T'\) is a minimum spanning tree. Since \((u,v)\) is a light edge
+    crossing \((S,V-S)\) and \((x,y)\) also crosses this cut, \(w(u,v)\le w(x,y)\).
+    Therefore \(w(T')\le w(T)\).
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Let \(G=(V,E)\) be a connected, undirected graph with a real-valued weight function \(w\)
+    defined on \(E\). Let \(A\) be a subset of \(E\) that is included in some minimum spanning tree
+    for \(G\), and let \(C=(V_C,E_C)\) be a connected component in the forest \(G_A=(V,A)\).
+    If \((u,v)\) is a light edge connecting \(C\) to some other component in \(G_A\), then \((u,v)\)
+    is safe for \(A\).
+    #+END_corollary
+*** The algorithms of Kruskal and Prim
+**** Kruskal's algorithm
+    Kruskal's algorithm finds a safe edge to add to the growing forest by finding, of all the edges
+    that connect any trees in the forest, an edge \((u,v)\) with the lowest weight.
+    \begin{algorithmic}[1]
+    \Procedure{MST-Kruskal}{$G,w$}
+    \State \(A=\emptyset\)
+    \For{each vertex \(v\in G.V\)}
+        \State Make-Set\((v)\)
+    \EndFor
+    \State create a single list of the edges in \(G.E\)
+    \State sort the list of edges into monotonically increasing order by weight \(w\)
+    \For{each edge \((u,v)\) taken from the sorted list in order}
+        \If{Find-Set(\(u\))\(\neq\)Find-Set(\(v\))}
+            \State \(A=A\cup\{(u,v)\}\)
+            \State Union(\(u,v\))
+        \EndIf
+    \EndFor
+    \State \textbf{Return} \(A\)
+    \EndProcedure
+    \end{algorithmic}
+
+    The running time of Kruskal's algorithm for a graph \(G=(V,E)\) depends on the specific
+    implementation of the disjoint-set data structure.
+
 ** Single-Source Shortest Paths
     \begin{algorithmic}[1]
     \Procedure{Initialize-single-source}{$G,s$}
