@@ -1,0 +1,93 @@
+#+title: Cpp Templates The Complete Guide
+
+#+AUTHOR: Many
+
+#+EXPORT_FILE_NAME: ../latex/CppTemplates/CppTemplates.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \let\OldTexttt\texttt
+#+LATEX_HEADER: \renewcommand{\texttt}[1]{\OldTexttt{\color{MidnightBlue} #1}}
+#+LATEX_HEADER: \usepackage{minted}
+#+LATEX_HEADER: \setminted{fontsize=\footnotesize,baselinestretch=1}
+
+* Function Templates
+** A First Look at Function Templates
+    For historical reasons, you can also use the keyword ~class~ instead of ~typename~ to define a type
+    parameter.
+
+    #+begin_src c++
+#include<iostream>
+
+template<typename T>
+T max(T a, T b)
+{
+  return b < a ? a : b;
+}
+
+int main(void)
+{
+  std::cout << ::max(7,8) << '\n';
+}
+    #+end_src
+
+    use ~::~  to ensure that our ~max()~ template is found in the global namespace since there is ~std::max()~.
+
+    Templates aren’t compiled into single entities that can handle any type. Instead, different
+    entities are generated from the template for every type for which the template is used.
+** Template Argument Deduction
+    Note that automatic type conversions are limited during type deduction:
+    * When declaring call parameters by reference, even trivial conversions do not apply to type
+      deduction. Two arguments declared with the same template parameter T must match exactly.
+    * When declaring call parameters by value, only trivial conversions that *decay* are supported:
+      Qualifications with ~const~ or ~volatile~ are ignored, references convert to the referenced type,
+      and raw arrays or functions convert to the corresponding pointer type. For two arguments
+      declared with the same template parameter T the decayed types must match.
+
+    For example:
+    #+begin_src c++
+template<typename T>
+T max (T a, T b);
+
+int const c = 42;
+max(i, c);        // OK: T is deduced as int
+max(c, c);        // OK: T is deduced as int
+int& ir = i;      
+max(i, ir);       // OK: T is deduced as int
+int arr[4];
+foo(&i, arr);     // OK: T is deduced as int*
+ 
+max(4, 7.2);      // ERROR: T can be deduced as int or double
+std::string s;
+foo("hello", s);  // ERROR: T can be deduced as char const[6] or std::string
+    #+end_src
+
+    There are three ways to handle such errors:
+    1. Cast the arugments so that they both match:
+       #+begin_src c++
+max(static_cast<double>(4), 4.7)
+       #+end_src
+    2. Specify explicitly the type of ~T~ to prevent the compiler from attempting type deduction:
+       #+begin_src c++
+max<double>(4, 4.7)
+       #+end_src
+    3. Specify that the parameters may have different types
+
+
+    Note that type deduction does not work for default call arguments. For example:
+    #+begin_src c++
+template<typename T>
+void f(T = "");
+
+f(1);   // OK: deduced T to be int, so that it calls f<int>(1)
+f();    // ERROR: cannot deduce T
+    #+end_src
+
+    To support this case, you also have to declare a default argument for the template parameter:
+    #+begin_src c++
+template<typename T = std::string>
+void f(T = "");
+...
+f(); // OK
+    #+end_src
+** Multiple Template Parameters

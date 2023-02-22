@@ -2354,13 +2354,373 @@ ios_base::sync_with_stdio(false); // avoid significant overhead
     C-style I/O.
 * Algorithms
 ** Use of Iterators
+** Container Algorithms
+    label:12.8
+    #+begin_src c++
+namespace Estd {
+using namespace std;
+
+template<typename C>
+void sort(C& c) {
+  sort(c.begin(),c.end());
+}
+template<typename C, typename Pred>
+void sort(C& c, Pred p) {
+  sort(c.begin(),c.end(),p);
+}
+// ...
+}
+    #+end_src
 * Utilities
 ** Resource Management
+    A resource is something that must be acquired and later released.
 *** ~unique_ptr~ and ~shared_ptr~
-    The basic use of these "smart pointers"  is to prevent memory leaks caused by careless
-    programming
+    1. ~unique_ptr~ to represent unique ownership
+    2. ~shared_ptr~ to represent shared ownership
+    #+begin_src c++
+void f(int i, int j) // X* vs. unique_ptr<X>
+{
+  X* p = new X;             // allocate a new X
+  unique_ptr<X> sp{new X}; // allocate a new X and give its pointer to unique_ptr
+  // ...
+  if (i<99) throw Z{};      // may throw an exception
+  if (j<77) return;         // may return "early"
+  // ... use p and sp ..
+  delete p;                 // destroy *p
+}
+    #+end_src
+    Here, we "forgot" to delete ~p~ if ~i<99~ or if ~j<77~. On the other hand, ~unique_ptr~ ensures that its
+    object is properly destroyed whichever way we exit ~f()~
 
-    The ~shared_ptr~ is similar to ~unique_ptr~ except that ~shared_ptr~ s are copied rather than moved.
+    Its further uses include passing free-store allocated objects in and out of functions:
+    #+begin_src c++
+unique_ptr<X> make_X(int i)
+    // make an X and immediately give it to a unique_ptr
+{
+  // ... check i, etc. ...
+  return unique_ptr<X>{new X{i}};
+}
+    #+end_src
+
+    A ~unique_ptr~ is a handle to an individual object (or an array) in much the same way that a
+    ~vector~ is a handle to a sequence of objects. Both control the lifetime of other objects (using
+    RAII) and both rely on move semantics to make ~return~ simple and efficient.
+
+    The ~shared_ptr~ is similar to ~unique_ptr~ except that \texttt{shared\_ptr}s are copied rather than
+    moved.
+    The \texttt{shared\_ptr}s for an object share ownership of an object; that object is destroyed when the
+    last of its \texttt{shared\_ptr}s is destroyed. For example:
+    #+begin_src c++
+void f(shared_ptr<fstream>);
+void g(shared_ptr<fstream>);
+
+void user(const string& name, ios_base::openmode mode)
+{
+  shared_ptr<fstream> fp {new fstream(name,mode)};
+  if (!∗fp)           // make sure the file was properly opened
+    throw No_file{};
+  f(fp);
+  g(fp);
+  // ...
+}
+    #+end_src
+
+    Now, the file opened by ~fp~'s constructor will be closed by the last function to (explicitly or
+    implicitly) destroy a copy of ~fp~. Note that ~f()~ or ~g()~ may spawn a task holding a copy of ~fp~
+    or in some other way store a copy that outlives ~user()~. Thus, ~shared_ptr~ provides a form of
+    garbage collection that respects the destructor-based resource management of the memory-managed
+    objects.
+
+    The standard library (in ~<memory>~) provides functions for constructing an object and returning
+    an appropriate smart pointer, ~make_shared()~ and ~make_unique()~. For example:
+    #+begin_src c++
+struct S {
+  int i;
+  string s;
+  double d;
+  // ...
+};
+auto p1 = make_shared<S>(1,"Ankh Morpork",4.65);
+auto p2 = make_unique<S>(2,"Oz",7.62);
+
+    #+end_src
+
+    when we need pointer semantics:
+    * When we share an object, we need pointers (or references) to refer to the shared object, so a
+        ~shared_ptr~ becomes the obvious choice (unless there is an obvious single owner).
+    * When we refer to a polymorphic object in classical object-oriented code (§4.5), we need a
+      pointer (or a reference) because we don’t know the exact type of the object referred to (or
+      even its size), so a ~unique_ptr~ becomes the obvious choice.
+    * A shared polymorphic object typically requires \texttt{shared\_ptr}s.
+*** ~move()~ and ~forward()~
+    The choice between moving and copying is mostly implicit. A compiler will prefer to move
+    when an object is about to be destroyed (as in a ~return~) because that’s assumed to be the
+    simpler and more efficient operation. However, sometimes we must be explicit. For example, a
+    ~unique_ptr~ is the sole owner of an object. Consequently, it cannot be copied:
+    #+begin_src c++
+void f1() {
+  auto p = make_unique<int>(2);
+  auto q = p; // error : we can’t copy a unique_ptr
+  // ...
+}
+    #+end_src
+
+    If you want a ~unique_ptr~ elsewhere, you must move it. For example:
+    #+begin_src c++
+void f1() {
+  auto p = make_unique<int>(2);
+  auto q = move(p); // p now holds nullptr
+  // ...
+}
+    #+end_src
+
+    Confusingly, ~std::move()~ doesn't move anything. Instead, it casts its argument to an rvalue
+    refer- ence, thereby saying that its argument will not be used again and therefore may be moved
+    (§5.2.2). It should have been called something like ~rvalue_cast~. Like other casts, it's
+    error-prone and best avoided. It exists to serve a few essential cases. Consider a simple swap:
+    #+begin_src c++
+template <typename T> void swap(T& a, T& b)
+{
+  T tmp {move(a)};    // the T constructor sees an rvalue and moves
+  a = move(b);        // the T assignment sees an rvalue and moves
+  b = move(tmp);      // the T assignment sees an rvalue and moves                
+}
+    #+end_src
+
+    #+begin_src c++
+string s1 = "Hello";
+string s2 = "World";
+vector<string> v;
+v.push_back(s1);       // use a "const string&" argument; push_back() will copy
+v.push_back(move(s2)); // use a move constructor
+    #+end_src
+
+    Here ~s1~ is copied (by ~push_back()~) whereas ~s2~ is moved. This sometimes (only sometimes) makes
+    the ~push_back()~ of ~s2~ cheaper. The problem is that a moved-from object is left behind. If we use
+    ~s2~ again, we have a problem:
+    #+begin_src c++
+cout << s1[2]; // write ’l’
+cout << s2[2]; // crash?
+    #+end_src
+
+    Forwarding arguments is an important use case that requires moves (§7.4.2). We sometimes want to
+    transmit a set of arguments on to another function without changing anything (to achieve
+    "perfect forwarding"):
+    #+begin_src c++
+template<typename T, typename... Args>
+unique_ptr<T> make_unique(Args&&... args) {
+  return unique_ptr<T>{new T{std::forward<Args>(args)...}};
+  // forward each argument
+}
+    #+end_src
+** Range Checking: ~gsl:span~
+** Specialized Containers
+*** ~array~
+    An ~array~, defined in ~<array>~, is a fixed-size sequence of elements of a given type where the
+    number of elements is specified at compile time.
+
+    #+begin_src c++
+void f(int∗ p, int sz);    // C-style interface
+
+void g() {
+  array<int,10> a;
+  f(a,a.size());           // error : no conversion
+  f(&a[0],a.size());       // C-style use  
+  f(a.data(),a.size());    // C-style use
+
+  auto p = find(a.begin(),a.end(),777); // C++/STL-style use
+  // ...
+}
+    #+end_src
+
+    #+begin_src c++
+void h() {
+  Circle a1[10]; array<Circle,10> a2;
+  // ...
+  Shape∗ p1 = a1; // OK: disaster waiting to happen
+  Shape∗ p2 = a2; // error: no conversion of array<Circle,10> to Shape*
+  p1[3].draw();    //disaster
+}
+    #+end_src
+
+    The ‘‘disaster’’ comment assumes that ~sizeof(Shape)<sizeof(Circle)~, so subscripting a ~Circle[]~ through
+    a ~Shape∗~ gives a wrong offset. All standard containers provide this advantage over built-in
+    arrays.
+** Type Functions
+    A *type function* is a function that is evaluated at compile time given a type as its argument or
+    returning a type.
+
+    For numerical types, numeric_limits from <limits> presents a variety of useful information. For
+    example:
+    #+begin_src c++
+constexpr float min = numeric_limits<float>::min(); // smallest positive float
+    #+end_src
+    Similarly, object sizes can be found by the built-in ~sizeof~ operator. For example:
+    #+begin_src c++
+constexpr int szi = sizeof(int); // the number of bytes in an int
+    #+end_src
+    Such type functions are part of C++'s mechanisms for compile-time computation that allow tighter
+    type checking and better performance than would otherwise have been possible. Use of such
+    features is often called ~metaprogramming~ or (when templates are involved) template
+    ~metaprogramming~ .
+*** ~iterator_traits~
+    The standard-library ~sort()~ takes a pair of iterators supposed to define a sequence. Furthermore, those iterators must offer random access to that sequence, that is, they must
+    be *random-access iterators*. Some containers, such as ~forward_list~, do not offer that. In
+    particular, a ~forward_list~ is a singly-linked list so subscripting would be expensive and
+    there is no reasonable way to refer back to a previous element. However, like most containers,
+    ~forward_list~ offers forward iterators that can be used to traverse the sequence by algorithms
+    and ~for~-statements .
+
+    The standard library provides a mechanism, ~iterator_traits~, that allows us to check which kind
+    of iterator is provided. Given that, we can improve the range ~sort()~ from ref:12.8 to accept
+    either a ~vector~ or a ~forward_list~. For example:
+    #+begin_src c++
+void test(vector<string>& v, forward_list<int>& lst) {
+  sort(v);   // sort the vector
+  sort(lst); // sort the singly-linked list
+}
+    #+end_src
+
+    #+begin_src c++
+template<typename Ran>
+void sort_helper(Ran beg, Ran end, random_access_iterator_tag) {
+  sort(beg,end); // just sort it
+}
+
+template<typename For> // for forward iterators
+void sort_helper(For beg, For end, forward_iterator_tag) // we can traverse [beg:end)
+{
+  vector<Value_type<For>> v {beg,end}; // initialize a vector from [beg:end)
+  sort(v.begin(),v.end());             // use the random access sort
+  copy(v.begin(),v.end(),beg);         // copy the elements back
+}
+    #+end_src
+
+    ~Value_type<For>~ is the type of ~For~'s elements, called it's *value type*
+
+    The real "type magic" is in the selection of helper functions:
+    #+begin_src c++
+template<typename C>
+void sort(C& c)
+{
+  using Iter = Iterator_type<C>;
+  sort_helper(c.begin(),c.end(),Iterator_category<Iter>{});
+}
+    #+end_src
+    Here, I use two type functions: ~Iterator_type<C>~ returns the iterator type of ~C~ (that is,
+    ~C::iterator~) and then ~Iterator_category<Iter>{}~ constructs a "tag" value indicating the kind of
+    iterator provided:
+    * ~std::random_access_iterator_tag~ if ~C~'s iterator supports random access
+    * ~std::forward_iterator_tag~ if ~C~'s iterator supports forward iteration
+
+    Given that, we can select between the two sorting algorithms at compile time. This technique,
+    called *tag dispatch*, is one of several used in the standard library and elsewhere to improve
+    flexibility and performance.
+
+    We could define ~Iterator_type~ like this:
+    #+begin_src c++
+template<typename C>
+using Iterator_type = typename C::iterator
+    #+end_src
+
+    However, to extend this idea to types without member types, such as pointers, the
+    standard-library support for tag dispatch comes in the form of a class template ~iterator_traits~
+    from ~<iterator>~. The specialization for pointers looks like this:
+    #+begin_src c++
+template<class T>
+struct iterator_traits<T∗> {
+  using difference_type = ptrdiff_t;
+  using value_type = T;
+  using pointer = T∗;
+  using reference = T&;
+  using iterator_category = random_access_iterator_tag;
+};
+    #+end_src
+
+    We can now write:
+    #+begin_src c++
+template<typename Iter>
+using Iterator_category = typename std::iterator_traits<Iter>::iterator_category;
+// Iter’s category
+    #+end_src
+
+    Now an ~int∗~ can be used as a random-access iterator despite not having a member type;
+    ~Iterator_category<int∗>~ is ~random_access_iterator_tag~.
+
+    Many traits and traits-based techniques will be made redundant by concepts (§7.2). Consider the
+    concepts version of the ~sort()~ example:
+    #+begin_src c++
+template<RandomAccessIterator Iter>
+void sort(Iter p, Iter q);  // use for std::vector and other types supporting random access
+// 
+template<ForwardIterator Iter>
+void sort(Iter p, Iter q)
+    // use for std::list and other types supporting just forward traversal
+{
+  vector<Value_type<Iter>> v {p,q};
+  sort(v);                  // use the random-access sort
+  copy(v.begin(),v.end(),p);
+}
+
+template<Range R> void sort(R& r)
+{ 
+  sort(r.begin(),r.end());  // use the appropriate sort
+}
+    #+end_src
+*** Type Predicates
+    In ~<type_traits>~, the standard library offers simple type functions, called *type predicates* that
+    answers a fundamental question about types. For example:
+    #+begin_src c++
+bool b1 = std::is_arithmetic<int>(); // yes, int is an arithmetic type
+bool b2 = std::is_arithmetic<string>(); // no, std::string is not an arithmetic type
+    #+end_src
+    Other examples are ~is_class~, ~is_pod~, ~is_literal_type~, ~has_virtual_destructor~, and ~is_base_of~.
+    For example:
+    #+begin_src c++
+template<typename Scalar>
+class complex {
+  Scalar re, im;
+ public:
+  static_assert(is_arithmetic<Scalar>(), "Sorry, I only support complex of arithmetic types");
+  // ...
+};
+    #+end_src
+
+    To improve readability, the standard library defines template aliases. For example:
+
+    #+begin_src c++
+template<typename T>
+constexpr bool is_arithmetic_v = std::is_arithmetic<T>();
+    #+end_src
+*** ~enable_if~
+    Obvious ways of using type predicates includes conditions for \texttt{static\_assert}s,
+    compile-time \texttt{if}s,
+    and \texttt{enable\_if}s. The standard-library ~enable_if~ is a widely used mechanism for conditonally
+    introducing definitions. Consider defining a "smart pointer":
+    #+begin_src c++
+template<typename T>
+class Smart_pointer {
+  // ...
+  T& operator∗();
+  T& operator−>(); // -> should work if and only if T is a class
+};
+    #+end_src
+    The ~−>~ should be defined if and only if ~T~ is a class type. For example, ~Smart_pointer<vector<T>>~
+    should have ~−>~, but ~Smart_pointer<int>~ should not.
+
+    We cannot use a compile-time ~if~ because we are not inside a function. Instead, we write
+    #+begin_src c++
+template<typename T>
+class Smart_pointer {
+  // ...
+  T& operator∗();
+  std::enable_if<is_class<T>(),T&> operator−>();
+  // -> is defined if and only if T is a class
+};
+    #+end_src
+
+    If ~is_class<T>()~ is true, the return type of ~operator−>()~ is ~T&~; otherwise, the definition of
+    ~operator−>()~ is ignored.
 * Concurrency
 ** Waiting for Events
     Consider the classical example of two ~thread~​s communicating by passing messages through a ~queue~.
