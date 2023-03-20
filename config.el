@@ -198,6 +198,7 @@ parent."
 (setq org-element-use-cache nil)
 (add-hook 'org-mode-hook '(lambda () (setq fill-column 100)))
 (add-hook 'org-mode-hook 'auto-fill-mode)
+(add-hook 'org-mode-hook 'iscroll-mode)
 ;;(add-hook 'org-mode-hook 'valign-mode)
 ;;(setq org-highlight-latex-and-related '(native script entities))
 ;;very bad perfomance
@@ -687,3 +688,34 @@ parent."
 ;;                objc-mode-local-vars-hook
 ;;                cmake-mode-local-vars-hook)
 ;;              :append #'lsp!)
+
+(use-package lsp-pyright
+  :ensure t
+  :hook (python-mode . (lambda ()
+                          (require 'lsp-pyright)
+                          (lsp))))  ; or lsp-deferred
+
+
+;; (require 'auto-save)
+;; (auto-save-enable)
+
+;; (setq auto-save-silent t)   ; quietly save
+;; (setq auto-save-delete-trailing-whitespace t)  ; automatically delete spaces at the end of the line when saving
+
+;; ;;; custom predicates if you don't want auto save.
+;; ;;; disable auto save mode when current filetype is an gpg file.
+;; (setq auto-save-disable-predicates
+;;       '((lambda ()
+;;       (string-suffix-p
+;;       "org"
+;;       (file-name-extension (buffer-name)) t))))
+
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
