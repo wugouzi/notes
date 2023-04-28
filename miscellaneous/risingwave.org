@@ -1,0 +1,232 @@
+#+title: RisingWave
+
+
+* Objective
+** Week 1 [2/3]
+    * [X] debezium：risingwave 类型到 mysql/pg/mongodb https://debezium.io/documentation/reference/2.2/
+    * [X] jdbc：risingwave 类型到 mysql/pg/tidb
+        https://dev.mysql.com/doc/refman/8.0/en/data-types.html
+        https://docs.pingcap.com/tidb/stable/data-type-overview
+        https://www.postgresql.org/docs/current/datatype.html
+    * [ ] sink，source 原理, 了解 source 内部数据流和控制流
+    * [ ] Confluent Cloud Kafka, Public net, AWS 14:00
+
+* Knowledge
+** Data types
+    #+begin_src rust
+pub struct StreamChunk {
+    // TODO: Optimize using bitmap
+    ops: Vec<Op>,
+    pub(super) data: DataChunk,
+}
+
+pub struct DataChunk {
+    columns: Vec<Column>,
+    vis2: Vis,
+}
+
+pub struct Column {
+    array: ArrayRef,
+}
+
+pub type ArrayRef = Arc<ArrayImpl>;
+
+/// for column `v1`, [`ArrayRef`] will contain: [1,1,1]
+/// | v1 | v2 |
+/// |----|----|
+/// | 1 |  a |
+/// | 1 |  b |
+/// | 1 |  c |
+    #+end_src
+
+    ~Timestamp~ is from ~chrono::NaiveDateTime~. ~{{date, time:{secs,frac}}}~
+
+    therefore the data in risingwave is stored in column form
+
+    ~Value~: valid JSON value
+** Sink
+    Three types of sink: ~KAFKA_SINK~, ~BLACKHOLE_SINK~, remote sink: ~jdbc~, ~file~, ~iceberg~
+    #+begin_src rust
+let sink_type = properties
+    .get(CONNECTOR_TYPE_KEY)
+    .ok_or_else(|| SinkError::Config(anyhow!("missing config: {}", CONNECTOR_TYPE_KEY)))?;
+match sink_type.to_lowercase().as_str() {
+    KAFKA_SINK => Ok(SinkConfig::Kafka(Box::new(KafkaConfig::from_hashmap(
+        properties,
+    )?))),
+    BLACKHOLE_SINK => Ok(SinkConfig::BlackHole),
+    _ => Ok(SinkConfig::Remote(RemoteConfig::from_hashmap(properties)?)),
+}
+    #+end_src
+** Source
+    #+begin_quote
+    Connector serves as an interface to upstream data pipeline, including the message queue and file
+    system. In the current design, it can only have a limited concurrency. One connector instance
+    only reads from one split from the upstream. For example, if upstream is a Kafka and it has
+    three partitions so, in RisingWave, there should be three connectors.
+    #+end_quote
+
+    All connectors need to implement the following trait and it exposes two methods to the upper
+    layer.
+    [[file:~/miscellaneous/risingwave/src/connector/src/source/base.rs::191][Source]]
+    #+begin_src rust
+pub trait SplitReader: Sized {
+    type Properties;
+
+    async fn new(
+        properties: Self::Properties,
+        state: Vec<SplitImpl>,
+        parser_config: ParserConfig,
+        source_ctx: SourceContextRef,
+        columns: Option<Vec<Column>>,
+    ) -> Result<Self>;
+
+    fn into_stream(self) -> BoxSourceWithStateStream;
+}
+    #+end_src
+    ~into_stream -> into_chunk_stream -> into_data_stream~
+
+    ~into_chunk_stream~ is implemented by [[file:~/miscellaneous/risingwave/src/connector/src/macros.rs::257][macro]].
+
+    ~BoxSourceWithStateStream~ is a wrapper of ~StreamChunk~ and split info.
+
+    #+begin_quote
+    Enumerator periodically requests upstream to discover changes in splits, and in most cases the
+    number of splits only increases. The enumerator is a separate task that runs on the meta. If the
+    upstream split changes, the enumerator notifies the connector by means of config change to
+    change the subscription relationship.
+    #+end_quote
+    [[file:~/miscellaneous/risingwave/src/connector/src/source/base.rs::75][Source]]
+    #+begin_src rust
+/// [`SplitEnumerator`] fetches the split metadata from the external source service.
+/// NOTE: It runs in the meta server, so probably it should be moved to the `meta` crate.
+pub trait SplitEnumerator: Sized {
+    type Split: SplitMetaData + Send + Sync;
+    type Properties;
+
+    async fn new(properties: Self::Properties) -> Result<Self>;
+    async fn list_splits(&mut self) -> Result<Vec<Self::Split>>;
+}
+    #+end_src
+
+    [[file:~/miscellaneous/risingwave/src/source/src/connector_source.rs::32][Source]]
+    #+begin_quote
+    ConnectorSource unites all connectors via SourceReader trait. Also, a parser is held here, which
+    parses raw data to stream chunks according to column description. A ConnectorSource can handle
+    multiple splits by spawning a new thread for each split. If the source is assigned no split, it
+    will start a dummy reader whose next method never returns as a placeholder.
+    #+end_quote
+*** Difference from the documentation
+    1. ~SplitReader~ doesn't use ~next~ now but use ~into_stream~.
+*** Kafka example
+    ~rdkafka~ -> message -> ~kafkaSplitReader~
+    #+begin_src rust
+pub struct KafkaSplitReader {
+    consumer: StreamConsumer<PrivateLinkConsumerContext>,
+    start_offset: Option<i64>,
+    stop_offset: Option<i64>,
+    bytes_per_second: usize,
+    max_num_messages: usize,
+    enable_upsert: bool,
+
+    split_id: SplitId,
+    parser_config: ParserConfig,
+    source_ctx: SourceContextRef,
+}
+    #+end_src
+** Datatype mapping
+    #+begin_src rust
+pub struct Field {
+    pub data_type: DataType,
+    pub name: String,
+    /// For STRUCT type.
+    pub sub_fields: Vec<Field>,
+    /// The user-defined type's name, when the type is created from a protobuf schema file,
+    /// this field will store the message name.
+    pub type_name: String,
+}
+    #+end_src
+    1. ~jdbc~ is part of remote sink, it only supports ~Int16, Int32, Int64, Float32, Float64,
+       Boolean, Decimal, Timestamp and Varchar~.
+       1. for ~Json~, each row is converted to a map ~Field name -> Json of value~, and then the map is
+          serialized and pushed to ~row_ops~, therefore there is no type info?
+       2. for ~streamchunk~, the message is simply serialized and encoded, there is no type cast
+    2. for ~KAFKA_SINK~, we can set it to have type ~debezium~, which will output change data capture
+       (CDC) log in Debezium format.
+       1. schema is converted by ~schema_to_json~
+       2. record is converted by ~record_to_json~
+       3. the question is: how is schema and record aligned
+
+
+    summary:
+    1. risingwave有三种sink，kafka,blackhole和remote，debezium属于kafka sink，jdbc属于remote sink。
+    2. 对于jdbc，它支持有限的risingwave类型，调用record_to_json将转换成 Field string到值的映射，然后序列化到json
+    3. 对于debezium，它不但用record_to_json转换值，同时使用
+       schema_to_json转换schema
+
+
+    Current goal:
+    1. format of debezium
+    2. who uses the sinked data
+
+    我有三个问题：
+    1. 对于debezium，因为我们是将数据转换成debezium的格式输出到kafka，因此数据格式应该跟debezium文档
+       一致；对于jdbc，我们需要将数据转换成mysql/pg/tidb支持的格式，因此需要跟它们各自的文档一致。请
+       问我的理解正确吗？
+    2. 对于debezium，在fields_to_json里，Timestamptz的目标类型是string，但是在datum_to_json_object中，Timestamptz保
+       持了int64的值，这符合预期吗？
+    3. 目前sink到jdbc是不是不支持date,time，是不是以后会支持？
+
+
+
+    1. 目前在datum_to_json_object中，
+       #+begin_src rust
+(DataType::Time, ScalarRefImpl::Time(v)) => {
+    // todo: just ignore the nanos part to avoid leap second complex
+    json!(v.0.num_seconds_from_midnight() as i64 * 1000)
+}
+(DataType::Date, ScalarRefImpl::Date(v)) => {
+    json!(v.0.num_days_from_ce())
+}
+(DataType::Timestamp, ScalarRefImpl::Timestamp(v)) => {
+    json!(v.0.timestamp_millis())
+}
+(DataType::Bytea, ScalarRefImpl::Bytea(v)) => {
+    json!(hex::encode(v))
+}
+// P<years>Y<months>M<days>DT<hours>H<minutes>M<seconds>S
+(DataType::Interval, ScalarRefImpl::Interval(v)) => {
+    json!(v.as_iso_8601())
+       #+end_src
+       参考的是debezium，并不适合jdbc?
+       1. date, 根据文档应该是从unix epoch开始算，目前是从ce开始算
+
+
+    create different object
+    #+begin_src rust
+let list_value = datum_to_json_object(
+    &Field {
+        data_type: DataType::List { datatype: Box::new(DataType::Int32) },
+        ..mock_field.clone()
+    },
+    Some(
+        ScalarImpl::List(ListValue::new(vec![
+            Some(4i32.to_scalar_value()),
+            Some(5i32.to_scalar_value()),
+        ])).as_scalar_ref_impl()
+    )).unwrap();
+println!("List: {}", list_value);
+
+let decimal_value = datum_to_json_object(
+    &Field {
+        data_type: DataType::Decimal,
+        ..mock_field.clone()
+    },
+    Some(
+        ScalarImpl::Decimal(Decimal::Normalized("123.4".parse().unwrap()))
+            .as_scalar_ref_impl(),
+    ),
+).unwrap();
+println!("Decimal: {}", decimal_value);
+
+    #+end_src

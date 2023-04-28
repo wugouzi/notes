@@ -1,0 +1,153 @@
+#+title: Distributive Systems
+#+AUTHOR: Martin Kleppmann
+#+EXPORT_FILE_NAME: ../latex/DistributiveSystems/DistributiveSystems.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+* Introduction
+    This type of interaction, where code on one node appears to call a function on another node, is
+    called a *Remote Procedure Call*.
+
+    What if..
+    * the service crashes during the function call?
+    * a message is lost?
+    * a message is delayed?
+    * something goes wrong, is it safe to retry?
+
+    Today, the most common form of RPC is implemented using JSON data sent over HTTP. A popular set
+    of design principles for such HTTP-based APIs is known as *representational state transfer* or
+    *REST* , and APIs that adhere to these principles are called *RESTful*. These
+    principles include:
+    * communication is stateless (each request is self-contained and independent from other requests)
+    * resources (objects that can be inspected and manipulated) are represented by URLs
+    * the state of a resource is updated by making a HTTP request with a standard method type, such
+      as ~POST~ or ~PUT~, to the appropriate URL.
+* Models of distributed systems
+** The two generals problem
+    In the two generals problem, we imagine two generals, each leading an army, who
+    want to capture a city. The city’s defences are strong, and if only one of the two armies
+    attacks, the army will be defeated. However, if both armies attack at the same time, they will
+    successfully capture the city.
+
+    Thus, the two generals need to coordinate their attack plan. This is made difficult by the fact
+    that the two armies are camped some distance apart, and they can only communicate by messenger.
+    The messengers must pass through territory controlled by the city, and so they are sometimes
+    captured. Thus, a message sent by one general may or may not be received by the other general,
+    and the sender does not know whether their message got through, except by receiving an explicit
+    reply from the other party. If a general does not receive any messages, it is impossible to tell
+    whether this is because the other general didn’t send any messages, or because all messengers
+    were captured.1
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/DistributiveSystems/1.png]]
+
+    How should the generals decide?
+    1. General 1 always attacks, even if no response is received?
+       * send lots of messengers to increase probability that one will get through
+       * if all are captured, general 2 does not know about the the attack, so general 1 loses
+    2. General 1 only attacks if positive response from general 2 is received?
+       * Now general 1 is safe
+       * But general 2 knows that general 1 will only attack if general 2's response gets through
+       * now general 2 is in the same situation as general 1 in option 1
+    *No common knowledge*: the only way of knowing something is to communicate it
+
+    The problem is that no matter how many messages are exchanged, neither general can ever be
+    certain that the other army will also turn up at the same time. A repeated sequence of
+    back-and-forth acknowledgements can build up gradually increasing confidence that the generals
+    are in agreement, but it can be proved that they cannot reach certainty by exchanging any finite
+    number of messages.
+** The Byzantine generals problem
+    We have armies wanting to capture a city, though in this case there can be three or more. Again
+    generals communicate by messengers, although this time we assume that if a message is sent, it
+    is always delivered correctly.
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/DistributiveSystems/2.png]]
+
+    The challenge in the Byzantine setting is that some generals might be “traitors”: that is, they
+    might try to deliberately and maliciously mislead and confuse the other generals. We call the
+    traitors *malicious*, and the others *honest*.
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/DistributiveSystems/3.png]]
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Need \(3f+1\) generals in total to tolerate \(f\) malicious generals
+    #+END_theorem
+
+    #+ATTR_LATEX: :width .6\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/DistributiveSystems/4.png]]
+
+    In distributed systems, some systems explicitly deal with the possibility that some nodes may be
+    controlled by a malicious actor, and such systems are called *Byzantine fault tolerant*.
+** Describing nodes and network behaviour
+    * Two generals problem: a model of networks
+    * Byzantine generals problem: a model of node behaviour
+
+    Capture assumptions in a *system model* consisting of
+    * network behaviour
+    * node behaviour
+    * timing behaviour
+
+    *Network behaviour*: Assume bidirectional *point-to-point* communication between two nodes with one
+    of:
+    * *Reliable* (perfect) links:
+      * A message is received iff it is sent.
+      * Message may be reordered.
+    * *Fair-loss* links:
+      * Messages may be lost, duplicated, or reordered
+      * If you keep retrying, a message eventually gets through
+    * *Arbitrary* links:
+      * A malicious adversary may interfere with messages
+
+    \begin{center}\begin{tikzcd}
+    \text{Arbitrary}\ar[r,"\text{TLS}"]&\text{Fair-loss}\ar[r,"\text{retry+dedup}"]&\text{Reliable}
+    \end{tikzcd}\end{center}
+
+    *Node behaviour*: Each node executes a specified algorithm, assuming one of the following:
+    * *Crash-stop*:
+      * A node is faulty if it crashes
+      * After crashing, it stops executing forever
+    * *Crash-recovery*
+      * A node may crash at any moment, losing its in-memory state. It may resume executing sometime
+        later.
+      * Data stored on disk survives the crash.
+    * *Byzantine*
+      * A node is faulty if it deviates from the algorithm.
+      * Faulty nodes may do anything, including crashing or malicious behaviour
+    A node that is not faulty is called *correct*
+
+    *Synchrony (timing) assumptions*: Assume one of the following for network and nodes:
+    * *Synchronous*:
+      * Message latency no greater than a known upper bound
+      * Nodes execute algorithm at a known speed
+    * *Partially synchronous*:
+      * The system is asynchronous for some finite (but unknown) periods of time, synchronous otherwise
+    * *Asynchronous*:
+      * Messages can be delayed arbitrarily
+      * Nodes can pause execution arbitrarily
+      * No timing guarantees at all
+
+    Violations of synchrony in practice:
+    * Networks usually have quite predictable latency, which can occasionally increase
+      * Message loss requiring retry
+      * Congestion/contention causing queueing
+      * Network/route reconfiguration
+    * Nodes usually execute code at a predictable speed, with occasional pauses:
+      * Operating system scheduling issues, e.g., priority inversion
+      * Stop-the-world garbage collection pauses
+      * Page faults, swap, thrashing
+    Real-time operating systems (RTOS) provide scheduling guarantees, but most distributed systems
+    do not use RTOS
+** Fault tolerance and high availability
+    *Service-level Objective* (SLO): e.g., "99.9% of requests in a day get a response in 200ms"
+
+    *Service-level Agreement* (SLA): contract specifying some SLO, penalties for violation
