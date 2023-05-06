@@ -1,16 +1,42 @@
 #+title: RisingWave
 
 
-* Objective
-** Week 1 [2/3]
+* Goal
+** Week 1 [4/4]
     * [X] debezium：risingwave 类型到 mysql/pg/mongodb https://debezium.io/documentation/reference/2.2/
     * [X] jdbc：risingwave 类型到 mysql/pg/tidb
         https://dev.mysql.com/doc/refman/8.0/en/data-types.html
         https://docs.pingcap.com/tidb/stable/data-type-overview
         https://www.postgresql.org/docs/current/datatype.html
-    * [ ] sink，source 原理, 了解 source 内部数据流和控制流
-    * [ ] Confluent Cloud Kafka, Public net, AWS 14:00
+    * [X] sink，source 原理, 了解 source 内部数据流和控制流
+    * [X] Confluent Cloud Kafka, Public net, AWS 14:00
+** Week2 [0/2]
+    * [ ] fix type problem
+    * [ ] setup debezium -> kafka -> pg/mysql pipeline
+      * [ ] setup debezium
+      * [ ] setup kafka
 
+
+*** Fix data mapping
+    请问：
+    1. 类型问题主要是目标类型的缺失和debezium跟jdbc类型的不一致，
+    1. 我需要把mysql/pg/tidb没有的类型和debezium跟jdbc不一致的类型都放在一个issue里吗？
+    2.
+
+
+    3. 从哪里入手？
+    4. mysql/pg/tidb没有的类型如何处理？
+    5. debezium跟jdbc的不一致如何处理？
+
+
+    related function：
+    [[file:~/miscellaneous/risingwave/src/connector/src/sink/mod.rs::273][datum_to_json_object]],
+    [[file:~/miscellaneous/risingwave/src/connector/src/sink/kafka.rs::441][fields_to_json]]
+
+    我目前的思路是对
+    请问怎么修改record_to_json比较好？
+
+    enum把数据包起来
 * Knowledge
 ** Data types
     #+begin_src rust
@@ -59,6 +85,206 @@ match sink_type.to_lowercase().as_str() {
 }
     #+end_src
 ** Source
+*** Summary
+    1. When a source is defined, meta service will register its schema and broadcast to compute
+       nodes. Compute node extracts properties from the frontend and builds corresponding components
+       and stores them as ~SourceDesc~ in ~source_manager~ identified by table_id. Note that at this
+       stage, the source instance is only built but not running.
+    2. No ~SourceExecutor~ will be built until a subsequent materialized view is created.
+       ~SourceExecutor~ fetches specific source instance from ~source_manager~ identified by table_id and
+       holds a copy of it, and initializes the corresponding state store at this stage.
+    3. When receiving a barrier, ~SourceExecutor~ will check whether it contains an ~SourceChangeSplit~
+       mutation. If the partition assignment in the ~SourceChangeSplit~ mutation is different from the
+       current situation, the SourceExecutor needs to rebuild the ConnectorSource and other
+       underlying services based on the information in the mutation, then starts reading from the
+       new split and offset.
+    4. Whenever receiving a barrier, the state handler always takes a snapshot of the
+       ConnectorSource then labels the snapshot with an epoch number. When an error occurs,
+       SourceExecutor takes a specific state and applies it.
+*** Source Manager
+    [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::48][Source]]
+    #+begin_src rust
+pub struct SourceManager<S: MetaStore> {
+    pub(crate) paused: Mutex<()>,
+    barrier_scheduler: BarrierScheduler<S>,
+    core: Mutex<SourceManagerCore<S>>,
+    connector_rpc_endpoint: Option<String>,
+    metrics: Arc<MetaMetrics>,
+}
+
+pub struct SourceManagerCore<S: MetaStore> {
+    fragment_manager: FragmentManagerRef<S>,
+
+    /// Managed source loops
+    managed_sources: HashMap<SourceId, ConnectorSourceWorkerHandle>,
+    /// Fragments associated with each source
+    source_fragments: HashMap<SourceId, BTreeSet<FragmentId>>,
+    /// Revert index for source_fragments
+    fragment_sources: HashMap<FragmentId, SourceId>,
+
+    /// Splits assigned per actor
+    actor_splits: HashMap<ActorId, Vec<SplitImpl>>,
+}
+
+impl<S> SourceManagerCore<S>
+where
+    S: MetaStore,
+{
+    async fn diff(&self) -> MetaResult<SplitAssignment> {}
+
+}
+    #+end_src
+*** Source Executor
+    [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::379][LocalStreamManagerCore]]'s
+    [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::470][create_nodes_inner]] creates [[file:~/miscellaneous/risingwave/src/stream/src/executor/mod.rs::150][BoxedExecutor]].
+    #+begin_src rust
+/// `LocalStreamManager` manages all stream executors in this project.
+pub struct LocalStreamManager {
+    core: Mutex<LocalStreamManagerCore>,
+
+    // Maintain a copy of the core to reduce async locks
+    state_store: StateStoreImpl,
+    context: Arc<SharedContext>,
+    streaming_metrics: Arc<StreamingMetrics>,
+
+    total_mem_val: Arc<TrAdder<i64>>,
+}
+    #+end_src
+
+    [[file:~/miscellaneous/risingwave/src/stream/src/from_proto/mod.rs::122][create_executor]] create executor based on type.
+
+    ~SourceExecutorBuilder~ builds ~BoxedExecutor~ based on if it's s3.
+
+    [[file:~/miscellaneous/risingwave/src/stream/src/executor/source/source_executor.rs::38][Source]]
+    #+begin_src rust
+pub struct SourceExecutor<S: StateStore> {
+    ctx: ActorContextRef,
+
+    identity: String,
+
+    schema: Schema,
+
+    pk_indices: PkIndices,
+
+    /// Streaming source  for external
+    stream_source_core: Option<StreamSourceCore<S>>,
+
+    /// Metrics for monitor.
+    metrics: Arc<StreamingMetrics>,
+
+    /// Receiver of barrier channel.
+    barrier_receiver: Option<UnboundedReceiver<Barrier>>,
+
+    /// Expected barrier latency.
+    expected_barrier_latency_ms: u64,
+}
+
+impl<S: StateStore> Executor for SourceExecutor<S> {
+    fn execute(self: Box<Self>) -> BoxedMessageStream {
+        if self.stream_source_core.is_some() {
+            self.execute_with_stream_source().boxed()
+        } else {
+            self.execute_without_stream_source().boxed()
+        }
+    }
+}
+
+impl<S: StateStore> SourceExecutor<S> {
+    async fn build_stream_source_reader(
+        &self,
+        source_desc: &SourceDesc,
+        state: ConnectorState,
+    ) -> StreamExecutorResult<BoxSourceWithStateStream> {
+        source_desc.source.steam_reader -> SplitReaderImpl::create()
+    }
+
+    /// A source executor with a stream source receives:
+    /// 1. Barrier messages
+    /// 2. Data from external source
+    /// and acts accordingly.
+    #[try_stream(ok = Message, error = StreamExecutorError)]
+    async fn execute_with_stream_source(mut self) {
+        //...
+        let source_chunk_reader = self
+            .build_stream_source_reader(&source_desc, recover_state)
+            .instrument_await("source_build_reader")
+            .await?;
+        let barrier_stream = barrier_to_message_stream(barrier_receiver).boxed();
+        let mut stream = StreamReaderWithPause::<true>::new(barrier_stream, source_chunk_reader);
+        //...
+        while let Some(msg) = stream.next().await {
+            match msg? {
+                // This branch will be preferred.
+                Either::Left(msg) => match &msg {
+                    Message::Barrier(barrier) => {
+                    }
+                    _ => {
+                        // For the source executor, the message we receive from this arm should
+                        // always be barrier message.
+                        unreachable!();
+                    }
+                },
+                Either::Right(StreamChunkWithState {
+                    chunk,
+                    split_offset_mapping,
+                }) => {
+                }
+            }
+        }
+    }
+}
+    #+end_src
+*** ConnectorSource
+
+    [[file:~/miscellaneous/risingwave/src/source/src/connector_source.rs::32][Source]]
+    #+begin_src rust
+pub struct SourceDesc {
+    pub source: ConnectorSource,
+    pub format: SourceFormat,
+    pub columns: Vec<SourceColumnDesc>,
+    pub metrics: Arc<SourceMetrics>,
+}
+
+impl ConnectorSource {
+    // generate the stream based on the desc
+    pub async fn stream_reader(
+        &self,
+        splits: ConnectorState,
+        column_ids: Vec<ColumnId>,
+        source_ctx: Arc<SourceContext>,
+    ) -> Result<BoxSourceWithStateStream> {
+        // params..
+        let readers = try_join_all(to_reader_splits.into_iter().map(|state| {
+            // params..
+            async move {
+            // params..
+                SplitReaderImpl::create(props, state, parser_config, source_ctx, data_gen_columns)
+                    .await
+            }
+        }
+        Ok(select_all(readers.into_iter().map(|r| r.into_stream())).boxed())
+    }
+}
+    #+end_src
+    #+begin_quote
+    ConnectorSource unites all connectors via SourceReader trait. Also, a parser is held here, which
+    parses raw data to stream chunks according to column description. A ConnectorSource can handle
+    multiple splits by spawning a new thread for each split. If the source is assigned no split, it
+    will start a dummy reader whose next method never returns as a placeholder.
+    #+end_quote
+
+    ~stream_reader~ builds split readers based on ~ConnectorState~.
+    #+begin_src rust
+/// [`ConnectorState`] maintains the consuming splits' info. In specific split readers,
+/// `ConnectorState` cannot be [`None`] and contains one(for mq split readers) or many(for fs
+/// split readers) [`SplitImpl`]. If no split is assigned to source executor, `ConnectorState` is
+/// [`None`] and [`DummySplitReader`] is up instead of other split readers.
+pub type ConnectorState = Option<Vec<SplitImpl>>;
+    #+end_src
+    ~SplitImpl~ contains the info for specific split.
+
+    raw_data -> [parser  -> stream chunks ->
+*** Connectors
     #+begin_quote
     Connector serves as an interface to upstream data pipeline, including the message queue and file
     system. In the current design, it can only have a limited concurrency. One connector instance
@@ -109,15 +335,9 @@ pub trait SplitEnumerator: Sized {
 }
     #+end_src
 
-    [[file:~/miscellaneous/risingwave/src/source/src/connector_source.rs::32][Source]]
-    #+begin_quote
-    ConnectorSource unites all connectors via SourceReader trait. Also, a parser is held here, which
-    parses raw data to stream chunks according to column description. A ConnectorSource can handle
-    multiple splits by spawning a new thread for each split. If the source is assigned no split, it
-    will start a dummy reader whose next method never returns as a placeholder.
-    #+end_quote
 *** Difference from the documentation
     1. ~SplitReader~ doesn't use ~next~ now but use ~into_stream~.
+    2. ~assign_split~ is now ~Mutation::SourceChangeSpit~
 *** Kafka example
     ~rdkafka~ -> message -> ~kafkaSplitReader~
     #+begin_src rust
@@ -135,6 +355,8 @@ pub struct KafkaSplitReader {
 }
     #+end_src
 ** Datatype mapping
+
+
     #+begin_src rust
 pub struct Field {
     pub data_type: DataType,
@@ -229,4 +451,54 @@ let decimal_value = datum_to_json_object(
 ).unwrap();
 println!("Decimal: {}", decimal_value);
 
+    #+end_src
+
+* Miscellaneous
+** Confluent
+    #+begin_src json
+# Required connection configs for Kafka producer, consumer, and admin
+bootstrap.servers=pkc-ymrq7.us-east-2.aws.confluent.cloud:9092
+security.protocol=SASL_SSL
+sasl.mechanisms=PLAIN
+sasl.username=7O7BEZWKLJZMBEXX
+sasl.password=/4zj0y5zKmEqbapzC5YaXu5aSBvtLbfrV+wETS4Vk7pCuniE7xzKjqHnBQrTuzST
+
+# Best practice for higher availability in librdkafka clients prior to 1.7
+session.timeout.ms=45000
+    #+end_src
+
+    #+begin_src sql
+CREATE TABLE s (
+    ordertime timestamp,
+    orderid int,
+    itemid varchar,
+    orderunits double,
+    address STRUCT < city varchar,
+    state varchar,
+    zipcode int >
+) WITH (
+    connector = 'kafka',
+    topic = 'topic1',
+    properties.bootstrap.server = 'pkc-ymrq7.us-east-2.aws.confluent.cloud:9092',
+    scan.startup.mode = 'earliest',
+    properties.sasl.mechanism = 'PLAIN',
+    properties.security.protocol = 'SASL_SSL',
+    properties.sasl.username = '7O7BEZWKLJZMBEXX',
+    properties.sasl.password = '/4zj0y5zKmEqbapzC5YaXu5aSBvtLbfrV+wETS4Vk7pCuniE7xzKjqHnBQrTuzST'
+) ROW FORMAT JSON;
+
+
+create source s with (
+  connector = 'kafka',
+    topic = 'topic1',
+    properties.bootstrap.server = 'pkc-ymrq7.us-east-2.aws.confluent.cloud:9092',
+    scan.startup.mode = 'earliest',
+    properties.sasl.mechanism = 'PLAIN',
+    properties.security.protocol = 'SASL_SSL',
+    properties.sasl.username = '7O7BEZWKLJZMBEXX',
+    properties.sasl.password = '/4zj0y5zKmEqbapzC5YaXu5aSBvtLbfrV+wETS4Vk7pCuniE7xzKjqHnBQrTuzST'
+) row format json;
+
+SELECT * FROM s
+WHERE _rw_kafka_timestamp > now() - interval '10 s';
     #+end_src
