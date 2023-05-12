@@ -10,12 +10,22 @@
         https://www.postgresql.org/docs/current/datatype.html
     * [X] sink，source 原理, 了解 source 内部数据流和控制流
     * [X] Confluent Cloud Kafka, Public net, AWS 14:00
-** Week2 [0/2]
+** Week2 [1/4]
     * [ ] fix type problem
     * [ ] setup debezium -> kafka -> pg/mysql pipeline
       * [ ] setup debezium
       * [ ] setup kafka
-
+    * [X] Fix pipeline for sinking
+        https://github.com/debezium/debezium-examples/tree/main/unwrap-smt
+** Week3 [1/7]
+    * [ ] source mutation
+    * [ ] source mutation
+    * [ ] offset 如何记录 enumerator, 上游split变化如何发现，executor如何动
+    * [ ] pipeline 需要docker compose
+      risingwave -> kafka -> postgresql pipeline
+    * [X] integration test
+    * [ ] set up corresponding pipeline for risingwave
+    * [ ] jdbc可以直接改
 
 *** Fix data mapping
     请问：
@@ -101,6 +111,103 @@ match sink_type.to_lowercase().as_str() {
     4. Whenever receiving a barrier, the state handler always takes a snapshot of the
        ConnectorSource then labels the snapshot with an epoch number. When an error occurs,
        SourceExecutor takes a specific state and applies it.
+
+
+    1. Sources are controlled by ~SourceManager~.
+    2. When you ~register_source~, you only create corresponding ~ConnectorSourceWorkerHandle~,  which
+       contains split info, thread handler and meta info
+    3. ~SourceExecutor~ is created when ~build_actors~, which is called while creating materialized view.
+    4. ~SourceExecutor~'s ~stream~ data contains ~source_chunk_reader~ and ~barrier_stream~. Barrier for
+       sync and ~source_chunk_reader~ is the actual data stream.
+    5. ~source_chunk_reader~ comes from ~SourceDesc.ConnectorSource~'s ~stream_reader~, and
+       ConnectorSource unites all connectors via SourceReader trait. Also, a parser is held here,
+       which parses raw data to stream chunks according to column description. A ConnectorSource can
+       handle multiple splits by spawning a new thread for each split. If the source is assigned no
+       split, it will start a dummy reader whose next method never returns as a placeholder.
+    6. ~SplitReader~ reads the actual data via ~into_stream~
+    7. ~ConnectorSourceWorker~ have ~SplitEnumeratorImpl~. Enumerator periodically requests upstream to
+       discover changes in splits, and in most cases the number of splits only increases. Managed by ~SourceManager~.
+
+
+    1. source mutation
+    2. source change
+    3. mutation
+    4. offset 如何记录 enumerator, 上游split变化如何发现，executor如何动
+    5. pipeline 需要docker compose
+    6. Integration test
+    7. jdbc可以直接改
+
+
+    Problems
+    1. what does ~dispatcher~ do
+    2. difference between meta's ~stream manager~  and stream's ~stream_manager~
+       1. meta's stream manager is the client, stream's stream manager is the server
+    3. How do we use ConnectorSourceWorker
+    4. what is table fragment
+
+*** Overview of overview
+**** System start
+    1. risingwave start
+    2. compute node [[file:~/miscellaneous/risingwave/src/cmd_all/src/bin/risingwave.rs::56]["start"]]
+    3. compute node begin to [[file:~/miscellaneous/risingwave/src/compute/src/lib.rs::199][serve]]
+    4. [[file:~/miscellaneous/risingwave/src/compute/src/server.rs::81][compute_node_serve]]
+       1. add
+          [[file:~/miscellaneous/risingwave/src/compute/src/server.rs::370][StreamServiceServer]]
+       2. rpc server start
+**** Create source
+    1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::125][run_command]]
+       1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::191][create_source]]
+          1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::191][start_create_source_procesdure]]
+          2. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::196][register_source]]
+             1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::618][create_source_worker]]
+                ConnectorSourceWorker begins to work in meta
+          3. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::204][finish_create_source_procesdure]]
+
+**** Create materialized view
+    1. front  end use
+       [[file:~/miscellaneous/risingwave/src/frontend/src/handler/create_mv.rs::142][handle_create_mv]] -> which send ~CreateMaterializedViewRequest~  rpc, generate graph info
+    2. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/service/ddl_service.rs::254][DdlServiceImpl::create_materialized_view]], request has the graph info
+    3. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::138][run_command]], ~MaterializedView~ is one of ~StreamingJob~
+    4. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::246][DdlController::create_streaming_job]]
+       1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::330][prepare_stream_job]]: make stream fragment graph
+       2. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::353][build_stream_job]]
+          1. Resolve the upstream fragments, extend the fragment graph to a complete graph that
+             contains all information needed for building the actor graph.
+          2. Build the actor graph.
+          3. Build the table fragments structure that will be persisted in the stream manager, and
+             the context that contains all information needed for building the actors on the compute
+             nodes.
+          4. Mark creating tables, including internal tables and the table of the stream job.
+       3. [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::207][GlobalStreamManager::create_streaming_job]]
+          1. Broadcast the actor info based on the scheduling result in the context, build the
+             hanging channels in upstream worker nodes.
+          2. (optional) Get the split information of the `StreamSource` via source manager and patch
+             actors.
+          3. Notify related worker nodes to update and build the actors.
+             [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::387][create_streaming_job_impl]]
+             1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::320][build_actors]]
+                1. Actors on each stream node will need to know where their upstream lies.
+                   `actor_info` includes such information. It contains: actors in the current
+                   create-streaming-job request; all upstream actors.
+                2. We send RPC request in two stages:
+
+                   The first stage does 2 things: broadcast actor
+                   info, and send local actor ids to different WorkerNodes. Such that each
+                   WorkerNode knows the overall actor allocation, but not actually builds it. We
+                   initialize all channels in this stage.
+                   [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::361][update_actors]]: register the actor info(e.g. type)
+
+                   In the second stage, each [`WorkerNode`] builds local actors and connect them
+                   with channels. Done by [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::377][build_actors]]
+             2. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/schedule.rs::229][BarrierScheduler::run_command]]
+          4. Store related meta data.
+    5. [[file:~/miscellaneous/risingwave/src/meta/src/manager/catalog/mod.rs::489][CatalogManager::create_view]]
+
+       Now stream service in compute node receives the rpc ~BuildActorsRequest~,
+       1. [[file:~/miscellaneous/risingwave/src/compute/src/rpc/service/stream_service.rs::62][StreamServiceImpl::build_actors]]
+       2. [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::600][LocalStreamManagerCore::build_actors]]
+          1. [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::470][create_nodes_inner]]
+**** Upstream changes
 *** Source Manager
     [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::48][Source]]
     #+begin_src rust
@@ -135,6 +242,80 @@ where
 }
     #+end_src
 *** Source Executor
+    ~stream_manager~
+    [[file:~/miscellaneous/risingwave/src/stream/src/from_proto/mod.rs::120][create_executor]]
+    How do we build source executor? Implement ~ExcutorBuilder~ trait for ~SourceExecutorBuilder~
+    1. Four [[file:~/miscellaneous/risingwave/src/stream/src/from_proto/source.rs::35][ingredients]]:
+       1. ~ExecutorParams~
+          #+begin_src rust
+pub struct ExecutorParams {
+    pub env: StreamEnvironment,
+    /// Indices of primary keys
+    pub pk_indices: PkIndices,
+    /// Executor id, unique across all actors.
+    pub executor_id: u64,
+    /// Operator id, unique for each operator in fragment.
+    pub operator_id: u64,
+    /// Information of the operator from plan node.
+    pub op_info: String,
+    /// The output schema of the executor.
+    pub schema: Schema,
+    /// The input executor.
+    pub input: Vec<BoxedExecutor>,
+    /// FragmentId of the actor
+    pub fragment_id: FragmentId,
+    /// Metrics
+    pub executor_stats: Arc<StreamingMetrics>,
+    /// Actor context
+    pub actor_context: ActorContextRef,
+    /// Vnodes owned by this executor. Represented in bitmap.
+    pub vnode_bitmap: Option<Bitmap>,
+}
+          #+end_src
+       2. ~SourceNode~
+       3. ~impl StateStore~
+       4. ~&mut LocalStreamManagerCore~
+          #+begin_src rust
+pub struct LocalStreamManagerCore {
+    /// Runtime for the streaming actors.
+    runtime: BackgroundShutdownRuntime,
+    /// Each processor runs in a future. Upon receiving a `Terminate` message, they will exit.
+    /// `handles` store join handles of these futures, and therefore we could wait their
+    /// termination.
+    handles: HashMap<ActorId, ActorHandle>,
+    pub(crate) context: Arc<SharedContext>,
+    /// Stores all actor information, taken after actor built.
+    actors: HashMap<ActorId, stream_plan::StreamActor>,
+    /// Stores all actor tokio runtime monitoring tasks.
+    actor_monitor_tasks: HashMap<ActorId, ActorHandle>,
+    /// The state store implement
+    state_store: StateStoreImpl,
+    /// Metrics of the stream manager
+    pub(crate) streaming_metrics: Arc<StreamingMetrics>,
+    /// Config of streaming engine
+    pub(crate) config: StreamingConfig,
+    /// Manages the await-trees of all actors.
+    await_tree_reg: Option<await_tree::Registry<ActorId>>,
+    /// Watermark epoch number.
+    watermark_epoch: AtomicU64Ref,
+    total_mem_val: Arc<TrAdder<i64>>,
+}
+          #+end_src
+    2. Build ~StreamSourceCore~:
+       1. ~source_id~
+       2. ~source_name~
+       3. ~column_ids~
+       4. ~source_desc_builder~
+       5. ~state_table_handler~
+    3. Then we build executor based on whether we are sourcing from fs:
+       1. ~FsSourceExecutor~
+       2. ~SourceExecutor~
+    Now we build ~SourceExecutor~ by ~SourceExecutor::new~
+    1.
+
+
+
+
     [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::379][LocalStreamManagerCore]]'s
     [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::470][create_nodes_inner]] creates [[file:~/miscellaneous/risingwave/src/stream/src/executor/mod.rs::150][BoxedExecutor]].
     #+begin_src rust
@@ -148,6 +329,23 @@ pub struct LocalStreamManager {
     streaming_metrics: Arc<StreamingMetrics>,
 
     total_mem_val: Arc<TrAdder<i64>>,
+}
+
+impl LocalStreamManagerCore {
+    async fn create_nodes_inner(
+        &mut self,
+        fragment_id: FragmentId,
+        node: &stream_plan::StreamNode,
+        input_pos: usize,
+        env: StreamEnvironment,
+        store: impl StateStore,
+        actor_context: &ActorContextRef,
+        vnode_bitmap: Option<Bitmap>,
+        has_stateful: bool,
+        subtasks: &mut Vec<SubtaskHandle>,
+    ) -> StreamResult<BoxedExecutor> {
+        let executor = create_executor(executor_params, self, node, store).await?;
+    }
 }
     #+end_src
 
@@ -338,6 +536,7 @@ pub trait SplitEnumerator: Sized {
 *** Difference from the documentation
     1. ~SplitReader~ doesn't use ~next~ now but use ~into_stream~.
     2. ~assign_split~ is now ~Mutation::SourceChangeSpit~
+    3. ~SourceManager~ no longer manages ~SourceDesc~, which is created when executing ~SourceExecutor~
 *** Kafka example
     ~rdkafka~ -> message -> ~kafkaSplitReader~
     #+begin_src rust
