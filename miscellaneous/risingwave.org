@@ -1,6 +1,5 @@
 #+title: RisingWave
 
-
 * Goal
 ** Week 1 [4/4]
     * [X] debezium：risingwave 类型到 mysql/pg/mongodb https://debezium.io/documentation/reference/2.2/
@@ -26,7 +25,18 @@
     * [X] integration test
     * [ ] set up corresponding pipeline for risingwave
     * [ ] jdbc可以直接改
+** Week 5
+    1. [ ] kinesis
 
+
+
+    1. 迁移完之后原来的shard还有数据吗
+    2. 怎么判断正在split或者merge，以及这种时候的行为是什么
+    3. push down是什么意思
+    4. 建kinesis
+
+       AKIAZJWL27L2NMT73L23
+       e8rrHDvhB8B3fELt9CyXrtzvH/BnzWh7cxW0Oo15
 *** Fix data mapping
     请问：
     1. 类型问题主要是目标类型的缺失和debezium跟jdbc类型的不一致，
@@ -47,6 +57,17 @@
     请问怎么修改record_to_json比较好？
 
     enum把数据包起来
+** Week5 [0/0]
+    1. upsert avro，有没有schema registry，没有的话用户给文件schema定义，有没有pk
+2. 有的话，key不一定有东西，应该拒掉
+3. 再检查schema能否对上
+
+接mv，table
+
+query on source，batch查寻
+
+batch执行检查pk
+    *
 * Knowledge
 ** Data types
     #+begin_src rust
@@ -145,6 +166,21 @@ match sink_type.to_lowercase().as_str() {
     3. How do we use ConnectorSourceWorker
     4. what is table fragment
 
+
+    StreamingClusterInfo
+    1. 节点分配均衡，数据怎么存的：数据在创建mv的时候用statetable存
+       分配均衡靠一个scheduler，依靠fragment图，这个图来自前端，靠
+    2. 恢复：
+       * two kind of failure:
+         1. fail in enumerator: 达到次数重启
+         2. fail in stream
+    3. assignment
+    4. add mutation: create streaming job
+
+
+
+    1. executor recovery，
+    2.
 *** Overview of overview
 **** System start
     1. risingwave start
@@ -154,12 +190,16 @@ match sink_type.to_lowercase().as_str() {
        1. add
           [[file:~/miscellaneous/risingwave/src/compute/src/server.rs::370][StreamServiceServer]]
        2. rpc server start
+
+    1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/server.rs::322][start_service_as_election_leader]]
+    2. Source Manager [[file:~/miscellaneous/risingwave/src/meta/src/rpc/server.rs::421][starts]]
+
 **** Create source
     1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::125][run_command]]
        1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::191][create_source]]
           1. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::191][start_create_source_procesdure]]
           2. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::196][register_source]]
-             1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::618][create_source_worker]]
+             1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::618][SourceManager::create_source_worker]]
                 ConnectorSourceWorker begins to work in meta
           3. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/ddl_controller.rs::204][finish_create_source_procesdure]]
 
@@ -181,13 +221,13 @@ match sink_type.to_lowercase().as_str() {
        3. [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::207][GlobalStreamManager::create_streaming_job]]
           1. Broadcast the actor info based on the scheduling result in the context, build the
              hanging channels in upstream worker nodes.
-          2. (optional) Get the split information of the `StreamSource` via source manager and patch
+          2. (optional) Get the split information of the ~StreamSource~ via source manager and patch
              actors.
           3. Notify related worker nodes to update and build the actors.
              [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::387][create_streaming_job_impl]]
              1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/stream_manager.rs::320][build_actors]]
                 1. Actors on each stream node will need to know where their upstream lies.
-                   `actor_info` includes such information. It contains: actors in the current
+                   ~actor_info~ includes such information. It contains: actors in the current
                    create-streaming-job request; all upstream actors.
                 2. We send RPC request in two stages:
 
@@ -207,7 +247,62 @@ match sink_type.to_lowercase().as_str() {
        1. [[file:~/miscellaneous/risingwave/src/compute/src/rpc/service/stream_service.rs::62][StreamServiceImpl::build_actors]]
        2. [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::600][LocalStreamManagerCore::build_actors]]
           1. [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::470][create_nodes_inner]]
+**** Split Change
+    Summary:
+    1. When we create a source, we will run the source enumerator in the background. It will fetch
+       the split info at regular intervals.
+    2. SourceManager will diff each source at regular intervals.
+    3. If Split changes, wrap it into a command
+    4. Global Barrier Scheduler push command into a queue
+    5. Global Barrier Manager service runs in meta, and take scheduled barriers and send them. In
+       this case, it will need to ~handle_new_barrier~ and send it via rpc.
+    6. Each compute node has its stream service, which handles this rpc.It will send the barrier to
+       target actor in info, actors are checked by [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::281][can_actor_send_or_collect]]
+    7. Now our actor, a.k.a. ~SourceExecutor~ here, receives the barrier from stream, will do things
+       according to the mutation info in barrier, in this case, ~apply_split_change~. It will build a
+       new source reader based on ~SplitImpl~
+
+
+    1. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::757][SourceManager::run]]
+    2. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::742][SourceManager::tick]]
+    3. [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::243][SourceManagerCore::diff]]
+    4. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/schedule.rs::229][BarrierScheduler::run_command(SourceSplitAssignment)]]
+       1. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/schedule.rs::96][BarrierScheduler::push]]: now the command is sent by rpc, we need to wait now
+
+          Global SourceManager creates a barrier and sends it to BarrierManager, which is achieved
+          by a queue.
+    5. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/server.rs::322][start_service_as_election_leader]]
+    6. [[file:~/miscellaneous/risingwave/src/meta/src/rpc/server.rs::569][GlobalBarrierManager::start]]
+    7. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::528][GlobalBarrierManager::run]]
+       1. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::1019][GlobalBarrierManager::handle_local_notification]]: handles ~SystemParamsChange~.
+       2. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::789][GlobalBarrierManager::handle_local_complete]]: Changes the state to ~Complete~, and try to
+          commit all epoch that state is ~Complete~ in order. If commit is err, all nodes will be handled.
+       3. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::616][GlobalBarrierManager::handle_new_barrier]]: Handle the new barrier from the scheduled queue
+          and inject it.
+          1. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::657][Notifier::notify_to_send]]: tell ~SourceManager~ we are handling the barrier? TODO
+          2. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::665][inject_barrier]]
+             1. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::692][inject_barrier_inner]]
+                1. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/command.rs::253][CommandContext::to_mutation]]
+                2. send ~InjectBarrierRequest~ by ~StreamClient~
+             2. [[file:~/miscellaneous/risingwave/src/meta/src/barrier/mod.rs::748][collect_barrier]]: Send barrier-complete-rpc and wait for responses from all compute
+                nodes
+
+        LocalStreamManager get the Barrier and broadcast it to all actors
+    1. [[file:~/miscellaneous/risingwave/src/compute/src/rpc/service/stream_service.rs::133][StreamServiceImpl::inject_barrier]]
+       1. [[file:~/miscellaneous/risingwave/src/stream/src/task/stream_manager.rs::221][LocalStreamManager::send_barrier]]
+
+
+    1. [[file:~/miscellaneous/risingwave/src/stream/src/executor/actor.rs::162][Actor::run_consumer]]
+       1. [[file:~/miscellaneous/risingwave/src/stream/src/executor/actor.rs::176][Box::pin(Box::new(self.consumer).execute())]]
+
+
+    1. [[file:~/miscellaneous/risingwave/src/stream/src/executor/source/source_executor.rs::223][SourceExecutor::execute_with_stream_source]]
+       1. [[file:~/miscellaneous/risingwave/src/stream/src/executor/source/source_executor.rs::311][while
+          let Some(msg) = stream.next().await]]
+       2.
+
 **** Upstream changes
+
 *** Source Manager
     [[file:~/miscellaneous/risingwave/src/meta/src/stream/source_manager.rs::48][Source]]
     #+begin_src rust
@@ -652,6 +747,15 @@ println!("Decimal: {}", decimal_value);
 
     #+end_src
 
+** Storage
+*** Readings
+    * [[https://www.notion.so/risingwave-labs/A-Summary-on-Compaction-Strategy-3316b8d507204be48fe5b41868cd0e8f?pvs=4][Summary on Compaction Strategy]]
+    *
+
+
+
+    RFCs:
+    * [[https://www.notion.so/risingwave-labs/RFC-Serverless-Compaction-9684770e2a6948fe86ad51453bec06c2?pvs=4][Serverless Compaction]]
 * Miscellaneous
 ** Confluent
     #+begin_src json
