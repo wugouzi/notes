@@ -1,0 +1,370 @@
+#+title: Big DataBase
+#+EXPORT_FILE_NAME: ../latex/bigdatabase/bigdatabase.tex
+#+LATEX_HEADER: \graphicspath{{../../books/bigdatabase/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+* Query Optimization
+:PROPERTIES:
+:EXPORT_AUTHOR: Thomas Neumann
+:END:
+** Introduction
+    Compile time system:
+    1. parsing: parsing, AST production
+    2. semantic analysis: schema lookup, variable binding, type inference
+    3. normalization, factorization, constant folding
+    4. rewrite 1: view resolution, unnesting, deriving predicates
+    5. plan generation: constructing the execution plan
+    6. rewrite 2: refining the plan, pushing group
+    7. code generation: producing the imperative plan
+
+
+    Different optimization goals:
+    * minimize response time
+    * minimize resource consumption
+    * minimize time to first tuple
+    * maximize throughput
+
+    Notation:
+    * \(\cala(e)\): attributes of the tuples produces by \(e\)
+    * \(\calf(e)\) free variable of the expression \(e\)
+    * binary operators \(e_1\theta e_2\) usually require \(\cala(e_1)=\cala(e_2)\)
+    * \(\rho_{a\to b(e)}\), rename
+    * \(\Pi_A(e)\), projection
+    * \(\sigma_p(e)\), selection, \(\{x\mid x\in e\wedge p(x)\}\)
+    * \(e_1\bowtie_pe_2\), join, \(\{x\circ y\mid x\in e_1\wedge y\in e_2\wedge p(x\circ y)\}\)
+
+** Join Ordering
+
+** Accessing the Data
+
+** Physical Properties
+
+** Query Rewriting
+
+** Self Tuning
+* Transaction System
+** Computational Models
+*** Page Model
+    #+ATTR_LATEX: :options [Page Model Transaction]
+    #+BEGIN_definition
+    A *transaction* \(t\) is a partial order of steps of the form \(r(x)\) or \(w(x)\)
+    where \(x\in D\) and reads and writes as well as multiple writes applied to the same object are
+    ordered. We write \(t=(op,<)\) for transaction \(t\) with step set \(op\) and partial order \(<\)
+    #+END_definition
+*** Object Model
+    #+ATTR_LATEX: :options [Object Model Transaction]
+    #+BEGIN_definition
+    A *transaction* \(t\) is a (finite) tree of labeled nodes with
+    * the transaction identifier as the label of the root node,
+    * the names and parameters of invoked operations as labels of inner nodes, and
+    * page-model read/write operations as labels of leafs nodes, along with a partial order < on the
+      leaf nodes s.t. for all leaf-node operations \(p\) and \(q\) with \(p\) of the form \(w(x)\)
+      and \(q\) of the form \(r(x)\) or \(w(x)\) or vice versa, we have \(p<q\vee q<p\).
+    #+END_definition
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/1.png]]
+** Notions of Correctness for the Page Model
+*** Canonical Synchronization Problems
+
+    Lost Update Problem:
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/2.png]]
+
+    Inconsistent Read Problem
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/3.png]]
+
+    Dirty Read Problem
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/4.png]]
+*** Syntax of Histories and Schedules
+    #+ATTR_LATEX: :options [Schedules and histories]
+    #+BEGIN_definition
+    Let \(T=\{t_1,\dots,t_n\}\) be a set of transactions, where each \(t_i\in T\) has the form
+    \(t_i=(op_i,<_i)\)
+    1. A *history* for \(T\) is a pair \(s=(op(s),<_s)\) s.t.
+       1. \(op(s)\subseteq\bigcup_{i=1}^nop_i\cup\bigcup_{i=1}^n\{a_i,c_i\}\)
+       2. for all \(1\le i\le n\), \(c_i\in op(s)\Leftrightarrow a_i\notin op(s)\)
+       3. \(\bigcup_{i=1}^n<_i\subseteq<_s\)
+       4. for all \(1\le i\le n\) and all \(p\in op_i\), \(p<_sc_i\vee p<_sa_i\)
+       5. for all \(p,q\in op(s)\) s.t. at least one of them is a write and both access the same
+          data item: \(p<_sq\vee q<_sp\)
+    2. A *schedule* is a prefix of a history
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A history \(s\) is *serial* if for any two transactions \(t_i\) and \(t_j\) in \(s\),
+    where \(i\neq j\), all operations from \(t_i\) are ordered in \(s\) before all operations
+    from \(t_j\) or vice versa
+    #+END_definition
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/6.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/5.png]]
+*** Herbrand Semantics of Schedules
+    #+ATTR_LATEX: :options [Herbrand Semantics of Steps]
+    #+BEGIN_definition
+    For schedule \(s\) the *Herbrand semantics* \(H_s\) of steps \(r_i(x),w_i(x)\in op(s)\) is :
+    1. \(H_s[r_i(x)]:=H_s[w_j(x)]\) where \(w_j(x)\) is the last write on \(x\) in \(s\)
+       before \(r_i(x)\)
+    2. \(H_s[w_i(x)]:=f_{ix}(H_x[r_i(y_1)],\dots,H_s[r_i(y_m)])\) where
+       the \(r_i(y_j)\), \(1\le j\le m\), are all read operations of \(t_i\) that occur in \(s\)
+       before \(w_i(x)\) and \(f_{ix}\) is an uninterpreted \(m\)-ary function symbol.
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Herbrand Universe]
+    #+BEGIN_definition
+    For data items \(D=\{x,y,z,\dots\}\) and transactions \(t_i\), \(1\le i\le n\), the *Herbrand
+    universe HU* is hte smallest set of symbols s.t.
+    1. \(f_{0x}()\in HU\) for each \(x\in D\) where \(f_{0x}\) is a constant, and
+    2. if \(w_i(x)\in op_i\) for some \(t_i\), there are \(m\) read
+       operations \(r_i(y_1),\dots,r_i(y_m)\) that precede \(w_i(x)\) in \(t_i\),
+       and \(v_1,\dots,v_m\in HU\), then \(f_{ix}(v_1,\dots,v_m)\in HU\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Schedule Semantics]
+    #+BEGIN_definition
+    The *Herbrand semantics of a schedule* \(s\) is the mapping \(H[s]:D\to HU\) defined
+    by \(H[s](x):=H_s[w_i(x)]\) where \(w_i(x)\) is the last operation from \(s\) writing \(x\), for
+    each \(x\in D\)
+    #+END_definition
+
+    #+ATTR_LATEX: :width .6\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/7.png]]
+*** Final-State Serializability
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedules \(s\) and \(s'\) are called *final state equivalent*, denoted \(s\approx_fs'\)
+    if \(op(s)=op(s')\) and \(H[s]=H[s']\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options [Reads-from Relation]
+    #+BEGIN_definition
+    Given a schedule \(s\), extended with an initial and a final transaction, \(t_0\)
+    and \(t_\infty\)
+    1. \(r_j(x)\) *reads \(x\) in \(s\) from \(w_i(x)\)* if \(w_i(x)\) is the last write on \(x\)
+       s.t. \(w_i(x)<_sr_j(x)\)
+    2. The *reads-from relation* of \(x\) is
+       \begin{equation*}
+       RF(s):=\{(t_i,x,t_j)\mid \text{an }r_j(x)\text{ reads \(x\) from a }w_i(x)\}
+       \end{equation*}
+    3. Step \(p\) is *directly useful* for step \(q\), denoted \(p\to q\), if \(q\) reads from \(p\),
+       or \(p\) is a read step and \(q\) is a subsequent write step of the same
+       transaction. \(\to^*\), the *useful relation*, denotes the reflexive and transitive closure of \(\to\).
+    4. Step \(p\) is *alive* in \(s\) if it is useful for some step from \(t_\infty\) and *dead*
+       otherwise
+    5. The *live-reads-from relation* of \(s\) is
+       \begin{equation*}
+       LRF(s):=\{(t_i,x,t_j)\mid \text{an alive \(r_j(x)\) reads \(x\) from \(w_i(x)\)}\}
+       \end{equation*}
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    For schedules \(s\) and \(s'\) the following statements hold:
+    1. \(s\approx_fs'\) iff \(op(s)=op(s')\) and \(LRF(s)=LRF(s')\)
+    2. For \(s\) let the step graph \(D(s)=(V,E)\) be a directed graph with vertices \(V:=op(s)\)
+       and edges \(E:=\{(p,q)\mid p\to q\}\), and the reduced step graph \(D_1(s)\) be derived
+       from \(D(s)\) by removing all vertices that correspond to dead steps. Then \(LRF(s)=LRF(s')\)
+       iff \(D_1(s)=D_1(s')\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Final-state equivalence of two schedules \(s\) and \(s'\) can be decided in time that is
+    polynomial in the length of the two schedules.
+    #+END_corollary
+*** View Serializability
+    As we have seen, FSR emphasizes steps that are alive in a schedule. However, since the semantics
+    of a schedule and of the transactions occurring in a schedule are unknown, it is reasonable to
+    require that in two equivalent schedules, each transaction reads the same values, independent of
+    its liveliness.
+
+    *Lost update anomaly*: \(L=r_1(x)r_2(x)w_1(x)w_2(x)c_1c_2\). History is not
+    FSR,
+     \(LRF(L)=\{(t_0,x,t_2),(t_2,x,t_\infty)\}\),
+     \(LRF(t_1t_2)=\{(t_0,x,t_1),(t_1,x,t_2),(t_2,x,t_\infty)\}\) and
+     \(LRF(t_2t_1)=\{(t_0,x,t_2),(t_2,x,t_1),(t_1,x,t_\infty)\}\)
+
+
+     *Inconsistent read anomaly*: \(I=r_2(x)w_2(x)r_1(x)r_1(y)r_2(y)w_2(y)c_1c_2\), history is FSR
+     \(LFR(I)=LFR(t_1t_2)=LFR(t_2t_1)=\{(t_0,x,t_2),(t_0,y,t_2),(t_2,x,t_\infty),(t_2,y,t_\infty)\}\)
+
+
+     #+ATTR_LATEX: :options [View Equivalence]
+     #+BEGIN_definition
+     Schedules \(s\) and \(s'\) are *view equivalent*, denoted \(s\approx_vs'\), if the following
+     hold:
+     1. \(op(s)=op(s')\)
+     2. \(H[s]=H[s']\)
+     3. \(H_s[p]=H_{s'}[p]\) for all (read or write) steps
+     #+END_definition
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     For schedules \(s\) and \(s'\) the following statements hold.
+     1. \(s\approx_v s'\) iff \(op(s)=op(s')\) and \(RF(s)=RF(s')\)
+     2. \(s\approx_vs'\) iff \(D(s)=D(s')\)
+     #+END_theorem
+
+     #+BEGIN_proof
+     1. \(\Rightarrow\): Consider a read step \(r_i(x)\) from \(s\).
+        Then \(H_s[r_i(x)]=H_{s'}[r_i(x)]\) implies that if \(r_i(x)\) reads from some
+        step \(w_j(x)\) in \(s\), the same holds in \(s'\), and vice versa.
+
+        \(\Leftarrow\): If \(RF(s)=RF(s')\), this in particular applies to \(t_\infty\);
+        hence \(H[s]=H[s']\). Similarly, for all other reads \(r_i(x)\) in \(s\), we
+        have \(H_s[r_i(x)]=H_{s'}[r_i(x)]\).
+
+        Suppose for some \(w_i(x)\), \(H_s[w_i(x)]\neq H_{s'}[w_i(x)]\). Thus the set of values read
+        by \(t_i\) prior to step \(w_i\) is different in \(s\) and \(s'\), a contradiction to our
+        assumption that \(RF(s)=RF(s')\).
+     #+END_proof
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_corollary
+     View equivalence of two schedules \(s\) and \(s'\) can be decided in time that is polynomial in
+     the length of the two schedules
+     #+END_corollary
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_definition
+     A schedule \(s\) is *view serializable* if there exists a serial schedule \(s'\)
+     s.t. \(s\approx_vs'\). VSR denotes the class of all view-serializable histories
+     #+END_definition
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     \(VSR\subset FSR\)
+     #+END_theorem
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     Let \(s\) be a history without dead steps. Then \(s\in VSR\) iff \(s\in FSR\)
+     #+END_theorem
+
+     #+ATTR_LATEX: :options []
+     #+BEGIN_theorem
+     The problem of deciding for a given schedule \(s\) whether \(s\in VSR\) holds is NP-complete
+     #+END_theorem
+
+     #+ATTR_LATEX: :options [Monotone Classes of Histories]
+     #+BEGIN_definition
+     Let \(s\) be a schedule and \(T\subseteq trans(s)\). \(\pi_T(s)\) denotes the projection
+     of \(s\) onto \(T\). A class of histories is called *monotone* if the following holds:
+     #+BEGIN_center
+     If \(s\) is in \(E\), then \(\Pi_T(s)\) is in \(E\) for each \(T\subseteq trans(s)\)
+     #+END_center
+     #+END_definition
+
+     VSR is not monotone
+*** Conflict Serializability
+    #+ATTR_LATEX: :options [Conflicts and Conflict Relations]
+    #+BEGIN_definition
+    Let \(s\) be a schedule, \(t,t'\in trans(s)\), \(t\neq t'\)
+    1. Two data operations \(p\in t\) and \(q\in t'\) are in *conflict* in \(s\) if
+       they access the same data item and at least one of them is a write
+    2. \(conf(s):=\{(p,q)\mid p,q\text{ are in conflict and }p<_sq\}\) is the *conflict relation* of \(s\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedules \(s\) and \(s'\) are *conflict equivalent*, denoted \(s\approx_cs'\),
+    if \(op(s)=op(s')\) and \(conf(s)=conf(s')\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedule \(s\) is *conflict serializable* if there is a serial schedule \(s'\)
+    s.t. \(s\approx_cs'\). CSR denotes the class of all conflict serializable schedules.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(CSR\subset VSR\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Let \(s\) be a schedule. The *conflict graph* \(G(s)=(V,E)\)  is a directed graph with
+    vertices \(V:=commit(s)\) and
+    edges \(E:=\{(t,t')\mid t\neq t'\text\wedge\exists p\in t,q\in t':(p,q)\in conf(s)\}\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(s\) be a schedule. Then \(s\in CSR\) iff \(G(s)\) is acyclic.
+    #+END_theorem
+
+    #+BEGIN_proof
+    \(\Rightarrow\): There is a serial history \(s'\) s.t. \(op(s)=op(s')\)
+    and \(conf(s)=conf(s')\). Consider \(t,t'\in V\), \(t\neq t'\) with \((t,t')\in E\). Then we
+    have
+    \begin{equation*}
+    (\exists p\in t)(\exists q\in t')p<_sq\wedge(p,q)\in conf(s)
+    \end{equation*}
+    Then \(p<_{s'}q\). Also all of \(t\) occur before all of \(t'\) in \(s'\).
+
+    Suppose \(G(s)\) were cyclic. Then we have a cycle \(t_1\to t_2\to\dots\to t_k\to t_1\). The
+    same cycle also exists in \(G(s')\), a contradiction
+
+    \(\Leftarrow\):
+    #+END_proof
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Testing if a schedule is in CSR can be done in time polynomial to the schedule's number of transactions
+    #+END_corollary
+
+    Commutativity rules:
+    1. \(C_1:r_i(x)r_j(y)\sim r_j(y)r_i(x)\) if \(i\neq j\)
+    2. \(C_2:r_1(x)w_j(y)\sim w_j(y)r_i(x)\) if \(i\neq j\) and \(x\neq y\)
+    3. \(C_3:w_i(x)w_j(y)\sim w_j(y)w_i(x)\) if \(i\neq j\) and \(x\neq y\)
+    Ordering rule:
+    4. [@4] \(C_4\): \(o_i(x)\), \(p_j(y)\) unordered \(\Rightarrow\) \(o_i(x)p_j(y)\)
+       if \(x\neq y\) or both \(o\) and \(p\) are reads
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedules \(s\) is *commit order preserving conflict serializable* if for
+    all \(t_i,t_j\in trans(s)\), if there are \(p\in t_i\), \(q\in t_j\) with \((p,q)\in conf(s)\),
+    then \(c_i<_sc_j\).
+
+    COCSR denotes the class of all schedules with this property
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(COCSR\subset CSR\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Schedule \(s\) is in COCSR iff there is a serial schedule \(s'\) s.t. \(s\approx_cs'\) and for
+    all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
+    #+END_theorem
+*** An Alternative Criterion: Interleaving Specifications
+** Concurrency Control Algorithms
+*** General Scheduler Design
+*** Locking Schedulers
+*** Non-Locking Schedulers
+*** Hybrid Protocols
