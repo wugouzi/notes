@@ -1,6 +1,6 @@
 #+title: Big DataBase
 #+EXPORT_FILE_NAME: ../latex/bigdatabase/bigdatabase.tex
-#+LATEX_HEADER: \graphicspath{{../../books/bigdatabase/}}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
 #+LATEX_HEADER: \makeindex
 * Query Optimization
@@ -33,6 +33,20 @@
     * \(\sigma_p(e)\), selection, \(\{x\mid x\in e\wedge p(x)\}\)
     * \(e_1\bowtie_pe_2\), join, \(\{x\circ y\mid x\in e_1\wedge y\in e_2\wedge p(x\circ y)\}\)
 
+
+    Different join implementations have different characteristics:
+    * \(e_1\bowtie^{NL}e_2\) Nested Loop Join:
+    * \(e_1\bowtie^{BNL}e_2\) Blockwise Nested Loop Join: Read chunks of \(e_1\) into memory and
+      read \(e_2\) once for each chunk. Further improvement: Use hashing for equi-joins
+    * \(e_1\bowtie^{SM}e_2\) Sort Merge Join: Equi-joins only
+    * \(e_1\bowtie^{HH}e_2\) Hybrid-Hash Join: Partitions \(e_1\) and \(e_2\) into partitions that
+      can be joined in memory. Equi-joins only
+
+** Query Optimization
+*** Algebra Revisited
+*** Canonical Query Translation
+*** Logical Query Optimization
+*** Physical Query Optimization
 ** Join Ordering
 
 ** Accessing the Data
@@ -345,6 +359,45 @@
 
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
+    Schedules \(s\) and \(s'\) s.t. \(op(s)=op(s')\) are *commutativity based equivalent*,
+    denoted \(s\sim^*s'\), if \(s\) can be transformed into \(s'\) by applying rules C1, C2, C3, C4 finitely.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Let \(s\) and \(s'\)  be schedules s.t. \(op(s)=op(s')\). Then \(s\approx_cs'\) iff \(s\sim^*s'\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedule \(s\) is *commutativity-based reducible* if there is a serial schedule \(s'\) s.t. \(s\sim^*s'\)
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_corollary
+    Schedule \(s\) is commutativity-based reducible iff \(s\in CSR\)
+    #+END_corollary
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Schedule \(s\) is *order preserving conflict serializable* if it is conflict equivalent to a
+    serial schedule \(s'\) and for all \(t,t'\in trans(s)\), if \(t\) completely precedes \(t'\)
+    in \(s\), then the same holds in \(s'\). OSCR denotes the class of all schedules with this property.
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(OCSR\subset CSR\)
+    #+END_theorem
+
+    \(s=w_1(x)r_2(x)c_2w_c(y)c_3w_1(y)c_1\in CSR\setminus OCSR\)
+
+
+
+
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
     Schedules \(s\) is *commit order preserving conflict serializable* if for
     all \(t_i,t_j\in trans(s)\), if there are \(p\in t_i\), \(q\in t_j\) with \((p,q)\in conf(s)\),
     then \(c_i<_sc_j\).
@@ -365,6 +418,56 @@
 *** An Alternative Criterion: Interleaving Specifications
 ** Concurrency Control Algorithms
 *** General Scheduler Design
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/8.png]]
+
+    #+ATTR_LATEX: :options [CSR Safety]
+    #+BEGIN_definition
+    For a scheduler \(S\), \(Gen(S)\) denotes the set of all schedules that \(S\) can generate. A
+    scheduler is called *CSR safe* if \(Gen(S)\subseteq CSR\)
+    #+END_definition
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/9.png]]
 *** Locking Schedulers
+**** Introduction
+    General locking rules:
+    1. Each data operation \(o_i(x)\) must be preceded by \(ol_i(x)\) and followed by \(ou_i(x)\)
+    2. For each \(x\) and \(t_i\) there is at most one \(ol_i(x)\) and at most one \(ou_i(x)\)
+    3. No \(ol_i(x)\)  or \(ou_i(x)\) is redundant
+    4. If \(x\) is locked by both \(t_i\) and \(t_j\), then these locks are compatible
+
+    Let \(DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\).
+**** Two-Phase Locking
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    A locking protocol is *two-phase* if for every output schedule \(s\) and every
+    transaction \(t_i\in trans(s)\) no \(ql_i\) step follows the first \(ou_i\) step (\(q,0\in\{r,w\}\))
+    #+END_definition
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/bigdatabase/10.png]]
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(Gen(2PL)\subset CSR\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(Gen(2PL)\subset OCSR\)
+    #+END_theorem
+
+**** Deadlock Handling
+**** Variants of 2PL
+**** Ordered Sharing of Locks (O2PL)
+**** Altruistic Locking (AL)
+**** Non-Two-Phase Locking (WTL, RWTL)
+
 *** Non-Locking Schedulers
 *** Hybrid Protocols
