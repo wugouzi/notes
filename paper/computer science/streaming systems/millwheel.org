@@ -1,0 +1,76 @@
+#+title: MillWheel: Fault-Tolerant Stream Processing at Internet Scale
+#+EXPORT_FILE_NAME: ../latex/paper/streaming systems/millwheel.tex
+#+LATEX_HEADER: \input{../../preamble.tex}
+#+AUTHOR: many
+
+* Introduction
+    requirements:
+    * fault tolerance
+    * persistent state
+    * scalability
+
+    What is MillWheel:
+    * MillWheel is tailored specifically to streaming, low-latency systems:
+
+        Users write application logic as individual nodes in a directed compute graph, for which they
+        can define an arbitrary, dynamic topology.
+
+        Records are delivered continuously along edges in the graph.
+    * MillWheel provides fault tolerance at the framework level:
+
+        any node or any edge in the topology can fail at any time without affecting the correctness of
+        the result.
+
+        As part of this fault tolerance, every record in the system is guaranteed to be delivered to
+        its consumers.
+    * the API that MillWheel provides for record processing handles each record in an
+        idempotent fashion, making record delivery occur exactly once from the user’s perspective.
+    * MillWheel checkpoints its progress at fine granularity, eliminating any need to buffer pending
+      data at external senders for long periods between checkpoints.
+
+* Motivation and Requirements
+    Google’s Zeitgeist pipeline is used to track trends in web queries.
+    This pipeline ingests a continuous input of search queries and performs anomaly detection,
+    outputting queries which are spiking or dipping as quickly as possible. The system builds a
+    historical model of each query, so that expected changes in traffic (e.g. for “television
+    listings” in the early evening) will not cause false positives. It is important that spiking or
+    dipping queries be identified as quickly as possible. The basic topology of this pipeline is
+    shown in Figure.
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../../../images/papers/mill1.png]]
+
+    In order to implement the Zeitgeist system, our approach is to bucket records into one-second
+    intervals and to compare the actual traffic for each time bucket to the expected traffic that the
+    model predicts. If these quantities are consistently different over a non-trivial number of buckets,
+    then we have high confidence that a query is spiking or dipping. In parallel, we update the
+    model with the newly received data and store it for future use.
+
+    * *Persistent Storage*: It is important to note that this implementation requires both short- and
+      long-term storage. A spike may only last a few seconds, and thus depend on state from a small
+      window of time, whereas model data can correspond to months of continuous updates.
+    * *Low Watermarks*: In a distributed system with inputs from all over the world, data arrival time
+      does not strictly correspond to its generation time, so it is important to be able to
+      distinguish whether a flurry of expected Arabic queries at \(t = 1296167641\) is simply
+      delayed on the wire, or actually not there.
+
+      MillWheel addresses this by providing a low watermark for incoming data for each processing
+      stage (e.g. Window Counter, Model Calculator), which indicates that all data up to a given
+      timestamp has been received. The low watermark tracks all pending events in the distributed
+      system. Using the low watermark, we are able to distinguish between the two example cases – if
+      the low watermark advances past time t without the queries arriving, then we have high
+      confidence that the queries were not recorded, and are not simply delayed. This semantic also
+      obviates any requirement of strict monotonicity for inputs – out-of-order streams are the
+      norm.
+    * *Duplicate Prevention*
+
+    Requirement for MillWheel:
+    * Data should be available to consumers as soon as it is published (i.e. there are no
+    system-intrinsic barriers to ingesting inputs and providing output data).
+    * Persistent state abstractions should be available to user code, and should be integrated into
+      the system’s overall consistency model.
+    * Out-of-order data should be handled gracefully by the system.
+    * A monotonically increasing low watermark of data timestamps should be computed by the system.
+    * Latency should stay constant as the system scales to more machines.
+    * The system should provide exactly-once delivery of records.
