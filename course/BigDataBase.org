@@ -2,6 +2,11 @@
 #+EXPORT_FILE_NAME: ../latex/bigdatabase/bigdatabase.tex
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \DeclareMathOperator{\commit}{\text{commit}}
+#+LATEX_HEADER: \DeclareMathOperator{\DT}{\text{DT}}
+#+LATEX_HEADER: \DeclareMathOperator{\CP}{\text{CP}}
+#+LATEX_HEADER: \DeclareMathOperator{\Gen}{\text{Gen}}
+#+LATEX_HEADER: \DeclareMathOperator{\CSR}{\text{CSR}}
 #+LATEX_HEADER: \makeindex
 * Query Optimization
 :PROPERTIES:
@@ -145,7 +150,7 @@
     #+ATTR_LATEX: :options [Herbrand Universe]
     #+BEGIN_definition
     For data items \(D=\{x,y,z,\dots\}\) and transactions \(t_i\), \(1\le i\le n\), the *Herbrand
-    universe HU* is hte smallest set of symbols s.t.
+    universe HU* is the smallest set of symbols s.t.
     1. \(f_{0x}()\in HU\) for each \(x\in D\) where \(f_{0x}\) is a constant, and
     2. if \(w_i(x)\in op_i\) for some \(t_i\), there are \(m\) read
        operations \(r_i(y_1),\dots,r_i(y_m)\) that precede \(w_i(x)\) in \(t_i\),
@@ -316,6 +321,7 @@
     \(CSR\subset VSR\)
     #+END_theorem
 
+    [[index:conflict graph]]
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     Let \(s\) be a schedule. The *conflict graph* \(G(s)=(V,E)\)  is a directed graph with
@@ -332,7 +338,7 @@
     \(\Rightarrow\): There is a serial history \(s'\) s.t. \(op(s)=op(s')\)
     and \(conf(s)=conf(s')\). Consider \(t,t'\in V\), \(t\neq t'\) with \((t,t')\in E\). Then we
     have
-    \begin{equation*}
+x    \begin{equation*}
     (\exists p\in t)(\exists q\in t')p<_sq\wedge(p,q)\in conf(s)
     \end{equation*}
     Then \(p<_{s'}q\). Also all of \(t\) occur before all of \(t'\) in \(s'\).
@@ -393,9 +399,6 @@
     \(s=w_1(x)r_2(x)c_2w_c(y)c_3w_1(y)c_1\in CSR\setminus OCSR\)
 
 
-
-
-
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
     Schedules \(s\) is *commit order preserving conflict serializable* if for
@@ -415,6 +418,7 @@
     Schedule \(s\) is in COCSR iff there is a serial schedule \(s'\) s.t. \(s\approx_cs'\) and for
     all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
     #+END_theorem
+*** Commit Serializability
 *** An Alternative Criterion: Interleaving Specifications
 ** Concurrency Control Algorithms
 *** General Scheduler Design
@@ -441,7 +445,10 @@
     3. No \(ol_i(x)\)  or \(ou_i(x)\) is redundant
     4. If \(x\) is locked by both \(t_i\) and \(t_j\), then these locks are compatible
 
-    Let \(DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\).
+    Let \(\DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\). \(\CP(s)\)
+    denotes the committed projection of \(s\).
+
+
 **** Two-Phase Locking
     #+ATTR_LATEX: :options []
     #+BEGIN_definition
@@ -453,18 +460,117 @@
     #+CAPTION:
     [[../images/bigdatabase/10.png]]
 
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:4.1
+    Let \(s\) be the output of a 2PL scheduler. Then for each transaction \(t_i\in commit(DT(s))\), the
+    following holds:
+    1. if \(o_i(x)\), \(o\in\{r,w\}\), occurs in \(\CP(\DT(s))\), then so do \(ol_i(x)\) and \(ou_i(x)\)
+       with the sequencing \(ol_i(x)<o_i(x)<ou_i(x)\).
+    2. If \(t_j\in\commit(\DT(s))\), \(i\neq j\), is another transaction s.t. some steps \(p_i(x)\)
+       and \(q_j(x)\) from \(\CP(\DT(s))\) are in conflict, then either \(pu_i(x)<ql_j\)
+       or \(qu_j(x)<pl_i(x)\) holds.
+    3. If \(p_i(x)\) and \(q_j(y)\) are in \(\CP(\DT(s))\), then \(pl_i(x)<qu_i(y)\), i.e., every lock
+       operation occurs before every unlock operation of the same transaction.
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    label:4.2
+    Let \(s\) be the output of a 2PL scheduler, and let \(G:=G(\CP(\DT(s)))\) be the conflict graph
+    of \(\CP(\DT(s))\), then the following holds:
+    1. If \((t_i,t_j)\) is an edge in \(G\), then \(pu_i(x)<ql_j(x)\) for some data item \(x\) and two
+       operations \(p_i(x)\), \(q_j(x)\) in conflict.
+    2. If \((t_1,\dots,t_n)\) is a path in \(G\), \(n\ge 1\), then \(pu_1(x)<ql_n(y)\) for two data
+       items \(x\) and \(y\) as well as operations \(p_1(x)\) and \(q_n(y)\).
+    3. \(G\) is acyclic.
+    #+END_lemma
+
+    Since the conflict graph of an output produced by a 2PL scheduler is acyclic, we have
+
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
     \(Gen(2PL)\subset CSR\)
     #+END_theorem
+
+    #+ATTR_LATEX: :options [Strict inclusion]
+    #+BEGIN_examplle
+    Let \(s=w_1(x)r_2(x)c_2r_3(y)c_3w_1(y)c_1\). \(s\in\CSR\) as \(s\approx_ct_3t_1t_2\). And \(s\) cannot be produced
+    by a 2PL scheduler
+    #+END_examplle
 
     #+ATTR_LATEX: :options []
     #+BEGIN_theorem
     \(Gen(2PL)\subset OCSR\)
     #+END_theorem
 
+
 **** Deadlock Handling
+    Deadlock detection:
+    1. maintain dynamic *waits-for graph* (WFG) with active transactions as nodes and an edge
+       from \(t_i\) to \(t_j\) if \(t_j\) waits for a lock held by \(t_i\)
+    2. Test WFG for cycles
+
+    Deadlock resolution: Choose a transaction on a WFG cycles as a *deadlock victim* and abort this
+    transaction, and repeat until no more cycles.
+
+    Possible victim selection strategies:
+    1. Last blocked
+    2. Random
+    3. Youngest
+    4. Minimum locks
+    5. Minimum work
+    6. Most cycles
+    7. Most edges
+
+    Deadlock Prevention: Restrict lock waits to ensure acyclic WFG at all times. Reasonable deadlock
+    prevention strategies when \(t_i\) is blocked by \(t_j\):
+    1. *wait-die*: if \(t_i\) started before \(t_j\) then wait else abort \(t_i\).
+    2. *wound-wait*: if \(t_i\) started before \(t_j\) then abort \(t_i\) else wait
+    3. *Immediate restart*: abort \(t_i\)
+    4. *Running priority*: if \(t_j\) is itself blocked then abort \(t_j\) else wait
+    5. *Timeout*: abort waiting transaction when a timer expires.
+    Abort entails later restart
 **** Variants of 2PL
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Under *static* or *conservative 2PL* (C2PL) each transaction acquires all its locks before the first
+    data operation.
+    #+END_definition
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Conservative 2PL
+    [[../images/bigdatabase/11.png]]
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Under *strict 2PL* (S2PL) each transaction holds all its write locks until the transaction terminates.
+    #+END_definition
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Strict 2PL
+    [[../images/bigdatabase/12.png]]
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    Under *strong 2PL* (SS2PL) each transaction holds all its locks until the transaction terminates
+    #+END_definition
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\Gen(SS2PL)\subset\Gen(S2PL)\subset\Gen(2PL)\)
+    #+END_theorem
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    \(\Gen(SS2PL)\subset COCSR\)
+    #+END_theorem
+
+
+
 **** Ordered Sharing of Locks (O2PL)
 **** Altruistic Locking (AL)
 **** Non-Two-Phase Locking (WTL, RWTL)
