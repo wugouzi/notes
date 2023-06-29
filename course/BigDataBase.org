@@ -48,12 +48,153 @@
       can be joined in memory. Equi-joins only
 
 ** Query Optimization
+    steps
+    1. translate the query into its canonical algebraic expression
+    2. logical query optimization
+    3. physical query optimization
 *** Algebra Revisited
-*** Canonical Query Translation
-*** Logical Query Optimization
-*** Physical Query Optimization
-** Join Ordering
+    Tuple is a (unordered) mapping from attribute names to values of a domain
 
+    Schema is a set of attributes with domain, written \(\cala(t)\)
+
+    concatenation of tuple:
+    * \(t_1\circ t_2\), note \(t_1\circ t_2=t_2\circ t_1\)
+    * \(\cala(t_1)\cap\cala(t_2)=\emptyset\)
+    * \(\cala(t_1\circ t_2)=\cala(t_1)\cup\cala(t_2)\)
+
+    tuple projection:
+    * \(t.a\), \(t|_A\)
+    * \(a\in\cala(t), A\subseteq\cala(t)\)
+    * \(\cala(t|_A)=A\)
+    * \(t.a\) produces a value, \(t|_A\) produces a tuple
+
+    Relation is a set of tuples with the same schema. Schema of the contained tuples,
+    written \(\cala(R)\)
+
+    Real data is usually a multi set (bag). The optimizar must consider three different semantics:
+    * logical algebra operates on bags
+    * physical algebra operates on streams
+    * explicit duplicate elimination \(\Rightarrow\) sets
+
+    Set operations are part of the algebra:
+    * union, intersection, difference
+    * but have schema constraints
+    * \(\cala(L)=\cala(R)\)
+    * \(\cala(L\cup R)=\cala(L)=\cala(R)\), \(\cala(L\cup R)=\cala(L)=\cala(R)\), \(\cala(L\setminus R)=\cala(L)=\cala(R)\)
+
+    \(\calf(e)\) are the free variables of \(e\)
+
+    Selection:
+    * \(\sigma_p(R)\)
+    * \(\calf(p)\subseteq\cala(R)\)
+    * \(\cala(\sigma_p(R))=\cala(R)\)
+
+    Projection:
+    * \(\Pi_A(R)\)
+    * eliminates duplicates for set semantic, keeps them for bag semantic
+    * \(A\subseteq\cala(R)\)
+    * \(\cala(\Pi_A(R))=A\)
+
+    Rename:
+    * \(\rho_{a\to b}(R)\)
+    * \(a\in \cala(R),b\notin\cala(R)\)
+    * \(\cala(\rho_{a\to b}(R))=\cala(R)\setminus\{a\}\cup\{b\}\)
+
+      \begin{align*}
+    \sigma_{p_1\wedge p_2}&\quad\equiv\quad\sigma_{p_1}(\sigma_{p_2}(e))\tag{1}\\
+    \sigma_{p_1}(\sigma_{p_2}(e))&\quad\equiv\quad\sigma_{p_2}(\sigma_{p_1}(e))\tag{2}\\
+    \Pi_{A_1}(\Pi_{A_2}(e))&\quad\equiv\quad\Pi_{A_1}(e)\tag{3}\\
+    &\quad\equiv\quad\text{if }A_1\subseteq A_2\\
+    \sigma_p(\Pi_A(e))&\quad\equiv\quad\Pi_A(\sigma_p(e))\tag{4}\\
+    &\quad\equiv\quad\text{if }\calf(p)\subseteq A\\
+    \sigma_p(e_1\cup e_2)&\quad\equiv\quad\sigma_p(e_1)\cup\sigma_p(e_2)\tag{5}\\
+    \sigma_p(e_1\cap e_2)&\quad\equiv\quad\sigma_p(e_1)\cap\sigma_p(e_2)\tag{6}\\
+    \sigma_p(e_1\setminus e_2)&\quad\equiv\quad\sigma_p(e_1)\setminus\sigma_p(e_2)\tag{7}\\
+    \Pi_A(e_1\cup e_2)&\quad\equiv\quad\Pi_A(e_1)\cup\Pi_A(e_2)\tag{8}\\
+    e_1\times e_2&\quad\equiv\quad e_2\times e_1\tag{9}\\
+    e_1\bowtie_pe_2&\quad\equiv\quad e_2\bowtie_pe_1\tag{10}\\
+    (e_1\times e_2)\times e_3&\quad\equiv\quad e_1\times(e_2\times e_3)\tag{11}\\
+    (e_1\bowtie_{p_1}e_2)\bowtie_{p_2}e_3&\quad\equiv\quad e_1\bowtie_{p_1}(e_2\bowtie_{p_2}e_3)\tag{12}\\
+    \sigma_p(e_1\times e_2)&\quad\equiv\quad e_1\bowtie_pe_2\tag{13}\\
+    \sigma_p(e_1\times e_2)&\quad\equiv\quad\sigma_p(e_1)\times e_2\tag{14}\\
+    &\quad\equiv\quad\text{if }\calf(e)\subseteq\cala(e_1)\\
+    \sigma_{p_1}(e_1\bowtie_{p_2}e_2)&\quad\equiv\quad\sigma_{p_1}(e_1)\bowtie_{p_2}e_2\tag{15}\\
+    &\quad\equiv\quad\text{if }\calf(p_1)\subseteq\cala(e_1)\\
+    \Pi_A(e_1\times e_2)&\quad\equiv\quad\Pi_{A_1}(e_1)\times\Pi_{A_2}(e_2)\tag{16}\\
+    &\quad\equiv\quad\text{if }A=A_1\cup A_2, A_1\subseteq\cala(e_1),A_2\subseteq\cala(e_2)
+      \end{align*}
+
+*** Canonical Query Translation
+    Restrictions:
+    * only *select distinct*
+    * no *group by, order by, union, intersect, except*
+    * only attributes in *select* clause
+    * no nested queries
+    * not discussed here: ~NULL~ values
+
+*** Logical Query Optimization
+    * foundation: algebraic equivalence
+
+    Which plans are better?
+    * plans can only be compared if there is a cost function
+    * cost functions need details that are not available when only considering logical algebra
+    * consequence: logical query optimization remains a heuristic
+
+    Phases
+    1. break up conjunctive selection predicates, \((1)\to\)
+    2. push selections down, \((2)\to,(14)\to\)
+    3. introduce joins, \((13)\to\)
+    4. determine join order \((9),(10),(11),(12)\)
+    5. introduce and push down projections \((3)\leftarrow,(4)\leftarrow,(16)\to\)
+       * eliminate redundant attributes
+
+    This kind of phases has limitation: different join order would allow further push down. The
+    phases are interdependent
+*** Physical Query Optimization
+    * add more execution information to the plan
+    * allow for cost calculations
+    * select index structures/access paths
+      * scan+selection could be done by an index lookup
+      * multiple indices to choose from
+      * table scan might be the best, even if an index is available
+      * depends on selectivity, rule of thumb: 10%
+      * detailed statistics and costs required
+      * related problem: materialized view
+      * even more complex, as more than one operator could be substitued
+    * choose operator implementations
+      * replace a logical operator (e.g. \(\bowtie\)) with a physical one (e.g. \(\bowtie^{HH}\))
+      * semantic restrictions: e.g., most join operators require equi-conditions
+      * \(\bowtie^{BNL}\) is better than \(\bowtie^{NL}\)
+      * \(\bowtie^{SM}\) and \(\bowtie^{HH}\) are usually better than both
+      * \(\bowtie^{HH}\) is often the best if not reusing sorts
+      * decision must be cost-based
+      * even \(\bowtie^{NL}\) can be optimal
+      * not only joins, has to be done for all operators
+    * add property enforcer
+      * certain physical operators need certain properties
+      * example: sort for \(\bowtie^{SM}\)
+      * example: in a distributed database, operators need the data locally to operate
+      * many operator requirements can be modeled as properties
+    * choose when to materialize
+      * temp operator stores input on disk
+      * essential for multiple consumers (factorization, DAGs)
+      * also relevant for \(\bowtie^{NL}\)
+** Join Ordering
+*** Basics
+*** Search Space
+*** Greedy Heuristics
+*** IKKBZ
+*** MVP
+*** Dynamic Programming
+*** Simplifying the Query Graph
+*** Adaptive Optimization
+*** Generating Permutations
+*** Transformative Approaches
+*** Randomized Approaches
+*** Metaheuristics
+*** Iterative Dynamic Programming
+*** Order Preserving Joins
+*** Complexity of Join Processing
 ** Accessing the Data
 
 ** Physical Properties

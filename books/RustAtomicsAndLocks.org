@@ -240,3 +240,281 @@ thread::scope(|s| {
 });
     #+end_src
 *  Atomics
+** Atomic Load and Store Operations
+    Take ~AtomicI32~ as an example:
+    #+begin_src rust
+impl AtomicI32 {
+    pub fn load(&self, ordering: Ordering) -> i32;
+    pub fn store(&self, value: i32, ordering: Ordering);
+}   
+    #+end_src
+
+    Note how the store method takes a shared reference (~&T~) rather than an exclusive reference
+    (~&mut T~), even though it modifies the value.
+*** Example: Stop Flag
+    #+begin_src rust
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering::Relaxed;
+fn main() {
+    static STOP: AtomicBool = AtomicBool::new(false);
+    // Spawn a thread to do the work.
+    let background_thread = thread::spawn(|| {
+        while !STOP.load(Relaxed) {
+            some_work();
+        }
+    });
+    // Use the main thread to listen for user input.
+    for line in std::io::stdin().lines() {
+        match line.unwrap().as_str() {
+            "help" => println!("commands: help, stop"),
+            "stop" => break,
+            cmd => println!("unknown command: {cmd:?}"),
+        }
+    }
+    // Inform the background thread it needs to stop.
+    STOP.store(true, Relaxed);
+    // Wait until the background thread finishes.
+    background_thread.join().unwrap();
+}
+    #+end_src
+*** Fetch-and-Modify Operations
+    The most commonly used ones are ~fetch_add~ and ~fetch_sub~, which perform addition and subtraction,
+    respectively. Some of the other available operations are ~fetch_or~ and ~fetch_and~ for bitwise
+    operations, and ~fetch_max~ and ~fetch_min~ which can be used to keep a running maximum or minimum.
+    #+begin_src rust
+impl AtomicI32 {
+    pub fn fetch_add(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_sub(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_or(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_and(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_nand(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_xor(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_max(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn fetch_min(&self, v: i32, ordering: Ordering) -> i32;
+    pub fn swap(&self, v: i32, ordering: Ordering) -> i32; // "fetch_store"
+}   
+    #+end_src
+
+    #+begin_src rust
+use std::sync::atomic::AtomicI32;
+
+let a = AtomicI32::new(100);
+let b = a.fetch_add(23, Relaxed);
+let c = a.load(Relaxed);
+
+assert_eq!(b, 100);
+assert_eq!(c, 123);
+    #+end_src
+
+    An important thing to keep in mind is that ~fetch_add~ and ~fetch_sub~ implement wrapping behavior
+    for overflows. Incrementing a value past the maximum representable value will wrap around and
+    result in the minimum representable value. This is different than the behavior of the plus and
+    minus operators on regular integers, which will panic in debug mode on overflow.
+*** Compare-and-Exchange Operations
+    #+begin_src rust
+impl AtomicI32 {
+    pub fn compare_exchange(
+        &self,
+        expected: i32,
+        new: i32,
+        success_order: Ordering,
+        failure_order: Ordering
+    ) -> Result<i32, i32>;
+}
+    #+end_src
+
+    Ignoring the order, it is basically identical to
+    #+begin_src rust
+impl AtomicI32 {
+    pub fn compare_exchange(&self, expected: i32, new: i32) -> Result<i32, i32> {
+        // In reality, the load, comparison and store,
+        // all happen as a single atomic operation.
+        let v = self.load();
+        if v == expected {
+            // Value is as expected.
+            // Replace it and report success.
+            self.store(new);
+            Ok(v)
+        } else {
+            // The value was not as expected.
+            // Leave it untouched and report failure.
+            Err(v)
+        }
+    }
+}
+    #+end_src
+
+    An example:
+    #+begin_src rust
+fn increment(a: &AtomicU32) {
+    let mut current = a.load(Relaxed);
+    loop {
+        let new = current + 1;
+        match a.compare_exchange(current, new, Relaxed, Relaxed) {
+            Ok(_) => return,
+            Err(v) => current = v,
+        }
+    }
+}   
+    #+end_src
+
+    Or we would use ~fetch_update~
+    #+begin_src rust
+a.fetch_update(Relaxed, Relaxed,
+    |n| n.add(1));
+    #+end_src
+* Memory Ordering
+** Reordering and Optimizations
+    A processor might determine that two particular consecutive instructions in your program will
+    not affect each other, and execute them /out of order/, if that is faster, for example. While one
+    instruction is briefly blocked on fetching some data from main memory, several of the following
+    instructions might be executed and finished before the first instruction finishes, as long as
+    that wouldn’t change the behavior of your program.
+** The Memory Model
+*** Happens-Before Relationship
+    ~Relaxed~ memory ordering is the most basic (and most performant) memory ordering that, by itself,
+    never results in any cross-thread happens-before relationships.
+
+    #+begin_src rust
+static X: AtomicI32 = AtomicI32::new(0);
+static Y: AtomicI32 = AtomicI32::new(0);
+fn a() {
+    X.store(10, Relaxed);    // 1
+    Y.store(20, Relaxed);    // 2
+}
+fn b() {
+    let y = Y.load(Relaxed); // 3
+    let x = X.load(Relaxed); // 4
+    println!("{x} {y}");
+}
+    #+end_src
+    If either of ~a~ or ~b~ completes before the other starts, the output will be ~0 0~ or ~10 20~. If ~a~ and
+    ~b~ cun concurrently, it's easy to see how the output can be ~10 0~.
+*** Spawning and Joining
+    Spawning a thread creates a happens-before relationship between what happened before the ~spawn()~
+    call, and the new thread. Similarly, joining a thread creates a happens-before relationship
+    between the joined thread and what happens after the ~join()~ call.
+
+    For example, the following assertion cannot fail:
+    #+begin_src rust
+static X: AtomicI32 = AtomicI32::new(0);
+fn main() {
+    X.store(1, Relaxed);
+    let t = thread::spawn(f);
+    X.store(2, Relaxed);
+    t.join().unwrap();
+    X.store(3, Relaxed);
+}
+fn f() {
+    let x = X.load(Relaxed);
+    assert!(x == 1 || x == 2);
+}
+    #+end_src
+*** Relaxed Ordering
+    While atomic operations using relaxed memory ordering do not provide any happens-before
+    relationship, they do guarantee a *total modification order* of each individual atomic variable. This
+    means that all modifications *of the same atomic variable* happen in an order that is the same
+    from the perspective of every single thread.
+
+    Consider
+    #+begin_src rust
+static X: AtomicI32 = AtomicI32::new(0);
+fn a() {
+    X.fetch_add(5, Relaxed);
+    X.fetch_add(10, Relaxed);
+}
+fn b() {
+    let a = X.load(Relaxed);
+    let b = X.load(Relaxed);
+    let c = X.load(Relaxed);
+    let d = X.load(Relaxed);
+    println!("{a} {b} {c} {d}");
+}
+    #+end_src
+*** Release and Acquire Ordering
+    *Release* and *acquire* memory ordering are used in a pair to form a happens-before relationship
+    between threads. ~Release~ memory ordering applies to store operations, while ~Acquire~ memory
+    ordering applies to load operations.
+
+    A happens-before relationship is formed when an acquire-load operation observes
+    the result of a release-store operation. In this case, the store and everything before it,
+    happened before the load and everything after it.
+
+    When using ~Acquire~ for a fetch-and-modify or compare-and-exchange operation, it applies only to
+    the part of the operation that loads the value. Similarly, ~Release~ applies only to the store
+    part of an operation. ~AcqRel~ is used to represent the combination of ~Acquire~ and ~Release~, which
+    causes both the load to use acquire ordering, and the store to use release ordering.
+
+    Consider
+    #+begin_src rust
+use std::sync::atomic::Ordering::{Acquire, Release};
+static DATA: AtomicU64 = AtomicU64::new(0);
+static READY: AtomicBool = AtomicBool::new(false);
+fn main() {
+    thread::spawn(|| {
+        DATA.store(123, Relaxed);
+        READY.store(true, Release); // Everything from before this store ..
+    });
+    while !READY.load(Acquire) { // .. is visible after this loads `true`.
+        thread::sleep(Duration::from_millis(100));
+        println!("waiting...");
+    }
+    println!("{}", DATA.load(Relaxed));
+}
+    #+end_src
+    The only possible outcome of this program is 123.
+
+    #+ATTR_LATEX: :options [Locking]
+    #+BEGIN_examplle
+    #+begin_src rust
+static mut DATA: String = String::new();
+static LOCKED: AtomicBool = AtomicBool::new(false);
+fn f() {
+    if LOCKED.compare_exchange(false, true, Acquire, Relaxed).is_ok() {
+        // Safety: We hold the exclusive lock, so nothing else is accessing DATA.
+        unsafe { DATA.push('!') };
+        LOCKED.store(false, Release);
+    }
+}
+fn main() {
+    thread::scope(|s| {
+        for _ in 0..100 {
+            s.spawn(f);
+        }
+    });
+}
+    #+end_src
+    #+END_examplle
+*** Consume Ordering
+*** Sequentially Consistent Ordering
+    Every single operation using ~SeqCst~ ordering within a program is part of a single total order
+    that all threads agree on. This total order is consistent with the total modification order of
+    each individual variable.
+    #+begin_src rust
+use std::sync::atomic::Ordering::SeqCst;
+static A: AtomicBool = AtomicBool::new(false);
+static B: AtomicBool = AtomicBool::new(false);
+static mut S: String = String::new();
+fn main() {
+    let a = thread::spawn(|| {
+        A.store(true, SeqCst);
+        if !B.load(SeqCst) {
+            unsafe { S.push('!') };
+        }
+    });
+    let b = thread::spawn(|| {
+        B.store(true, SeqCst);
+        if !A.load(SeqCst) {
+            unsafe { S.push('!') };
+        }
+    });
+    a.join().unwrap();
+    b.join().unwrap();
+}
+    #+end_src
+
+    If both store operations happen before either of the load operations, it’s possible that neither
+    thread ends up accessing ~S~. However, it’s impossible for both threads to access ~S~ and cause
+    undefined behavior, since the sequentially consistent ordering guarantees only one of them can
+    win the race.
+*** Fences

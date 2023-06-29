@@ -191,6 +191,66 @@ PCollection<KV<Team, Integer>> totals = input
     #+END_SRC
     #+LATEX: \end{listing}
 * Watermarks
+** Definition
+    we make one fundamental assumption about our streaming data: /each message has an associated
+    logical event timestamp./
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_definition
+    The *watermark* is a monotonically increasing timestamp of the oldest work not yet completed.
+    #+END_definition
+
+    * Completeness
+        If the watermark has advanced past some timestamp T, we are guaranteed
+        by its monotonic property that no more processing will occur for on-time
+        (nonlate data) events at or before T. Therefore, we can correctly emit any
+        aggregations at or before T. In other words, the watermark allows us to
+        know when it is correct to close a window.
+    * Visibility
+        If a message is stuck in our pipeline for any reason, the watermark cannot
+        advance. Furthermore, we will be able to find the source of the problem
+        by examining the message that is preventing the watermark from
+        advancing.
+** Source Watermark Creation
+** Watermark Propagation
+    #+ATTR_LATEX: :options [Pipeline Stages]
+    #+BEGIN_examplle
+    Different stages are typically necessary every time your pipeline groups data together by some
+    new dimension. For example, if you had a pipeline that consumed raw data, computed some per-user
+    aggregates, and then used those per-user aggregates to compute some per-team aggregates, you’d
+    likely end up with a three-stage pipeline:
+    * One consuming the raw, ungrouped data
+    * One grouping the data by user and computing per-user aggregates
+    * One grouping the data by team and computing per-team aggregates
+    #+END_examplle
+
+    Watermarks are created at input sources, as discussed in the preceding section. They then
+    conceptually flow through the system as data progress through it.
+
+    We give the following definitions for the watermarks at the boundaries of stages:
+    * An *input watermark*, which captures the progress of everything upstream of that stage (i.e.,
+      how complete the input is for that stage). For sources, the input watermark is a
+      source-specific function creating the watermark for the input data. For nonsource stages, the
+      input watermark is defined as the minimum of the output watermarks of all
+      shards/partitions/instances of all of its upstream sources and stages.
+    * An *output watermark*, which captures the progress of the stage itself, and is essentially
+      defined as the minimum of the stage’s input watermark and the event times of all nonlate data
+      active messages within the stage. Exactly what “active” encompasses is somewhat dependent upon
+      the operations a given stage actually performs, and the implementation of the stream
+      processing system. It typically includes data buffered for aggregation but not yet
+      materialized downstream, pending output data in flight to downstream stages, and so on.
+
+    One nice feature of defining an input and output watermark for a specific stage is that we can
+    use these to calculate the amount of event-time latency introduced by a stage. Subtracting the
+    value of a stage’s output watermark from the value of its input watermark gives the amount of
+    event-time latency or lag introduced by the stage.
+
+    Output watermark could be the minimum of the following:
+    * *Per-source* watermark - for each sending stage
+    * *Per-external input* watermark - for sources external to the pipeline
+    * *Per-state component* watermark - for each type of state that can be written
+    * *Per-output buffer* watermark - for each receiving stage
+** Understanding Watermark Propagation
 
 * Advanced Windowing
 
