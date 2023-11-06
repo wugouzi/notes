@@ -294,8 +294,8 @@ equivalent to `xenops-regenerate'."
 
 (defvar xenops-elements
   `((block-math
-     .  ((:delimiters . (("^[ \t]*\\\\begin{\\(align\\|equation\\|gather\\|alignat\\)\\*?}"
-                          "^[ \t]*\\\\end{\\(align\\|equation\\|gather\\|alignat\\)\\*?}")
+     .  ((:delimiters . (("^[ \t]*\\\\begin{\\(align\\|equation\\|gather\\|alignat\\|forest\\)\\*?}"
+                          "^[ \t]*\\\\end{\\(align\\|equation\\|gather\\|alignat\\|forest\\)\\*?}")
                          ("^[ \t]*\\\\\\["
                           "^[ \t]*\\\\\\]")))
          (:parser . xenops-math-parse-block-element-at-point)
