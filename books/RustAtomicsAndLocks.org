@@ -518,3 +518,115 @@ fn main() {
     undefined behavior, since the sequentially consistent ordering guarantees only one of them can
     win the race.
 *** Fences
+* Building Our Own Spin Lock
+** A minimal implementation
+    #+begin_src rust
+pub struct SpinLock {
+    locked: AtomicBool,
+}
+
+impl SpinLock {
+    pub const fn new() -> Self {
+        Self { locked: AtomicBool::new(false) }
+    }
+
+    pub fn lock(&self) {
+        while self.locked.swap(true, std::sync::atomic::Ordering::Acquire) {
+            spin_loop();
+        }
+    }
+
+    pub fn unlock(&self) {
+        self.locked.store(false, std::sync::atomic::Ordering::Release);
+    }
+}
+    #+end_src
+
+    We use acquire and release memory ordering to make sure that every ~unlock()~ call establishes a
+    happens-before relationship with the ~lock()~ calls that follow.
+
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/RustAtomics/1.jpg]]
+** An unsafe spin lock
+    #+begin_src rust
+use std::cell::UnsafeCell;
+pub struct SpinLock<T> {
+    locked: AtomicBool,
+    value: UnsafeCell<T>,
+}
+    #+end_src
+
+    As a precaution, ~UnsafeCell~ does not implement ~Sync~, which means that our type is now no longer
+    shareable between threads, making it rather useless. To fix that, we need to promise to the
+    compiler that it is actually safe for our type to be shared between threads. However, since the
+    lock can be used to send values of type ~T~ from one thread to another, we must limit this promise
+    to types that are safe to send between threads. So, we (unsafely) implement ~Sync~ for ~SpinLock<T>~
+    for all ~T~ that implement Send, like this:
+
+    #+begin_src rust
+unsafe impl<T> Sync for SpinLock<T> where T: Send {}
+    #+end_src
+
+    Note that we don’t need to require that ~T~ is ~Sync~, because our ~SpinLock<T>~ will only allow one
+    thread at a time to access the ~T~ it protects. Only if we were to give multiple threads access at
+    once, like a reader-writer lock does for readers, would we (additionally) need to require ~T: Sync~.
+
+#+begin_src rust
+impl<T> SpinLock<T> {
+    pub const fn new(value: T) -> Self {
+        Self {
+            locked: AtomicBool::new(false),
+            value: UnsafeCell::new(value),
+        }
+    }
+}
+#+end_src
+
+    And then we get to the interesting part: ~lock~ and ~unlock~. The reason we are doing all
+    this, is to be able to return a ~&mut T~ from ~lock()~, such that the user isn't required to
+    write unsafe, unchecked code when using our lock to protect their data. This means
+    that we now have to use unsafe code on our side, within the implementation of lock.
+    An ~UnsafeCell~ can give us a raw pointer to its contents (~*mut T~) through its ~get()~
+    method, which we can convert to a reference within an unsafe block, as follows:
+
+    #+begin_src rust
+pub fn lock(&self) -> &mut T {
+    while self.locked.swap(true, Acquire) {
+        std::hint::spin_loop();
+    }
+    unsafe { &mut *self.value.get() }
+}
+    #+end_src
+
+    Since the function signature of lock contains a reference both in its input and
+    output, the lifetimes of the ~&self~ and ~&mut T~ have been elided and assumed to be
+    identical.
+
+    #+begin_src rust
+pub fn lock<'a>(&'a self) -> &'a mut T { }
+    #+end_src
+
+    If we try to add the ~unlock()~ method back, however, we would need a way to limit the lifetime of
+    the returned reference until the next call to ~unlock()~. Unfortunately, that’s not valid Rust.
+    #+begin_src rust
+/// Safety: The &mut T from lock() must be gone!
+/// (And no cheating by keeping reference to fields of that T around!)
+pub unsafe fn unlock(&self) {
+    self.locked.store(false, Release);
+}
+    #+end_src
+** A safe interface using a lock guard
+    To be able to provide a fully safe interface, we need to tie the unlocking operation to the end
+    of the ~&mut T~. We can do that by wrapping this reference in our own type that behaves like a
+    reference, but also implements the ~Drop~ trait to do something when it is dropped.
+
+    Such a type is often called a *guard*, as it effectively guards the state of the lock, and stays
+    responsible for that state until it is dropped.
+
+    #+begin_src rust
+pub struct Guard<'a, T> {
+    lock: &'a SpinLock<T>,
+}
+    #+end_src

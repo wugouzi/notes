@@ -1,4 +1,4 @@
-% Created 2023-05-30 Tue 10:52
+% Created 2023-07-04 Tue 11:51
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -14,6 +14,11 @@
 \usepackage{hyperref}
 \graphicspath{{../../books/}}
 \input{../preamble.tex}
+\DeclareMathOperator{\commit}{\text{commit}}
+\DeclareMathOperator{\DT}{\text{DT}}
+\DeclareMathOperator{\CP}{\text{CP}}
+\DeclareMathOperator{\Gen}{\text{Gen}}
+\DeclareMathOperator{\CSR}{\text{CSR}}
 \makeindex
 \author{wu}
 \date{\today}
@@ -31,9 +36,9 @@
 \tableofcontents
 
 \section{Query Optimization}
-\label{sec:org6ac77ef}
+\label{sec:orgd1d7442}
 \subsection{Introduction}
-\label{sec:org820094c}
+\label{sec:org68836e6}
 Compile time system:
 \begin{enumerate}
 \item parsing: parsing, AST production
@@ -65,33 +70,246 @@ Notation:
 \item \(e_1\bowtie_pe_2\), join, \(\{x\circ y\mid x\in e_1\wedge y\in e_2\wedge p(x\circ y)\}\)
 \end{itemize}
 
-\subsection{Join Ordering}
-\label{sec:org2ecd2b7}
 
+Different join implementations have different characteristics:
+\begin{itemize}
+\item \(e_1\bowtie^{NL}e_2\) Nested Loop Join:
+\item \(e_1\bowtie^{BNL}e_2\) Blockwise Nested Loop Join: Read chunks of \(e_1\) into memory and
+read \(e_2\) once for each chunk. Further improvement: Use hashing for equi-joins
+\item \(e_1\bowtie^{SM}e_2\) Sort Merge Join: Equi-joins only
+\item \(e_1\bowtie^{HH}e_2\) Hybrid-Hash Join: Partitions \(e_1\) and \(e_2\) into partitions that
+can be joined in memory. Equi-joins only
+\end{itemize}
+
+\subsection{Query Optimization}
+\label{sec:org5e83656}
+steps
+\begin{enumerate}
+\item translate the query into its canonical algebraic expression
+\item logical query optimization
+\item physical query optimization
+\end{enumerate}
+\subsubsection{Algebra Revisited}
+\label{sec:org2386cf6}
+Tuple is a (unordered) mapping from attribute names to values of a domain
+
+Schema is a set of attributes with domain, written \(\cala(t)\)
+
+concatenation of tuple:
+\begin{itemize}
+\item \(t_1\circ t_2\), note \(t_1\circ t_2=t_2\circ t_1\)
+\item \(\cala(t_1)\cap\cala(t_2)=\emptyset\)
+\item \(\cala(t_1\circ t_2)=\cala(t_1)\cup\cala(t_2)\)
+\end{itemize}
+
+tuple projection:
+\begin{itemize}
+\item \(t.a\), \(t|_A\)
+\item \(a\in\cala(t), A\subseteq\cala(t)\)
+\item \(\cala(t|_A)=A\)
+\item \(t.a\) produces a value, \(t|_A\) produces a tuple
+\end{itemize}
+
+Relation is a set of tuples with the same schema. Schema of the contained tuples,
+written \(\cala(R)\)
+
+Real data is usually a multi set (bag). The optimizar must consider three different semantics:
+\begin{itemize}
+\item logical algebra operates on bags
+\item physical algebra operates on streams
+\item explicit duplicate elimination \(\Rightarrow\) sets
+\end{itemize}
+
+Set operations are part of the algebra:
+\begin{itemize}
+\item union, intersection, difference
+\item but have schema constraints
+\item \(\cala(L)=\cala(R)\)
+\item \(\cala(L\cup R)=\cala(L)=\cala(R)\), \(\cala(L\cup R)=\cala(L)=\cala(R)\), \(\cala(L\setminus R)=\cala(L)=\cala(R)\)
+\end{itemize}
+
+\(\calf(e)\) are the free variables of \(e\)
+
+Selection:
+\begin{itemize}
+\item \(\sigma_p(R)\)
+\item \(\calf(p)\subseteq\cala(R)\)
+\item \(\cala(\sigma_p(R))=\cala(R)\)
+\end{itemize}
+
+Projection:
+\begin{itemize}
+\item \(\Pi_A(R)\)
+\item eliminates duplicates for set semantic, keeps them for bag semantic
+\item \(A\subseteq\cala(R)\)
+\item \(\cala(\Pi_A(R))=A\)
+\end{itemize}
+
+Rename:
+\begin{itemize}
+\item \(\rho_{a\to b}(R)\)
+\item \(a\in \cala(R),b\notin\cala(R)\)
+\item \(\cala(\rho_{a\to b}(R))=\cala(R)\setminus\{a\}\cup\{b\}\)
+
+\begin{align*}
+\sigma_{p_1\wedge p_2}&\quad\equiv\quad\sigma_{p_1}(\sigma_{p_2}(e))\tag{1}\\
+\sigma_{p_1}(\sigma_{p_2}(e))&\quad\equiv\quad\sigma_{p_2}(\sigma_{p_1}(e))\tag{2}\\
+\Pi_{A_1}(\Pi_{A_2}(e))&\quad\equiv\quad\Pi_{A_1}(e)\tag{3}\\
+&\quad\equiv\quad\text{if }A_1\subseteq A_2\\
+\sigma_p(\Pi_A(e))&\quad\equiv\quad\Pi_A(\sigma_p(e))\tag{4}\\
+&\quad\equiv\quad\text{if }\calf(p)\subseteq A\\
+\sigma_p(e_1\cup e_2)&\quad\equiv\quad\sigma_p(e_1)\cup\sigma_p(e_2)\tag{5}\\
+\sigma_p(e_1\cap e_2)&\quad\equiv\quad\sigma_p(e_1)\cap\sigma_p(e_2)\tag{6}\\
+\sigma_p(e_1\setminus e_2)&\quad\equiv\quad\sigma_p(e_1)\setminus\sigma_p(e_2)\tag{7}\\
+\Pi_A(e_1\cup e_2)&\quad\equiv\quad\Pi_A(e_1)\cup\Pi_A(e_2)\tag{8}\\
+e_1\times e_2&\quad\equiv\quad e_2\times e_1\tag{9}\\
+e_1\bowtie_pe_2&\quad\equiv\quad e_2\bowtie_pe_1\tag{10}\\
+(e_1\times e_2)\times e_3&\quad\equiv\quad e_1\times(e_2\times e_3)\tag{11}\\
+(e_1\bowtie_{p_1}e_2)\bowtie_{p_2}e_3&\quad\equiv\quad e_1\bowtie_{p_1}(e_2\bowtie_{p_2}e_3)\tag{12}\\
+\sigma_p(e_1\times e_2)&\quad\equiv\quad e_1\bowtie_pe_2\tag{13}\\
+\sigma_p(e_1\times e_2)&\quad\equiv\quad\sigma_p(e_1)\times e_2\tag{14}\\
+&\quad\equiv\quad\text{if }\calf(e)\subseteq\cala(e_1)\\
+\sigma_{p_1}(e_1\bowtie_{p_2}e_2)&\quad\equiv\quad\sigma_{p_1}(e_1)\bowtie_{p_2}e_2\tag{15}\\
+&\quad\equiv\quad\text{if }\calf(p_1)\subseteq\cala(e_1)\\
+\Pi_A(e_1\times e_2)&\quad\equiv\quad\Pi_{A_1}(e_1)\times\Pi_{A_2}(e_2)\tag{16}\\
+&\quad\equiv\quad\text{if }A=A_1\cup A_2, A_1\subseteq\cala(e_1),A_2\subseteq\cala(e_2)
+\end{align*}
+\end{itemize}
+
+\subsubsection{Canonical Query Translation}
+\label{sec:org00dcf2d}
+Restrictions:
+\begin{itemize}
+\item only \textbf{select distinct}
+\item no \textbf{group by, order by, union, intersect, except}
+\item only attributes in \textbf{select} clause
+\item no nested queries
+\item not discussed here: \texttt{NULL} values
+\end{itemize}
+
+\subsubsection{Logical Query Optimization}
+\label{sec:org457a05f}
+\begin{itemize}
+\item foundation: algebraic equivalence
+\end{itemize}
+
+Which plans are better?
+\begin{itemize}
+\item plans can only be compared if there is a cost function
+\item cost functions need details that are not available when only considering logical algebra
+\item consequence: logical query optimization remains a heuristic
+\end{itemize}
+
+Phases
+\begin{enumerate}
+\item break up conjunctive selection predicates, \((1)\to\)
+\item push selections down, \((2)\to,(14)\to\)
+\item introduce joins, \((13)\to\)
+\item determine join order \((9),(10),(11),(12)\)
+\item introduce and push down projections \((3)\leftarrow,(4)\leftarrow,(16)\to\)
+\begin{itemize}
+\item eliminate redundant attributes
+\end{itemize}
+\end{enumerate}
+
+This kind of phases has limitation: different join order would allow further push down. The
+phases are interdependent
+\subsubsection{Physical Query Optimization}
+\label{sec:org9d03ab9}
+\begin{itemize}
+\item add more execution information to the plan
+\item allow for cost calculations
+\item select index structures/access paths
+\begin{itemize}
+\item scan+selection could be done by an index lookup
+\item multiple indices to choose from
+\item table scan might be the best, even if an index is available
+\item depends on selectivity, rule of thumb: 10\%
+\item detailed statistics and costs required
+\item related problem: materialized view
+\item even more complex, as more than one operator could be substitued
+\end{itemize}
+\item choose operator implementations
+\begin{itemize}
+\item replace a logical operator (e.g. \(\bowtie\)) with a physical one (e.g. \(\bowtie^{HH}\))
+\item semantic restrictions: e.g., most join operators require equi-conditions
+\item \(\bowtie^{BNL}\) is better than \(\bowtie^{NL}\)
+\item \(\bowtie^{SM}\) and \(\bowtie^{HH}\) are usually better than both
+\item \(\bowtie^{HH}\) is often the best if not reusing sorts
+\item decision must be cost-based
+\item even \(\bowtie^{NL}\) can be optimal
+\item not only joins, has to be done for all operators
+\end{itemize}
+\item add property enforcer
+\begin{itemize}
+\item certain physical operators need certain properties
+\item example: sort for \(\bowtie^{SM}\)
+\item example: in a distributed database, operators need the data locally to operate
+\item many operator requirements can be modeled as properties
+\end{itemize}
+\item choose when to materialize
+\begin{itemize}
+\item temp operator stores input on disk
+\item essential for multiple consumers (factorization, DAGs)
+\item also relevant for \(\bowtie^{NL}\)
+\end{itemize}
+\end{itemize}
+\subsection{Join Ordering}
+\label{sec:org70c7bb8}
+\subsubsection{Basics}
+\label{sec:orgde4806f}
+\subsubsection{Search Space}
+\label{sec:org740500a}
+\subsubsection{Greedy Heuristics}
+\label{sec:orgc48b09d}
+\subsubsection{IKKBZ}
+\label{sec:org498fa31}
+\subsubsection{MVP}
+\label{sec:orge6f93ea}
+\subsubsection{Dynamic Programming}
+\label{sec:orgbcca9b2}
+\subsubsection{Simplifying the Query Graph}
+\label{sec:org9fe6bbe}
+\subsubsection{Adaptive Optimization}
+\label{sec:org87794e1}
+\subsubsection{Generating Permutations}
+\label{sec:org448cd5c}
+\subsubsection{Transformative Approaches}
+\label{sec:orgb387da3}
+\subsubsection{Randomized Approaches}
+\label{sec:org05df034}
+\subsubsection{Metaheuristics}
+\label{sec:org0529e50}
+\subsubsection{Iterative Dynamic Programming}
+\label{sec:orgfce4cb7}
+\subsubsection{Order Preserving Joins}
+\label{sec:org759a9ce}
+\subsubsection{Complexity of Join Processing}
+\label{sec:org145ea07}
 \subsection{Accessing the Data}
-\label{sec:org53f4ca7}
+\label{sec:org8fc883b}
 
 \subsection{Physical Properties}
-\label{sec:org43a7943}
+\label{sec:org1372730}
 
 \subsection{Query Rewriting}
-\label{sec:orgcb55afa}
+\label{sec:orge5173a7}
 
 \subsection{Self Tuning}
-\label{sec:org4b8d456}
+\label{sec:orgedcd106}
 \section{Transaction System}
-\label{sec:orge9e30a6}
+\label{sec:org07af306}
 \subsection{Computational Models}
-\label{sec:orgfffb96c}
+\label{sec:orgb394ac6}
 \subsubsection{Page Model}
-\label{sec:org12c0203}
+\label{sec:org0daf5ac}
 \begin{definition}[Page Model Transaction]
 A \textbf{transaction} \(t\) is a partial order of steps of the form \(r(x)\) or \(w(x)\)
 where \(x\in D\) and reads and writes as well as multiple writes applied to the same object are
 ordered. We write \(t=(op,<)\) for transaction \(t\) with step set \(op\) and partial order \(<\)
 \end{definition}
 \subsubsection{Object Model}
-\label{sec:orgdc0e4a0}
+\label{sec:org056d3ac}
 \begin{definition}[Object Model Transaction]
 A \textbf{transaction} \(t\) is a (finite) tree of labeled nodes with
 \begin{itemize}
@@ -108,9 +326,9 @@ and \(q\) of the form \(r(x)\) or \(w(x)\) or vice versa, we have \(p<q\vee q<p\
 \label{}
 \end{center}
 \subsection{Notions of Correctness for the Page Model}
-\label{sec:orgdc6df74}
+\label{sec:org8d5f3f8}
 \subsubsection{Canonical Synchronization Problems}
-\label{sec:org838a2f2}
+\label{sec:orgf915e86}
 
 Lost Update Problem:
 \begin{center}
@@ -130,7 +348,7 @@ Dirty Read Problem
 \label{}
 \end{center}
 \subsubsection{Syntax of Histories and Schedules}
-\label{sec:orge0a8247}
+\label{sec:org27dc5d9}
 \begin{definition}[Schedules and histories]
 Let \(T=\{t_1,\dots,t_n\}\) be a set of transactions, where each \(t_i\in T\) has the form
 \(t_i=(op_i,<_i)\)
@@ -164,7 +382,7 @@ from \(t_j\) or vice versa
 \label{}
 \end{center}
 \subsubsection{Herbrand Semantics of Schedules}
-\label{sec:org23db092}
+\label{sec:orgff3d6d6}
 \begin{definition}[Herbrand Semantics of Steps]
 For schedule \(s\) the \textbf{Herbrand semantics} \(H_s\) of steps \(r_i(x),w_i(x)\in op(s)\) is :
 \begin{enumerate}
@@ -178,7 +396,7 @@ before \(w_i(x)\) and \(f_{ix}\) is an uninterpreted \(m\)-ary function symbol.
 
 \begin{definition}[Herbrand Universe]
 For data items \(D=\{x,y,z,\dots\}\) and transactions \(t_i\), \(1\le i\le n\), the \textbf{Herbrand
-universe HU} is hte smallest set of symbols s.t.
+universe HU} is the smallest set of symbols s.t.
 \begin{enumerate}
 \item \(f_{0x}()\in HU\) for each \(x\in D\) where \(f_{0x}\) is a constant, and
 \item if \(w_i(x)\in op_i\) for some \(t_i\), there are \(m\) read
@@ -198,7 +416,7 @@ each \(x\in D\)
 \label{}
 \end{center}
 \subsubsection{Final-State Serializability}
-\label{sec:org4790b6a}
+\label{sec:orga33717a}
 \begin{definition}[]
 Schedules \(s\) and \(s'\) are called \textbf{final state equivalent}, denoted \(s\approx_fs'\)
 if \(op(s)=op(s')\) and \(H[s]=H[s']\)
@@ -242,7 +460,7 @@ Final-state equivalence of two schedules \(s\) and \(s'\) can be decided in time
 polynomial in the length of the two schedules.
 \end{corollary}
 \subsubsection{View Serializability}
-\label{sec:org10d71af}
+\label{sec:orga7e1851}
 As we have seen, FSR emphasizes steps that are alive in a schedule. However, since the semantics
 of a schedule and of the transactions occurring in a schedule are unknown, it is reasonable to
 require that in two equivalent schedules, each transaction reads the same values, independent of
@@ -325,7 +543,7 @@ If \(s\) is in \(E\), then \(\Pi_T(s)\) is in \(E\) for each \(T\subseteq trans(
 
 VSR is not monotone
 \subsubsection{Conflict Serializability}
-\label{sec:org806ffb7}
+\label{sec:org1ecbb80}
 \begin{definition}[Conflicts and Conflict Relations]
 Let \(s\) be a schedule, \(t,t'\in trans(s)\), \(t\neq t'\)
 \begin{enumerate}
@@ -349,6 +567,7 @@ s.t. \(s\approx_cs'\). CSR denotes the class of all conflict serializable schedu
 \(CSR\subset VSR\)
 \end{theorem}
 
+\index{conflict graph}
 \begin{definition}[]
 Let \(s\) be a schedule. The \textbf{conflict graph} \(G(s)=(V,E)\)  is a directed graph with
 vertices \(V:=commit(s)\) and
@@ -393,6 +612,36 @@ if \(x\neq y\) or both \(o\) and \(p\) are reads
 
 
 \begin{definition}[]
+Schedules \(s\) and \(s'\) s.t. \(op(s)=op(s')\) are \textbf{commutativity based equivalent},
+denoted \(s\sim^*s'\), if \(s\) can be transformed into \(s'\) by applying rules C1, C2, C3, C4 finitely.
+\end{definition}
+
+\begin{theorem}[]
+Let \(s\) and \(s'\)  be schedules s.t. \(op(s)=op(s')\). Then \(s\approx_cs'\) iff \(s\sim^*s'\)
+\end{theorem}
+
+\begin{definition}[]
+Schedule \(s\) is \textbf{commutativity-based reducible} if there is a serial schedule \(s'\) s.t. \(s\sim^*s'\)
+\end{definition}
+
+\begin{corollary}[]
+Schedule \(s\) is commutativity-based reducible iff \(s\in CSR\)
+\end{corollary}
+
+\begin{definition}[]
+Schedule \(s\) is \textbf{order preserving conflict serializable} if it is conflict equivalent to a
+serial schedule \(s'\) and for all \(t,t'\in trans(s)\), if \(t\) completely precedes \(t'\)
+in \(s\), then the same holds in \(s'\). OSCR denotes the class of all schedules with this property.
+\end{definition}
+
+\begin{theorem}[]
+\(OCSR\subset CSR\)
+\end{theorem}
+
+\(s=w_1(x)r_2(x)c_2w_c(y)c_3w_1(y)c_1\in CSR\setminus OCSR\)
+
+
+\begin{definition}[]
 Schedules \(s\) is \textbf{commit order preserving conflict serializable} if for
 all \(t_i,t_j\in trans(s)\), if there are \(p\in t_i\), \(q\in t_j\) with \((p,q)\in conf(s)\),
 then \(c_i<_sc_j\).
@@ -408,12 +657,14 @@ COCSR denotes the class of all schedules with this property
 Schedule \(s\) is in COCSR iff there is a serial schedule \(s'\) s.t. \(s\approx_cs'\) and for
 all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
 \end{theorem}
+\subsubsection{Commit Serializability}
+\label{sec:org1a41ba5}
 \subsubsection{An Alternative Criterion: Interleaving Specifications}
-\label{sec:org60739c3}
+\label{sec:orgf854784}
 \subsection{Concurrency Control Algorithms}
-\label{sec:org81d9781}
+\label{sec:orgc065bfb}
 \subsubsection{General Scheduler Design}
-\label{sec:org7323902}
+\label{sec:orgc1efb6e}
 \begin{center}
 \includegraphics[width=.8\textwidth]{../images/bigdatabase/8.png}
 \label{}
@@ -423,20 +674,178 @@ all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
 For a scheduler \(S\), \(Gen(S)\) denotes the set of all schedules that \(S\) can generate. A
 scheduler is called \textbf{CSR safe} if \(Gen(S)\subseteq CSR\)
 \end{definition}
-\begin{forest}
-[concurrency control protocols
-    [pessimistic
-        [non-locking
-            [TO]
-            [SGT]
-        ]
-    ]
-]
-\end{forest}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/bigdatabase/9.png}
+\label{}
+\end{center}
 \subsubsection{Locking Schedulers}
-\label{sec:org4a9d132}
+\label{sec:org33253f7}
+\begin{enumerate}
+\item Introduction
+\label{sec:org165d84f}
+General locking rules:
+\begin{enumerate}
+\item Each data operation \(o_i(x)\) must be preceded by \(ol_i(x)\) and followed by \(ou_i(x)\)
+\item For each \(x\) and \(t_i\) there is at most one \(ol_i(x)\) and at most one \(ou_i(x)\)
+\item No \(ol_i(x)\)  or \(ou_i(x)\) is redundant
+\item If \(x\) is locked by both \(t_i\) and \(t_j\), then these locks are compatible
+\end{enumerate}
+
+Let \(\DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\). \(\CP(s)\)
+denotes the committed projection of \(s\).
+
+
+\item Two-Phase Locking
+\label{sec:orga48af50}
+\begin{definition}[]
+A locking protocol is \textbf{two-phase} if for every output schedule \(s\) and every
+transaction \(t_i\in trans(s)\) no \(ql_i\) step follows the first \(ou_i\) step (\(q,0\in\{r,w\}\))
+\end{definition}
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/bigdatabase/10.png}
+\label{}
+\end{center}
+
+
+\begin{lemma}[]
+\label{4.1}
+Let \(s\) be the output of a 2PL scheduler. Then for each transaction \(t_i\in commit(DT(s))\), the
+following holds:
+\begin{enumerate}
+\item if \(o_i(x)\), \(o\in\{r,w\}\), occurs in \(\CP(\DT(s))\), then so do \(ol_i(x)\) and \(ou_i(x)\)
+with the sequencing \(ol_i(x)<o_i(x)<ou_i(x)\).
+\item If \(t_j\in\commit(\DT(s))\), \(i\neq j\), is another transaction s.t. some steps \(p_i(x)\)
+and \(q_j(x)\) from \(\CP(\DT(s))\) are in conflict, then either \(pu_i(x)<ql_j\)
+or \(qu_j(x)<pl_i(x)\) holds.
+\item If \(p_i(x)\) and \(q_j(y)\) are in \(\CP(\DT(s))\), then \(pl_i(x)<qu_i(y)\), i.e., every lock
+operation occurs before every unlock operation of the same transaction.
+\end{enumerate}
+\end{lemma}
+
+\begin{lemma}[]
+\label{4.2}
+Let \(s\) be the output of a 2PL scheduler, and let \(G:=G(\CP(\DT(s)))\) be the conflict graph
+of \(\CP(\DT(s))\), then the following holds:
+\begin{enumerate}
+\item If \((t_i,t_j)\) is an edge in \(G\), then \(pu_i(x)<ql_j(x)\) for some data item \(x\) and two
+operations \(p_i(x)\), \(q_j(x)\) in conflict.
+\item If \((t_1,\dots,t_n)\) is a path in \(G\), \(n\ge 1\), then \(pu_1(x)<ql_n(y)\) for two data
+items \(x\) and \(y\) as well as operations \(p_1(x)\) and \(q_n(y)\).
+\item \(G\) is acyclic.
+\end{enumerate}
+\end{lemma}
+
+Since the conflict graph of an output produced by a 2PL scheduler is acyclic, we have
+
+\begin{theorem}[]
+\(Gen(2PL)\subset CSR\)
+\end{theorem}
+
+\begin{examplle}[Strict inclusion]
+Let \(s=w_1(x)r_2(x)c_2r_3(y)c_3w_1(y)c_1\). \(s\in\CSR\) as \(s\approx_ct_3t_1t_2\). And \(s\) cannot be produced
+by a 2PL scheduler
+\end{examplle}
+
+\begin{theorem}[]
+\(Gen(2PL)\subset OCSR\)
+\end{theorem}
+
+
+\item Deadlock Handling
+\label{sec:org60fe08b}
+Deadlock detection:
+\begin{enumerate}
+\item maintain dynamic \textbf{waits-for graph} (WFG) with active transactions as nodes and an edge
+from \(t_i\) to \(t_j\) if \(t_j\) waits for a lock held by \(t_i\)
+\item Test WFG for cycles
+\end{enumerate}
+
+Deadlock resolution: Choose a transaction on a WFG cycles as a \textbf{deadlock victim} and abort this
+transaction, and repeat until no more cycles.
+
+Possible victim selection strategies:
+\begin{enumerate}
+\item Last blocked
+\item Random
+\item Youngest
+\item Minimum locks
+\item Minimum work
+\item Most cycles
+\item Most edges
+\end{enumerate}
+
+Deadlock Prevention: Restrict lock waits to ensure acyclic WFG at all times. Reasonable deadlock
+prevention strategies when \(t_i\) is blocked by \(t_j\):
+\begin{enumerate}
+\item \textbf{wait-die}: if \(t_i\) started before \(t_j\) then wait else abort \(t_i\).
+\item \textbf{wound-wait}: if \(t_i\) started before \(t_j\) then abort \(t_i\) else wait
+\item \textbf{Immediate restart}: abort \(t_i\)
+\item \textbf{Running priority}: if \(t_j\) is itself blocked then abort \(t_j\) else wait
+\item \textbf{Timeout}: abort waiting transaction when a timer expires.
+\end{enumerate}
+Abort entails later restart
+\item Variants of 2PL
+\label{sec:org78a9d40}
+\begin{definition}[]
+Under \textbf{static} or \textbf{conservative 2PL} (C2PL) each transaction acquires all its locks before the first
+data operation.
+\end{definition}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/bigdatabase/11.png}
+\captionof{figure}{\label{}Conservative 2PL}
+\end{center}
+
+\begin{definition}[]
+Under \textbf{strict 2PL} (S2PL) each transaction holds all its write locks until the transaction terminates.
+\end{definition}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/bigdatabase/12.png}
+\captionof{figure}{\label{}Strict 2PL}
+\end{center}
+
+\begin{definition}[]
+Under \textbf{strong 2PL} (SS2PL) each transaction holds all its locks until the transaction terminates
+\end{definition}
+
+\begin{theorem}[]
+\(\Gen(SS2PL)\subset\Gen(S2PL)\subset\Gen(2PL)\)
+\end{theorem}
+
+\begin{theorem}[]
+\(\Gen(SS2PL)\subset COCSR\)
+\end{theorem}
+
+
+\item Ordered Sharing of Locks (O2PL)
+\label{sec:org460f7bf}
+\item Altruistic Locking (AL)
+\label{sec:orged87c75}
+\item Non-Two-Phase Locking (WTL, RWTL)
+\label{sec:orgd7f08ac}
+Motivation: concurrent executions of transactions with access patterns that comply with
+organizing data items into a virtual tree
+\begin{align*}
+&t_1=w_1(a)w_1(b)w_1(d)w_1(e)w_1(i)w_1(k)\\
+&t_2=w_2(a)w_2(b)w_2(c)w_2(d)w_2(h)
+\end{align*}
+\begin{forest}
+[a
+    [b
+        [c
+            [f] [g]]
+        [d [h]]
+        [e
+            [i
+                [j] [k]]]]]
+\end{forest}
+\item Geometry of Locking
+\label{sec:orgf1b8056}
+\end{enumerate}
 \subsubsection{Non-Locking Schedulers}
-\label{sec:orgca01522}
+\label{sec:org276f78c}
 \subsubsection{Hybrid Protocols}
-\label{sec:org97079be}
+\label{sec:org00e18af}
 \end{document}

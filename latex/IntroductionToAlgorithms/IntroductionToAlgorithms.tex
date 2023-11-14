@@ -1,4 +1,4 @@
-% Created 2022-12-28 Wed 14:37
+% Created 2023-09-28 Thu 14:34
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -24,7 +24,7 @@
  pdftitle={Introduction To Algorithms},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 28.0.92 (Org mode 9.6)}, 
+ pdfcreator={Emacs 29.1 (Org mode 9.7)}, 
  pdflang={English}}
 \begin{document}
 
@@ -34,11 +34,11 @@
 
 
 \section{Graph Algorithms}
-\label{sec:org1235130}
+\label{sec:org4cc080e}
 \subsection{Elementary Graph Algorithms}
-\label{sec:org36620c5}
+\label{sec:orgb718ed8}
 \subsubsection{Topological sort}
-\label{sec:org9cf1671}
+\label{sec:org66618ae}
 \begin{algorithmic}[1]
 \Procedure{Topological-Sort}{$G$}
 \State call DFS\((G)\) to compute finishing times \(v.f\) for each vertex \(v\)
@@ -72,9 +72,9 @@ happens to this algorithm if \(G\) has cycles?
 
 \end{proof}
 \subsection{Minimum Spanning Trees}
-\label{sec:org04b6b1f}
+\label{sec:org66c1988}
 \subsubsection{Growing a minimum spanning tree}
-\label{sec:org4fe7a6f}
+\label{sec:org66aa787}
 \begin{algorithmic}[1]
 \Procedure{Generic-MST}{$G,w$}
 \State \(A=\emptyset\)
@@ -131,10 +131,12 @@ If \((u,v)\) is a light edge connecting \(C\) to some other component in \(G_A\)
 is safe for \(A\).
 \end{corollary}
 \subsubsection{The algorithms of Kruskal and Prim}
-\label{sec:org6718153}
+\label{sec:org7fbb10d}
 \begin{enumerate}
 \item Kruskal's algorithm
-\label{sec:orgb693735}
+\label{sec:orgf4bc2e1}
+Kruskal's algorithm finds a safe edge to add to the growing forest by finding, of all the edges
+that connect any trees in the forest, an edge \((u,v)\) with the lowest weight.
 \begin{algorithmic}[1]
 \Procedure{MST-Kruskal}{$G,w$}
 \State \(A=\emptyset\)
@@ -152,10 +154,13 @@ is safe for \(A\).
 \State \textbf{Return} \(A\)
 \EndProcedure
 \end{algorithmic}
+
+The running time of Kruskal's algorithm for a graph \(G=(V,E)\) depends on the specific
+implementation of the disjoint-set data structure.
 \end{enumerate}
 
 \subsection{Single-Source Shortest Paths}
-\label{sec:org4296c50}
+\label{sec:org648f66e}
 \begin{algorithmic}[1]
 \Procedure{Initialize-single-source}{$G,s$}
 \For{\(v\in G.V\)}
@@ -176,7 +181,7 @@ is safe for \(A\).
 \end{algorithmic}
 
 \subsubsection{The Bellman-Ford algorithm}
-\label{sec:org5089956}
+\label{sec:org74e2030}
 \begin{algorithmic}[1]
 \Procedure{Initialize-single-source}{$G,s$}
     \For{\(i=1\) to \(\abs{G,V}-1\)}
@@ -247,7 +252,7 @@ But since \(\sum_{i=1}^kv_i.d=\sum_{i=1}^kv_{i-1}.d\), we have
 
 \end{exercise}
 \subsubsection{Single-source shortest paths in directed acyclic graphs}
-\label{sec:orgc67f19d}
+\label{sec:orgd5c692a}
 By relaxing the edges of a weighted dag \(G=(V,E)\) according to a topological sort of its
 vertices, we can compute shortest paths from a single source in \(\Theta(V+E)\) time. Shortest paths
 are always well defined in a dag
@@ -269,7 +274,7 @@ Given an efficient algorithm to count the total number of paths in a directed ac
 Analyze your algorithm
 \end{exercise}
 \subsubsection{Dijkstra's algorithm}
-\label{sec:org888fca0}
+\label{sec:orgb563df3}
 Dijkstra's algorithm solves the single-source shortest-paths problem on a weighted, directed
 graph \(G=(V,E)\) for the case in which all edge weights are nonnegative.
 \begin{algorithmic}[1]
@@ -306,7 +311,7 @@ We claim that \(y.d=\delta(s,y)\) when \(u\) is added to \(S\). But \(y\) should
 
 \end{exercise}
 \subsubsection{Proofs of shortest-paths properties}
-\label{sec:orgc40bb34}
+\label{sec:org292e937}
 \begin{lemma}[Triangle inequality]
 Let \(G=(V,E)\) be a weighted, directed graph with weight function \(w:E\to\R\) and source
 vertex \(s\). Then for all edges \(u,v)\in E\) we have
@@ -374,4 +379,24 @@ If \(G\) is initialized by INITIALIZE-SINGLE-SOURCE\((G,s)\) and then a sequence
 steps occurs that includes, in order, relaxing the edges \((v_0,v_1),\dots,(v_{k-1},v_k)\)
 then \(v_k.d=\delta(s,v_k)\) after these relaxations and at all times after wards.
 \end{lemma}
+\section{Dynamic Programming}
+\label{sec:orgc46dd7c}
+\subsection{Longest common subsequence}
+\label{sec:orgbcb879e}
+\begin{theorem}[Optimal substructure of an LCS]
+Let \(X=\la x_1,\dots,x_m\ra\) and \(Y=\la y_1,\dots,y_n\ra\) be sequence, and let \(Z=\la z_1,\dots,z_k\ra\) be any LCS
+of \(X\) and \(Y\).
+\begin{enumerate}
+\item If \(x_m=y_n\), then \(z_k=x_m=y_n\) and \(Z_{k-1}\) is an LCS of \(X_{m-1}\)
+and \(Y_{n-1}\).
+\item If \(x_m\neq y_n\) and \(z_k\neq x_m\), then \(Z\) is an LCS of \(X_{m-1}\) and \(Y\).
+\item If \(x_m\neq y_n\) and \(z_k\neq y_n\), then \(Z\) is an LCS of \(X\) and \(Y_{n-1}\)
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\begin{enumerate}
+\item If \(z_k\neq x_m\), then we could append \(x_m=y_n\) to \(Z\)
+\end{enumerate}
+\end{proof}
 \end{document}

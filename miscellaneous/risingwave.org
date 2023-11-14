@@ -85,6 +85,113 @@ query on source，batch查寻
 
 batch执行检查pk
     *
+** Week9 [0/0]
+    * rename source_info
+    * implement from for each schema?
+    * clone in create_source
+
+
+    Principle: parameters are enough for construction of parser
+**** list of parameters to build parser
+    * CSV: ~delimiter~, ~has_header~
+    * AVRO/AVRO UPSERT: ~row_schema_location~
+      * ~use_schema_registry~ true:  ~kafka topic~, ~client~
+      * false: ~s3~ config
+    * Protobuf: ~message_name~, ~row_schema_location~
+      * ~use_schema_registry~ true: ~kafka topic~, ~client~
+      * false: ~s3~
+    * DebeziumAvro: ~row_schema_location~, ~kafka_topic~, ~client~
+    * rest: None
+
+
+**** list of connector properties
+** Week 10 [0/0]
+*** except
+    two goal:
+    #+begin_src sql
+select t.* except (t.a) from t;
+
+select * except (a) from t cross join tt;
+    #+end_src
+*** accessor
+    * json:
+      #+begin_src rust
+let mut event: BorrowedValue<'_> = simd_json::to_borrowed_value(&mut payload)
+    .map_err(|e| RwError::from(ProtocolError(e.to_string())))?;
+
+let payload = if let Some(payload) = event.get_mut("payload") {
+    std::mem::take(payload)
+} else {
+    event
+};
+
+let accessor = JsonAccess::new_with_options(payload, &JsonParseOptions::DEBEZIUM);
+
+      #+end_src
+
+    * avro
+      #+begin_src rust
+let mut accessor: UpsertChangeEvent<AvroAccess<'_, '_>, AvroAccess<'_, '_>> =
+    UpsertChangeEvent::default();
+if let Some(key) = &avro_key {
+    accessor = accessor.with_key(AvroAccess::new(
+        key,
+        AvroParseOptions {
+            schema: self.key_schema.as_deref(),
+            ..Default::default()
+        },
+    ));
+}
+
+if let Some(value) = &avro_value {
+    accessor = accessor.with_value(AvroAccess::new(
+        value,
+        AvroParseOptions::default().with_schema(&self.schema),
+    ));
+}
+
+if let Some(pk) = &self.upsert_primary_key_column_name {
+    accessor = accessor.with_key_as_column_name(pk);
+}
+
+apply_row_operation_on_stream_chunk_writer(accessor, &mut writer)
+      #+end_src
+
+    * Protobuf
+
+
+    Overall design:
+    1. One parser for each protocol
+    2. Each parser has two accessor
+    3. Each parser has two value parser, and generate corresponding accessor based on value
+
+
+    Payload -> Value -> Accessor
+
+    We use accessor builder to store the value and provide corresponding accessor
+    #+begin_src rust
+/// debezium json
+let payload = if let Some(payload) = event.get_mut("payload") {
+    std::mem::take(payload)
+} else {
+    event
+};
+    #+end_src
+
+    design:
+    1. First, we have default format parser. And specific avro parser for debezium, as well as json
+       parser for ~canal~.
+    value parser -> build corresponding value parser
+    1. avro has key/value schema, how do we handle it. Need to specify whether it's key or value()
+    2. key parser is optional
+       * specified
+       * if not specified, and upsert, get it from with clause
+
+    3. Deprecate previous Avro/Protobuf parsers
+
+    4. each provider has its own
+
+    access builder -> build corresponding accessor
 * Knowledge
 ** Data types
     #+begin_src rust
