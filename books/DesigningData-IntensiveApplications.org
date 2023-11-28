@@ -207,7 +207,7 @@
     This is a problem of causality. To order these events correctly, a technique called *version vectors* can be used.
 ** Leaderless Replication
 *** Writing to the Database When a Node is Down
-*** Read repair and anti-entropy
+**** Read repair and anti-entropy
     /Read repair/: When a client makes a read from several nodes in parallel, it can detect any stale
     responses.
 
@@ -216,8 +216,375 @@
     to another. Unlike the replication log in leader-based replication, this anti-entropy process
     does not copy writes in any particular order, and there may be a significant delay before data
     is copied.
-*** Quorums for reading and writing
+**** Quorums for reading and writing
     If there are \(n\) replicas, every write mus be performed by \(w\) nodes to be considered
     successful, and we must query at least \(r\) nodes for each read. As long as \(w+r>n\), we
     expect to get an up-to-date value when reading. Reads and writes that obey these \(r\) and \(w\)
     values are called *quorum* reads and writes.
+
+    The quorum condition, \(w+r>n\), allows the system to tolerate unavailable nodes as follows:
+    * if \(w<n\), we can still process writes if a node is unavailable
+    * if \(r<n\), we can still process reads if a node is unavailable
+    * With \(n=3,w=2,r=2\), we can tolerate one unavailable node.
+    * With \((n,w,r)=(5,3,2)\), we can tolerate two unavailable nodes.n
+*** Limitations of Quorum Consistency
+    If you have \(n\) replicas, and you choose \(w\) and \(r\) s.t. \(w+r>n\), you can generally
+    expect every read to return the most recent value written for a key.
+
+    Often, \(r\) and \(w\) are chosen to be a majority (more than \(n/2\)) of nodes, because that
+    ensures \(w+r>n\) while still tolerating up to \(n/2\) node failures.
+
+    Edge case:
+    * If two writes occur concurrently, it is not clear which one happened first.
+    * If a node carrying a new value fails, and its data is restored from a replica carrying an old
+      value, the number of replicas storing the new value may fall below \(w\), breaking the quorum condition.
+**** Monitoring staleness
+*** Sloppy Quorums and Hinted Handoff
+    A network interruption can easily cut off a client from a large number of database nodes.
+    Although those nodes are alive, and other clients may be able to connect to them, to a client
+    that is cut off from the database nodes, they might as well be dead. In this situation, it’s
+    likely that fewer than \(w\) or \(r\) reachable nodes remain, so the client can no longer reach
+    a quorum.
+
+    In a large cluster (with significantly more than n nodes) it’s likely that the client can
+    connect to some database nodes during the network interruption, just not to the nodes that it
+    needs to assemble a quorum for a particular value. In that case, database designers face a
+    trade-off:
+    * Is it better to return errors to all requests for which we cannot reach a quorum of \(w\)
+      or \(r\) nodes?
+    * Or should we accept writes anyway, and write them to some nodes that are reachable but aren’t
+      among the \(n\) nodes on which the value usually lives?
+
+
+    The latter is known as a *sloppy quorum*: writes and reads still require \(w\) and \(r\)
+    successful responses, but those may include nodes that are not among the designated \(n\) "home"
+    nodes for a value.
+
+    Once the network interruption is fixed, any writes that one node temporarily accepted on behalf
+    of another node are sent to the appropriate “home” nodes. This is called *hinted handoff*.
+*** Detecting Concurrent Writes
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Concurrent writes in a Dynamo-style datastore: there is no well-defined ordering
+    [[../images/ddia/4.jpg]]
+**** Last writes wins (discarding concurrent writes)
+    LWW achieves the goal of eventual convergence, but at the cost of durability: if there
+    are several concurrent writes to the same key, even if they were all reported as successful to
+    the client (because they were written to w replicas), only one of the writes will survive and
+    the others will be silently discarded.
+**** The "happens-before" relation and concurrency
+* Partitioning
+** Partitioning and Replication
+** Partitioning of Key-Value Data
+*** Partitioning by Key Range
+*** Partitioning by Hash of Key
+*** Skewed Workloads and Relieving Hot Spots
+** Partitioning and Secondary Indexes
+    The problem with secondary indexes is that they don’t map neatly to partitions.
+*** Partitioning Secondary Indexes by Document
+    each partition maintains its own secondary indexes, covering only the documents in that
+    partition. It doesn’t care what data is stored in other partitions.
+*** Partitioning Secondary Indexes by Term
+    Rather than each partition having its own secondary index (a /local index/), we can construct a
+    /global index/ that covers data in all partitions. A global index must also be partitioned, but it
+    can be partitioned differently from the primary key index.
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Partitioning secondary indexes by term
+    [[../images/ddia/5.jpg]]
+** Rebalancing Partitions
+    The process of moving load from one node in the cluster to another is called *rebalancing*.
+
+    Requirements:
+    * after rebalancing, the load (data storage, read and write requests) should be shared fairly
+      between the nodes in the cluster
+    * while rebalancing is happening, the database should continue accepting reads and writes
+    * no more data than necessary should be moved between nodes, to make rebalancing fast and to
+      minimize hte network and disk I/O load
+*** Strategies for rebalancing
+**** How not to do it: hash mod N
+    if \(N\) changes, we need to remap most of keys
+**** Fixed number of partitions
+    We can create many partitions than there are nodes, and assign several partitions to each node.
+**** Dynamic partitioning
+    When a partition grows to exceed a configured size (on HBase, the default is 10 GB), it is split
+    into two partitions so that approximately half  of the data ends up on each side of the split
+    [26]. Conversely, if lots of data is deleted and a partition shrinks below some threshold, it
+    can be merged with an adjacent partition.
+**** Partitioning proportionally to nodes
+    With dynamic partitioning, the number of partitions is proportional to the size of the dataset,
+    since the splitting and merging processes keep the size of each partition between some fixed
+    minimum and maximum.
+*** Operations: Automatic or Manual Rebalancing
+** Request Routing
+*** Parallel Query Execution
+* Transactions
+** The Slippery Concept of a Transaction
+*** The Meaning of ACID
+**** Atomicity
+    Atomicity describes what happens if a client wants to make several writes, but a fault occurs
+    after some of the writes have been processed.
+
+    If the writes are grouped together into an atomic transaction, and the transaction cannot be
+    completed (committed) due to a fault, then the transaction is aborted and the database must
+    discard or undo any writes it has made so far in that transaction.
+**** Consistency
+    The idea of ACID consistency is that you have certain statements about your data
+    (invariants) that must always be true. If a transaction starts with a database that is valid
+    according to these invariants, and any writes during the transaction preserve the validity, then
+    you can be sure that the invariants are always satisfied.
+
+    Consistency is a property of the application. The application may rely on the database’s
+    atomicity and isolation properties in order to achieve consistency, but it’s not up to the
+    database alone.
+**** Isolation
+    Isolation in the sense of ACID means that concurrently executing transactions are
+    isolated from each other: they cannot step on each other’s toes.
+**** Durability
+    Durability is the promise that once a transaction has committed successfully, any data it has
+    written will not be forgotten, even if there is a hardware fault or the database crashes.
+*** Single-Object and Multi-Object Operations
+** Weak Isolation Levels
+*** Read Committed
+    It makes two guarantees:
+    1. When reading from the database, you will only see data that has been committed (no *dirty
+       reads*)
+    2. When writing to the database, you will only overwrite data that has been committed (no *dirty
+       writes*)
+
+    Most commonly, database prevent dirty writes by using row-level locks: when a transaction wants
+    to modify a particular object (row or document), it must first acquire a lock on that object.
+
+    How do we prevent dirty reads? One option would be to use the same lock.
+    Otherwise, for every object that is written, the database remembers both the old committed value
+    and the new value set by the transaction currently holds the write lock. While the transaction
+    is ongoing, any other transactions that read the object are given the old value. Only when the
+    new value is committed do transactions switch over to reading the new value.
+*** Snapshot Isolation and Repeatable Read
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Read skew: Alice observes the database in an inconsistent state
+    [[../images/ddia/6.jpg]]
+
+    This anomaly is called a *nonrepeatable read* or *read skew*.
+
+    *Snapshot isolation* is the most common solution to this problem. The idea is that each
+    transaction reads from a /consistent snapshot/ of the database - that is, the transaction sees all
+    the data that was committed in the database at the start of the transaction.
+**** Implementing snapshot isolation
+    Like read committed isolation, implementations of snapshot isolation typically use write locks
+    to prevent dirty writes. However, reads do not require any locks.
+    /From a performance point of view, a key principle of snapshot isolation is readers never block
+    writers, and writers never block readers./
+
+    To implement it, we use write locks to prevent dirty writes and use *Multiversion concurrency
+    control* for read.
+
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Implementing snapshot isolation using multi-version objects
+    [[../images/ddia/7.jpg]]
+
+    An update is internally translated into a delete and a create.
+**** Visibility rules for observing a consistent snapshot
+**** Indexes and snapshot isolation
+    One option is to have the index simply point to all version of an object.
+
+    Also can use *append-only b-tree*.
+**** Repeatable read and naming confusion
+    Oracle calls it *serializable* and PG/MySQL calls it *repeatable read*.
+*** Preverting Lost Updates
+    The read committed and snapshot isolation levels we’ve discussed so far have been primarily
+    about the guarantees of what a read-only transaction can see in the presence of concurrent
+    writes.
+
+    There are several other interesting kinds of conflicts that can occur between concurrently
+    writing transactions. The best known of these is the lost update problem:
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: A race condition between two clients concurrently incrementing a counter
+    [[../images/ddia/8.jpg]]
+
+    The lost update problem can occur if an application reads some value from the database, modifies
+    it, and writes back the modified value (a /read-modify-write cycle/).
+**** Atomic write operations
+    Atomic operations are usually implemented by taking an exclusive lock on the objecgt when it is
+    read so that no other transaction can read it until the update has been applied. This technique
+    is called *cursor stability*.
+**** Explicit locking
+**** Automatically detecting lost updates
+**** Compare-and-set
+**** Conflict resolution and replication
+*** Write Skew and Phantoms
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Example of write skew causing an application bug
+    [[../images/ddia/9.jpg]]
+
+    Since the database is using snapshot isolation, both checks return 2.
+**** Characterizing write skew
+    This anomaly is called *write skew*.
+
+    Write skew can occur if two transactions read the same objects, and then update some of those
+    objects
+
+    With write skew our options are more restricted.
+    * Atomic single-object operations don't help, as multiple objects are involved.
+    * If you can't use a serializable isolation level, the second-best option in this case is to
+      explicitly lock the row.
+**** Phantoms causing write skew
+    1. A ~SELECT~ query checks whether some requirements is satisfied by searching for rows that match
+       some search condition
+    2. Depending on the result of the first query, the application code decides how to continue
+    3. If the application decides to go ahead, it makes a write (~INSERT~, ~UPDATE~, or ~DELETE~) to the
+       database and commits the transaction.
+
+    This effect, where a write in one transaction changes the result of a search query in another
+    transaction, is called a *phantom*
+** Serializability
+*** Actual Serial Execution
+    * Every transaction must be small and fast, because it takes only one slow transaction to stall
+      all transaction processing.
+    * It is limited to use cases where the active dataset can fit in memory. Rarely accessed data
+        could potentially be moved to disk, but if it needed to be accessed in a single-threaded
+        transaction, the system would get very slow.
+    * Write throughput must be low enough to be handled on a single CPU core, or else transactions
+        need to be partitioned without requiring cross-partition coordination.
+    * Cross-partition transactions are possible, but there is a hard limit to the extent to which
+      they can be used.
+*** Two-Phase Locking
+    Two-phase locking makes the lock requirements much stronger:
+    * If transaction A has read an object and transaction B wants to write to that object, B must
+      wait until A commits or aborts before it can continue. (This ensures that B can’t change the
+      object unexpectedly behind A’s back.)
+    * If transaction A has written an object and transaction B wants to read that object, B must
+      wait until A commits or aborts before it can continue. (Reading an old version of the object
+      is not acceptable under 2PL.)
+
+    A database with serializable isolation must prevent phantoms.
+
+    In the meeting room booking example this means that if one transaction has searched for existing
+    bookings for a room within a certain time window, another transaction is not allowed to concurrently
+    insert or update another booking for the same room and time range. (It’s okay to concurrently
+    insert  bookings for other rooms, or for the same room at a different time that doesn’t affect
+    the proposed booking.)
+
+    How do we implement this? Conceptually, we need a *predicate lock*. It works similarly to the
+    shared/exclusive lock described earlier, but rather than belonging to a particular object (e.g.,
+    one row in a table), it belongs to all objects that match some search condition,
+
+    Unfortunately, predicate locks do not perform well: if there are many locks by active
+    transactions, checking for matching locks becomes time-consuming. For that reason, most
+    databases with 2PL actually implement *index-range locking*
+*** Serializable Snapshot Isolation
+    On the one hand, we have implementations of serializability that don’t perform well (two- phase
+    locking) or don’t scale well (serial execution). On the other hand, we have weak isolation
+    levels that have good performance, but are prone to various race conditions (lost updates, write
+    skew, phantoms, etc.). Are serializable isolation and good performance fundamentally at odds
+    with each other?
+**** Pessimistic versus optimistic concurrency control
+    Two-phase locking is a so-called *pessimistic* concurrency control mechanism. Serial execution is,
+    in a sense, pessimistic to the extreme.
+
+    By contrast, serializable snapshot isolation is an *optimistic* currency control technique.
+    Optimistic in this context means that instead of blocking if something potentially dangerous
+    happens, transactions continue anyway, in the hope that everything will turn out all right. When
+    a transaction wants to commit, the database checks whether anything bad happened; if so, the
+    transaction action is aborted and has to be retired.
+**** Decisions based on an outdated premise
+    How does the database know if a query result might have changed? There are two cases:
+    * Detecting reads of a stale MVCC object version
+    * Detecting writes that affect prior reads (the write occurs after the read)
+**** Detecting stale MVCC reads
+    The database needs to track when a transaction ignores another transaction's writes due to MVCC
+    visibility rules. When the transaction wants to commit, the database checks whether any of the
+    ignored writes have now been committed. If so, the transaction must be aborted.
+
+    If the transaction is read-only, there is no risk of write skew.
+**** Detecting writes that affect prior reads
+    When a transaction writes to the database, it must look in the indexes for any other
+    transactions that have recently read the affected data. This process is similar to acquiring a
+    write lock on the affected key range, but rather than blocking until the readers have committed,
+    the lock acts as a tripwire: it simply notifies the transactions that the data they read may no
+    longer be up to date.
+* The Trouble with Distributed Systems
+** Faults and Partial Failures
+*** Cloud Computing and Supercomputing
+** Unreliable Networks
+*** Network Faults in Practice
+*** Deteting Faults
+*** Timeouts and Unbounded Delays
+*** Synchronous Versus Asynchronous Networks
+** Unreliable Clocks
+*** Monotonic Versus Time-of-Day Clocks
+*** Clocks Synchronization and Accuracy
+*** Relying on Synchronized Clocks
+*** Process Pauses
+** Knowledge, Truth, and Lies
+*** The Truth is Defined by the Majority
+*** Byzantine Faults
+*** System Model and Reality
+* Consistency and Consensus
+** Consistency Guarantees
+** Linearizability
+    *Linearizability/atomic consistency/strong consistency/immediate consistency/external
+    consistency*: make a system appear as if there were only one copy of the data
+*** What Makes a System Linearizable?
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: If a read rquest is concurrent with a write request, it may return either the old or the new value
+    [[../images/ddia/10.jpg]]
+
+    To make the system linearizable, we need to add another constraint,
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: After any one read has returned new value, all following reads must also return the new value
+    [[../images/ddia/11.jpg]]
+    In a linearizable system we imagine that there must be some point in time where the value
+    of \(x\) atomically flips from 0 to 1. Thus, if one client's read returns the new value 1, all
+    subsequent reads must also return the new value, even if the write operation has not yet
+    completed.
+
+    Consider \(cas(x, v_{\text{old}}, v_{\text{new}})\Rightarrow r\) means the client requested an atomic
+    /compare-and-set/ operation. \(r\) is the database's response. Each operation is marked with a
+    vertical line at the time when we think the operation was executed.
+    #+ATTR_LATEX: :width .9\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Visualizing the points in time at which the reads and writes appear to have taken effect. The final read by \(B\) is not linearizable.
+    [[../images/ddia/12.png]]
+
+    The requirement of linearizability is that the lines joining up the operation markers always
+    move forward in time (from left to right), never backward.
+
+    #+ATTR_LATEX: :options [Linearizability Versus Serializability]
+    #+BEGIN_remark
+    Serializability is an isolation property of transactions, where every transaction may read and
+    write multiple objects (rows, documents, records) It guarantees that transactions behave the
+    same as if they had executed in some serial order (each transaction running to completion before
+    the next transaction starts). It is okay for that serial order to be different from the order in
+    which transactions were actually run.
+
+    Linearizability is a recency guarantee on reads and writes of a register (an indinpvidual object).
+    #+END_remark
+
+
+*** Relying on Linearizability
+**** Locking and leader election
+    A system that uses single-leader replication needs to ensure that there is indeed only one
+    leader, not several (split brain). One way of electing a leader is to use a lock: every node
+    that starts up tries to acquire the lock, and the one that succeeds becomes the  leader. No
+    matter how this lock is implemented, it must be linearizable: all nodes must agree which node
+    owns the lock; otherwise it is useless.
+**** Constraints and uniqueness guarantees
+**** Cross-channel timing dependencies
+*** Implementing Linearizable Systems
+*** The Cost of Linearizability
+** Ordering Guarantees
+*** Ordering and Causality
+*** Sequence Number Ordering
+*** Total Order Broadcast
+** Distributed Transactions and Consensus
+*** Atomic Commit and Two-Phase Commit
+*** Distributed Transactions in Practice
+*** Fault-Tolerant Consensus
+*** Membership and Coordination Services
