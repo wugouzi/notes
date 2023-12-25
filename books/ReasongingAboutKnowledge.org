@@ -1,0 +1,120 @@
+#+title: Reasonging about Knowledge
+
+#+EXPORT_FILE_NAME: ../latex/ReasongingAboutKnowledge/ReasongingAboutKnowledge.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+* A Model for Knowledge
+** Adding Common Knowledge and Distributed Knowledge
+    #+ATTR_LATEX: :options []
+    #+BEGIN_lemma
+    1. \((M,s)\vDash E_G^k\varphi\) iff \((M,t)\vDash\varphi\) for all \(t\) that are \(G\)-reachable from \(s\) in \(k\) steps
+    2. \((M,s)\vDash C_G\varphi\) iff \((M,t)\vDash\varphi\) for all \(t\) that are \(G\)-reachable from \(s\)
+    #+END_lemma
+
+    #+BEGIN_center
+    \((M,s)\vDash D_G\varphi\) iff \((M,t)\vDash\varphi\) for all \(t\) s.t. \((s,t)\in\bigcap_{i\in G}\calk_i\)
+    #+END_center
+* Knowledge in Multi-Agent Systems
+** Incorporating Knowledge
+    Statement such as "\(R\) does not know \varphi" means that, as far as \(R\) is concerned, the system could be at
+    a point where \varphi does not hold. We think of \(R\)'s knowledge as being determined by its local state.
+
+    To view a system as a Kripke structure, we assume that we have a set \Phi of primitive propositions. An
+    *interpreted system* \(\cali\) consists of a pair \((\calr,\pi)\) where \(\calr\) is a system over a set \(\calg\) of global
+    states and \pi is an interpretation for the proposition in \Phi over \(\calg\), which assigns truth values to the
+    primitive propositions at the global states. Thus, for every \(p\in\Phi\) and state \(s\in\calg\), we
+    have \(\pi(s)(p)\in[\textbf{true},\textbf{false}]\).
+** Incorporating Time
+    We focus on four temporal operators: \(\Box\) ("always"), its dual \(\Diamond\) ("eventually"), \(\bigcirc\) ("next
+    time"), and \(U\) ("until")
+
+    \begin{align*}
+    (\cali,r,m)\vDash\Box\varphi&\quad\text{ iff }\quad(\cali,r,m')\vDash\varphi\text{ for all }m'\ge m\\
+    (\cali,r,m)\vDash\Diamond\varphi&\quad\text{ iff }\quad(\cali,r,m')\vDash\varphi\text{ for some }m'\ge m\\
+    (\cali,r,m)\vDash\bigcirc\varphi&\quad\text{ iff }\quad(\cali,r,m+1)\vDash\varphi\\
+    (\cali,r,m)\vDash\varphi U\psi&\quad\text{ iff }\quad(\cali,r,m')\vDash\psi\text{ for some }m'\ge m\text{ and}\\
+    &\hspace{2cm}(\cali,r,m'')\vDash\varphi\text{ for all }m\le m''<m'
+    \end{align*}
+
+    Note that \(\Diamond\varphi\) is equivalent to \(ture\;U\varphi\) and \(\Box\varphi\) is equivalent to \(\neg\Diamond\neg\varphi\). Hence we take \(\bigcirc\)
+    and \(U\) as our basic temporal operators.
+
+    We define a *temporal formula* to be one whose only modal operators are temporal operators. A *knowledge
+    formula* is one whose only modal operators are the epistemic operators \(K_1,\dots,K_n,C_G\) and \(D_G\). Thus a
+    knowledge formula is a formula in the language \(\call_n^{CD}\).
+
+    * The formula \(\Box\Diamond\varphi\) is true if \varphi occurs /infinitely often/.
+    * The formula \(\Diamond\Box\varphi\) is true if \varphi is true /almost everywhere/; that is, \((\cali,r,m)\vDash\Diamond\Box\varphi\) if for some \(m'\)
+      and all \(m''\ge m\), we have \((\cali,r,m'')\vDash\varphi\)
+
+** Examples of Systems
+*** Message-Passing Systems
+    In message-passing systems, we view a process's local state as containing information about its initial
+    state, the messages that it has /sent/ and /received/, and what /internal actions/ it has taken.
+
+    Suppose we fix a set \(\Sigma_i\) of initial states for process \(i\), a set \(INT_i\) of internal actions
+    for \(i\), and a set \(MSG\) of messages. Then a *history* for process \(i\) (over \(\Sigma_i\), \(INT_i\)
+    and \(MSG\)) is a sequence whose first element is in \(\Sigma_i\), and whose later elements consist of nonempty
+    sets with elements of the form \(send(\mu,j,i)\), \(receive(\mu,j,i)\) or \(int(\sfa,i)\), where \(\mu\in MSG\)
+    and \(\sfa\in INT_i\).
+
+    In message-passing systems, we speak of \(send(\mu,j,i)\), \(receive(\mu,j,i)\) and \(int(\sfa,i)\) as *events*.
+    We say that an event *occurs* in round \(m+1\) of run \(r\) if it appears in some process's history
+    in \((r,m+1)\), but not in any process's history in \((r, m)\).
+
+    In a message-passing system, the process's local state at any point is its history. Of course, if \(h\) is
+    the history of process \(i\) at the point \((r,m)\), then we want it to be the case that \(h\) describes
+    what happened in \(r\) up to time \(m\) from \(i\)'s point of view. To do so, we need to impose some
+    consistency conditions on global state. In particular, we want to ensure that message histories grow over
+    time, and that every message received in round \(m\) corresponds to a message that was sent at round \(m\)
+    or earlier. Given sets \(\Sigma_i\) of initial stats and \(INT_i\) of internal actions for processes \(1,\dots,n\)
+    and a set \(MSG\) of messages, we define a *message-passing system* (over \(\Sigma_i,\dots,\Sigma_i,INT_1,\dots,INT_n\)
+    and \(MSG\)) to be a system s.t. for each point \((r,m)\) the following constraints are satisfied:
+    1. MP1. \(r_i(m)\) is a history over \(\Sigma_i,INT_i,MSG\)
+    2. MP2. for every event \(receive(\mu,j,i)\) in \(r_i(m)\) there exists a corresponding event \(send(\mu,i,j)\)
+       in \(r_j(m)\)
+    3. MP3. \(r_i(0)\) is a sequence of length one and \(r_i(m+1)\) is either identical to \(r_i(m)\) or the
+       result of appending a set of events to \(r_i(m)\)
+    4. MP4. for all processes \(i, j\), and all points \((r,m)\) in \(\calr\), if \(send(\mu,j,i)\) is in \(r_i(m)\),
+       then thre exists an \(m'\ge m\) s.t. \(receive(\mu,i,j)\) is in \(r_j(m')\)
+
+    A *reliable* message-passing system \(\calr\) is one that satisfies conditions MP1-MP4
+*** Asynchronous Message-Passing Systems
+    Two more assumptions:
+    * We assume that at each step, at most one event takes place for each process.
+    * All the events in a given process's history are distinct.
+
+
+    Let \(V_1,\dots,V_n\) be sets of prefix-closed histories for processes \(1,\dots,n\) respectively.
+    Define \(\calr(V_1,\dots,V_n)\) to consist of all runs satisfying MP1, MP2 and MP3 s.t. all of process \(i\)'s
+    local states are in \(V_i\). We define an *asynchronous message-passing system* (or a.m.p. system, for
+    short) to be one of the form \(\calr(V_1,\dots,V_n)\) for some choice of prefix-closed \(V_1,\dots,V_n\).
+
+    Given sets of prefix-closed histories \(V_1,\dots,V_n\), we define the corresponding
+    asynchronous reliable message-passing system* (or a.r.m.p. system for short) to be the set of all runs
+    satisfying all four conditions MP1-4 s.t. all of process \(i\)'s local states are in \(V_i\)
+    for \(i=1,\dots,n\).
+
+    An a.m.p. system is asynchronous in a strong sense: the only information a process has about the
+    ordering of events is what follows from the order in its own history, together with the fact that a
+    message must be sent before it is received. We define a notion of *potential causality* between events
+    based on this. For events \(e\) and \(e'\), we write \(e\xrightarrow{r}e'\) if either
+    1. \(e'\) is a /receive/ event and \(e\) is the corresponding /send/ event,
+    2. for some process \(i\), events \(e\) and \(e'\) are both in \(i\)'s history at some point \((r,m)\)
+       and either \(e=e'\) or \(e\) precedes \(e'\), or
+    3. for some event \(e''\), we have \(e\xrightarrow{r}e''\) and \(e''\xrightarrow{r}e'\)
+
+
+    The following result makes precise the degree to which an a.m.p. is asynchronous. It says that the
+    potential causality relation \(\xrightarrow{r}\) is the closest we can come in an a.m.p. system to define a notion of
+    ordering of events. For the following proposition, we assume that for each pair of events \(e\)
+    and \(e'\), we have a proposition \(Prec(e,e')\) in \Phi. We say that the interpretation of \(Prec(e,e')\) in
+    the interpreted a.m.p. system \(\cali=(\calr,\pi)\) is *standard* if \(\pi(r(m))(Prec(e,e'))=\textbf{true}\) exactly if
+    events \(e\) and \(e'\) both occur by round \(m\) of run \(r\), and \(e\) occurs no later than \(e'\) in \(r\).
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    Let \(G\) be the group of all processes, let \(\calr\) be an a.m.p. system, and assume that the interpretation
+    of \(Prec(e,e')\) in \(\cali=(\calr,\pi)\) is standard. Then \((\cali,r,m)\vDash D_G(Prec(e,e'))\) iff \(e\) and \(e'\) have
+    both occurred by round \(m\) of \(r\) and \(e\xrightarrow{r}e'\).
+    #+END_proposition

@@ -21,7 +21,7 @@
     modeled by two events, specifically, the event
     denoted \(inv[X.op\text{ by }p_i]\) that occurs when \(p_i\) invokes the
     operation (*invocation event*), and the event
-    denoted \(resp[X.op.res\text{ by }p_i\) that occurss when the operation
+    denoted \(resp[X.op.res\text{ by }p_i]\) that occurss when the operation
     terminates (*response event*).
 
     Each interaction between a process and an object is represented by a
@@ -137,3 +137,124 @@
     edge \(\to_H\). Therefore we get a cycle in \(\to_H\).
     #+END_proof
 ** The Importance of (Real) Time
+    Sequential consistency is a relaxation of linearizability. It only requires that the real-time order is
+    preserved if the operations are invoked by the same process. This relaxation of the real-time order is
+    called *process-order*.
+
+    Formally, a history \(H\) is *sequentially consistent* if there is a history \(S\) s.t.:
+    1. \(H\) and \(S\) are equivalent
+    2. \(S\) is sequential and legal.
+
+
+    A major drawback of sequential consistency is that it is not compositional. Consider
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION:Sequential consistency is not compositional
+    [[../images/AfCS/1.png]]
+** Safety
+    A *property* is a set of (finite or infinite) histories. A property \(P\) is a *safety property* if:
+    * \(P\) is *prefix-closed*: if \(H\in P\), then for every prefix \(H'\) of \(H\), \(H'\in P\)
+    * \(P\) is *limit-closed*: for every infinite sequence \(H_0,H_1,\dots\) of hisotries, where each \(H_i\) is
+      a prefix of \(H_{i+1}\) and each \(H_i\in P\), the limit history \(H=\lim_{i\to\infty}H_i\) is in \(P\).
+
+    #+ATTR_LATEX: :options [Kőnig's Lemma]
+    #+BEGIN_lemma
+    Let \(G\) be an infinite directed graph s.t.
+    1. each node of \(G\) has finite outdegree
+    2. each vertex of \(G\) reachable from some root vertex of \(G\)
+    3. \(G\) has only finitely many roots
+    Then \(G\) has an infinite path with no repeated nodes starting from some root.
+    #+END_lemma
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_theorem
+    Linearizability is a safety property
+    #+END_theorem
+
+    #+BEGIN_proof
+    We consider only objects with finite non-determinism: an operation applied to a given object state can
+    return only finitely many responses and cause only a finite number of state transitions.
+
+    *Prefix-closedness*: Consider a linearizable history \(H\). Since linearizability is compositional, we can
+    assume that \(H\) is a history of operations on a single object \(X\). We show first that any \(H'\),
+    prefix of \(H\), is also linearizable w.r.t. \(X\).
+
+    Let \(S\) be any linearization of \(H\). Now we construct a sequential history \(S'\) as follows: we take
+    the shorted prefix of \(S\) that contains all complete operations of \(H'\). Since \(S\) contains all
+    complete operations of \(H'\), such a prefix of \(S\) exists.
+
+    We claim that \(S'\) is a linearization of \(H'\). We complete \(H'\) by removing operations that do not
+    appear in \(S'\) and adding responses to incomplete operations in \(H'\) that are present in \(S'\).
+    Let \(\bbar{H'}\) denote the resulting complete history.
+
+    First, complete histories \(S'\) and \(\bbar{H'}\) consist of the same set of operations. By construction,
+    every operation in \(\bbar{H'}\) appears in \(S'\). Now suppose, by contradiction, that \(S'\) contains an
+    operation \(op\) that does not appear in \(\bbar{H'}\), \(op\) does not appear in \(H'\) either.
+    Since \(S'\) is the shortest prefix of \(S\) that contains all complete operations of \(H\), \(op\) cannot
+    be the last operation appearing in \(S'\). Otherwise, we could find a shorter prefix of \(S\).
+    Furthermore, the last operation in \(S'\) must be complete in \(H'\), we denote this operation by \(op'\).
+    Since \(op\) does not appear in \(H'\) and \(op'\) is complete in \(H'\), we have \(op'<_Hop\).
+    But \(op<_Sop'\). Hence \(S\) violates the real-time order of \(H\), a contradiction.
+
+    Since \(S'\) is a prefix of a legal history, it is also legal. Also, \(S'\) respect the real-time order
+    in \(\bbar{H'}\).
+
+    Consider any local history \(\bbar{H'}|_p\). Recall that we only assume well-formed histories,
+    hence \(\bbar{H'}|_p\) is sequential. Since \(S'\) and \(\bbar{H'}\) contain the same set of operations
+    and \(S'\) respects the real-time order of \(\bbar{H'}\), we have \(S'|_p=\bbar{H'}|_p\)
+
+    *Limit-closedness*: Consider an infinite sequence of ever-extending linearizable histories \(H_0,H_1,\dots\)
+     Our goal is to show that \(H=\lim_{i\to\infty}H_i\) is linearizable. We assume that \(H_0\) is the empty
+     history and that each \(H_{i+1}\) is a one-event extension of \(H_i\). Now we construct a directed
+     graph \(G=(V,E)\) as follows. Vertices of \(G\) are all tuples \((H_i,S, Q)\),
+     where \(i=0,1,\dots,\abs{H}\), \(S\) is any linearization of \(H_i\) that ends with a /complete/ operation
+     present in \(H_i\), and \(Q\) is any sequence of object stats that /witness the legality of/ \(S\). Now
+     there is a directed edge \((H_i,S,Q),(H_j,S',Q')\) in \(G\) iff \(j=i+1\), \(S\) is a prefix of \(S'\)
+     and \(Q\) is a prefix of \(Q'\).
+
+    We use Kőnig's lemma to show that the resulting graph \(G\) contains an infinite
+    path \((H_0,S_0),(H_1,S_1),\dots\) and the limit \(\lim_{i\to\infty}S_i\) is a linearization of the
+    infinite limit history \(H\).
+
+    First we observe that each non-empty vertex \((H_{i+1},S',Q')\) is connected to some \((H_i,S,Q)\). There
+    are two cases to consider:
+    * The last operation \(op\) of \(S'\) is a complete operation in \(H_i\). In this case, \(S'\) is also a
+      linearization of \(H_i\). Indeed, even if the last event of \(H_{i+1}\) is the invocation of a new
+      operation \(op'\), this operation cannot appear in \(S'\): it can only appear before \(op\) in \(S'\)
+      violating the real-time order in \(H_{i+1}\). Thus \((H_i,S',Q')\) is a vertex in \(G\).
+    * The last operation \(op\) of \(S'\) is not a complete operation in \(H_i\). Recall that \(S'\) ends with
+      an operation \(op\) that is complete in \(H_{i+1}\) and \(H_{i+1}\) extends \(H_i\) with one event only.
+      Thus the last event of \(H_{i+1}\) is the response of \(op\). Thus \(H_i\) and \(H_{i+1}\) contain the
+      same set of operations, except that \(op\) is imcomplete in \(H_i\). Let \(S\) be the longest prefix
+      of \(S'\) that ends with a complete operation in \(H_i\). Since \(S'\) is legal, \(S\) is also legal. By
+      construction, every complete operation in \(H_i\) appears in \(S\) and no operation appears in \(S\) if
+      it does not appear in \(H_i\). Thus, \(S\) is a linearization of \(H_i\) and \((H_i,S,Q)\), where \(Q\)
+      is the prefix of \(Q'\) that witnesses the legality of \(S\), is a vertex in \(G\).
+    #+END_proof
+* Progress
+** Implementation
+*** High-Level and Low-Level Objects
+    *Low-level objects* are also called *base* objects and the operations they export are called *primitives*.
+*** Zooming into Histories
+** Progress Properties
+    Informally, we say that an implementation is *lock-based* if it permits a situation in which some process
+    running in isolation after some finite execution is never able to complete its operation. Taking a
+    negation of this property, we state that an implementation *does not employ locks* if by starting after any
+    finite execution, every process can complete its operation in a finite number of its own steps.
+
+    Several progress properties preclude the use of locks:
+    * *Obstruction-freedom* (*solo termination*): An implementation (of a shared object) is obstruction-free, if
+      every operation by a correct process that eventually runs without concurrency returns a response.
+
+      An operation on an object invoked by a process \(p\) is said to *eventually run without concurrency* if
+      there is a time after which \(p\) is the only process to take *steps* involving the object.
+    * *Non-blockingness* (*partial termination*): at least one of correct processes that execute operations on the
+      same object terminates its operation.
+    * *Wait-freedom* (*global termination*): every operation executed by a correct process eventually returns a
+      response.
+
+
+    *Liveness* property ensures that the implementation eventually reaches some desired state. We say that \(P\)
+    is a liveness property if /any/ finite execution has an extension in \(P\). To show that an implementation
+    satisfies a liveness property \(P\), we should show that all its /infinite/ executions are in \(P\).
+** Linearizability and Wait-Freedom
