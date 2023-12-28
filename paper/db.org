@@ -1,0 +1,49 @@
+#+title: Db
+
+* Fault Tolerance
+** Chain Replication for Supporting High Throughput and Availability
+    This paper is concerned with storage systems that sit somewhere between file systems and database systems.
+
+    *strong consistency guarantees*:
+    1. operations to query and update individual objects are executed in some sequential order
+    2. the effects of update operations are necessarily reflected in results returned by subsequent query
+       operations.
+
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Client's View of an Objectr
+    [[../images/db/1.png]]
+
+    Servers are assumed to be fail-stop:
+    1. each server halts in response to a failure rather than making erroneous state transitions, and
+    2. a server’s halted state can be detected by the environment.
+
+
+    * \(Hist_{objID}\) is defined to be \(Hist_{objID}^T\), the value of \(Hist_{objID}\) stored by tail T of
+      the chain,
+    * \(Pending_{objID}\) is defined to be the set of client requests received by any server in the chain and not yet processed by the tail.
+
+
+    1. a server in the chain receiving a request from a client
+    2. the tail processing a client request
+
+
+    The master distinguishes three cases:
+    * failure of the head
+    * failure of the tail
+    * failure of some other server in the chain.
+
+
+    Let the server at the head of the chain be labeled \(H\), the next server be labeled \(H+1\), etc.,
+    through the tail, which is given label \(T\) . Define
+    \begin{equation*}
+    Hist_{objID}^i\preceq Hist^j_{objID}
+    \end{equation*}
+    to hold if sequence of requests \(Hist^i_{objID}\) at the server with label \(i\) is a prefix of
+    sequence \(Hist_{objID}^j\) at the server with label \(j\).
+
+    *Update Propagation Invariant*: For servers labeled \(i\) and \(j\) s.t. \(i\le j\) holds then
+    \begin{equation*}
+    Hist^j_{objID}\preceq Hist^i_{objID}
+    \end{equation*}

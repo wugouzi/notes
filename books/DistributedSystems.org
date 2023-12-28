@@ -1,0 +1,110 @@
+#+title: Distributed Systems
+
+#+AUTHOR: Sape Mullender
+
+#+EXPORT_FILE_NAME: ../latex/DistributedSystems/DistributedSystems.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\Definitely}{\textbf{Definitely}}
+#+LATEX_HEADER: \DeclareMathOperator{\Possibly}{\textbf{Possibly}}
+
+* Consistent Global States of Distributed Systems
+** Casual Delivery
+    #+BEGIN_center
+    *Causal Delivery* (CD): \(send_i(m)\to send_j(m')\Rightarrow deliver_k(m)\to deliver_k(m')\)
+    #+END_center
+
+** Constructing the Causal Precedence Relation
+    #+BEGIN_center
+    Strong Clock Condition: \(e\to e'\equiv TC(e)<TC(e')\)
+    #+END_center
+*** Causal Histories
+    Define *causal history* of event \(e\) in distributed computation \((H,\to)\) as the set
+    \begin{equation*}
+    \theta(e)=\{e'\in H\mid e'\to e\}\cup\{e\}
+    \end{equation*}
+*** Vector Clocks
+    Define *vector clocks* as
+    \begin{equation*}
+    VC(e)[i]=k \quad\text{ iff }\quad \theta_i(e)=h_i^k
+    \end{equation*}
+    Each process \(p_i\) initializes /VC/ to contain all zeros. Each message \(m\) contains a timestamp \(TS(m)\)
+    which is the vector clock value of its send event.
+
+    For \(j\neq i\),
+    #+BEGIN_center
+    \(VC(e_i)[j]\equiv\) number of events of \(p_j\) that causally precede event \(e_i\) of \(p_i\).
+    #+END_center
+
+    #+ATTR_LATEX: :options []
+    #+BEGIN_proposition
+    1. Strong Clock Condition: \(e\to e'\equiv VC(e)<VC(e')\)
+    2. Simple Strong Clock Condition: Given event \(e_i\) of processs \(p_i\) and event \(e_j\) of
+       process \(p_j\) where \(i\neq j\), \(e_i\to e_j\equiv VC(e_i)[i]\le VC(e_j)[i]\)
+    3. Concurrent: Given event \(e_i\) of process \(p_i\) and event \(p_j\) of
+       process \(p_j\): \(e_i||e_j\equiv(VC(e_i)[i]>VC(e_j)[i])\wedge(VC(e_j)[j]>VC(e_i)[j])\).
+    4. Pairwise Inconsistent: Event \(e_i\) of process \(p_i\) is pairwise inconsistent with event \(e_i\) of
+       process \(p_j\), where \(i\neq j\) iff \((VC(e_i)[i]<VC(e_j)[i])\vee(VC(e_j)[j]<VC(e_i)[i])\)
+    5. Consistent Cut: A cut defined by \((c_1,\dots,c_n)\) is consistent
+       iff \(\forall i,j:1\le i\le n,1\le j\le n:VC(e_i^{c_i})[i]\ge VC(e_j^{c_j})[i]\)
+    6. Counting: Given event \(e_i\) of process \(p_i\) and its vector clock value \(VC(e_i)\), the number of
+       events \(e\) s.t. \(e\to e_i\) is given by \(\#(e_i)=(\sum_{j=1}^nVC(e_i)[j])-1\)
+    7. Weak Gap-Detection: Given event \(e_i\) of process \(p_i\) and event \(e_j\) of process \(p_j\),
+       if \(VC(e_i)[k]<VC(e_j)[k]\) for some \(k\neq j\), then there exists an event \(e_k\) s.t.
+       \begin{equation*}
+       \neg(e_k\to e_i)\wedge(e_k\to e_j)
+       \end{equation*}
+    #+END_proposition
+** Implementing Causal Delivery with Vector Clocks
+    The weak gap-detection property of the previous section can be exploited to efficiently implement causal
+    delivery using vector clocks.
+
+    1. Each process increments the local component of their vector clocks only for events that are notified to
+       the monitor.
+    2. Each message \(m\) carries a timestamp \(TS(m)\) which is the vector clock value of the event being
+       notified by \(m\).
+    3. All messages that have been received but not yet delivered by the monitor process \(p_0\) are
+       maintained in a set \(\calm\), initially empty.
+
+
+    A message \(m\in\calm\) from process \(p_j\) is deliverable as soon as \(p_0\) can verify that there are no
+    other messages whose sending causally precede that of \(m\). Let \(m'\) be the last message delivered from
+    process \(p_k\), where \(k\neq j\). Before message \(m\) of process \(p_j\) can be delivered, \(p_0\) must
+    verify two conditions:
+    1. there is no earlier message from \(p_j\) that is undelivered, and
+    2. there is no undelivered message \(m''\) from \(p_k\) s.t.
+       \begin{equation*}
+       send(m')\to send(m'')\to send(m), \forall k\neq j
+       \end{equation*}
+
+    The first condition holds if exactly \(TS(m)[j]-1\) messages have already been delivered from \(p_j\). To
+    verify the second condition, we can use the special case of weak gap-detection where \(i=k\)
+    and \(e_i=send_k(m')\), \(e_k=send_k(m')\) and \(e_j=send_j(m)\) and we have
+    #+BEGIN_center
+    If \(TS(m')[k]<TS(m)[k]\) for some \(k\neq j\), then there exists an event \(send_k(m'')\) s.t.
+    \begin{equation*}
+    send_k(m')\to send_k(m'')\to send_j(m)
+    \end{equation*}
+    #+END_center
+
+    Thus, no undelivered message \(m''\) exists if \(TS(m')[k]\ge TS(m)[k]\) for all \(k\). These tests can be
+    efficiently implemented if \(p_0\) maintains an array \(D[1\cdots n]\) of counters, initially all zeros, s.t.
+    counter \(D[i]\) contains \(TS(m_i)[i]\) where \(m_i\) is the last message that has been delivered from
+    process \(p_i\).
+
+    DR3: (Casual Delivery) Deliver message \(m\) from process \(p_j\) as soon as both of the following
+    conditions are satisfied:
+    \begin{gather*}
+    D[j]=TS(m)[j]-1\\
+    D[k]\ge TS(m)[k],\forall k\neq j
+    \end{gather*}
+    When \(p_0\) delivers \(m\), array \(D\) is updated by setting \(D[j]\) to \(TS(m)[j]\)
+** Properties of Global Predicates
+*** Stable Predicates
+*** Nonstable Predicates
+    There is very little value in using a snapshot protocol to detect a nonstable predicate.
+    1. \(\Possibly(\Phi)\): There exists a consistent observation \(O\) of the computation s.t. \Phi holds in a
+       global state of \(O\)
+    2. \(\Definitely(\Phi)\): For every consistent observation of the computation, there exists a global state
+       of \(O\) where \Phi holds.
