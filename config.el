@@ -128,7 +128,7 @@
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
 
-
+(require 'org-indent)
 (use-package org
   :hook
   ((org-mode . auto-fill-mode)
@@ -143,6 +143,8 @@
         ;; org-latex-listings 'minted
         org-latex-pdf-process (quote
                                ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f" "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+        ;; inline image size
+        org-image-actual-width (truncate (* (display-pixel-width) 0.8))
         org-emphasis-alist
         '(("*" bold)
           ("/" italic)
@@ -206,6 +208,13 @@
          )
   )
 
+(use-package latex-pretty-symbols
+  :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
+  ;;:load-path "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el"
+  :hook
+  (org-mode . latex-unicode-simplified)
+  )
+
 (use-package svg-tag-mode
   :after org
   :hook (org-mode . org-sticky-header-mode)
@@ -245,16 +254,33 @@
 
 (use-package company
   :init
-  (setq company-tooltip-align-annotations t
-        company-tooltip-limit 12
-        company-idle-delay 0
-        company-echo-delay (if (display-graphic-p) nil 0)
-        company-minimum-prefix-length 2
-        company-require-match nil
-        company-dabbrev-ignore-case nil
-        company-dabbrev-downcase nil
-        company-dabbrev-minimum-length 5
-        company-dabbrev-char-regexp "[A-Za-z]+")
+  (setq
+   ;; company-tooltip-align-annotations t
+   ;; company-tooltip-limit 12
+   company-idle-delay 0
+   ;; company-echo-delay (if (display-graphic-p) nil 0)
+   ;; company-minimum-prefix-length 2
+   ;; company-require-match nil
+   company-dabbrev-ignore-case nil
+   company-dabbrev-downcase nil
+   company-dabbrev-minimum-length 3
+   company-dabbrev-char-regexp "[A-Za-z]+")
   :config
   (set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
   )
+
+
+(use-package lsp-mode
+  :custom
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil)
+  )
+
+
+(setq
+ rustic-cargo-test-exec-command "test")
