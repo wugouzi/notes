@@ -51,6 +51,7 @@
 
 (package! org-mode :pin "b55e388")
 (package! org-appear)
+(package! org-ref)
 (package! org-sticky-header)
 (package! aio)
 (package! mixed-pitch)

@@ -144,7 +144,7 @@
         org-latex-pdf-process (quote
                                ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f" "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
         ;; inline image size
-        org-image-actual-width (truncate (* (display-pixel-width) 0.8))
+        org-image-actual-width 600
         org-emphasis-alist
         '(("*" bold)
           ("/" italic)
@@ -207,6 +207,32 @@
          (("C-c C-g C-c" . xenops-reveal-at-point))
          )
   )
+
+(use-package org-ref
+  :ensure nil
+  :init
+  (require 'bibtex)
+  (setq bibtex-autokey-year-length 4
+        bibtex-autokey-name-year-separator "-"
+        bibtex-autokey-year-title-separator "-"
+        bibtex-autokey-titleword-separator "-"
+        bibtex-autokey-titlewords 2
+        bibtex-autokey-titlewords-stretch 1
+        bibtex-autokey-titleword-length 5
+        reftex-default-bibliography '("~/notes/references.bib")
+        ;; https://github.com/jkitchin/org-ref/issues/974
+        org-ref-activate-ref-links nil
+        org-ref-activate-cite-links nil
+        org-ref-validate-bibliography nil
+        )
+  (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (define-key org-mode-map (kbd "s-[") 'org-ref-insert-link-hydra/body)
+  (require 'org-ref-ivy)
+  (require 'org-ref-arxiv)
+  (require 'org-ref-scopus)
+  (require 'org-ref-wos))
+
 
 (use-package latex-pretty-symbols
   :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
