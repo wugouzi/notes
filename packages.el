@@ -56,5 +56,6 @@
 (package! aio)
 (package! mixed-pitch)
 (package! svg-tag-mode)
+(package! ivy-bibtex)
 
 (package! auctex)

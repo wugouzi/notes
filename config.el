@@ -251,20 +251,31 @@
         )
   )
 
-(use-package consult
-  :bind (("C-s" . consult-line)
-         )
-  )
+(use-package ivy
+  :bind (("C-s" . swiper)
+         ("C-x b" . ivy-switch-buffer)
+         ("C-x C-f" . counsel-find-file)
+         ("M-x" . counsel-M-x)
+         :map org-mode-map
+         ("M-." . counsel-org-goto)
+         ("C-u C-SPC" . org-mark-ring-goto)))
+
+;; for vertico
+;; (use-package consult
+;;   :bind (("C-s" . consult-line)
+;;          )
+;;   )
 
 ;; https://www.reddit.com/r/emacs/comments/ev7igv/why_is_auctex_loaded_using_usepackage_tex_instead/
 (use-package tex
+  :ensure auctex
   :init
   (setq preview-auto-cache-preamble t
         preview-default-preamble
         (quote
          ("\\RequirePackage["
           ("," . preview-default-option-list)
-          "]{preview}[2004/11/05]"
+          "]{preview}[2004/11/06]"
           "\\PreviewEnvironment{tikzcd}"
           "\\PreviewEnvironment{tikzpicture}"
           "\\PreviewEnvironment{center}"
@@ -273,10 +284,19 @@
           "\\PreviewEnvironment{figure}"))
         preview-dvipng-image-type (quote png)
         TeX-command-extra-options "-shell-escape"
-        TeX-engine 'xetex
         ;;'(Evince)
+        TeX-engine 'xetex
         +latex-viewers '(skim)
-        preview-transparent-color nil))
+        preview-transparent-color nil)
+  :hook
+  (
+   (LaTeX-mode . turn-on-reftex)
+   (plain-TeX-mode . LaTeX-mode)
+   )
+  :config
+  (setq TeX-engine 'xetex))
+
+(setq TeX-engine 'xetex)
 
 (use-package company
   :init

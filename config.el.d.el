@@ -360,8 +360,8 @@ parent."
   (org-mode . xenops-mode)
   :bind (
          (("C-c C-g C-c" . xenops-reveal-at-point))
+         )
   )
-)
 
 (use-package latex-pretty-symbols
   :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
@@ -432,7 +432,7 @@ parent."
 
 ;;zero width space
 (define-key org-mode-map (kbd "M-SPC M-SPC")
-  (lambda () (interactive) (insert "\u200b")))
+            (lambda () (interactive) (insert "\u200b")))
 
 
 (global-prettify-symbols-mode +1)
@@ -562,7 +562,7 @@ parent."
 (dirvish-override-dired-mode)
 
 ;; (with-eval-after-load 'flycheck
-  ;;(flycheck-grammarly-setup))
+;;(flycheck-grammarly-setup))
 
 ;; (setq flycheck-grammarly-check-time 0.8)
 
@@ -601,7 +601,7 @@ parent."
   (setq
    ;;magit-delta-default-dark-theme "Monokai Extended"
    ;;magit-delta-default-light-theme "Github"
-    magit-delta-hide-plus-minus-markers nil)
+   magit-delta-hide-plus-minus-markers nil)
   (magit-delta-mode))
 
 ;; (after! lsp-clangd
@@ -659,8 +659,8 @@ parent."
 (setq org-image-actual-width nil)
 
 (defun +my/ccls-code-lens ()
-    (when (member major-mode '(c-mode c++-mode))
-      (ccls-code-lens-mode 1)))
+  (when (member major-mode '(c-mode c++-mode))
+    (ccls-code-lens-mode 1)))
 (add-hook 'lsp-after-open-hook #'+my/ccls-code-lens)
 (setq lsp-lens-enable nil)
 
@@ -677,7 +677,7 @@ parent."
 
 ;; rust
 (setq
-      rustic-cargo-test-exec-command "test")
+ rustic-cargo-test-exec-command "test")
 
 ;;(map! "C-," #'lsp-find-references)
 
@@ -694,7 +694,7 @@ parent."
 
 
 ;; (setq pdf-view-use-scaling t)
-      ;; pdf-view-use-imagemagick nil)
+;; pdf-view-use-imagemagick nil)
 
 
 (add-to-list 'org-latex-classes
