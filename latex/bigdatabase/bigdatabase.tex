@@ -1,4 +1,4 @@
-% Created 2023-07-04 Tue 11:51
+% Created 2024-01-15 Mon 16:55
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -16,6 +16,7 @@
 \input{../preamble.tex}
 \DeclareMathOperator{\commit}{\text{commit}}
 \DeclareMathOperator{\DT}{\text{DT}}
+\DeclareMathOperator{\RF}{\text{RF}}
 \DeclareMathOperator{\CP}{\text{CP}}
 \DeclareMathOperator{\Gen}{\text{Gen}}
 \DeclareMathOperator{\CSR}{\text{CSR}}
@@ -28,7 +29,7 @@
  pdftitle={Big DataBase},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 29.0.90 (Org mode 9.6.1)}, 
+ pdfcreator={Emacs 29.1 (Org mode 9.7)}, 
  pdflang={English}}
 \begin{document}
 
@@ -36,9 +37,9 @@
 \tableofcontents
 
 \section{Query Optimization}
-\label{sec:orgd1d7442}
+\label{sec:orgef7ce99}
 \subsection{Introduction}
-\label{sec:org68836e6}
+\label{sec:orgd963388}
 Compile time system:
 \begin{enumerate}
 \item parsing: parsing, AST production
@@ -80,9 +81,8 @@ read \(e_2\) once for each chunk. Further improvement: Use hashing for equi-join
 \item \(e_1\bowtie^{HH}e_2\) Hybrid-Hash Join: Partitions \(e_1\) and \(e_2\) into partitions that
 can be joined in memory. Equi-joins only
 \end{itemize}
-
 \subsection{Query Optimization}
-\label{sec:org5e83656}
+\label{sec:org18860a8}
 steps
 \begin{enumerate}
 \item translate the query into its canonical algebraic expression
@@ -90,7 +90,7 @@ steps
 \item physical query optimization
 \end{enumerate}
 \subsubsection{Algebra Revisited}
-\label{sec:org2386cf6}
+\label{sec:orgcb266de}
 Tuple is a (unordered) mapping from attribute names to values of a domain
 
 Schema is a set of attributes with domain, written \(\cala(t)\)
@@ -175,9 +175,8 @@ e_1\bowtie_pe_2&\quad\equiv\quad e_2\bowtie_pe_1\tag{10}\\
 &\quad\equiv\quad\text{if }A=A_1\cup A_2, A_1\subseteq\cala(e_1),A_2\subseteq\cala(e_2)
 \end{align*}
 \end{itemize}
-
 \subsubsection{Canonical Query Translation}
-\label{sec:org00dcf2d}
+\label{sec:orga95efde}
 Restrictions:
 \begin{itemize}
 \item only \textbf{select distinct}
@@ -186,9 +185,8 @@ Restrictions:
 \item no nested queries
 \item not discussed here: \texttt{NULL} values
 \end{itemize}
-
 \subsubsection{Logical Query Optimization}
-\label{sec:org457a05f}
+\label{sec:org54fc450}
 \begin{itemize}
 \item foundation: algebraic equivalence
 \end{itemize}
@@ -215,7 +213,7 @@ Phases
 This kind of phases has limitation: different join order would allow further push down. The
 phases are interdependent
 \subsubsection{Physical Query Optimization}
-\label{sec:org9d03ab9}
+\label{sec:org913aac8}
 \begin{itemize}
 \item add more execution information to the plan
 \item allow for cost calculations
@@ -255,61 +253,154 @@ phases are interdependent
 \end{itemize}
 \end{itemize}
 \subsection{Join Ordering}
-\label{sec:org70c7bb8}
+\label{sec:org5aa60bb}
 \subsubsection{Basics}
-\label{sec:orgde4806f}
+\label{sec:org02683ae}
+Concentrate on join ordering, that is:
+\begin{itemize}
+\item conjunctive queries
+\item simple predicates
+\item predicates have the form \(a_1=a_2\) where \(a_1\) is an attribute and \(a_2\) is either an
+attribute or a constant
+\item even ignore constants in some algorithms
+\end{itemize}
+
+We join relations \(R_1,\dots,R_n\) where \(R_i\) can be
+\begin{itemize}
+\item a base relation
+\item a base relation including selections
+\item a more complex building block or access path
+\end{itemize}
+
+Queries of this type can be characterized by their query graph:
+\begin{itemize}
+\item the query graph is an undirected graph with \(R_1,\dots,R_n\) as nodes
+\item a predicate of the form \(a_1=a_2\) where \(a_1\in R_i\) and \(a_2\in R_j\) forms an edge
+between \(R_i\) and \(R_j\) labeled with the predicate
+\item a predicate of the form \(a_1=a_2\) where \(a_1\in R_i\) and \(a_2\) is a constant forms a self-edge
+on \(R_i\) labeled with the predicate
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/db/2.png}
+\label{}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/db/3.png}
+\captionof{figure}{\label{}Shapes of Query Graphs}
+\end{center}
+
+
+
+A join tree is a binary tree with
+\begin{itemize}
+\item join operators as inner nodes
+\item relations as leaf nodes
+\end{itemize}
+
+Commonly used classes of join trees:
+\begin{itemize}
+\item left-deep tree
+\item right-deep tree
+\item zigzag tree
+\item bushy tree
+\end{itemize}
+The first three are summariezed as \textbf{linear trees}
+
+\textbf{Join selectivity}
+\begin{itemize}
+\item input
+\begin{itemize}
+\item cardinalities \(\abs{R_i}\)
+\item selectivities \(f_{i,j}\): if \(p_{i,j}\) is the join predicate between \(R_i\) and \(R_j\), define
+\begin{equation*}
+f_{i,j}=\frac{R_i\bowtie_{p_{i,j}}R_j}{R_i\times R_j}
+\end{equation*}
+\end{itemize}
+\item Calculate: \(\abs{R_i\bowtie_{p_{i,j}}R_j}=f_{i,j}\abs{R_i}\abs{R_j}\)
+\item Rational: The selectivity can be computed/estimated easily (ideally)
+\end{itemize}
+
+Given a join tree \(T\), the result cardinality \(\abs{T}\) can be computed recursively as
+\begin{equation*}
+\abs{T}=
+\begin{cases}
+\abs{R_i}&\text{if $T$ is a leaf }R_i\\
+(\displaystyle\prod_{R_i\in T_1,R_j\in T_2}f_{i,j})\abs{T_1}\abs{T_2}&\text{if }T=T_1\bowtie T_2
+\end{cases}
+\end{equation*}
+assuming independence of the predicates
+
+Given a join tree \(T\), the cost function \(C_{out}\) is defined as
+\begin{equation*}
+C_{out}(T)=
+\begin{cases}
+0&\text{if $T$ is a leaf }R_i\\
+\abs{T}+C_{out}(T_1)+C_{out}(T_2)\text{if }T=T_1\bowtie T_2
+\end{cases}
+\end{equation*}
+
+Consider nested loop join (nlj), hash join (hj), and sort merge join (smj), \cite{10.5555/645913.671481}
+\begin{align*}
+C_{nlj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\abs{e_2}\\
+C_{hj}(e_1\bowtie_pe_2)&\quad=\quad h\abs{e_1}\\
+C_{smj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\log(\abs{e_1})+\abs{e_2}\log(\abs{e_2})
+\end{align*}
+where \(e_i\) are join trees and \(h\) is the average length of the collision chain in the hash table. We
+will assume \(h=1.2\).
 \subsubsection{Search Space}
-\label{sec:org740500a}
+\label{sec:org218a7bf}
 \subsubsection{Greedy Heuristics}
-\label{sec:orgc48b09d}
+\label{sec:org1a4e861}
 \subsubsection{IKKBZ}
-\label{sec:org498fa31}
+\label{sec:orgd71b815}
 \subsubsection{MVP}
-\label{sec:orge6f93ea}
+\label{sec:orgd5f030a}
 \subsubsection{Dynamic Programming}
-\label{sec:orgbcca9b2}
+\label{sec:orgc117908}
 \subsubsection{Simplifying the Query Graph}
-\label{sec:org9fe6bbe}
+\label{sec:orge68e11b}
 \subsubsection{Adaptive Optimization}
-\label{sec:org87794e1}
+\label{sec:org5d16f82}
 \subsubsection{Generating Permutations}
-\label{sec:org448cd5c}
+\label{sec:orge070c5a}
 \subsubsection{Transformative Approaches}
-\label{sec:orgb387da3}
+\label{sec:orge148af1}
 \subsubsection{Randomized Approaches}
-\label{sec:org05df034}
+\label{sec:org1fad68c}
 \subsubsection{Metaheuristics}
-\label{sec:org0529e50}
+\label{sec:org36893f1}
 \subsubsection{Iterative Dynamic Programming}
-\label{sec:orgfce4cb7}
+\label{sec:orgd74f8f3}
 \subsubsection{Order Preserving Joins}
-\label{sec:org759a9ce}
+\label{sec:orgc6f6829}
 \subsubsection{Complexity of Join Processing}
-\label{sec:org145ea07}
+\label{sec:orgcf294d8}
 \subsection{Accessing the Data}
-\label{sec:org8fc883b}
+\label{sec:org264c3b4}
 
 \subsection{Physical Properties}
-\label{sec:org1372730}
+\label{sec:orgb748054}
 
 \subsection{Query Rewriting}
-\label{sec:orge5173a7}
+\label{sec:orgc40a8a3}
 
 \subsection{Self Tuning}
-\label{sec:orgedcd106}
+\label{sec:orgfc8c880}
 \section{Transaction System}
-\label{sec:org07af306}
+\label{sec:org45c2df0}
 \subsection{Computational Models}
-\label{sec:orgb394ac6}
+\label{sec:org55696af}
 \subsubsection{Page Model}
-\label{sec:org0daf5ac}
+\label{sec:org13e1f50}
 \begin{definition}[Page Model Transaction]
 A \textbf{transaction} \(t\) is a partial order of steps of the form \(r(x)\) or \(w(x)\)
 where \(x\in D\) and reads and writes as well as multiple writes applied to the same object are
 ordered. We write \(t=(op,<)\) for transaction \(t\) with step set \(op\) and partial order \(<\)
 \end{definition}
 \subsubsection{Object Model}
-\label{sec:org056d3ac}
+\label{sec:org2d241a2}
 \begin{definition}[Object Model Transaction]
 A \textbf{transaction} \(t\) is a (finite) tree of labeled nodes with
 \begin{itemize}
@@ -326,9 +417,9 @@ and \(q\) of the form \(r(x)\) or \(w(x)\) or vice versa, we have \(p<q\vee q<p\
 \label{}
 \end{center}
 \subsection{Notions of Correctness for the Page Model}
-\label{sec:org8d5f3f8}
+\label{sec:org16ba78e}
 \subsubsection{Canonical Synchronization Problems}
-\label{sec:orgf915e86}
+\label{sec:org9b83e85}
 
 Lost Update Problem:
 \begin{center}
@@ -348,7 +439,7 @@ Dirty Read Problem
 \label{}
 \end{center}
 \subsubsection{Syntax of Histories and Schedules}
-\label{sec:org27dc5d9}
+\label{sec:org6222a9e}
 \begin{definition}[Schedules and histories]
 Let \(T=\{t_1,\dots,t_n\}\) be a set of transactions, where each \(t_i\in T\) has the form
 \(t_i=(op_i,<_i)\)
@@ -372,6 +463,16 @@ where \(i\neq j\), all operations from \(t_i\) are ordered in \(s\) before all o
 from \(t_j\) or vice versa
 \end{definition}
 
+\begin{definition}[]
+\begin{itemize}
+\item \(trans(s):=\{t_i\mid s\text{ contains step of }t_i\}\)
+\item \(commit(s):=\{t_i\in trans(s)\mid c_i\in s\}\)
+\item \(abort(s):=\{t_i\in trans(s)\mid a_i\in s\}\)
+\item \(active(s):=trans(s)-(commit(s)\cup abort(s))\)
+\end{itemize}
+\end{definition}
+
+
 \begin{center}
 \includegraphics[width=.8\textwidth]{../images/bigdatabase/6.png}
 \label{}
@@ -382,7 +483,7 @@ from \(t_j\) or vice versa
 \label{}
 \end{center}
 \subsubsection{Herbrand Semantics of Schedules}
-\label{sec:orgff3d6d6}
+\label{sec:org76b25ab}
 \begin{definition}[Herbrand Semantics of Steps]
 For schedule \(s\) the \textbf{Herbrand semantics} \(H_s\) of steps \(r_i(x),w_i(x)\in op(s)\) is :
 \begin{enumerate}
@@ -416,11 +517,16 @@ each \(x\in D\)
 \label{}
 \end{center}
 \subsubsection{Final-State Serializability}
-\label{sec:orga33717a}
+\label{sec:org6d27359}
 \begin{definition}[]
 Schedules \(s\) and \(s'\) are called \textbf{final state equivalent}, denoted \(s\approx_fs'\)
 if \(op(s)=op(s')\) and \(H[s]=H[s']\)
 \end{definition}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/bigdatabase/13.png}
+\label{}
+\end{center}
 
 \begin{definition}[Reads-from Relation]
 Given a schedule \(s\), extended with an initial and a final transaction, \(t_0\)
@@ -435,8 +541,11 @@ RF(s):=\{(t_i,x,t_j)\mid \text{an }r_j(x)\text{ reads \(x\) from a }w_i(x)\}
 \item Step \(p\) is \textbf{directly useful} for step \(q\), denoted \(p\to q\), if \(q\) reads from \(p\),
 or \(p\) is a read step and \(q\) is a subsequent write step of the same
 transaction. \(\to^*\), the \textbf{useful relation}, denotes the reflexive and transitive closure of \(\to\).
-\item Step \(p\) is \textbf{alive} in \(s\) if it is useful for some step from \(t_\infty\) and \textbf{dead}
-otherwise
+\item Step \(p\) is \textbf{alive} in \(s\) if it is useful for some step from \(t_\infty\), i.e.,
+\begin{equation*}
+(\exists q\in t_\infty)p\xrightarrow{*}q
+\end{equation*}
+and \textbf{dead} otherwise
 \item The \textbf{live-reads-from relation} of \(s\) is
 \begin{equation*}
 LRF(s):=\{(t_i,x,t_j)\mid \text{an alive \(r_j(x)\) reads \(x\) from \(w_i(x)\)}\}
@@ -455,12 +564,31 @@ iff \(D_1(s)=D_1(s')\)
 \end{enumerate}
 \end{theorem}
 
+\begin{proof}
+For a given schedule \(s\), we can construct a ``step graph'' \(D(s)=(V,E)\) as follows
+\begin{align*}
+V&:=op(s)\\
+E&:=\{(p,q)\mid p,q\in V,p\to q\}
+\end{align*}
+From a step graph \(D(s)\), a reduced step graph \(D_l(s)\) can be derived by dropping all vertices (and
+thier incident edges) that represent dead steps. Then the following can be proven:
+\begin{enumerate}
+\item \(LRF(s)=LRF(s')\Leftrightarrow D_l(s)=D_l(s')\)
+
+If \(D_l(s)\neq D_l(s')\), if there is \(r(x)\in D_l(s)\setminus D_l(s')\), then clearly \(LRF(s)\neq LRF(s')\); if
+there is \(w_i(x)\in D_l(s)\setminus D_l(s')\), then \((t_i,x,t_\infty)\in LRF(s)\setminus LRF(s')\).
+
+If \(LRF(s)\neq LRF(s')\), suppose \((t_i,x,t_j)\in LRF(s)\setminus LRF(s')\), then clearly \(D_l(s)\neq D_l(s')\)
+\item \(s\approx_fs'\) iff \(op(s)=op(s')\) and \(D_l(s)=D_l(s')\)
+\end{enumerate}
+\end{proof}
+
 \begin{corollary}[]
 Final-state equivalence of two schedules \(s\) and \(s'\) can be decided in time that is
 polynomial in the length of the two schedules.
 \end{corollary}
 \subsubsection{View Serializability}
-\label{sec:orga7e1851}
+\label{sec:org5bc1155}
 As we have seen, FSR emphasizes steps that are alive in a schedule. However, since the semantics
 of a schedule and of the transactions occurring in a schedule are unknown, it is reasonable to
 require that in two equivalent schedules, each transaction reads the same values, independent of
@@ -543,7 +671,7 @@ If \(s\) is in \(E\), then \(\Pi_T(s)\) is in \(E\) for each \(T\subseteq trans(
 
 VSR is not monotone
 \subsubsection{Conflict Serializability}
-\label{sec:org1ecbb80}
+\label{sec:orgb94d917}
 \begin{definition}[Conflicts and Conflict Relations]
 Let \(s\) be a schedule, \(t,t'\in trans(s)\), \(t\neq t'\)
 \begin{enumerate}
@@ -658,13 +786,13 @@ Schedule \(s\) is in COCSR iff there is a serial schedule \(s'\) s.t. \(s\approx
 all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
 \end{theorem}
 \subsubsection{Commit Serializability}
-\label{sec:org1a41ba5}
+\label{sec:org530c33d}
 \subsubsection{An Alternative Criterion: Interleaving Specifications}
-\label{sec:orgf854784}
+\label{sec:orgb0f6bc3}
 \subsection{Concurrency Control Algorithms}
-\label{sec:orgc065bfb}
+\label{sec:org558a237}
 \subsubsection{General Scheduler Design}
-\label{sec:orgc1efb6e}
+\label{sec:org075ac35}
 \begin{center}
 \includegraphics[width=.8\textwidth]{../images/bigdatabase/8.png}
 \label{}
@@ -680,10 +808,10 @@ scheduler is called \textbf{CSR safe} if \(Gen(S)\subseteq CSR\)
 \label{}
 \end{center}
 \subsubsection{Locking Schedulers}
-\label{sec:org33253f7}
+\label{sec:org4425226}
 \begin{enumerate}
 \item Introduction
-\label{sec:org165d84f}
+\label{sec:orgb47d1f9}
 General locking rules:
 \begin{enumerate}
 \item Each data operation \(o_i(x)\) must be preceded by \(ol_i(x)\) and followed by \(ou_i(x)\)
@@ -694,10 +822,8 @@ General locking rules:
 
 Let \(\DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\). \(\CP(s)\)
 denotes the committed projection of \(s\).
-
-
 \item Two-Phase Locking
-\label{sec:orga48af50}
+\label{sec:org21d52c9}
 \begin{definition}[]
 A locking protocol is \textbf{two-phase} if for every output schedule \(s\) and every
 transaction \(t_i\in trans(s)\) no \(ql_i\) step follows the first \(ou_i\) step (\(q,0\in\{r,w\}\))
@@ -750,10 +876,8 @@ by a 2PL scheduler
 \begin{theorem}[]
 \(Gen(2PL)\subset OCSR\)
 \end{theorem}
-
-
 \item Deadlock Handling
-\label{sec:org60fe08b}
+\label{sec:org17e1cfd}
 Deadlock detection:
 \begin{enumerate}
 \item maintain dynamic \textbf{waits-for graph} (WFG) with active transactions as nodes and an edge
@@ -786,7 +910,7 @@ prevention strategies when \(t_i\) is blocked by \(t_j\):
 \end{enumerate}
 Abort entails later restart
 \item Variants of 2PL
-\label{sec:org78a9d40}
+\label{sec:org90f2dd7}
 \begin{definition}[]
 Under \textbf{static} or \textbf{conservative 2PL} (C2PL) each transaction acquires all its locks before the first
 data operation.
@@ -817,21 +941,19 @@ Under \textbf{strong 2PL} (SS2PL) each transaction holds all its locks until the
 \begin{theorem}[]
 \(\Gen(SS2PL)\subset COCSR\)
 \end{theorem}
-
-
 \item Ordered Sharing of Locks (O2PL)
-\label{sec:org460f7bf}
+\label{sec:org8faf339}
 \item Altruistic Locking (AL)
-\label{sec:orged87c75}
+\label{sec:org0def3fc}
 \item Non-Two-Phase Locking (WTL, RWTL)
-\label{sec:orgd7f08ac}
+\label{sec:org48193b7}
 Motivation: concurrent executions of transactions with access patterns that comply with
 organizing data items into a virtual tree
 \begin{align*}
 &t_1=w_1(a)w_1(b)w_1(d)w_1(e)w_1(i)w_1(k)\\
 &t_2=w_2(a)w_2(b)w_2(c)w_2(d)w_2(h)
 \end{align*}
-\begin{forest}
+\begin{center} \begin{forest}
 [a
     [b
         [c
@@ -840,12 +962,77 @@ organizing data items into a virtual tree
         [e
             [i
                 [j] [k]]]]]
-\end{forest}
+\end{forest}\end{center}
+
+\begin{definition}[Write-only Tree Locking (WTL)]
+Lock requests and releases must obey LR1 - LR4 and the following additional rules
+\begin{enumerate}
+\item WTL1: A lock on a node \(x\) other than the tree root can be acquired only if the transaction
+already holds a lock on the parent of \(x\)
+\item WTL2: After a \(wu_i(x)\) no further \(wl_i(x)\) is allowed
+\end{enumerate}
+\end{definition}
 \item Geometry of Locking
-\label{sec:orgf1b8056}
+\label{sec:orgc8546bd}
 \end{enumerate}
 \subsubsection{Non-Locking Schedulers}
-\label{sec:org276f78c}
+\label{sec:orgcc3055f}
+\begin{enumerate}
+\item Timestamp Ordering
+\label{sec:org7897099}
+\end{enumerate}
 \subsubsection{Hybrid Protocols}
-\label{sec:org00e18af}
+\label{sec:org93d9c07}
+\subsection{Multiversion Concurrency Control}
+\label{sec:org86fa38d}
+\subsubsection{Multiversion Schedules}
+\label{sec:org983cc25}
+\begin{examplle}[]
+\(s=r_1(x)w_1(x)r_2(x)w_2(y)r_1(y)w_1(z)c_1c_2\notin\CSR\)
+\end{examplle}
+but schedule would be tolerable if \(r_1(y)\) could read the old version \(y_0\) of \(y\) to be
+consistent with \(r_1(x)\)
+
+Approach:
+\begin{itemize}
+\item each \(w\) step creates a new version
+\item each \(r\) step can choose which version it wants/needs to read
+\item versions are transparent to application and transient
+\end{itemize}
+
+
+\begin{definition}[]
+Let \(s\) be a history with initial transaction \(t_0\) and final transaction \(t_\infty\). A
+\textbf{version function} for \(s\) is a function \(h\) which associates with each read step of \(s\) a
+previous write step on the same data item, and the identity for writes.
+\end{definition}
+
+\begin{definition}[]
+A \textbf{multiversion (mv) history} for transactions \(T=\{t_1,\dots,t_n\}\) is a pair \(m=(\op(m),<_m)\)
+where \(<_m\) is an order on \(\op(m)\) and
+\begin{enumerate}
+\item \(\op(m)=\bigcup_{i=1,\dots,n}h(\op(t_i))\) for some version function \(h\)
+\item for all \(t\in T\) and all \(p,q\in\op(t_i)\): \(p<_tq\Rightarrow h(p)<_mh(q)\)
+\item if \(h(r_j(x))=w_j(x_i)\), \(i\neq j\), then \(c_i\) is in \(m\) and \(c_i<_mc_j\)
+\end{enumerate}
+A \textbf{multiversion (mv) schedule} is a prefix of a multiversion history
+\end{definition}
+
+\begin{definition}[]
+A multiversion schedule is a \textbf{monoversion schedule} if its version function maps each read to the
+last preceding write on the same data item.
+\end{definition}
+\subsubsection{Multiversion Serializability}
+\label{sec:org897cdb5}
+\begin{definition}[]
+For mv schedule \(m\) the reads-from relation of \(m\) is \(\RF(m)=\{(t_i,x,t_j)\mid r_j(x_i)\in\op(m)\}\)
+\end{definition}
+
+\begin{definition}[]
+mv histories \(m\) and \(m'\) with \(trans(m)=trans(m')\) are \textbf{view equivalent}, \(m\equiv_vm'\), if \(\RF(m)=\RF(m')\)
+\end{definition}
+\subsubsection{Limiting the Number of Versions}
+\label{sec:orgbd88af2}
+\subsubsection{Multiversion Concurrency Control Protocols}
+\label{sec:org713af3b}
 \end{document}

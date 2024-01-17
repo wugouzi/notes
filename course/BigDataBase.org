@@ -201,6 +201,18 @@
     * a predicate of the form \(a_1=a_2\) where \(a_1\in R_i\) and \(a_2\) is a constant forms a self-edge
       on \(R_i\) labeled with the predicate
 
+    #+ATTR_LATEX: :width .7\textwidth :float nil
+    #+NAME:
+    #+CAPTION:
+    [[../images/db/2.png]]
+
+    #+ATTR_LATEX: :width .8\textwidth :float nil
+    #+NAME:
+    #+CAPTION: Shapes of Query Graphs
+    [[../images/db/3.png]]
+
+
+
     A join tree is a binary tree with
     * join operators as inner nodes
     * relations as leaf nodes
@@ -208,10 +220,102 @@
     Commonly used classes of join trees:
     * left-deep tree
     * right-deep tree
-    * zigzag tree
-    * bushy tree
+    * zigzag tree: at least one input of every join is a relation \(R\)
+    * bushy tree:
     The first three are summariezed as *linear trees*
 
+    *Join selectivity*
+    * input
+      * cardinalities \(\abs{R_i}\)
+      * selectivities \(f_{i,j}\): if \(p_{i,j}\) is the join predicate between \(R_i\) and \(R_j\), define
+        \begin{equation*}
+        f_{i,j}=\frac{R_i\bowtie_{p_{i,j}}R_j}{R_i\times R_j}
+        \end{equation*}
+    * Calculate: \(\abs{R_i\bowtie_{p_{i,j}}R_j}=f_{i,j}\abs{R_i}\abs{R_j}\)
+    * Rational: The selectivity can be computed/estimated easily (ideally)
+
+    Given a join tree \(T\), the result cardinality \(\abs{T}\) can be computed recursively as
+    \begin{equation*}
+    \abs{T}=
+    \begin{cases}
+    \abs{R_i}&\text{if $T$ is a leaf }R_i\\
+    (\displaystyle\prod_{R_i\in T_1,R_j\in T_2}f_{i,j})\abs{T_1}\abs{T_2}&\text{if }T=T_1\bowtie T_2
+    \end{cases}
+    \end{equation*}
+    assuming independence of the predicates
+
+    Given a join tree \(T\), the cost function \(C_{out}\) is defined as
+    \begin{equation*}
+    C_{out}(T)=
+    \begin{cases}
+    0&\text{if $T$ is a leaf }R_i\\
+    \abs{T}+C_{out}(T_1)+C_{out}(T_2)\text{if }T=T_1\bowtie T_2
+    \end{cases}
+    \end{equation*}
+
+    Consider nested loop join (nlj), hash join (hj), and sort merge join (smj),
+    [[cite:&10.5555/645913.671481]] proposes
+    \begin{align*}
+    C_{nlj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\abs{e_2}\\
+    C_{hj}(e_1\bowtie_pe_2)&\quad=\quad h\abs{e_1}\\
+    C_{smj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\log(\abs{e_1})+\abs{e_2}\log(\abs{e_2})
+    \end{align*}
+    where \(e_i\) are join trees and \(h\) is the average length of the collision chain in the hash table. We
+    will assume \(h=1.2\).
+
+    For sequence of join operators \(s=s_1\bowtie\dots\bowtie s_n\)
+    \begin{align*}
+    C_{nlj}(s)&\quad=\quad\sum_{i=2}^n\abs{s_1\bowtie\dots\bowtie s_{i-1}}\abs{s_i}\\
+    C_{hj}(s)&\quad=\quad\sum_{i=2}^nh\abs{s_1\bowtie\dots\bowtie s_{i-1}}\\
+    C_{smj}(s)&\quad=\quad\sum_{i=2}^n\abs{s_1\bowtie\dots\bowtie s_{i-1}}\log(\abs{s_1\bowtie\dots\bowtie s_{i-1}})+\sum_{i=2}^n\abs{s_i}\log(\abs{s_i})
+    \end{align*}
+    #+ATTR_LATEX: :options []
+    #+BEGIN_remark
+    Note that the aboves cost functions are designed for left-deep trees.
+    #+END_remark
+
+    Cost function \(C_{impl}\) is *symmetric* if \(C_{impl}(e_{1}\bowtie^{impl}e_2)=C_{impl}(e_2\bowtie^{impl}e_1)\)
+
+    ASI: adjacent sequence interchange
+
+    Out basic cost functions can be classified as:
+    |                | ASI         | \(\neg\)ASI    |
+    |----------------+-------------+-------------|
+    | symmetric      | \(C_{out}\) | \(C_{smj}\) |
+    | \(\neg\)symmetric | \(C_{hj}\)  |             |
+
+    We distringuish four different dimensions:
+    1. query graph class: chain, cycle, star, and clique
+    2. join tree structures: left-deep, zig-zag, or bushy
+    3. join construction: with or without cross product
+    4. cost functions: with or without ASI property
+    In total, 48 different join ordering problems
+
+    The number of binary trees with \(n\) leave nodes is given by \(\calc(n-1)\), where \(\calc(n)\) is defined as
+    \begin{equation*}
+    \calc(n)=
+    \begin{cases}
+    1&n=0\\
+    \sum_{k=0}^n-1\calc(k)\calc(n-k-1)&n>0
+    \end{cases}
+    \end{equation*}
+    It can be written in a closed form as
+    \begin{equation*}
+    \calc(n)=\frac{1}{n+1}\binom{2n}{n}
+    \end{equation*}
+    The Catalan numbers grow in the order of \(\Theta(4^n/n^{1.5})\)
+
+    Number of join trees with cross products:
+    * left deep/right deep: \(n!\)
+    * zig-zag: there are \(n-1\) join operators, and for every left-deep tree, we can derive zig-zag trees by
+      exchanging the left and right inputs. Hence, from any left-deep tree for \(n\) relations, we can
+      derive \(2^{n-2}\) zig-zag trees. Therefore there exists a total of \(2^{n-2}n!\) zig-zag trees.
+    * bushy tree: \(n!\calc(n-1)=\frac{(2n-2)!}{(n-1)!}\)
+
+    For chain queries without cross products, let's denote the number of left-deep join trees for a chain
+    query \(R_1-\dots-R_n\) as \(f(n)\). \(f(0)=0\), \(f(1)=1\); for \(n>1\), consider adding \(R_n\) to all join
+    trees for \(R_1-\dots-R_{n-1}\). Let's denote the position of \(R_{n-1}\) from the bottom with \(k\in[1,n-1]\).
+    Then there are \(n-k\) join trees for adding \(R_n\) after \(R_{n-1}\)
 *** Search Space
 *** Greedy Heuristics
 *** IKKBZ
@@ -374,8 +478,11 @@
     3. Step \(p\) is *directly useful* for step \(q\), denoted \(p\to q\), if \(q\) reads from \(p\),
        or \(p\) is a read step and \(q\) is a subsequent write step of the same
        transaction. \(\to^*\), the *useful relation*, denotes the reflexive and transitive closure of \(\to\).
-    4. Step \(p\) is *alive* in \(s\) if it is useful for some step from \(t_\infty\) and *dead*
-       otherwise
+    4. Step \(p\) is *alive* in \(s\) if it is useful for some step from \(t_\infty\), i.e.,
+       \begin{equation*}
+       (\exists q\in t_\infty)p\xrightarrow{*}q
+       \end{equation*}
+        and *dead* otherwise
     5. The *live-reads-from relation* of \(s\) is
        \begin{equation*}
        LRF(s):=\{(t_i,x,t_j)\mid \text{an alive \(r_j(x)\) reads \(x\) from \(w_i(x)\)}\}
@@ -401,6 +508,11 @@
     From a step graph \(D(s)\), a reduced step graph \(D_l(s)\) can be derived by dropping all vertices (and
     thier incident edges) that represent dead steps. Then the following can be proven:
     1. \(LRF(s)=LRF(s')\Leftrightarrow D_l(s)=D_l(s')\)
+
+       If \(D_l(s)\neq D_l(s')\), if there is \(r(x)\in D_l(s)\setminus D_l(s')\), then clearly \(LRF(s)\neq LRF(s')\); if
+       there is \(w_i(x)\in D_l(s)\setminus D_l(s')\), then \((t_i,x,t_\infty)\in LRF(s)\setminus LRF(s')\).
+
+       If \(LRF(s)\neq LRF(s')\), suppose \((t_i,x,t_j)\in LRF(s)\setminus LRF(s')\), then clearly \(D_l(s)\neq D_l(s')\)
     2. \(s\approx_fs'\) iff \(op(s)=op(s')\) and \(D_l(s)=D_l(s')\)
     #+END_proof
 
