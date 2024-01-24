@@ -1,4 +1,4 @@
-% Created 2024-01-15 Mon 16:55
+% Created 2024-01-17 Wed 16:38
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -37,9 +37,9 @@
 \tableofcontents
 
 \section{Query Optimization}
-\label{sec:orgef7ce99}
+\label{sec:orgf50a1a5}
 \subsection{Introduction}
-\label{sec:orgd963388}
+\label{sec:orgdd9da12}
 Compile time system:
 \begin{enumerate}
 \item parsing: parsing, AST production
@@ -82,7 +82,7 @@ read \(e_2\) once for each chunk. Further improvement: Use hashing for equi-join
 can be joined in memory. Equi-joins only
 \end{itemize}
 \subsection{Query Optimization}
-\label{sec:org18860a8}
+\label{sec:org054efa2}
 steps
 \begin{enumerate}
 \item translate the query into its canonical algebraic expression
@@ -90,7 +90,7 @@ steps
 \item physical query optimization
 \end{enumerate}
 \subsubsection{Algebra Revisited}
-\label{sec:orgcb266de}
+\label{sec:org1631f1d}
 Tuple is a (unordered) mapping from attribute names to values of a domain
 
 Schema is a set of attributes with domain, written \(\cala(t)\)
@@ -176,7 +176,7 @@ e_1\bowtie_pe_2&\quad\equiv\quad e_2\bowtie_pe_1\tag{10}\\
 \end{align*}
 \end{itemize}
 \subsubsection{Canonical Query Translation}
-\label{sec:orga95efde}
+\label{sec:orgbe4a96a}
 Restrictions:
 \begin{itemize}
 \item only \textbf{select distinct}
@@ -186,7 +186,7 @@ Restrictions:
 \item not discussed here: \texttt{NULL} values
 \end{itemize}
 \subsubsection{Logical Query Optimization}
-\label{sec:org54fc450}
+\label{sec:orgf0edbd4}
 \begin{itemize}
 \item foundation: algebraic equivalence
 \end{itemize}
@@ -213,7 +213,7 @@ Phases
 This kind of phases has limitation: different join order would allow further push down. The
 phases are interdependent
 \subsubsection{Physical Query Optimization}
-\label{sec:org913aac8}
+\label{sec:org5e6079c}
 \begin{itemize}
 \item add more execution information to the plan
 \item allow for cost calculations
@@ -253,9 +253,9 @@ phases are interdependent
 \end{itemize}
 \end{itemize}
 \subsection{Join Ordering}
-\label{sec:org5aa60bb}
+\label{sec:orgece9090}
 \subsubsection{Basics}
-\label{sec:org02683ae}
+\label{sec:orgb16ea1b}
 Concentrate on join ordering, that is:
 \begin{itemize}
 \item conjunctive queries
@@ -303,8 +303,8 @@ Commonly used classes of join trees:
 \begin{itemize}
 \item left-deep tree
 \item right-deep tree
-\item zigzag tree
-\item bushy tree
+\item zigzag tree: at least one input of every join is a relation \(R\)
+\item bushy tree:
 \end{itemize}
 The first three are summariezed as \textbf{linear trees}
 
@@ -341,7 +341,8 @@ C_{out}(T)=
 \end{cases}
 \end{equation*}
 
-Consider nested loop join (nlj), hash join (hj), and sort merge join (smj), \cite{10.5555/645913.671481}
+Consider nested loop join (nlj), hash join (hj), and sort merge join (smj),
+\cite{10.5555/645913.671481} proposes
 \begin{align*}
 C_{nlj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\abs{e_2}\\
 C_{hj}(e_1\bowtie_pe_2)&\quad=\quad h\abs{e_1}\\
@@ -349,58 +350,378 @@ C_{smj}(e_1\bowtie_pe_2)&\quad=\quad\abs{e_1}\log(\abs{e_1})+\abs{e_2}\log(\abs{
 \end{align*}
 where \(e_i\) are join trees and \(h\) is the average length of the collision chain in the hash table. We
 will assume \(h=1.2\).
+
+For sequence of join operators \(s=s_1\bowtie\dots\bowtie s_n\)
+\begin{align*}
+C_{nlj}(s)&\quad=\quad\sum_{i=2}^n\abs{s_1\bowtie\dots\bowtie s_{i-1}}\abs{s_i}\\
+C_{hj}(s)&\quad=\quad\sum_{i=2}^nh\abs{s_1\bowtie\dots\bowtie s_{i-1}}\\
+C_{smj}(s)&\quad=\quad\sum_{i=2}^n\abs{s_1\bowtie\dots\bowtie s_{i-1}}\log(\abs{s_1\bowtie\dots\bowtie s_{i-1}})+\sum_{i=2}^n\abs{s_i}\log(\abs{s_i})
+\end{align*}
+\begin{remark}[]
+Note that the aboves cost functions are designed for left-deep trees.
+\end{remark}
+
+Cost function \(C_{impl}\) is \textbf{symmetric} if \(C_{impl}(e_{1}\bowtie^{impl}e_2)=C_{impl}(e_2\bowtie^{impl}e_1)\)
+
+ASI: adjacent sequence interchange
+
+Out basic cost functions can be classified as:
+\begin{center}
+\begin{tabular}{lll}
+ & ASI & \(\neg\)ASI\\[0pt]
+\hline
+symmetric & \(C_{out}\) & \(C_{smj}\)\\[0pt]
+\(\neg\)symmetric & \(C_{hj}\) & \\[0pt]
+\end{tabular}
+\end{center}
 \subsubsection{Search Space}
-\label{sec:org218a7bf}
+\label{sec:org24eac58}
+We distringuish four different dimensions:
+\begin{enumerate}
+\item query graph class: chain, cycle, star, and clique
+\item join tree structures: left-deep, zig-zag, or bushy
+\item join construction: with or without cross product
+\item cost functions: with or without ASI property
+\end{enumerate}
+In total, 48 different join ordering problems
+
+The number of binary trees with \(n\) leave nodes is given by \(\calc(n-1)\), where \(\calc(n)\) is defined as
+\begin{equation*}
+\calc(n)=
+\begin{cases}
+1&n=0\\
+\sum_{k=0}^n-1\calc(k)\calc(n-k-1)&n>0
+\end{cases}
+\end{equation*}
+It can be written in a closed form as
+\begin{equation*}
+\calc(n)=\frac{1}{n+1}\binom{2n}{n}
+\end{equation*}
+The Catalan numbers grow in the order of \(\Theta(4^n/n^{1.5})\)
+
+Number of join trees with cross products:
+\begin{itemize}
+\item left deep/right deep: \(n!\)
+\item zig-zag: there are \(n-1\) join operators, and for every left-deep tree, we can derive zig-zag trees by
+exchanging the left and right inputs. Hence, from any left-deep tree for \(n\) relations, we can
+derive \(2^{n-2}\) zig-zag trees. Therefore there exists a total of \(2^{n-2}n!\) zig-zag trees.
+\item bushy tree: \(n!\calc(n-1)=\frac{(2n-2)!}{(n-1)!}\)
+\end{itemize}
+
+\textbf{Chain queries, left-deep join trees, no Cartesian product}: let's denote the number of left-deep join trees for a chain
+query \(R_1-\dots-R_n\) as \(f(n)\). \(f(0)=0\), \(f(1)=1\); for \(n>1\), consider adding \(R_n\) to all join
+trees for \(R_1-\dots-R_{n-1}\). Let's denote the position of \(R_{n-1}\) from the bottom with \(k\in[1,n-1]\).
+Then there are \(n-k\) join trees for adding \(R_n\) after \(R_{n-1}\) and one additional tree if \(k=1\)
+as \(R_n\) can be placed before \(R_{n-1}\). What's more, for \(R_{n-1}\) to
+be \(k\), \(R_{n-k}-\dots-R_{n-2}\) must be below it, which is \(f(k-1)\) trees for \(n>1\). Therefore
+\begin{equation*}
+f(n)=1+\sum_{k=1}^{n-1}f(k-1)*(n-k)=2^{n-1}
+\end{equation*}
+
+\textbf{Chain queries, zig-zag join trees, no Cartesian product}: \(2^{n-2}*2^{n-1}=2^{2n-3}\)
+
+\textbf{Chain queries, bushy join trees, no Cartesian product}: Every subtree of the join tree must contain a
+subtrain in order to prevent cross products.
+\begin{equation*}
+f(n)=
+\begin{cases}
+1&n<2\\
+\sum_{k=1}^{n-1}2f(k)f(n-k)&n\ge 2
+\end{cases}=2^{n-1}\calc(n-1)
+\end{equation*}
+
+\textbf{Star queries, no Cartesian product}: \(2*(n-1)!\) possible left-deep join trees
+and \(2*(n-1)!*2^{n-2}=2^{n-1}*(n-1)!\) zig-zag trees
 \subsubsection{Greedy Heuristics}
-\label{sec:org1a4e861}
+\label{sec:org8d778db}
+\begin{algorithm}
+\caption{GreedyJoinOrdering-1($\{R=R_1,\dots,R_n\}$,\(w:R\to\R\))}
+\KwIn{a set of relations to be joined and a weight function}
+\KwOut{a join order \(S\)}
+\(S=\epsilon\)\;
+\(R=\{R_1,\dots,R_n\}\)\;
+\While{\(!\texttt{empty}(R)\)}{
+    Let \(k\) be s.t. \(weight(R_k)=\min_{R_i\in R}(weight(R_i))\)\;
+    \(R\setminus=R_k\)\;
+    \(S\circ=R_k\)\;
+}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{GreedyJoinOrdering-2($\{R=R_1,\dots,R_n\}$,\(w:R^*\times R\to\R\))}
+\KwIn{a set of relations to be joined and a weight function}
+\KwOut{a join order \(S\)}
+\(S=\epsilon\)\;
+\(R=\{R_1,\dots,R_n\}\)\;
+\While{\(!\texttt{empty}(R)\)}{
+    Let \(k\) be s.t. \(weight(S,R_k)=\min_{R_i\in R}(weight(S,R_i))\)\;
+    \(R\setminus=R_k\)\;
+    \(S\circ=R_k\)\;
+}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{GreedyJoinOrdering-3($\{R=R_1,\dots,R_n\}$,\(w:R^*\times R\to\R\))}
+\KwIn{a set of relations to be joined and a weight function}
+\KwOut{a join order \(S\)}
+\(S=\epsilon\)\;
+\(R=\{R_1,\dots,R_n\}\)\;
+\For{\(i=1;i\le n;++i\)}{
+    \(S=R_i\)\;
+    \(R=R\setminus R_i\)\;
+    \While{\(!\texttt{empty}(R)\)}{
+        Let \(k\) be s.t. \(weight(S,R_k)=\min_{R_i\in R}(weight(S,R_i))\)\;
+        \(R\setminus=R_k\)\;
+        \(S\circ=R_k\)\;
+    }
+    \(Solutions+=S\)
+}
+\Return{cheapest in solutions}
+\end{algorithm}
+
+The above algorithms only generate linear join trees, but Greedy Operator Ordering (GOO) generates bushy
+join trees.
+
+\begin{algorithm}
+\caption{GOO(\(\{R_1,\dots,R_n\}\))}
+\KwIn{a set of relations to be joined}
+\KwOut{join tree}
+\(Trees:=\{R_1,\dots,R_n\}\)\;
+\While{\(\abs{Trees}!=1\)}{
+    find \(T_1,T_j\in Trees\) s.t. \(i\neq j\),  \(\abs{T_i\bowtie T_j}\) is minimal\;
+    \quad among all pairs of trees in \(Trees\)\;
+    \(Trees\setminus=\{T_i,T_j\}\)\;
+    \(Trees+=T_i\bowtie T_j\)\;
+}
+\end{algorithm}
 \subsubsection{IKKBZ}
-\label{sec:orgd71b815}
+\label{sec:org8de7f05}
+The most general case for which a polynomial solution is known is charactized by the following features:
+\begin{itemize}
+\item the query graph must be acyclic
+\item no cross products are considered
+\item the search space is restricted to left-deep trees
+\item the cost function must have the ASI property
+\end{itemize}
+
+The IKKBZ-algorithm considers only join operators that have a cost function of the form
+\begin{equation*}
+cost(R_i\bowtie R_j)=\abs{R_i}*h_j(\abs{R_i})
+\end{equation*}
+where each \(R_j\) have its own cost function \(h_j\). We denote the set of \(h_j\) by \(H\). Let us
+denote by \(n_i\) the cardinality of the relation \(R_i\).
+
+The algorithm works as follows. For every relation \(R_k\) it computes the optimal join order under the
+assumption that \(R_k\) is the first relation in the join sequence. The resulting subproblems then
+resemble a job-scheduling problem.
+
+Given a query graph \(G=(V,E)\) and a starting relation \(R_k\), we construct the directed \textbf{precedence
+graph} \(G^p_k=(V_k^p,E_k^p)\) rooted in \(R_k\) as follows:
+\begin{enumerate}
+\item choose \(R_k\) as the root node of \(G_k^p\), \(V_k^p=\{R_k\}\)
+\item while \(\abs{V_k^p}<\abs{V}\), choose \(R_i\in V\setminus V_k^p\) s.t. \(\exists R_j\in V_k^p:(R_j,R_i)\in E\). Add \(R_i\)
+to \(V_k^p\) and \(R_j\to R_i\) to \(E_k^p\)
+\end{enumerate}
+
+The precedence graph describes the ordering of joins implied by the query graph.
+
+A sequence \(S=v_1,\dots,v_k\) of nodes conforms to a precedence graph \(G=(V,E)\) if
+\begin{enumerate}
+\item \(\forall i\in[2,k]\exists j\in[1,i):(v_j,v_i)\in E\)
+\item \(\not\exists i\in[1,k],j\in(i,k]:(v_j,v_i)\in E\)
+\end{enumerate}
+
+For non-empty sequence \(S_1\) and \(S_2\) and a precedence graph \(G=(V,E)\), we write \(S_1\to S_2\) if \(S_1\)
+must occur before \(S_2\), i.e.:
+\begin{enumerate}
+\item \(S_1\) and \(S_2\) conform to \(G\)
+\item \(S_1\cap S_2=\emptyset\)
+\item \(\exists v_i,v_j\in V:v_i\in S_1\wedge v_j\in S_2\wedge(v_i,v_j)\in E\)
+\item \(\not\exists v_i,v_j\in V:v_i\in S_1\wedge v_j\in V\setminus S_1\setminus S_2\wedge(v_i,v_j)\in E\)
+\end{enumerate}
+Further we write
+\begin{align*}
+R_{1,2,\dots,k}&\quad=\quad R_1\bowtie R_2\bowtie\dots\bowtie R_k\\
+n_{1,2,\dots,k}&\quad=\quad \abs{R_{1,2,\dots,k}}
+\end{align*}
+
+For a given precedence graph, let \(R_i\) be a relation and \(\calr_i\) be the set of relations from which there
+exists a path to \(R_i\)
+\begin{itemize}
+\item in any conforming join tree which includes \(R_i\), all relations from \(\calr_i\) must be joined first
+\item all other relations \(R_j\) that might be joined before \(R_i\) will have no connection to \(R_i\),
+thus \(f_{i,j}=1\)
+\end{itemize}
+
+Hence we can define selectivity of the join with \(R_i\) as
+\begin{equation*}
+s_i=
+\begin{cases}
+1&\abs{\calr_i}=0\\
+\prod_{R_j\in\calr_i}f_{i,j}&\abs{\calr_i}>0
+\end{cases}
+\end{equation*}
+If the query graph is a chain, the following conditions holds
+\begin{equation*}
+n_{1,2,\dots,k}=n_{1,2,\dots,k}*s_{k+1}*n_{k+1}
+\end{equation*}
+We define \(s_1=1\). Then we have
+\begin{equation*}
+n_{1,2}=s_2*(n_1*n_2)=(s_1*s_2)*(n_1*n_2)
+\end{equation*}
+and, in general,
+\begin{equation*}
+n_{1,2,\dots,k}=\prod_{i=1}^k(s_i*n_i)
+\end{equation*}
+
+The costs for a totally ordered precedence graph \(G\) can be computed as follows:
+\begin{align*}
+Cost_H(G)&=\sum_{i=2}^n[n_{1,2,\dots,i-1}h_i(n_i)]\\
+&=\sum_{i=2}^n[(\prod_{j=1}^is_jn_j)h_i(n_i)]
+\end{align*}
+If we choose \(h_i(n_i)=s_in_i\), then \(C_H\equiv C_{out}\). If \(s_in_i\) is less than one, we call the join
+\textbf{decreasing} and \textbf{increasing} otherwise.
+
+\begin{definition}[]
+Define the cost function \(C_H\) as follows
+\begin{align*}
+C_H(\epsilon)&=0\\
+C_H(R_j)&=0\hspace{1cm}\text{if $R_j$ is the root}\\
+C_H(R_j)&=h_j(n_j)\hspace{1cm}\text{else}\\
+C_H(S_1S_2)&=C_H(S_1)+T(S_1)*C_H(S_2)
+\end{align*}
+where
+\begin{align*}
+T(\epsilon)&=1\\
+T(S)&=\prod_{R_i\in S}(s_i*n_i)
+\end{align*}
+\end{definition}
+
+By induction, \(C_H(G)=Cost_{H}(G)\)
+
+\begin{definition}[]
+Let \(A\) and \(B\) be two sequences and \(V\) and \(U\) two non-empty sequences. We say that a cost
+function \(C\) has the \textbf{adjacent sequence interchange property} (ASI property) iff there exists a
+function \(T\) and a rank function defined for sequence \(S\) as
+\begin{equation*}
+rank(S)=\frac{T(S)-1}{C(S)}
+\end{equation*}
+s.t. for non-empty sequences \(S=AUVB\) the following holds
+\begin{equation*}
+C(AUVB)\le C(AVUB)\Leftrightarrow rank(U)\le rank(V)
+\end{equation*}
+if \(AUVB\) and \(AVUB\) satisfy the precedence constraints imposed by a given precedence graph
+\end{definition}
+
+\begin{lemma}[]
+\label{3.2.3}
+\(C_H\) has the ASI property
+\end{lemma}
+
+\begin{definition}[]
+Let \(M=\{A_1,\dots,A_n\}\) be a set of node sequences in a given precedence graph. Then \(M\) is called a \textbf{module}
+if for all sequences \(B\) that do not overlap with the sequences in \(M\) one of the following conditions
+holds:
+\begin{itemize}
+\item \(B\to A_i\), \(\forall 1\le i\le n\)
+\item \(A_i\to B\), \(\forall 1\le i\le n\)
+\item \(B\not\rightarrow A_i\) and \(A_i\not\rightarrow B\), \(\forall 1\le i\le n\)
+\end{itemize}
+\end{definition}
+
+\begin{lemma}[]
+\label{3.2.5}
+Let \(C\) be any cost function with the ASI property and \(\{A,B\}\) a module. If \(A\to B\) and
+additionally \(rank(B)\le rank(A)\), then we can find an optimal sequence among those where \(B\) directly
+follows \(A\)
+\end{lemma}
+
+\begin{proof}
+Every optimal permutation must have the form \((U,A,V,B,W)\) since \(A\to B\). Assume \(V\neq\epsilon\).
+If \(rank(A)\le rank(V)\), then \(rank(B)\le rank(V)\) and we can exchange \(V\) and \(B\). Therefore \(V\) is empty.
+\end{proof}
+
+If the precedence graph demands \(A\to B\) but \(rank(B)\le rank(A)\), we speak of \textbf{contradictory
+sequences} \(A\) and \(B\). Since the lemma shows that no non-empty subsequence can occur between \(A\)
+and \(B\), we will combine \(A\) and \(B\) into a new single node replacing \(A\) and \(B\). This node
+represents a \textbf{compound relation} comprising all relations in \(A\) and \(B\). Its cardinality is computed by
+multiplying the cardinalities of all relations in \(A\) and \(B\), and its selectivity \(s\) is the
+product of all the selectivities \(s_i\) of the relations \(R_i\) contained in \(A\) and \(B\). The
+continued process of this step until no more contradictory sequences exits is called \textbf{normalization}. The
+opposite step, replacing a compound node by the sequence of relations it was derived from, is called
+\textbf{denormalization}.
+
+\begin{algorithm}
+\caption{\texttt{IKKBZ}(\(G\))}
+\KwIn{an acyclic query graph \(G\) for relations \(R_1,\dots,R_n\)}
+\KwOut{the best left-deep tree}
+\(R=\emptyset\)\;
+\For{\(i=1;i\le n;++i\)}{
+    Let \(G_i\) be the precedence graph derived from \(G\) and rooted at \(R_i\)\;
+    \(T=\texttt{IKKBZ-Sub}(G_i)\)\;
+    \(R=RT\)\;
+}
+\Return{best of \(R\)}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{\texttt{IKKBZ-Sub}(\(G\))}
+\KwIn{a precedence graph \(G_i\) for relations \(R_1,\dots,R_n\) rooted at some \(R_i\)}
+\KwOut{the optimal left-deep tree under \(G_i\)}
+\While{\(G_i\) is not a chain}{
+    let \(r\) be the root of a subtree in \(G_i\) whose subtrees are chains\;
+    \texttt{IKKBZ-Normalize}(\(r\))\;
+    merge the chains under \(r\) according to the rank function in ascending order\;
+}
+\texttt{IKKBZ-Denormalize}(\(G_i\))\;
+\Return{\(G_i\)}
+\end{algorithm}
 \subsubsection{MVP}
-\label{sec:orgd5f030a}
+\label{sec:org3f02680}
 \subsubsection{Dynamic Programming}
-\label{sec:orgc117908}
+\label{sec:org738dd53}
 \subsubsection{Simplifying the Query Graph}
-\label{sec:orge68e11b}
+\label{sec:org602b537}
 \subsubsection{Adaptive Optimization}
-\label{sec:org5d16f82}
+\label{sec:org87c915b}
 \subsubsection{Generating Permutations}
-\label{sec:orge070c5a}
+\label{sec:org6f30d78}
 \subsubsection{Transformative Approaches}
-\label{sec:orge148af1}
+\label{sec:orgfcc4a3b}
 \subsubsection{Randomized Approaches}
-\label{sec:org1fad68c}
+\label{sec:org3a1d8e9}
 \subsubsection{Metaheuristics}
-\label{sec:org36893f1}
+\label{sec:org9d3aaca}
 \subsubsection{Iterative Dynamic Programming}
-\label{sec:orgd74f8f3}
+\label{sec:org73e858e}
 \subsubsection{Order Preserving Joins}
-\label{sec:orgc6f6829}
+\label{sec:orgd4715cd}
 \subsubsection{Complexity of Join Processing}
-\label{sec:orgcf294d8}
+\label{sec:org66b2828}
 \subsection{Accessing the Data}
-\label{sec:org264c3b4}
+\label{sec:org115e3a3}
 
 \subsection{Physical Properties}
-\label{sec:orgb748054}
+\label{sec:org5d9e038}
 
 \subsection{Query Rewriting}
-\label{sec:orgc40a8a3}
+\label{sec:org28fdb37}
 
 \subsection{Self Tuning}
-\label{sec:orgfc8c880}
+\label{sec:orge09be1c}
 \section{Transaction System}
-\label{sec:org45c2df0}
+\label{sec:org364a91b}
 \subsection{Computational Models}
-\label{sec:org55696af}
+\label{sec:orgcb55b5c}
 \subsubsection{Page Model}
-\label{sec:org13e1f50}
+\label{sec:org24041fa}
 \begin{definition}[Page Model Transaction]
 A \textbf{transaction} \(t\) is a partial order of steps of the form \(r(x)\) or \(w(x)\)
 where \(x\in D\) and reads and writes as well as multiple writes applied to the same object are
 ordered. We write \(t=(op,<)\) for transaction \(t\) with step set \(op\) and partial order \(<\)
 \end{definition}
 \subsubsection{Object Model}
-\label{sec:org2d241a2}
+\label{sec:orga183ad1}
 \begin{definition}[Object Model Transaction]
 A \textbf{transaction} \(t\) is a (finite) tree of labeled nodes with
 \begin{itemize}
@@ -417,9 +738,9 @@ and \(q\) of the form \(r(x)\) or \(w(x)\) or vice versa, we have \(p<q\vee q<p\
 \label{}
 \end{center}
 \subsection{Notions of Correctness for the Page Model}
-\label{sec:org16ba78e}
+\label{sec:orgf6be71f}
 \subsubsection{Canonical Synchronization Problems}
-\label{sec:org9b83e85}
+\label{sec:org073c1a1}
 
 Lost Update Problem:
 \begin{center}
@@ -439,7 +760,7 @@ Dirty Read Problem
 \label{}
 \end{center}
 \subsubsection{Syntax of Histories and Schedules}
-\label{sec:org6222a9e}
+\label{sec:org5f2fa37}
 \begin{definition}[Schedules and histories]
 Let \(T=\{t_1,\dots,t_n\}\) be a set of transactions, where each \(t_i\in T\) has the form
 \(t_i=(op_i,<_i)\)
@@ -483,7 +804,7 @@ from \(t_j\) or vice versa
 \label{}
 \end{center}
 \subsubsection{Herbrand Semantics of Schedules}
-\label{sec:org76b25ab}
+\label{sec:org1e2d035}
 \begin{definition}[Herbrand Semantics of Steps]
 For schedule \(s\) the \textbf{Herbrand semantics} \(H_s\) of steps \(r_i(x),w_i(x)\in op(s)\) is :
 \begin{enumerate}
@@ -517,7 +838,7 @@ each \(x\in D\)
 \label{}
 \end{center}
 \subsubsection{Final-State Serializability}
-\label{sec:org6d27359}
+\label{sec:orgf13b949}
 \begin{definition}[]
 Schedules \(s\) and \(s'\) are called \textbf{final state equivalent}, denoted \(s\approx_fs'\)
 if \(op(s)=op(s')\) and \(H[s]=H[s']\)
@@ -588,7 +909,7 @@ Final-state equivalence of two schedules \(s\) and \(s'\) can be decided in time
 polynomial in the length of the two schedules.
 \end{corollary}
 \subsubsection{View Serializability}
-\label{sec:org5bc1155}
+\label{sec:org072747b}
 As we have seen, FSR emphasizes steps that are alive in a schedule. However, since the semantics
 of a schedule and of the transactions occurring in a schedule are unknown, it is reasonable to
 require that in two equivalent schedules, each transaction reads the same values, independent of
@@ -671,7 +992,7 @@ If \(s\) is in \(E\), then \(\Pi_T(s)\) is in \(E\) for each \(T\subseteq trans(
 
 VSR is not monotone
 \subsubsection{Conflict Serializability}
-\label{sec:orgb94d917}
+\label{sec:orgd5fedef}
 \begin{definition}[Conflicts and Conflict Relations]
 Let \(s\) be a schedule, \(t,t'\in trans(s)\), \(t\neq t'\)
 \begin{enumerate}
@@ -786,13 +1107,13 @@ Schedule \(s\) is in COCSR iff there is a serial schedule \(s'\) s.t. \(s\approx
 all \(t_i,t_j\in trans(s)\): \(t_i<_{s'}t_j\Leftarrow c_i<_{s}c_j\)
 \end{theorem}
 \subsubsection{Commit Serializability}
-\label{sec:org530c33d}
+\label{sec:org166a5b7}
 \subsubsection{An Alternative Criterion: Interleaving Specifications}
-\label{sec:orgb0f6bc3}
+\label{sec:orgcad2e31}
 \subsection{Concurrency Control Algorithms}
-\label{sec:org558a237}
+\label{sec:orgc7650b5}
 \subsubsection{General Scheduler Design}
-\label{sec:org075ac35}
+\label{sec:org9b35b98}
 \begin{center}
 \includegraphics[width=.8\textwidth]{../images/bigdatabase/8.png}
 \label{}
@@ -808,10 +1129,10 @@ scheduler is called \textbf{CSR safe} if \(Gen(S)\subseteq CSR\)
 \label{}
 \end{center}
 \subsubsection{Locking Schedulers}
-\label{sec:org4425226}
+\label{sec:org132da81}
 \begin{enumerate}
 \item Introduction
-\label{sec:orgb47d1f9}
+\label{sec:org7321b02}
 General locking rules:
 \begin{enumerate}
 \item Each data operation \(o_i(x)\) must be preceded by \(ol_i(x)\) and followed by \(ou_i(x)\)
@@ -823,7 +1144,7 @@ General locking rules:
 Let \(\DT(s)\) denote the projection of \(s\) onto the steps of type \(r,w,a,c\). \(\CP(s)\)
 denotes the committed projection of \(s\).
 \item Two-Phase Locking
-\label{sec:org21d52c9}
+\label{sec:orgf4ea444}
 \begin{definition}[]
 A locking protocol is \textbf{two-phase} if for every output schedule \(s\) and every
 transaction \(t_i\in trans(s)\) no \(ql_i\) step follows the first \(ou_i\) step (\(q,0\in\{r,w\}\))
@@ -877,7 +1198,7 @@ by a 2PL scheduler
 \(Gen(2PL)\subset OCSR\)
 \end{theorem}
 \item Deadlock Handling
-\label{sec:org17e1cfd}
+\label{sec:org6660280}
 Deadlock detection:
 \begin{enumerate}
 \item maintain dynamic \textbf{waits-for graph} (WFG) with active transactions as nodes and an edge
@@ -910,7 +1231,7 @@ prevention strategies when \(t_i\) is blocked by \(t_j\):
 \end{enumerate}
 Abort entails later restart
 \item Variants of 2PL
-\label{sec:org90f2dd7}
+\label{sec:org1575956}
 \begin{definition}[]
 Under \textbf{static} or \textbf{conservative 2PL} (C2PL) each transaction acquires all its locks before the first
 data operation.
@@ -942,11 +1263,11 @@ Under \textbf{strong 2PL} (SS2PL) each transaction holds all its locks until the
 \(\Gen(SS2PL)\subset COCSR\)
 \end{theorem}
 \item Ordered Sharing of Locks (O2PL)
-\label{sec:org8faf339}
+\label{sec:orgce89085}
 \item Altruistic Locking (AL)
-\label{sec:org0def3fc}
+\label{sec:org0bcd1a8}
 \item Non-Two-Phase Locking (WTL, RWTL)
-\label{sec:org48193b7}
+\label{sec:orgfef8b28}
 Motivation: concurrent executions of transactions with access patterns that comply with
 organizing data items into a virtual tree
 \begin{align*}
@@ -973,20 +1294,20 @@ already holds a lock on the parent of \(x\)
 \end{enumerate}
 \end{definition}
 \item Geometry of Locking
-\label{sec:orgc8546bd}
+\label{sec:orgbb47ba4}
 \end{enumerate}
 \subsubsection{Non-Locking Schedulers}
-\label{sec:orgcc3055f}
+\label{sec:org8140f7a}
 \begin{enumerate}
 \item Timestamp Ordering
-\label{sec:org7897099}
+\label{sec:org347694c}
 \end{enumerate}
 \subsubsection{Hybrid Protocols}
-\label{sec:org93d9c07}
+\label{sec:orgae51aae}
 \subsection{Multiversion Concurrency Control}
-\label{sec:org86fa38d}
+\label{sec:orgd6f7968}
 \subsubsection{Multiversion Schedules}
-\label{sec:org983cc25}
+\label{sec:org9fca717}
 \begin{examplle}[]
 \(s=r_1(x)w_1(x)r_2(x)w_2(y)r_1(y)w_1(z)c_1c_2\notin\CSR\)
 \end{examplle}
@@ -1023,7 +1344,7 @@ A multiversion schedule is a \textbf{monoversion schedule} if its version functi
 last preceding write on the same data item.
 \end{definition}
 \subsubsection{Multiversion Serializability}
-\label{sec:org897cdb5}
+\label{sec:orge37ed82}
 \begin{definition}[]
 For mv schedule \(m\) the reads-from relation of \(m\) is \(\RF(m)=\{(t_i,x,t_j)\mid r_j(x_i)\in\op(m)\}\)
 \end{definition}
@@ -1032,7 +1353,7 @@ For mv schedule \(m\) the reads-from relation of \(m\) is \(\RF(m)=\{(t_i,x,t_j)
 mv histories \(m\) and \(m'\) with \(trans(m)=trans(m')\) are \textbf{view equivalent}, \(m\equiv_vm'\), if \(\RF(m)=\RF(m')\)
 \end{definition}
 \subsubsection{Limiting the Number of Versions}
-\label{sec:orgbd88af2}
+\label{sec:orgfe9a3a8}
 \subsubsection{Multiversion Concurrency Control Protocols}
-\label{sec:org713af3b}
+\label{sec:orgf73d878}
 \end{document}
