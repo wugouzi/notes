@@ -38,6 +38,7 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 (setq doom-theme 'doom-one-light)
+;; (setq doom-theme 'doom-nano-light)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
 ;; numbers are disabled. For relative line numbers, set this to `relative'.
@@ -134,15 +135,18 @@
   ((org-mode . auto-fill-mode)
    (org-mode . mixed-pitch-mode)
    (org-mode . (lambda () (setq fill-column 110)))
+   (org-mdoe . org-latex-preview-auto-mode)
+   ;; (org-mode . valign-mode)
    )
 
   :config
   (setq org-highlight-latex-and-related '(script entities)
+        org-latex-preview-process-precompiled t
         org-startup-indented nil
         org-hide-emphasis-markers t
         ;; org-latex-listings 'minted
         org-latex-pdf-process (quote
-                               ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f" "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+                               ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
         ;; inline image size
         org-image-actual-width 600
         org-emphasis-alist
@@ -153,7 +157,69 @@
           ("~" org-code verbatim)
           ;; ("+" (:strike-through t))
           )
+        ;; org-latex-compiler "xelatex"
         )
+  )
+
+(use-package org-latex-preview
+  :config
+  ;; Increase preview width
+  (plist-put org-latex-preview-appearance-options
+             :page-width 0.8)
+
+  ;; Use dvisvgm to generate previews
+  ;; You don't need this, it's the default:
+  (setq org-latex-preview-process-default 'dvisvgm)
+
+  ;; Turn on auto-mode, it's built into Org and much faster/more featured than
+  ;; org-fragtog. (Remember to turn off/uninstall org-fragtog.)
+  (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
+
+  ;; Block C-n and C-p from opening up previews when using auto-mode
+  (add-hook 'org-latex-preview-auto-ignored-commands 'next-line)
+  (add-hook 'org-latex-preview-auto-ignored-commands 'previous-line)
+
+  ;; Enable consistent equation numbering
+  (setq org-latex-preview-numbered t)
+
+  (setq org-latex-preview-process-precompiled t)
+
+  (setq org-latex-compiler "xelatex")
+
+  (setq org-startup-with-latex-preview t)
+
+  ;; Bonus: Turn on live previews.  This shows you a live preview of a LaTeX
+  ;; fragment and updates the preview in real-time as you edit it.
+  ;; To preview only environments, set it to '(block edit-special) instead
+  (setq org-latex-preview-live t)
+
+  ;; More immediate live-previews -- the default delay is 1 second
+  (setq org-latex-preview-live-debounce 0.25)
+  ;; (setq org-preview-latex-process-alist
+  ;;       '((dvipng :programs ("latex" "dvipng") :description "dvi > png" :message
+  ;;          "you need to install the programs: latex and dvipng." :image-input-type
+  ;;          "dvi" :image-output-type "png" :image-size-adjust (1.0 . 1.0)
+  ;;          :latex-compiler
+  ;;          ("xelatex -interaction nonstopmode -output-directory %o %f")
+  ;;          :image-converter ("dvipng -D %D -T tight -o %O %f")
+  ;;          :transparent-image-converter
+  ;;          ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
+  ;;         (dvisvgm
+  ;;          :programs ("latex" "dvisvgm")
+  ;;          :description "dvi > svg"
+  ;;          :message "you need to install the programs: latex and dvisvgm."
+  ;;          :image-input-type "dvi"
+  ;;          :image-output-type "svg"
+  ;;          :image-size-adjust (1.7 . 1.5)
+  ;;          :latex-compiler ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f")
+  ;;          :image-converter ("dvisvgm %f --no-fonts --exact-bbox --scale=%S --output=%O"))
+  ;;         (imagemagick :programs ("latex" "convert") :description "pdf > png" :message
+  ;;                      "you need to install the programs: latex and imagemagick."
+  ;;                      :image-input-type "pdf" :image-output-type "png"
+  ;;                      :image-size-adjust (1.0 . 1.0) :latex-compiler
+  ;;                      ("pdflatex -interaction nonstopmode -output-directory %o %f")
+  ;;                      :image-converter
+  ;;                      ("convert -density %D -trim -antialias %f -quality 100 %O"))))
   )
 
 (setq my-symbols-alist
@@ -196,20 +262,20 @@
   :hook
   (org-mode . org-sticky-header-mode))
 
-(use-package xenops
-  :after org
-  :init (load-file "~/.doom.d/xenops/xenops.el")
-  :ensure nil
-  :load-path "~/.doom.d/xenops"
-  :hook
-  (org-mode . xenops-mode)
-  :bind (
-         (("C-c C-g C-c" . xenops-reveal-at-point))
-         )
-  )
+;; (use-package xenops
+;;   :after org
+;;   :init (load-file "~/.doom.d/xenops/xenops.el")
+;;   :ensure nil
+;;   :load-path "~/.doom.d/xenops"
+;;   :hook
+;;   (org-mode . xenops-mode)
+;;   :bind (
+;;          (("C-c C-g C-c" . xenops-reveal-at-point))
+;;          )
+;;   )
 
 (use-package org-ref
-  :ensure nil
+  ;; :ensure nil
   :init
   (require 'bibtex)
   (setq bibtex-autokey-year-length 4
@@ -224,11 +290,12 @@
         org-ref-activate-ref-links nil
         org-ref-activate-cite-links nil
         org-ref-validate-bibliography nil
+        bibtex-completion-bibliography '("~/notes/references.bib")
         )
   (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
   (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
   (define-key org-mode-map (kbd "s-[") 'org-ref-insert-link-hydra/body)
-  (require 'org-ref-ivy)
+  ;; (require 'org-ref-ivy)
   (require 'org-ref-arxiv)
   (require 'org-ref-scopus)
   (require 'org-ref-wos))
@@ -251,20 +318,20 @@
         )
   )
 
-(use-package ivy
-  :bind (("C-s" . swiper)
-         ("C-x b" . ivy-switch-buffer)
-         ("C-x C-f" . counsel-find-file)
-         ("M-x" . counsel-M-x)
-         :map org-mode-map
-         ("M-." . counsel-org-goto)
-         ("C-u C-SPC" . org-mark-ring-goto)))
+;; (use-package ivy
+;;   :bind (("C-s" . swiper)
+;;          ("C-x b" . ivy-switch-buffer)
+;;          ("C-x C-f" . counsel-find-file)
+;;          ("M-x" . counsel-M-x)
+;;          :map org-mode-map
+;;          ("M-." . counsel-org-goto)
+;;          ("C-u C-SPC" . org-mark-ring-goto)))
 
 ;; for vertico
-;; (use-package consult
-;;   :bind (("C-s" . consult-line)
-;;          )
-;;   )
+(use-package consult
+  :bind (("C-s" . consult-line)
+         )
+  )
 
 ;; https://www.reddit.com/r/emacs/comments/ev7igv/why_is_auctex_loaded_using_usepackage_tex_instead/
 (use-package tex
@@ -316,17 +383,31 @@
   )
 
 
-(use-package lsp-mode
-  :custom
-  (lsp-rust-analyzer-server-display-inlay-hints t)
-  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
-  (lsp-rust-analyzer-display-chaining-hints t)
-  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
-  (lsp-rust-analyzer-display-closure-return-type-hints t)
-  (lsp-rust-analyzer-display-parameter-hints nil)
-  (lsp-rust-analyzer-display-reborrow-hints nil)
-  )
+;; (use-package lsp-mode
+;;   :custom
+;;   (lsp-rust-analyzer-server-display-inlay-hints t)
+;;   (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+;;   (lsp-rust-analyzer-display-chaining-hints t)
+;;   (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+;;   (lsp-rust-analyzer-display-closure-return-type-hints t)
+;;   (lsp-rust-analyzer-display-parameter-hints nil)
+;;   (lsp-rust-analyzer-display-reborrow-hints nil)
+;;   )
 
 
 (setq
  rustic-cargo-test-exec-command "test")
+
+;; (after! ccls
+;;   (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;;   (set-lsp-priority! 'ccls 2)) ; optional as ccls is the default in Doom
+
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
