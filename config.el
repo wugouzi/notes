@@ -157,7 +157,6 @@
           ("~" org-code verbatim)
           ;; ("+" (:strike-through t))
           )
-        ;; org-latex-compiler "xelatex"
         )
   )
 
@@ -165,7 +164,7 @@
   :config
   ;; Increase preview width
   (plist-put org-latex-preview-appearance-options
-             :page-width 0.8)
+             :page-width 1.0)
 
   ;; Use dvisvgm to generate previews
   ;; You don't need this, it's the default:
@@ -188,6 +187,14 @@
 
   (setq org-startup-with-latex-preview t)
 
+  (setq org-latex-preview-appearance-options
+        '(:foreground auto
+          :background "Transparent"
+          :scale 1.5
+          :zoom 1.1
+          :page-width 1.0
+          :matchers ("begin" "$1" "$" "$$" "\\(" "\\[")))
+
   ;; Bonus: Turn on live previews.  This shows you a live preview of a LaTeX
   ;; fragment and updates the preview in real-time as you edit it.
   ;; To preview only environments, set it to '(block edit-special) instead
@@ -195,31 +202,6 @@
 
   ;; More immediate live-previews -- the default delay is 1 second
   (setq org-latex-preview-live-debounce 0.25)
-  ;; (setq org-preview-latex-process-alist
-  ;;       '((dvipng :programs ("latex" "dvipng") :description "dvi > png" :message
-  ;;          "you need to install the programs: latex and dvipng." :image-input-type
-  ;;          "dvi" :image-output-type "png" :image-size-adjust (1.0 . 1.0)
-  ;;          :latex-compiler
-  ;;          ("xelatex -interaction nonstopmode -output-directory %o %f")
-  ;;          :image-converter ("dvipng -D %D -T tight -o %O %f")
-  ;;          :transparent-image-converter
-  ;;          ("dvipng -D %D -T tight -bg Transparent -o %O %f"))
-  ;;         (dvisvgm
-  ;;          :programs ("latex" "dvisvgm")
-  ;;          :description "dvi > svg"
-  ;;          :message "you need to install the programs: latex and dvisvgm."
-  ;;          :image-input-type "dvi"
-  ;;          :image-output-type "svg"
-  ;;          :image-size-adjust (1.7 . 1.5)
-  ;;          :latex-compiler ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f")
-  ;;          :image-converter ("dvisvgm %f --no-fonts --exact-bbox --scale=%S --output=%O"))
-  ;;         (imagemagick :programs ("latex" "convert") :description "pdf > png" :message
-  ;;                      "you need to install the programs: latex and imagemagick."
-  ;;                      :image-input-type "pdf" :image-output-type "png"
-  ;;                      :image-size-adjust (1.0 . 1.0) :latex-compiler
-  ;;                      ("pdflatex -interaction nonstopmode -output-directory %o %f")
-  ;;                      :image-converter
-  ;;                      ("convert -density %D -trim -antialias %f -quality 100 %O"))))
   )
 
 (setq my-symbols-alist
@@ -261,18 +243,6 @@
   :after org
   :hook
   (org-mode . org-sticky-header-mode))
-
-;; (use-package xenops
-;;   :after org
-;;   :init (load-file "~/.doom.d/xenops/xenops.el")
-;;   :ensure nil
-;;   :load-path "~/.doom.d/xenops"
-;;   :hook
-;;   (org-mode . xenops-mode)
-;;   :bind (
-;;          (("C-c C-g C-c" . xenops-reveal-at-point))
-;;          )
-;;   )
 
 (use-package org-ref
   ;; :ensure nil
@@ -317,15 +287,6 @@
                          (svg-tag-make tag :beg 1 :end -1)))))
         )
   )
-
-;; (use-package ivy
-;;   :bind (("C-s" . swiper)
-;;          ("C-x b" . ivy-switch-buffer)
-;;          ("C-x C-f" . counsel-find-file)
-;;          ("M-x" . counsel-M-x)
-;;          :map org-mode-map
-;;          ("M-." . counsel-org-goto)
-;;          ("C-u C-SPC" . org-mark-ring-goto)))
 
 ;; for vertico
 (use-package consult
@@ -382,7 +343,6 @@
   (set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
   )
 
-
 ;; (use-package lsp-mode
 ;;   :custom
 ;;   (lsp-rust-analyzer-server-display-inlay-hints t)
@@ -397,10 +357,6 @@
 
 (setq
  rustic-cargo-test-exec-command "test")
-
-;; (after! ccls
-;;   (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
-;;   (set-lsp-priority! 'ccls 2)) ; optional as ccls is the default in Doom
 
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
