@@ -1,7 +1,8 @@
 #+title: Big DataBase
 #+EXPORT_FILE_NAME: ../latex/bigdatabase/bigdatabase.tex
+#+STARTUP: latexpreview
 #+LATEX_HEADER: \graphicspath{{../../books/}}
-#+LATEX_HEADER: \input{../preamble.tex}
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+LATEX_HEADER: \DeclareMathOperator{\commit}{\text{commit}}
 #+LATEX_HEADER: \DeclareMathOperator{\DT}{\text{DT}}
 #+LATEX_HEADER: \DeclareMathOperator{\RF}{\text{RF}}
@@ -22,7 +23,6 @@
     5. plan generation: constructing the execution plan
     6. rewrite 2: refining the plan, pushing group
     7. code generation: producing the imperative plan
-
 
     Different optimization goals:
     * minimize response time
@@ -1247,3 +1247,34 @@
     * Redundant representation of individual columns in different sort orders
     * Database cracking and adaptive indexing
     * Efficient loading architectures
+
+**** History, trends, and performance tradeoffs
+    Figure 2.1 comes from [[cite:&10.5555/645927.672367]], summary of which by [[https://www.cs.cmu.edu/~kgao/course/15823/ailamaki01.html][Kun Gao]]:
+    Partition Attributes Across (PAX) is a new layout technique that groups the same attribute of different
+    tuples on the same page together to improve cache performance and reduce the cost of joining attributes.
+    This provides better performance than existing NSM and DSM storage layout methods.
+
+**** Column-store Architecture
+***** C-Store
+        The primary representation of data on disk is a set of column files. Each column-file contains data
+        from one column, compressed using a column-specific compression method, and sorted according to some
+        atrribute in the table that the column belongs to. This collection of files is known as the "read
+        optimized store" (ROS). Additionally, newly loaded data is stored in a write-optimized store (WOS),
+        where data is uncompressed and not vertically partitioned. Periodically, data is moved from the WOS
+        into the ROS via a background "tuple mover" process, which sorts, compresses, and writes re-organized
+        data to disk in a columnar form.
+
+        Each column in C-Store may be stored several times in several different sort orders. Groups of columns
+        sorted on the same attribute are referred to as “projections”. Typically there is at least one
+        projection containing all columns that can be used to answer any query.
+
+        C-Store support efficient indexing into sorted projections through the use of *sparse indexes*. A sparse
+        index is a small tree-based index that stores the first value contained on each physical page of a
+        column. A typical page in C-Store would be a few megabytes in size. Given a value in a sorted
+        projection, a lookup in this tree returns the first page that contains that value. The page can then
+        be scanned to find the actual value.
+***** MonetDB and VectorWise
+        MonetDB stores data one column-at-a-time both in memory and on disk and exploits bulk processing and
+        late materialization. MonetDB differs from traditional RDBMS architecture in many aspects, such as
+        its:
+        * Execution engine, which uses a column at-a-time-algebra
