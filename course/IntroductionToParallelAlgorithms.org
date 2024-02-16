@@ -1,0 +1,49 @@
+#+TITLE: Introduction to Parallel Algorithms
+
+#+AUTHOR: Guy E. Blelloch, Laxman Dhulipala, Yihan Sun
+
+#+EXPORT_FILE_NAME: ../latex/IntroductionToParallelAlgorithms/IntroductionToParallelAlgorithms.tex
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \input{../preamble.tex}
+
+
+From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
+
+* Models
+        We use the *Random Access Machine* (RAM) model which consists of a single processor with some constant
+        number of registers, an instruction counter and an arbitrarily large memory. The RAM model assumes
+        that all instructions take unit time.
+
+        The RAM is by no stretch meant to model the runtime on a real machine with cycle-by-cycle level
+        accuracy. It does not model, for example, that modern-day machines have cache hierarchies and
+        therefore not all memory accesses are equally expensive.
+
+        In *work-span* models, algorithms still assume a shared random access memory, but allow dynamically
+        creating tasks. Costs are measured in terms of the total number of operations, the *work* and the
+        longest chain of dependence.
+
+        We call a parallel algorithm *work-efficient* if its work is work asymptotically the same as its
+        best-known sequential counterpart.
+
+        The span for a parallel algorithm is the running time when you have an infinite number of processors.
+
+        The *Multi-Process Random-Access Machine* (MP-RAM) consists of a set of processes that share an
+        unbounded memory. The MP-RAM extends the RAM with a fork instruction that takes a positive integer
+        \(k\) and forks \(k\) new child processes. Each child process receives a unique integer in the range
+        \([1, . . . , k]\) in its first register and otherwise has the identical state as the parent (forking
+        process), which has that register set to 0. All children start by running the next instruction, and
+        the parent suspends until all the children terminate (execute an end instruction). The first
+        instruction of the parent after all children terminate is called the *join* instruction. A *computation*
+        starts with a single root process and finishes when that root process ends. This model supports
+        *nested parallelism* -the ability to fork processes in a nested fashion. If the root process never does
+        a fork, it is a standard sequential program.
+
+        A computation in the MP-RAM defines a partial order on the instructions. In particular
+        1. every instruction depends on its previous instruction in the same thread (if any),
+        2. every first instruction in a process depends on the fork instruction of the parent that generated
+           it, and
+        3. every join instruction depends on the end instruction of all child processes of the corresponding
+           fork generated.
+
+        The work of a computation is the total number of instructions, and the span is the longest sequences
+        of dependent instructions.
