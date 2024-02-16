@@ -3,8 +3,8 @@
 #+AUTHOR: Guy E. Blelloch, Laxman Dhulipala, Yihan Sun
 
 #+EXPORT_FILE_NAME: ../latex/IntroductionToParallelAlgorithms/IntroductionToParallelAlgorithms.tex
-#+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
 
 
 From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
@@ -76,8 +76,42 @@ From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
-        Consider a set of indicator random variables \(X_1,\dots,X_n\) for which \(p(X_i=1)\le\barp_i\)
+        Consider a set of indicator random variables \(X_1,\dots,X_n\) for which \(p(X_i=1)\le\barp_i\) conditioned on
+        all possible events \(X_j=\{0,1\}\), \(i\neq j\). Let \(X=\sum_{i=1}^nX_i\) and \(\barE[X]=\sum_{i=1}^n\barp_i\),
+        then
+        \begin{equation*}
+        \Pr[X\ge k]\le\left( \frac{e\barE[X]}{k} \right)^k
+        \end{equation*}
         #+END_theorem
 
-        \(\cala aef\)
-        \cala wefaefw
+        #+BEGIN_proof
+        Let's first consider the special case that the \(\barp_i\) are all equal and have value \(p\). If
+        \(X\ge k\), then we have that at least \(k\) of the random variables are 1. The probability of any
+        particular \(k\) variables all being 1, and the others being anything, is upper bounded by \(p^k\).
+        \begin{equation*}
+        \Pr[X\ge k]\le p^k\binom{n}{k}<p^k\left(\frac{ne}{k}\right)^k
+        =\left(\frac{pne}{k}\right)^k=
+        \left(\frac{e\barE[X]}{k}\right)^k
+        \end{equation*}
+        Here we used a standard upper bound on the binomial coefficients: \(\binom{n}{m}<\left(\frac{ne}{m}\right)^m\).
+        #+END_proof
+* Some Building Blocks
+** Scan
+        A *scan* or *prefix-sum* function takes a sequence \(A\), an associative function \(f\), and a left
+        identity element \(\bot\) and computes the values
+        \begin{equation*}
+        r_i=
+        \begin{cases}
+        \bot&i=0\\
+        f(r_{i-1},A_i)&0<i\le\abs{A}
+        \end{cases}
+        \end{equation*}
+        Each \(r_i\) is the "sum" of the prefix \(A[0,i]\) of \(A\) w.r.t. the function \(f\).
+
+
+        \begin{algorithm}
+        \lIf{\(abs{A}=1\)}{\Return A[0]}\;
+        \Else{
+        \(n\gets\abs{A}\)\;
+        }
+        \end{algorithm}

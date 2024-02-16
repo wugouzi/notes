@@ -1,0 +1,141 @@
+% Created 2024-02-16 Fri 19:59
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../books/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc,
+%   !announce-end.
+
+%% end ox-latex features
+
+
+\author{Guy E. Blelloch, Laxman Dhulipala, Yihan Sun}
+\date{\today}
+\title{Introduction to Parallel Algorithms}
+\hypersetup{
+ pdfauthor={Guy E. Blelloch, Laxman Dhulipala, Yihan Sun},
+ pdftitle={Introduction to Parallel Algorithms},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 30.0.50 (Org mode 9.7-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+From \url{https://www.cs.cmu.edu/\~guyb/paralg/paralg/parallel.pdf}
+\section{Models}
+\label{sec:org75c5c0a}
+We use the \textbf{Random Access Machine} (RAM) model which consists of a single processor with some constant
+number of registers, an instruction counter and an arbitrarily large memory. The RAM model assumes
+that all instructions take unit time.
+
+The RAM is by no stretch meant to model the runtime on a real machine with cycle-by-cycle level
+accuracy. It does not model, for example, that modern-day machines have cache hierarchies and
+therefore not all memory accesses are equally expensive.
+
+In \textbf{work-span} models, algorithms still assume a shared random access memory, but allow dynamically
+creating tasks. Costs are measured in terms of the total number of operations, the \textbf{work} and the
+longest chain of dependence.
+
+We call a parallel algorithm \textbf{work-efficient} if its work is work asymptotically the same as its
+best-known sequential counterpart.
+
+The span for a parallel algorithm is the running time when you have an infinite number of processors.
+
+The \textbf{Multi-Process Random-Access Machine} (MP-RAM) consists of a set of processes that share an
+unbounded memory. The MP-RAM extends the RAM with a fork instruction that takes a positive integer
+\(k\) and forks \(k\) new child processes. Each child process receives a unique integer in the range
+\([1, . . . , k]\) in its first register and otherwise has the identical state as the parent (forking
+process), which has that register set to 0. All children start by running the next instruction, and
+the parent suspends until all the children terminate (execute an end instruction). The first
+instruction of the parent after all children terminate is called the \textbf{join} instruction. A \textbf{computation}
+starts with a single root process and finishes when that root process ends. This model supports
+\textbf{nested parallelism} -the ability to fork processes in a nested fashion. If the root process never does
+a fork, it is a standard sequential program.
+
+A computation in the MP-RAM defines a partial order on the instructions. In particular
+\begin{enumerate}
+\item every instruction depends on its previous instruction in the same thread (if any),
+\item every first instruction in a process depends on the fork instruction of the parent that generated
+it, and
+\item every join instruction depends on the end instruction of all child processes of the corresponding
+fork generated.
+\end{enumerate}
+
+The work of a computation is the total number of instructions, and the span is the longest sequences
+of dependent instructions.
+
+Two instructions are said to be \textbf{concurrent} if they are unordered, and ordered otherwise. Two
+instructions \textbf{conflict} if one writes to a memory location that the other reads or writes the same
+location. We say two instructions race if they are concurrent and conflict.
+
+A \(\textsc{testAndSet}(x)\) (TS) instruction takes a reference to a memory location \(x\), checks if
+the value of \(x\) is \texttt{false} and if so atomically sets it to \texttt{true} and returns \texttt{true}; if already \texttt{true} it
+returns \texttt{false}.
+
+A \(\textsc{compareAndSwap}(x, o, n)\) (CAS) instruction takes a reference to a memory location \(x\),
+checks if the value of \(x\) equals \(o\). If so, the instruction will change the value to \(n\) and
+return \texttt{true}. If not, the instruction does nothing and simply returns \texttt{false}.
+
+A \(\textsc{fetchAndAdd}(x, y)\) (FA) instruction takes a reference to a memory location \(x\), and a
+value \(y\), and it adds \(y\) to the value of \(x\), returning the old value. Different from a TS or
+a CAS, an FA instruction always successfully adds \(y\) to the value stored in \(x\).
+
+A \(\textsc{priorityWrite}(x, y)\) (PW) instruction takes a reference to a memory location \(x\), and
+checks if the value \(y\) is less than the current value in \(x\). If so, it changes the value stored
+in \(x\) to \(y\), and return \texttt{true}. If not, it does nothing and return \texttt{false}.
+\section{Preliminaries}
+\label{sec:org8968f32}
+\begin{definition}[w.h.p.]
+\(g(n)\in O(f(n))\) with \textbf{high probability} (w.h.p.) if \(g(n)\in O(cf(n))\) with probability at least
+\(1-(\frac{1}{n})^c\), for some constant \(c_0\) and all \(c\ge c_0\).
+\end{definition}
+
+\begin{theorem}[]
+Consider a set of indicator random variables \(X_1,\dots,X_n\) for which \(p(X_i=1)\le\barp_i\) conditioned on
+all possible events \(X_j=\{0,1\}\), \(i\neq j\). Let \(X=\sum_{i=1}^nX_i\) and \(\barE[X]=\sum_{i=1}^n\barp_i\),
+then
+\begin{equation*}
+\Pr[X\ge k]\le\left( \frac{e\barE[X]}{k} \right)^k
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+Let's first consider the special case that the \(\barp_i\) are all equal and have value \(p\). If
+\(X\ge k\), then we have that at least \(k\) of the random variables are 1. The probability of any
+particular \(k\) variables all being 1, and the others being anything, is upper bounded by \(p^k\).
+\begin{equation*}
+\Pr[X\ge k]\le p^k\binom{n}{k}<p^k\left(\frac{ne}{k}\right)^k
+=\left(\frac{pne}{k}\right)^k=
+\left(\frac{e\barE[X]}{k}\right)^k
+\end{equation*}
+Here we used a standard upper bound on the binomial coefficients: \(\binom{n}{m}<\left(\frac{ne}{m}\right)^m\).
+\end{proof}
+\section{Some Building Blocks}
+\label{sec:org7224ff2}
+\subsection{Scan}
+\label{sec:org0261658}
+A \textbf{scan} or \textbf{prefix-sum} function takes a sequence \(A\), an associative function \(f\), and a left
+identity element \(\bot\) and computes the values
+\begin{equation*}
+r_i=
+\begin{cases}
+\bot&i=0\\
+f(r_{i-1},A_i)&0<i\le\abs{A}
+\end{cases}
+\end{equation*}
+Each \(r_i\) is the ``sum'' of the prefix \(A[0,i]\) of \(A\) w.r.t. the function \(f\).
+
+
+\begin{algorithm}
+\lIf{\(abs{A}=1\)}{\Return A[0]}\;
+\Else{
+\(n\gets\abs{A}\)\;
+}
+\end{algorithm}
+\end{document}
