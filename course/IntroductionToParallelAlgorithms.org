@@ -5,7 +5,7 @@
 #+EXPORT_FILE_NAME: ../latex/IntroductionToParallelAlgorithms/IntroductionToParallelAlgorithms.tex
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+LATEX_HEADER: \graphicspath{{../../books/}}
-
+#+LATEX_HEADER: \algrenewcommand\algorithmicforall{\textbf{parfor}}
 
 From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
 
@@ -108,10 +108,78 @@ From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
         \end{equation*}
         Each \(r_i\) is the "sum" of the prefix \(A[0,i]\) of \(A\) w.r.t. the function \(f\).
 
+        \begin{algorithmic}
+        \Function{scanUp}{\(A,L,f\)}
+        \If{\(\abs{A}=1\)}
+                \Return \(\abs{A[0]}\)
+        \Else
+                \State \(n\gets\abs{A}\);
+                \State \(m\gets n/2\);
+                \State \(l\gets\textsc{scanUp}(A[0:m],L[0:m-1],f)\quad||\)
+                \State \(r\gets\textsc{scanUp}([A[m:n],L[m:n-1]],f)\);
+                \State \(L[m-1]\gets l\);
+                \State \Return \(f(l,r)\)
+        \EndIf
+        \EndFunction
+        \end{algorithmic}
 
-        \begin{algorithm}
-        \lIf{\(abs{A}=1\)}{\Return A[0]}\;
-        \Else{
-        \(n\gets\abs{A}\)\;
-        }
-        \end{algorithm}
+        \begin{algorithmic}
+        \Function{scanDown}{\(R,L,f,s\)}
+                \If{\(\abs{R}=1\)}
+                        \State \(R[0]=s\);
+                        \State \Return
+                \Else
+                        \State \(n\gets\abs{A}\);
+                        \State \(m\gets\abs{R}/2\);
+                        \State \(\textsc{scanDown}(R[0:m],L[0:m-1],s)\quad||\)
+                        \State \(\textsc{scanDown}(R[m:n],L[m:n-1],f(s,L[m-1]))\);
+                        \State \Return
+                \EndIf
+        \EndFunction
+        \end{algorithmic}
+
+        \begin{algorithmic}
+        \Function{scan}{\(A,f,I\)}
+        \State \(L\gets\textsc{array}[\abs{A}-1]\);
+        \State \(R\gets\textsc{array}[\abs{A}]\);
+        \State \(\texttt{total}\gets\textsc{scanUp}(A,L,f)\);
+        \State \(\textsc{scanDown}(R,L,f,I)\);
+        \State\Return \(\la R,\texttt{total}\ra\)
+        \EndFunction
+        \end{algorithmic}
+
+        For \textsc{scanUp} it should be clear that the values written into \(L\) are indeed the sums of the
+        left subtrees. For \textsc{scanDown} consider a node \(v\) in the tree and the value \(s\) passed to
+        it. The algorithm maintains that the value \(s\) is the sum of all values to the left of the subtree
+        rooted at \(v\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../images/Parallel/1.png]]
+        Work of \textsc{scanUp} and \textsc{scanDown} is
+        \begin{equation*}
+        W(n)=2W(n/2)+O(1)=O(n)
+        \end{equation*}
+        and the span is
+        \begin{equation*}
+        D(n)=D(n/2)+O(1)=\log(n)
+        \end{equation*}
+** Filter and Flatten
+        \begin{algorithmic}
+        \Function{filter}{\(A,p\)}
+                \State \(n\gets\abs{A}\);
+                \State \(F\gets\textsc{array}[n]\);
+                \ForAll{\(i\in[0:n]\)}
+                \State \(F[i]\gets p(A[i])\)
+                \EndFor
+                \State \(\la X,m\ra\gets\textsc{plusScan}(F)\);
+                \State \(R\gets\textsc{array}[m]\);
+                \ForAll{\(i\in[0:n]\)}
+                \If{\(F[i]\)}
+                        \State\(R[X[i]]\gets A[i]\);
+                \EndIf
+                \EndFor
+                \State\Return \(R\)
+        \EndFunction
+        \end{algorithmic}
