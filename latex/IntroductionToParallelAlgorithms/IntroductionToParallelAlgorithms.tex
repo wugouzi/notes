@@ -1,7 +1,10 @@
-% Created 2024-02-18 Sun 13:41
+% Created 2024-02-20 Tue 17:15
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../books/}}
+\algrenewcommand\algorithmicforall{\textbf{parfor}}
 
 %% ox-latex features:
 %   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
@@ -29,13 +32,9 @@
 \maketitle
 \tableofcontents
 
-\input{/Users/wu/notes/preamble.tex}
-\graphicspath{{../../books/}}
-\algrenewcommand\algorithmicforall{\textbf{parfor}}
-
 From \url{https://www.cs.cmu.edu/\~guyb/paralg/paralg/parallel.pdf}
 \section{Models}
-\label{sec:org49fb2bb}
+\label{sec:orgf6aa965}
 We use the \textbf{Random Access Machine} (RAM) model which consists of a single processor with some constant
 number of registers, an instruction counter and an arbitrarily large memory. The RAM model assumes
 that all instructions take unit time.
@@ -96,7 +95,7 @@ A \(\textsc{priorityWrite}(x, y)\) (PW) instruction takes a reference to a memor
 checks if the value \(y\) is less than the current value in \(x\). If so, it changes the value stored
 in \(x\) to \(y\), and return \texttt{true}. If not, it does nothing and return \texttt{false}.
 \section{Preliminaries}
-\label{sec:org997ce75}
+\label{sec:orgd0b6421}
 \begin{definition}[w.h.p.]
 \(g(n)\in O(f(n))\) with \textbf{high probability} (w.h.p.) if \(g(n)\in O(cf(n))\) with probability at least
 \(1-(\frac{1}{n})^c\), for some constant \(c_0\) and all \(c\ge c_0\).
@@ -123,9 +122,9 @@ particular \(k\) variables all being 1, and the others being anything, is upper 
 Here we used a standard upper bound on the binomial coefficients: \(\binom{n}{m}<\left(\frac{ne}{m}\right)^m\).
 \end{proof}
 \section{Some Building Blocks}
-\label{sec:orgb536966}
+\label{sec:org677eba5}
 \subsection{Scan}
-\label{sec:orge21bf3a}
+\label{sec:org542bc3b}
 A \textbf{scan} or \textbf{prefix-sum} function takes a sequence \(A\), an associative function \(f\), and a left
 identity element \(\bot\) and computes the values
 \begin{equation*}
@@ -195,7 +194,7 @@ and the span is
 D(n)=D(n/2)+O(1)=\log(n)
 \end{equation*}
 \subsection{Filter and Flatten}
-\label{sec:orga8d8650}
+\label{sec:orgba2c040}
 \begin{algorithmic}
 \Function{filter}{\(A,p\)}
         \State \(n\gets\abs{A}\);
@@ -211,6 +210,71 @@ D(n)=D(n/2)+O(1)=\log(n)
         \EndIf
         \EndFor
         \State\Return \(R\)
+\EndFunction
+\end{algorithmic}
+
+Work \(O(n)\), span \(O(\log n)\)
+
+\begin{algorithmic}
+\Function{flatten}{\(A\)}
+\State \(\texttt{sizes}\gets\textsc{array}(\abs{A})\);
+\ForAll{\(i\in[0:\abs{A}]\)}
+        \State \(\texttt{sizes}[i]\gets\abs{A[i]}\);
+\EndFor
+\State \(\la X,m\ra\gets\textsc{plusScan}(\texttt{sizes})\);
+\State \(R\gets\textsc{array}(m)\)
+\ForAll{\(i\in[0:\abs{A}]\)}
+        \State \(o\gets X[i]\);
+        \ForAll{\(j\in[0:\abs{A[i]}]\)}
+                \State\(R[o+j]\gets A[i][j]\)
+        \EndFor
+\EndFor
+\State \Return\(R\)
+\EndFunction
+\end{algorithmic}
+\subsection{Search}
+\label{sec:org9a87c34}
+The sorted search problem is given a sorted sequence \(A\) and a key \(v\), to find the position of the
+greatest element in \(A\) that is less than \(v\).
+
+\begin{algorithmic}
+\LComment{finds which of \(k\) blocks contains \(v\), returns \texttt{block} and \texttt{offset}}
+\Function{findBlock}{\(A,v,k\)}
+\State \(s\gets\abs{A}/k\)
+\State \(r\gets k\)
+\ForAll{\(i\in[0:k]\)}
+        \If{\(A[i\times s]<v\wedge A[(i+1)\times s]>v\)}
+                \State \(r\gets i\)
+        \EndIf
+\EndFor
+\State \Return \((A[r\times s,(r+1)\times s],i\times s)\)
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{search}{\(A,v,k\)}
+\State \((B,o)=\textsc{findBlock}{A,v,\min(\abs{A},k)}\);
+\If{\(\abs{A}\le k\)}
+        \State \Return \(o\)
+\Else
+        \State \Return \(o+\textsc{search}(B,v,k)\)
+\EndIf
+\EndFunction
+\end{algorithmic}
+
+\begin{algorithmic}
+\Function{kthHelp}{\(A,a_0,B,b_0,k\)}
+\If{\(\abs{A}+\abs{B}=0\)}
+        \State \Return \((a_0,b_0)\)
+\ElsIf{\abs{A}=0}
+        \State \Return \((a_0,b_0+k)\)
+\ElsIf{\(\abs{B}=0\)}
+        \State \Return \((a_0+k,b_0)\)
+\Else
+        \State \(m_a\gets\abs{A}/2\)
+        \State \(m_b\gets\abs{B}/2\)
+        
+\EndIf
 \EndFunction
 \end{algorithmic}
 \end{document}
