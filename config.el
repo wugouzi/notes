@@ -158,6 +158,7 @@
           ;; ("+" (:strike-through t))
           )
         )
+  (set-company-backend! 'org-mode '(company-dabbrev :with company-yasnippet))
   )
 
 (use-package org-latex-preview
@@ -289,10 +290,12 @@
   )
 
 ;; for vertico
-(use-package consult
-  :bind (("C-s" . consult-line)
-         )
-  )
+;; (use-package consult
+;;   :bind (("C-s" . consult-line)
+;;          )
+;;   )
+(use-package swiper
+  :bind (("C-s" . swiper-isearch)))
 
 ;; https://www.reddit.com/r/emacs/comments/ev7igv/why_is_auctex_loaded_using_usepackage_tex_instead/
 (use-package tex
@@ -337,11 +340,17 @@
    ;; company-require-match nil
    company-dabbrev-ignore-case nil
    company-dabbrev-downcase nil
-   company-dabbrev-minimum-length 3
-   company-dabbrev-char-regexp "[A-Za-z]+")
+   company-dabbrev-minimum-length 4
+   ;; company-dabbrev-char-regexp "[A-Za-z]+"
+   )
   :config
-  (set-company-backend! 'org-mode 'company-dabbrev 'company-math-symbols-latex 'company-latex-commands)
   )
+
+;; 'company-math-symbols-latex 'company-latex-commands 'company-yasnippet
+;; (after! org-mode
+;;   (set-company-backend! 'org-mode nil))
+;; (after! org-mode
+;;   (set-company-backend! 'org-mode '(company-dabbrev :with company-yasnippet)))
 
 ;; (use-package lsp-mode
 ;;   :custom
@@ -367,3 +376,14 @@
           "--header-insertion=never"
           "--header-insertion-decorators=0"))
   (set-lsp-priority! 'clangd 2))
+
+;; annoying org warnings
+(setq warning-minimum-level :error)
+
+(add-to-list 'org-latex-classes
+                 '("fduthesis" "\\documentclass{fduthesis}"
+                   ("\\chapter{%s}" . "\\section*{%s}")
+                   ("\\section{%s}" . "\\subsection*{%s}")
+                   ("\\subsection{%s}" . "\\subsubsection*{%s}")
+                   ("\\paragraph{%s}" . "\\paragraph*{%s}")
+                   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
