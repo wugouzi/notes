@@ -232,17 +232,102 @@ From https://www.cs.cmu.edu/~guyb/paralg/paralg/parallel.pdf
         \EndFunction
         \end{algorithmic}
 
+        By picking \(k=n_0^\alpha\), where \(n_0\) is the original input size, and for \(0<\alpha\le 1\), the algorithm
+        will make \(O(1/\alpha)\) calls until it is of size 1 or less. The work on each recursive call is
+        \(O(k)=O(n_0^\alpha)\) so the total work is \(W(n)=O((1/\alpha)n^\alpha)\). On the MP-RAM the span on each level is
+        \(O(1)\) so the overall span is \(O(1/\alpha)\).
+
+        Another related problem is given two sorted sequences \(A\) and \(B\), and an integer \(k\), to find
+        the \(k\)th smallest elements. More specifically, \(\textsc{kth}(A,B,k)\) returns locations
+        \((l_a,l_b)\) in \(A\) and \(B\) s.t. \(l_a+l_b=k\)
         \begin{algorithmic}
         \Function{kthHelp}{\(A,a_0,B,b_0,k\)}
         \If{\(\abs{A}+\abs{B}=0\)}
                 \State \Return \((a_0,b_0)\)
-        \ElsIf{\abs{A}=0}
+        \ElsIf{\(\abs{A}=0\)}
                 \State \Return \((a_0,b_0+k)\)
         \ElsIf{\(\abs{B}=0\)}
                 \State \Return \((a_0+k,b_0)\)
         \Else
                 \State \(m_a\gets\abs{A}/2\)
                 \State \(m_b\gets\abs{B}/2\)
+                \CaseOf{\((A[m_a]<B,k>m_a+m_b)\)}
+                        \State \((T,T)\Rightarrow\) \Return \(\textsc{kthHelp}(A[m_a+1:\abs{A}],a_0+m_a+1,B,b_0,k-m_a-1)\)
+                        \State \((T,F)\Rightarrow\) \Return \(\textsc{kthHelp}(A,a_0,B[0:m_b],b_0,k)\)
+                        \State \((F,T)\Rightarrow\) \Return \(\textsc{kthHelp}(A,a_0,B[m_b+1:\abs{B}],b_0+m_b+1,k-m_b-1)\)
+                        \State \((F,F)\Rightarrow\) \Return \(\textsc{kthHelp}(A[0:m_a],a_0,B,b_0,k)\)
+                \EndCaseOf
         \EndIf
         \EndFunction
         \end{algorithmic}
+
+        \begin{algorithmic}
+        \Function{kth}{\(A,B,k\)}
+        \State \Return \(\textsc{kthHelp}(A,0,B,0,k)\)
+        \EndFunction
+        \end{algorithmic}
+        Work and span are \(O(\log\abs{A}+\log\abs{B})\)
+
+        Again the idea is to do a \(k\)-way search. By picking \(k\) evenly spaced positions in one array it
+        is possible to find them in the other array using the sorted search problem. This can be used to find
+        the subblock of \(A\) and \(B\) that contains the location \((l_a,l_b)\). By doing this again from the
+        other array, both subblocks can be reduced in size by a factor of \(k\). This is repeated for
+        \(\log_k\abs{A}+\log_k\abs{B}\) levels. By picking \(k=n_0^\alpha\) this will result in an algorithm taking
+        \(O(n^{2\alpha})\) work and \(O(1/\alpha^2)\) span. #+LATEX: \wu{
+        Note here is fucking weird. I think they are \(O((1/\alpha)n^{\alpha})\) and \(O(1/\alpha)\) respectively
+   #+LATEX: }
+** Merge
+        \begin{algorithmic}
+        \Function{merge}{\(A,B,R\)}
+        \CaseOf{\((\abs{A},\abs{B})\)}
+                \State \((0,\_)\Rightarrow\texttt{copy }$B$\texttt{ to }R\); \Return
+                \State \((\_,0)\Rightarrow\texttt{copy }$B$\texttt{ to }R\); \Return
+                \State \texttt{otherwise} \(\Rightarrow\)
+                \State \hspace{0,4cm} \(m\gets\abs{R}/2\);
+                \State \hspace{0,4cm} \((m_a,m_b)=\textsc{kth}(A,B,m)\);
+                \State \hspace{0,4cm} \textsc{merge}\((A[0:m_a],B[0:m_b],R[0:m])\quad||\)
+                \State \hspace{0,4cm} \(\textsc{merge}(A[m_a:\abs{A}],B[m_b:\abs{B}],R[m:\abs{R}])\)
+                \State \hspace{0,4cm} \Return
+        \EndCaseOf
+        \EndFunction
+        \end{algorithmic}
+        Let \(m=\abs{A}+\abs{B}\), then
+        \begin{align*}
+        W(m)&=2W(m/2)+O(\log m)=O(m)\\
+        D(m)&=D(m/2)+O(\log m)=O(\log^2m)
+        \end{align*}
+
+        By using the parallel version of \textsc{kth} with some \alpha, the recurrences are
+        \begin{align*}
+        W(m)&=2W(m/2)+O(n^{1/2})=O(m)\\
+        D(m)&=D(m/2)+O(1)=O(\log m)
+        \end{align*}
+
+        The span of parallel merge can be improved by using a multi-way divide-and-conquer instead of
+        two-way,, as below.
+        \begin{algorithmic}
+        \Function{mergeFway}{\(A,B,R,f\)}
+        \LComment{Same base cases}
+        \Otherwise
+        \State \(l\gets(\abs{R}-1)/f(\abs{R})+1\);
+        \ForAll{\(i\in[0:f(\abs{R})]\)}
+                \State \(s\gets\min(i\times l,\abs{R})\);
+                \State \(e\gets\min((i+1)\times l,\abs{R})\);
+                \State \((s_a,s_b)\gets\textsc{kth}(A,B,s)\);
+                \State \((e_a,e_b)\gets\textsc{kth}(A,B,e)\);
+                \State \(\textsc{mergeFway}(A[s_a:e_a],B[s_b:e_b],R[s:e],f)\)
+        \EndFor
+        \State \Return
+        \EndOtherwise
+        \EndFunction
+        \end{algorithmic}
+
+        If we use \(f(n)=\sqrt{n}\), and using dual binary search for \(\textsc{kth}\), then
+        \begin{align*}
+        W(m)&=\sqrt{m}W(\sqrt{m})+O(\sqrt{m}\log m)=O(m)\\
+        D(m)&=D(\sqrt{m})+O(\log m)=O(\log m)
+        \end{align*}
+** K-th Smallest
+        \Function{}{}
+
+        \EndFunction

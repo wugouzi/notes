@@ -103,7 +103,7 @@
 \usepackage{tabularx}
 
 \usepackage{enumitem}
-\usepackage{algpseudocodex}
+\usepackage[indLines=false]{algpseudocodex}
 % \usepackage{algorithm2e}
 % \SetKwComment{Comment}{/* }{ */}
 % \algrenewcommand\algorithmicrequire{\textbf{Input:}}
@@ -140,6 +140,68 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% USEPACKAGES end                       %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Algorithm environment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% https://github.com/chrmatt/algpseudocodex/issues/3
+\algnewcommand\algorithmicswitch{\textbf{switch}}%
+\algnewcommand\algorithmiccase{\textbf{case}}
+\algnewcommand\algorithmicof{\textbf{of}}
+\algnewcommand\algorithmicotherwise{\texttt{otherwise} $\Rightarrow$}
+
+\makeatletter
+\algdef{SE}[SWITCH]{Switch}{EndSwitch}[1]{\algpx@startIndent\algpx@startCodeCommand\algorithmicswitch\ #1\ \algorithmicdo}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicswitch}%
+\algdef{SE}[CASE]{Case}{EndCase}[1]{\algpx@startIndent\algpx@startCodeCommand\algorithmiccase\ #1}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmiccase}%
+\algdef{SE}[CASEOF]{CaseOf}{EndCaseOf}[1]{\algpx@startIndent\algpx@startCodeCommand\algorithmiccase\ #1 \algorithmicof}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmiccase}
+\algdef{SE}[OTHERWISE]{Otherwise}{EndOtherwise}[0]{\algpx@startIndent\algpx@startCodeCommand\algorithmicotherwise}{\algpx@endIndent\algpx@startCodeCommand\algorithmicend\ \algorithmicotherwise}
+\ifbool{algpx@noEnd}{%
+  \algtext*{EndSwitch}%
+  \algtext*{EndCase}%
+  \algtext*{EndCaseOf}
+  \algtext*{EndOtherwise}
+  %
+  % end indent line after (not before), to get correct y position for multiline text in last command
+  \apptocmd{\EndSwitch}{\algpx@endIndent}{}{}%
+  \apptocmd{\EndCase}{\algpx@endIndent}{}{}%
+  \apptocmd{\EndCaseOf}{\algpx@endIndent}{}{}
+  \apptocmd{\EndOtherwise}{\algpx@endIndent}{}{}
+}{}%
+
+\pretocmd{\Switch}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Case}{\algpx@endCodeCommand}{}{}
+\pretocmd{\CaseOf}{\algpx@endCodeCommand}{}{}
+\pretocmd{\Otherwise}{\algpx@endCodeCommand}{}{}
+
+% for end commands that may not be printed, tell endCodeCommand whether we are using noEnd
+\ifbool{algpx@noEnd}{%
+  \pretocmd{\EndSwitch}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndCase}{\algpx@endCodeCommand[1]}{}{}
+  \pretocmd{\EndCaseOf}{\algpx@endCodeCommand[1]}{}{}%
+  \pretocmd{\EndOtherwise}{\algpx@endCodeCommand[1]}{}{}
+}{%
+  \pretocmd{\EndSwitch}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndCase}{\algpx@endCodeCommand[0]}{}{}%
+  \pretocmd{\EndCaseOf}{\algpx@endCodeCommand[0]}{}{}
+  \pretocmd{\EndOtherwise}{\algpx@endCodeCommand[0]}{}{}
+}%
+\makeatother
+% % For algpseudocode
+% \algnewcommand\algorithmicswitch{\textbf{switch}}
+% \algnewcommand\algorithmiccase{\textbf{case}}
+% \algnewcommand\algorithmiccaseof{\textbf{case}}
+% \algnewcommand\algorithmicof{\textbf{of}}
+% % New "environments"
+% \algdef{SE}[SWITCH]{Switch}{EndSwitch}[1]{\algorithmicswitch\ #1\ \algorithmicdo}{\algorithmicend\ \algorithmicswitch}%
+% \algdef{SE}[CASE]{Case}{EndCase}[1]{\algorithmiccase\ #1}{\algorithmicend\ \algorithmiccase}%
+% \algtext*{EndSwitch}%
+% \algtext*{EndCase}
+% \algdef{SE}[CASEOF]{CaseOf}{EndCaseOf}[1]{\algorithmiccaseof\ #1 \algorithmicof}{\algorithmicend\ \algorithmiccaseof}
+% \algtext*{EndCaseOf}
+
+
+
 %\pdfcompresslevel0
 
 % quoting from

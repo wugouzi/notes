@@ -1,0 +1,55 @@
+#+title: Theory Of Distributed Systems
+#+AUTHOR: James Aspnes
+#+EXPORT_FILE_NAME: ../latex/TheoryOfDistributedSystems/TheoryOfDistributedSystems.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \DeclareMathOperator{\state}{\textsf{state}}
+#+LATEX_HEADER: \DeclareMathOperator{\buffer}{\textsf{buffer}}
+#+LATEX_HEADER: \DeclareMathOperator{\del}{\textsf{del}}
+#+LATEX_HEADER: \DeclareMathOperator{\comp}{\textsf{comp}}
+
+* Model
+** Basic message-passing model
+        We have a collection of \(n\) *processes* \(p_1,\dots,p_n\), each of which has a *state* consisting of a state
+        from state set \(Q_i\). We think of these processes as nodes in a directed *communication graph* or
+        *network*. The edges in this graph are a collection of point-to-point *channels* or *buffers* \(b_{ij}\),
+        one for each pair of adjacent processes \(i\) and \(j\), representing messages that have been sent but
+        that have not yet been delivered.
+
+        A *configuration* of the system consists of a vector of states, one for each process and channel. The
+        configuration of the system is updated by an *event*, where
+        1. zero or more messages in channels \(b_{ij}\) are delivered to process \(p_j\), removing them from
+           \(b_{ij}\);
+        2. \(p_j\) updates its state in response;
+        3. zero or more messages are added by \(p_j\) to outgoing channels \(b_{ji}\).
+
+        An *execution segment* is a sequence of alternating configurations and events \(C_0,\phi_1,C_1,\phi_2,\dots\), where
+        each triple \(C_i\phi_{i+1}C_{i+1}\) is consistent with the transition rules for the event \(\phi_{i+1}\) and
+        the last element of the sequence is a configuration. If the first configuration \(C_0\) is an *initial
+        configuration* of the system, we have an *execution*. A *schedule* is an execution with the configurations
+        removed.
+*** Formal Details
+        Let \(P\) be the set of processes, \(Q\) the set of process states, and \(M\) the set of possible
+        messages.
+
+        Each process \(p_i\) has a state \(\state_i\in Q\). Each channel \(b_{ij}\) has a state \(\buffer_{ij}\in\calp(M)\).
+        We assume each process has a *transition function* \(\delta:Q\times\calp(M)\to Q\times\calp(P\times M)\) that maps tuples consisting
+        of a state and a set of incoming messages a new state and a set of recipients and messages to be sent.
+        A delivery event \(\del(i,A)\) where \(A=\{(j_k,m_k)\}\) removes each message \(m_k\) from \(b_{ji}\),
+        updates \(\state_i\) according to \(\delta(\state_i,A)\) to the appropriate channels. A computation event \(\comp(i)\)
+        does the same thing, except that it applies \(\delta(\state_j,\emptyset)\).
+** Asynchronous systems
+        In an *asynchronous* model, only minimal restrictions are placed on when messages are delivered and when
+        local computation occurs. A schedule is *admissible* if
+        1. there are infinitely many computation steps for each process,
+        2. every message is eventually delivered
+        These are *fairness* conditions. Condition (a) assumes that processes do not explicitly terminate.
+** Synchronous systems
+        A *synchronous message-passing* system is exactly like an asynchronous system, except we insist that the
+        schedule consists of alternating phases where
+        1. every process executes a computation step,
+        2. all messages are delivered while none are sent
+        The combination of a computation phase and a delivery phase is called a *round*.
+** Drawing message-passing executions
+* Broadcast and convergecast
