@@ -1,5 +1,6 @@
 #+title: Theory Of Distributed Systems
 #+AUTHOR: James Aspnes
+#+STARTUP: latexpreview
 #+EXPORT_FILE_NAME: ../latex/TheoryOfDistributedSystems/TheoryOfDistributedSystems.tex
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+LATEX_HEADER: \graphicspath{{../../books/}}
@@ -8,6 +9,31 @@
 #+LATEX_HEADER: \DeclareMathOperator{\buffer}{\textsf{buffer}}
 #+LATEX_HEADER: \DeclareMathOperator{\del}{\textsf{del}}
 #+LATEX_HEADER: \DeclareMathOperator{\comp}{\textsf{comp}}
+#+LATEX_HEADER: \DeclareMathOperator{\true}{\textbf{true}}
+#+LATEX_HEADER: \DeclareMathOperator{\false}{\textbf{false}}
+#+LATEX_HEADER: \DeclareMathOperator{\pid}{\textsf{pid}}
+#+LATEX_HEADER: \DeclareMathOperator{\troot}{\textsf{root}}
+#+LATEX_HEADER: \DeclareMathOperator{\seenmessage}{\textsf{seen-message}}
+#+LATEX_HEADER: \DeclareMathOperator{\parent}{\textsf{parent}}
+#+LATEX_HEADER: \DeclareMathOperator{\nonChildren}{\textsf{nonChildren}}
+#+LATEX_HEADER: \DeclareMathOperator{\children}{\textsf{children}}
+#+LATEX_HEADER: \DeclareMathOperator{\ack}{\textsf{ack}}
+#+LATEX_HEADER: \DeclareMathOperator{\nack}{\textsf{nack}}
+#+LATEX_HEADER: \DeclareMathOperator{\tinput}{\textsf{input}}
+#+LATEX_HEADER: \DeclareMathOperator{\initiator}{\textsf{initiator}}
+#+LATEX_HEADER: \DeclareMathOperator{\tpid}{\textsf{pid}}
+#+LATEX_HEADER: \DeclareMathOperator{\distance}{\textsf{distance}}
+#+LATEX_HEADER: \DeclareMathOperator{\bound}{\textsf{bound}}
+#+LATEX_HEADER: \DeclareMathOperator{\exactly}{\textsf{exactly}}
+#+LATEX_HEADER: \DeclareMathOperator{\morethan}{\textsf{more-than}}
+#+LATEX_HEADER: \DeclareMathOperator{\leader}{\textsf{leader}}
+#+LATEX_HEADER: \DeclareMathOperator{\maxId}{\textsf{maxId}}
+#+LATEX_HEADER: \DeclareMathOperator{\tid}{\textsf{id}}
+#+LATEX_HEADER: \DeclareMathOperator{\phase}{\textsf{phase}}
+#+LATEX_HEADER: \DeclareMathOperator{\candidate}{\texttt{candidate}}
+#+LATEX_HEADER: \DeclareMathOperator{\relay}{\texttt{relay}}
+#+LATEX_HEADER: \DeclareMathOperator{\probe}{\texttt{probe}}
+#+LATEX_HEADER: \DeclareMathOperator{\current}{\textsf{current}}
 
 * Model
 ** Basic message-passing model
@@ -53,3 +79,378 @@
         The combination of a computation phase and a delivery phase is called a *round*.
 ** Drawing message-passing executions
 * Broadcast and convergecast
+** Flooding
+*** Basic algorithm
+        \begin{algorithm}
+        \caption{Basic flooding algorithm}
+        \Init{
+                \If{\(\textsf{tpid}=\textsf{root}\)}{
+                        \(\textsf{seen-message}\gets\textbf{true}\)\;
+                        send \(M\) to all neighbors\;
+                }
+                \Else{
+                        \(\textsf{seen-message}\gets\textbf{false}\)\;
+                }
+        }
+        \Recv{\(M\)}{
+                \If{\(\seenmessage=\false\)}{
+                        \(\seenmessage\gets\true\)\;
+                        send \(M\) to all neighbors\;
+                }
+        }
+        \end{algorithm}
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Every process receives \(M\) after at most \(D\) time and at most \(\abs{E}\) messages, where \(D\) is
+        the diameter of the network and \(E\) is the set of (directed) edges in the network
+        #+END_theorem
+
+        We can optimize the algorithm slightly by not sending M back to the node it came from; this will
+        slightly reduce the message complexity in many cases but makes the proof a sentence or two longer.
+*** Adding parent pointers
+        \begin{algorithm}
+        \label{3.2}
+        \caption{Flooding with parent pointers}
+        \Init{
+                \If{\(\textsf{tpid}=\textsf{root}\)}{
+                        \(\parent\gets\troot\)\;
+                        send \(M\) to all neighbors\;
+                }
+                \Else{
+                        \(\parent\gets\bot\)\;
+                }
+        }
+        \Recv{\(M\) from \(p\)}{
+                \If{\(\parent=\bot\)}{
+                        \(\parent\gets p\)\;
+                        send \(M\) to all neighbors\;
+                }
+        }
+        \end{algorithm}
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        At any time during the execution of Algorithm ref:3.2, the following invariant holds:
+        1. If \(u.\parent\neq\bot\) then \(u.\parent.\parent\neq\bot\) and following parent pointers gives a
+           path from \(u\) to \(\troot\)
+        2. If there is a message \(M\) in transit from \(u\) to \(v\), then \(u.\parent\neq\bot\)
+        #+END_lemma
+
+        Though we get a spanning tree at the end, we may not get a very good spanning tree.
+
+*** Identifying children
+        \begin{algorithm}
+        \label{3.3}
+        \caption{Flooding tracking children}
+        \Init{
+                \(\nonChildren=\emptyset\)\;
+                \If{\(\textsf{tpid}=\textsf{root}\)}{
+                        \(\parent\gets\troot\)\;
+                        \(\children\gets\{\troot\}\)\;
+                        send \(M\) to all neighbors\;
+                }
+                \Else{
+                        \(\parent\gets\bot\)\;
+                        \(\children\gets\emptyset\)\;
+                }
+        }
+        \Recv{\(M\) from \(p\)}{
+                \If{\(\parent=\bot\)}{
+                        \(\parent\gets p\)\;
+                        send \(\ack\) to \(p\)\;
+                        send \(M\) to all neighbors\;
+                }
+                \Else{
+                        send \(\nack\) to \(p\)\;
+                }
+        }
+        \Recv{\(\ack\) from \(p\)}{
+                \(\children\gets\children\cup\{p\}\)
+        }
+        \Recv{\(\nack\)}{
+                \(\nonChildren=\nonChildren\cup\{p\}\)
+        }
+        \end{algorithm}
+
+        Properties
+        1. (safety) If \(p_j\in p_i.\children\), then \(p_j.\parent=p_i\)
+        2. (safety) If \(p_j\in p_i.\nonChildren\), then \(p_j.\parent\not\in\{p_i,\bot\}\)
+        3. (liveness) Eventually, every neighbor of \(p_i\) appears in \(p_i.\children\cup p_i.\nonChildren\)
+
+*** Convergecast
+        A *convergecast* is the inverse of broadcast: data is collected from outlying nodes to the root.
+        \begin{algorithm}
+        \Init{
+                \If{I am a leaf}{
+                        send \(\tinput\) to \(\parent\)\;
+                }
+        }
+        \Recv{\(M\) from \(c\)}{
+                append \((c,M)\) to \(\buffer\)\;
+                \If{\(\buffer\) contains messages from all my children}{
+                        \(v\gets f(\buffer,\tinput)\)\;
+                        \eIf{\(\tpid=\troot\)}{
+                                \Return{\(v\)}
+                        }{
+                                send \(v\) to \(\parent\)\;
+                        }
+                }
+        }
+        \end{algorithm}
+
+        Running time is bounded by the depth of the tree: we can prove by induction that any node at height h
+        (height is length of the longest path from this node to some leaf) sends a message by time \(h\) at the latest.
+        Message complexity is exactly \(n − 1\), where n is the number of nodes;
+
+
+*** Flooding and convergecast together
+
+* Distributed breadth-first search
+
+** Using explicit distances
+        \begin{algorithm}
+        \caption{AsynchBFS algorithm}
+        \Init{
+                \eIf{\(\tpid=\initiator\)}{
+                        \(\distance\gets 0\)\;
+                        send \(\distance\) to all neighbors
+                }{
+                        \(\distance\gets\infty\)\;
+                }
+        }
+        \Recv{\(d\) from \(p\)}{
+                \If{\(d+1<\distance\)}{
+                        \(\distance\gets d+1\)\;
+                        \(\parent\gets p\)\;
+                        send \(\distance\) to all neighbors\;
+                }
+        }
+        \end{algorithm}
+
+        The claim is that after at most \(O(VE)\) messages and \(O(D)\) time, all distance values are equal to
+        the length of the shortest path from the initiator.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The variable \(\distance_p\) is always the length of some path from initiator to \(p\), and any
+        message sent by \(p\) is also the length of some path from \(\initiator\) to \(p\)
+        #+END_lemma
+
+        #+BEGIN_proof
+        Induction
+        #+END_proof
+
+        A liveness property: \(\distance_p=d(\initiator,p)\) no later than time \(d(\initiator, p)\)
+
+
+** Using layering
+        Here we run a sequence of up to \(\abs{V}\) instances of the simple algorithm with a distance bound on
+        each: instead of sending out just 0, the initiator sends out \((0,\bound)\) where \(\bound\) is
+        initially 1 and increases at each phase. A process only sends out its improved distance if it is less
+        than \(\bound\).
+
+        Each phase of the algorithm constructs a partial BFS tree that contains only those nodes within
+        distance \(\bound\) of the root.
+
+        With some effort, it is possible to prove that in a bidirectional network that this approach
+        guarantees that each edge is only probed once with a new distance, and the \(\bound\)-update and
+        acknowledgment messages contribute at most \(\abs{V}\) messages per phase. So we get \(O(E+VD)\) total
+        messages. But the time complexity is bad: \(O(D^2)\) in the worst case.
+
+        <<Problem BFS>> TODO: figure out
+** Using local synchronization
+        The reason the layering algorithm takes so long is that at each phase we have to phone all the way
+        back up the tree to the initiator to get permission to go on to the next phase.
+
+        We'll require each node at distance \(d\) to delay sending out a recruiting message until it has confirmed
+        that none of its neighbors will be sending it a smaller distance. We do this by having two classes of
+        messages:
+        * \(\exactly(d)\): "I know that my distance is \(d\)"
+        * \(\morethan(d)\): "I know that my distance is \(>d\)"
+        The rules for sending these messages for a non-initiator are:
+        1. I can send \(\exactly(d)\) as soon as I have received \(\exactly(d-1)\) from at least one neighbor
+           and \(\morethan(d-2)\) from all neighbors.
+        2. I can send \(\morethan(d)\) if \(d=0\) or as soon as I have received \(\morethan(d-1)\) from all
+           neighbors.
+
+        The initiator sends \(\exactly(0)\) to all neighbors at the start of the protocol.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Under the assumption that local computation takes zero time and message delivery takes at most 1 time
+        unit, we'll show that if \(d(\initiator,p)=d\):
+        1. \(p\) sends \(\morethan(d')\) for any \(d'<d\) by time \(d'\)
+        2. \(p\) sends \(\exactly(d)\) by time \(d\)
+        3. \(p\) never sends \(\morethan(d')\) for any \(d'\ge d\)
+        4. \(p\) never sends \(\exactly(d')\) for any \(d'\neq d\)
+        #+END_proposition
+
+        #+BEGIN_proof
+        For (3) and (4). The base case is that the initiator never sends any \(\morethan\) messages at all,
+        and any non-initiator never sends \(\exactly(0)\). For larger \(d'\), observe that if a non-initiator
+        \(p\) sends \(\morethan(d')\) for \(d'\ge d\), it must first have received \(\morethan(d'-1)\) from all
+        neighbors, including some neighbor \(p'\) at distance \(d-1\). But the induction hypothesis tells us
+        that \(p'\) can't send \(\morethan(d'-1)\) for \(d'-1\ge d-1\). Similarly, to send \(\exactly(d')\) for
+        \(d'>d\), \(p\) must first receive \(\morethan(d'-2)\) from this closer neighbor \(p'\), but then
+        \(d'-2>d-2\ge d-1\) so \(\morethan(d'-2)\) is not sent by \(p'\).
+
+        For (1) and (2). The base case is that the initiator sends \(\exactly(0)\) to all nodes at time 0,
+        giving (1), and there is no \(\morethan(d')\) with \(d'<0\) for it to send, giving (2).
+
+        Message complexity: A node at distance \(d\) sends \(\morethan(d')\) for all \(0<d'<d\) and
+        \(\exactly(d)\) and no other messages. So we have message complexity bounded by \(\abs{E}\cdot D\).
+
+        Time complexity: \(D\)
+        #+END_proof
+* Leader election
+** Symmetry
+        A system exhibits *symmetry* if we can permute the nodes without changing the behaviour of the system.
+        More formally, we can define a symmetry as an *equivalence relation* on processes, where we have the
+        additional properties that all processes in the same equivalence class run the same code; and whenever
+        \(p\) is equivalent to \(p'\), each neighbor \(q\) of \(p\) is equivalent to a corresponding neighbor
+        \(q'\) of \(p'\).
+
+        Symmetries are convenient for proving impossibility results, as observed by Angluin. The underlying
+        theme is that without some mechanism for  *symmetry breaking*, a message-passing system escape from a
+        symmetric initial configuration. The following lemma holds for *deterministic* systems, basically those
+        in which processes can’t flip coins:
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        label:5.1.1
+            A symmetric deterministic message-passing system that starts in an initial configuration in which
+            equivalent processes have the same state has a synchronous execution in which equivalent processes
+            continue to have the same state.
+        #+END_lemma
+
+        #+BEGIN_proof
+        Easy induction on rounds: if in some round \(p\) and \(p'\) are equivalent and have the same state, and all
+        their neighbors are equivalent and have the same state, then p and p0 receive the same messages from
+        their neighbors and can proceed to the same state (including outgoing messages) in the next round.
+        #+END_proof
+
+        An immediate corollary is that you can’t do leader election in an anonymous system with a symmetry
+        that puts each node in a non-trivial equivalence class, because as soon as I stick my hand up to
+        declare I’m the leader, so do all my equivalence-class buddies.
+
+        A more direct way to break symmetry is to assume that all processes have identities; now processes can
+        break symmetry by just declaring that the one with the smaller or larger identity wins.
+** Leader election in rings
+*** The Le Lann-Chang-Roberts algorithm
+        This algorithm works in a *unidirectional ring*, where messages can only travel clockwise.
+        \begin{algorithm}
+        \caption{LCR leader election}
+                \Init{
+                    \(\leader\gets 0\)\;
+                    \(\maxId\gets \tid_i\)\;
+                    send \(\id_i\) to clockwise neighbor\;
+                }
+        \Recv{\(j\)}{
+            \If{\(j=\tid_i\)}{
+                        \(\leader\gets 1\)\;
+            }
+                \If{\(j>\maxId\)}{
+                        \(\maxId\gets j\)\;
+                        send \(j\) to clockwise neighbor\;
+                }
+        }
+        \end{algorithm}
+        Protocol works because whichever process \(p_{max}\) holds the maximum ID \(\tid_{max}\) will
+        1. refuse to forward any smaller ID
+        2. eventually have its value forwarded through all of the other processes, causing it to eventually
+           set its \(\leader\) bit to 1.
+*** The Hirschberg-Sinclair algorithm
+        Nancy's book is better.
+
+        This algorithm improves on Le Lann-Chang-Roberts by reducing the message complexity. The idea is that
+        instead of having each process send a message all the way around a ring, each process will first probe
+        locally to see if it has the largest ID within a short distance. If it wins among its immediate
+        neighbors, it doubles the size of the neighborhood it checks, and continues as long as it has a
+        winning ID. This means that most nodes drop out quickly, giving a total message complexity of \(O(n
+        log n)\). The running time is a constant factor worse than LCR, but still \(O(n)\).
+*** Peterson's algorithm for the unidirectional ring
+        Assume an asynchronous unidirectional ring. It gets \(O(n\log n)\) message complexity.
+
+        Let’s start by describing a version with two-way communication. Start with \(n\) candidate leaders. In
+        each of at most lg n asynchronous phases, each candidate probes its nearest surviving neighbors to the
+        left and right; if its ID is larger than the IDs of both neighbors, it survives to the next phase.
+        Non-candidates act as relays passing messages between candidates. As in Hirschberg and Sinclair, the
+        probing operations in each phase take \(O(n)\) messages, and at least half of the candidates drop out
+        in each phase. The last surviving candidate wins when it finds that it’s its own surviving neighbor.
+
+        To make this work in a 1-way ring, we have to simulate 2-way communication by moving the candidates
+        clockwise around the ring to catch up with their unsendable counterclockwise messages. In each phase
+        \(k\), a candicate effectively moves two positions to the right, allowing it to look at the IDs of
+        three phase-\(k\) candidates before deciding to continue in phase \(k+1\) or not.
+
+        \begin{algorithm}
+        \caption{Peterson's leader-election algorithm}
+        \Function{\texttt{candidate}\(()\)}{
+                \(\phase\gets 0\)\;
+                \(\current\gets\tpid\)\;
+                \While{\(\true\)}{
+                        send \(\texttt{probe}(\phase,\current)\)\;
+                        wait for \(\probe(\phase,x)\)\;
+                        \(\tid_2\gets x\)\;
+                        send \(\probe(\phase+1/2,\tid_2)\)\;
+                        wait for \(\probe(\phase+1/2,x)\)\;
+                        \(\tid_3\gets x\)\;
+                        \uIf{\(\tid_2=\current\)}{
+                                I am the leader\;
+                                \Return{}\;
+                        }\uElseIf{\(\tid_2>\current\wedge\tid_2>\tid_3\)}{
+                                \(\current\gets\tid_2\)\;
+                                \(\phase\gets\phase+1\)\;
+                        }\Else{
+                                switch to \(\relay()\)\;
+                        }
+                }
+        }
+        \Function{\(\relay()\)}{
+                \Recv{\(\probe(p,i)\)}{
+                    send \(\probe(p,i)\)\;
+                }
+        }
+        \end{algorithm}
+** Leader election in general networks
+** Lower bounds
+*** Lower bound on asynchronous message complexity
+        Here we describe a lower bound for uniform asynchronous leader election in the ring. We assume the
+        system is deterministic.
+
+        The proof constructs a bad execution in which \(n\) processes sends lots of messages recursively, by
+        first constructing two bad \((n/2)\)-process executions and pasting them together in a way that
+        generates many extra messages. If the pasting step produces \(\Theta(n)\) additional messages, we get a
+        recurrence \(T(n)\ge 2T(n/2)+\Theta(n)\) for the total message traffic, which has solution \(T(n)=\Omega(n\log
+        n)\).
+
+        We’ll assume that all processes are trying to learn the identity of the process with the smallest ID.
+        This is a slightly stronger problem that mere leader election, but it can be solved with at most an
+        additional \(2n\) messages once we actually elect a leader. So if we get a lower bound of \(f(n)\)
+        messages on this problem, we immediately get a lower bound of \(f(n)-2n\) on leader election.
+
+        To construct the bad execution, we consider “open executions” on rings of size \(n\) where no message is
+        delivered across some edge (these will be partial executions, because otherwise the guarantee of
+        eventual delivery kicks in). Because no message is delivered across this edge, the processes can’t
+        tell if there is really a single edge there or some enormous unexplored fragment of a much larger
+        ring.
+
+        Our induction hypothesis will show that a line of \(n/2\) processes can be made to send at least
+        \(T(n/2)\) messages in an open execution (before seeing any messages across the open edge); we’ll then
+        show that a linear number of additional messages can be generated by pasting two such executions
+        together end-to-end, while still getting an open execution with \(n\) processes.
+
+        For large \(n\), suppose that we have two open executions on \(n/2\) processes that each send at least
+        \(T(n/2)\) messages. Break the open edges in both executions and replace them with new edges to create
+        a ring of size \(n\); similarly paste the schedule \(\sigma_1\) and \(\sigma_2\) of the two executions together to
+        get a combined schedule \(\sigma_1\sigma_2\) with at least \(2T(n/2)\) messages. Note that in the combined
+        schedule no messages are passed between the two sides, so the processes continue to behave as they did
+        in their separate executions.
+
+        Let \(e\) and \(e'\) be the edges we used to past together the two rings. Extend \(\sigma_1\sigma_2\) by the
+        longest possible suffix \(\sigma_3\) in which no messages are delivered across \(e\) and \(e'\). Since
+        \(\sigma_3\) is as long as possible, after \(\sigma_1\sigma_2\sigma_3\), there are no messages waiting to be delivered across
+        any edge except \(e\) and \(e'\).
+* Problems
+        | Link            | Problems                |       |
+        |-----------------+-------------------------+-------|
+        | <<Problem BFS>> | proof of the complexity | false |
