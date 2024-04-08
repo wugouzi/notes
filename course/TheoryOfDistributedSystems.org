@@ -34,6 +34,8 @@
 #+LATEX_HEADER: \DeclareMathOperator{\relay}{\texttt{relay}}
 #+LATEX_HEADER: \DeclareMathOperator{\probe}{\texttt{probe}}
 #+LATEX_HEADER: \DeclareMathOperator{\current}{\textsf{current}}
+#+LATEX_HEADER: \DeclareMathOperator{\tclock}{\textsf{clock}}
+#+LATEX_HEADER: \DeclareMathOperator{\VC}{\textsf{VC}}
 
 * Model
 ** Basic message-passing model
@@ -449,7 +451,87 @@
         Let \(e\) and \(e'\) be the edges we used to past together the two rings. Extend \(\sigma_1\sigma_2\) by the
         longest possible suffix \(\sigma_3\) in which no messages are delivered across \(e\) and \(e'\). Since
         \(\sigma_3\) is as long as possible, after \(\sigma_1\sigma_2\sigma_3\), there are no messages waiting to be delivered across
-        any edge except \(e\) and \(e'\).
+        any edge except \(e\) and \(e'\) and all processes are *quiescent* - they will send no additional
+        messages until they receive one.
+
+        We now consider some suffix \(\sigma_4\) that causes the protocol to finish when appended to \(\sigma_1\sigma_2\sigma_3\).
+        While executing \(\sigma_4\), construct two sets of processes \(S\) and \(S'\) by the following rules:
+        1. if a process is not yet in \(S\) or \(S'\) and receives a message delivered across \(e\), put it in
+           \(S\); similarly if it receives a message delivered across \(e'\), put it in \(S'\)
+        2. If a process is not yet in \(S\) or \(S'\) and receives a message that was sent by a process in
+           \(S\), put it in \(S\); similarly for \(S'\)
+* Causal ordering and logical clocks
+** Causal ordering
+        *Happens-before* relation \(\xRightarrow{S}\) on a schedule \(S\) consists of
+        1. all pairs \((e,e')\) where \(e\) precedes \(e'\) in \(S\) and \(e\) and \(e'\) are events of the
+           same process
+        2. all pairs \((e,e')\) where \(e\) is a send event and \(e'\) is the receive event for the same message
+        3. all pairs \((e,e')\) where there exists a third event \(e''\) s.t. \(e\xRightarrow{S}e''\) and \(e''\xRightarrow{S}e'\)
+
+        A *causal shuffle* \(S'\) of \(S\) is a permutation of \(S\) that is consistent with the happens-before
+        relation on \(S\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+            Let \(S'\) be a permutation of the events in \(S\). TFAE:
+            1. \(S'\) is a causal shuffle of \(S\)
+            2. \(S'\) is the schedule of an execution fragment of a message-passing system with \(S|p=S'|p\)
+               for all \(p\)
+        #+END_lemma
+** Logical clocks
+*** Lamport clock
+        Every process maintains a local variable \(\tclock\). When a process sends a message or executes an
+        internal step, it sets \(\tclock\gets\tclock+1\). When a process receives a message with timestamp \(t\), it
+        sets \(\tclock\gets\max(\tclock,t)+1\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        If we order all events by clock value, we get an execution of the underlying protocol that is locally
+        indistinguishable from the original execution.
+        #+END_theorem
+*** Neiger-Toueg-Welch clock
+        Each process maintains its own variable \(\tclock\), which it increments whenever it feels like it. To
+        break ties, the process extends the clock value to \(\la\tclock,\textsf{id},\textsf{eventCount}\ra\) where
+        \(\textsf{eventCount}\) is a count of send and receive events (and possibly local computation steps).
+        Each message in the underlying protocol is timestamped with the current extended clock value. Because
+        the protocol can't change the clock values on its own, when a message is received with a timestamp
+        later than the current extended clock value, its delivery is delayed until \(\tclock\) exceeds the
+        message timestamp, at which point the receive event is assigned the extended clock value of the time
+        of delivery.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+            If we order all events by clock value, we get an execution of the underlying protocol that is
+            locally indistinguishable from the original execution.
+        #+END_theorem
+*** Vector clocks
+        Logical clocks give a /superset/ of the happens-before relation, but what if we want to compute \(\xRightarrow{S}\)
+        exactly.
+
+        A process \(p\) starts with a vector \(t^p=0\). When a process executes a local event or a send event,
+        it increments only its own component \(t^p_p\) of the vector, and includes the updated vector clock
+        value with its message. When it receives a message, it increments \(t_p^p\) and sets \(t_q^p\) to the
+        max of its previous value and the value of \(t_q\) piggybacked on the message. We define \(\VC(e)\)
+        where \(e\) is an event \(p\) to be the value of \(t^p\) to be the value of \(t^p\) at the end of event
+        \(e\). We define \(\VC(e)\le \VC(e')\) if \(\VC(e)_i\le\VC(e')_i\) for all \(i\).
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Fix a schedule \(S\), then for any \(e,e'\), \(\VC(e)<\VC(e')\) iff \(e\xRightarrow{S}e'\)
+        #+END_theorem
+
+        #+BEGIN_proof
+        We will start by showing that for any event \(e\) at a process \(p\), the value of \(\VC(e)_q\) for
+        any \(q\neq p\) is equal to the max \(\VC(e')_q\) for any event \(e'\) of \(q\) s.t. \(e'\xRightarrow{S}e\), or 0 if
+        there is no such \(e'\)
+
+        Induction on the schedule so far.
+
+        If \(e\) is a local event or a send event, then there is either no preceding event at the same process
+        and \(\VC(e)_q=0\); or there is some preceding event \(e''\) of \(p\). Since \(e''\) is the only
+        immediate predecessor of \(e'\) in \(\xRightarrow{S}\), if there is an event \(e'\) of \(q\) maximizing
+        \(\VC(e')_q\) s.t.
+        #+END_proof
+*** Consistent snapshots
 * Problems
         | Link            | Problems                |       |
         |-----------------+-------------------------+-------|

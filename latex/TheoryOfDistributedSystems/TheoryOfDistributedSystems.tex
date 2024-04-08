@@ -1,4 +1,4 @@
-% Created 2024-03-02 Sat 14:19
+% Created 2024-03-17 Sun 15:41
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -35,6 +35,7 @@
 \DeclareMathOperator{\probe}{\texttt{probe}}
 \DeclareMathOperator{\current}{\textsf{current}}
 
+
 %% ox-latex features:
 %   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
 %   !announce-end.
@@ -60,9 +61,9 @@
 \tableofcontents
 
 \section{Model}
-\label{sec:org0c30293}
+\label{sec:orge54c942}
 \subsection{Basic message-passing model}
-\label{sec:org23b584a}
+\label{sec:orgacc630c}
 We have a collection of \(n\) \textbf{processes} \(p_1,\dots,p_n\), each of which has a \textbf{state} consisting of a state
 from state set \(Q_i\). We think of these processes as nodes in a directed \textbf{communication graph} or
 \textbf{network}. The edges in this graph are a collection of point-to-point \textbf{channels} or \textbf{buffers} \(b_{ij}\),
@@ -84,7 +85,7 @@ the last element of the sequence is a configuration. If the first configuration 
 configuration} of the system, we have an \textbf{execution}. A \textbf{schedule} is an execution with the configurations
 removed.
 \subsubsection{Formal Details}
-\label{sec:org7935ca2}
+\label{sec:orgcaf0076}
 Let \(P\) be the set of processes, \(Q\) the set of process states, and \(M\) the set of possible
 messages.
 
@@ -95,7 +96,7 @@ A delivery event \(\del(i,A)\) where \(A=\{(j_k,m_k)\}\) removes each message \(
 updates \(\state_i\) according to \(\delta(\state_i,A)\) to the appropriate channels. A computation event \(\comp(i)\)
 does the same thing, except that it applies \(\delta(\state_j,\emptyset)\).
 \subsection{Asynchronous systems}
-\label{sec:orgdfc976e}
+\label{sec:orgc7f1a15}
 In an \textbf{asynchronous} model, only minimal restrictions are placed on when messages are delivered and when
 local computation occurs. A schedule is \textbf{admissible} if
 \begin{enumerate}
@@ -104,7 +105,7 @@ local computation occurs. A schedule is \textbf{admissible} if
 \end{enumerate}
 These are \textbf{fairness} conditions. Condition (a) assumes that processes do not explicitly terminate.
 \subsection{Synchronous systems}
-\label{sec:org2e96f46}
+\label{sec:org69a7acc}
 A \textbf{synchronous message-passing} system is exactly like an asynchronous system, except we insist that the
 schedule consists of alternating phases where
 \begin{enumerate}
@@ -113,13 +114,13 @@ schedule consists of alternating phases where
 \end{enumerate}
 The combination of a computation phase and a delivery phase is called a \textbf{round}.
 \subsection{Drawing message-passing executions}
-\label{sec:org9a4faf0}
+\label{sec:orgfdd0a73}
 \section{Broadcast and convergecast}
-\label{sec:org3e168ba}
+\label{sec:org600826a}
 \subsection{Flooding}
-\label{sec:orgc3d9ede}
+\label{sec:orgcec8738}
 \subsubsection{Basic algorithm}
-\label{sec:org1a653a4}
+\label{sec:orgf7613a8}
 \begin{algorithm}
 \caption{Basic flooding algorithm}
 \Init{
@@ -147,7 +148,7 @@ the diameter of the network and \(E\) is the set of (directed) edges in the netw
 We can optimize the algorithm slightly by not sending M back to the node it came from; this will
 slightly reduce the message complexity in many cases but makes the proof a sentence or two longer.
 \subsubsection{Adding parent pointers}
-\label{sec:orgef350b6}
+\label{sec:orgd723943}
 \begin{algorithm}
 \label{3.2}
 \caption{Flooding with parent pointers}
@@ -179,7 +180,7 @@ path from \(u\) to \(\troot\)
 
 Though we get a spanning tree at the end, we may not get a very good spanning tree.
 \subsubsection{Identifying children}
-\label{sec:org2e540b4}
+\label{sec:org0f41adf}
 \begin{algorithm}
 \label{3.3}
 \caption{Flooding tracking children}
@@ -220,7 +221,7 @@ Properties
 \item (liveness) Eventually, every neighbor of \(p_i\) appears in \(p_i.\children\cup p_i.\nonChildren\)
 \end{enumerate}
 \subsubsection{Convergecast}
-\label{sec:orgcd64fd5}
+\label{sec:org1dba343}
 A \textbf{convergecast} is the inverse of broadcast: data is collected from outlying nodes to the root.
 \begin{algorithm}
 \Init{
@@ -245,12 +246,12 @@ Running time is bounded by the depth of the tree: we can prove by induction that
 (height is length of the longest path from this node to some leaf) sends a message by time \(h\) at the latest.
 Message complexity is exactly \(n − 1\), where n is the number of nodes;
 \subsubsection{Flooding and convergecast together}
-\label{sec:org0c6a5ec}
+\label{sec:org2ec205e}
 \section{Distributed breadth-first search}
-\label{sec:org40e97f4}
+\label{sec:orgc0fb785}
 
 \subsection{Using explicit distances}
-\label{sec:orgd4159c9}
+\label{sec:org99d406c}
 \begin{algorithm}
 \caption{AsynchBFS algorithm}
 \Init{
@@ -283,7 +284,7 @@ Induction
 
 A liveness property: \(\distance_p=d(\initiator,p)\) no later than time \(d(\initiator, p)\)
 \subsection{Using layering}
-\label{sec:org06e55ee}
+\label{sec:org160ad2e}
 Here we run a sequence of up to \(\abs{V}\) instances of the simple algorithm with a distance bound on
 each: instead of sending out just 0, the initiator sends out \((0,\bound)\) where \(\bound\) is
 initially 1 and increases at each phase. A process only sends out its improved distance if it is less
@@ -299,7 +300,7 @@ messages. But the time complexity is bad: \(O(D^2)\) in the worst case.
 
 \label{Problem BFS} TODO: figure out
 \subsection{Using local synchronization}
-\label{sec:org6fcf6c3}
+\label{sec:org433391d}
 The reason the layering algorithm takes so long is that at each phase we have to phone all the way
 back up the tree to the initiator to get permission to go on to the next phase.
 
@@ -349,9 +350,9 @@ Message complexity: A node at distance \(d\) sends \(\morethan(d')\) for all \(0
 Time complexity: \(D\)
 \end{proof}
 \section{Leader election}
-\label{sec:org9427c3f}
+\label{sec:org88cf5e1}
 \subsection{Symmetry}
-\label{sec:org1637d12}
+\label{sec:org5b6d3dc}
 A system exhibits \textbf{symmetry} if we can permute the nodes without changing the behaviour of the system.
 More formally, we can define a symmetry as an \textbf{equivalence relation} on processes, where we have the
 additional properties that all processes in the same equivalence class run the same code; and whenever
@@ -382,9 +383,9 @@ declare I’m the leader, so do all my equivalence-class buddies.
 A more direct way to break symmetry is to assume that all processes have identities; now processes can
 break symmetry by just declaring that the one with the smaller or larger identity wins.
 \subsection{Leader election in rings}
-\label{sec:org9f322d0}
+\label{sec:org8ba62cc}
 \subsubsection{The Le Lann-Chang-Roberts algorithm}
-\label{sec:org192ddba}
+\label{sec:org20e2552}
 This algorithm works in a \textbf{unidirectional ring}, where messages can only travel clockwise.
 \begin{algorithm}
 \caption{LCR leader election}
@@ -410,7 +411,7 @@ Protocol works because whichever process \(p_{max}\) holds the maximum ID \(\tid
 set its \(\leader\) bit to 1.
 \end{enumerate}
 \subsubsection{The Hirschberg-Sinclair algorithm}
-\label{sec:orga2418cb}
+\label{sec:org9a4062d}
 Nancy's book is better.
 
 This algorithm improves on Le Lann-Chang-Roberts by reducing the message complexity. The idea is that
@@ -420,8 +421,20 @@ neighbors, it doubles the size of the neighborhood it checks, and continues as l
 winning ID. This means that most nodes drop out quickly, giving a total message complexity of \(O(n
         log n)\). The running time is a constant factor worse than LCR, but still \(O(n)\).
 \subsubsection{Peterson's algorithm for the unidirectional ring}
-\label{sec:org1936f83}
+\label{sec:org085c571}
 Assume an asynchronous unidirectional ring. It gets \(O(n\log n)\) message complexity.
+
+Let’s start by describing a version with two-way communication. Start with \(n\) candidate leaders. In
+each of at most lg n asynchronous phases, each candidate probes its nearest surviving neighbors to the
+left and right; if its ID is larger than the IDs of both neighbors, it survives to the next phase.
+Non-candidates act as relays passing messages between candidates. As in Hirschberg and Sinclair, the
+probing operations in each phase take \(O(n)\) messages, and at least half of the candidates drop out
+in each phase. The last surviving candidate wins when it finds that it’s its own surviving neighbor.
+
+To make this work in a 1-way ring, we have to simulate 2-way communication by moving the candidates
+clockwise around the ring to catch up with their unsendable counterclockwise messages. In each phase
+\(k\), a candicate effectively moves two positions to the right, allowing it to look at the IDs of
+three phase-\(k\) candidates before deciding to continue in phase \(k+1\) or not.
 
 \begin{algorithm}
 \caption{Peterson's leader-election algorithm}
@@ -452,8 +465,90 @@ Assume an asynchronous unidirectional ring. It gets \(O(n\log n)\) message compl
         }
 }
 \end{algorithm}
+\subsection{Leader election in general networks}
+\label{sec:org218a054}
+\subsection{Lower bounds}
+\label{sec:org4092bfe}
+\subsubsection{Lower bound on asynchronous message complexity}
+\label{sec:org3bbba1e}
+Here we describe a lower bound for uniform asynchronous leader election in the ring. We assume the
+system is deterministic.
+
+The proof constructs a bad execution in which \(n\) processes sends lots of messages recursively, by
+first constructing two bad \((n/2)\)-process executions and pasting them together in a way that
+generates many extra messages. If the pasting step produces \(\Theta(n)\) additional messages, we get a
+recurrence \(T(n)\ge 2T(n/2)+\Theta(n)\) for the total message traffic, which has solution \(T(n)=\Omega(n\log
+        n)\).
+
+We’ll assume that all processes are trying to learn the identity of the process with the smallest ID.
+This is a slightly stronger problem that mere leader election, but it can be solved with at most an
+additional \(2n\) messages once we actually elect a leader. So if we get a lower bound of \(f(n)\)
+messages on this problem, we immediately get a lower bound of \(f(n)-2n\) on leader election.
+
+To construct the bad execution, we consider “open executions” on rings of size \(n\) where no message is
+delivered across some edge (these will be partial executions, because otherwise the guarantee of
+eventual delivery kicks in). Because no message is delivered across this edge, the processes can’t
+tell if there is really a single edge there or some enormous unexplored fragment of a much larger
+ring.
+
+Our induction hypothesis will show that a line of \(n/2\) processes can be made to send at least
+\(T(n/2)\) messages in an open execution (before seeing any messages across the open edge); we’ll then
+show that a linear number of additional messages can be generated by pasting two such executions
+together end-to-end, while still getting an open execution with \(n\) processes.
+
+For large \(n\), suppose that we have two open executions on \(n/2\) processes that each send at least
+\(T(n/2)\) messages. Break the open edges in both executions and replace them with new edges to create
+a ring of size \(n\); similarly paste the schedule \(\sigma_1\) and \(\sigma_2\) of the two executions together to
+get a combined schedule \(\sigma_1\sigma_2\) with at least \(2T(n/2)\) messages. Note that in the combined
+schedule no messages are passed between the two sides, so the processes continue to behave as they did
+in their separate executions.
+
+Let \(e\) and \(e'\) be the edges we used to past together the two rings. Extend \(\sigma_1\sigma_2\) by the
+longest possible suffix \(\sigma_3\) in which no messages are delivered across \(e\) and \(e'\). Since
+\(\sigma_3\) is as long as possible, after \(\sigma_1\sigma_2\sigma_3\), there are no messages waiting to be delivered across
+any edge except \(e\) and \(e'\) and all processes are \textbf{quiescent} - they will send no additional
+messages until they receive one.
+
+We now consider some suffix \(\sigma_4\) that causes the protocol to finish when appended to \(\sigma_1\sigma_2\sigma_3\).
+While executing \(\sigma_4\), construct two sets of processes \(S\) and \(S'\) by the following rules:
+\begin{enumerate}
+\item if a process is not yet in \(S\) or \(S'\) and receives a message delivered across \(e\), put it in
+\(S\); similarly if it receives a message delivered across \(e'\), put it in \(S'\)
+\item If a process is not yet in \(S\) or \(S'\) and receives a message that was sent by a process in
+\(S\), put it in \(S\); similarly for \(S'\)
+\end{enumerate}
+\section{Causal ordering and logical clocks}
+\label{sec:org0ff7a93}
+\subsection{Causal ordering}
+\label{sec:orgffd09ed}
+\textbf{Happens-before} relation \(\xRightarrow{S}\) on a schedule \(S\) consists of
+\begin{enumerate}
+\item all pairs \((e,e')\) where \(e\) precedes \(e'\) in \(S\) and \(e\) and \(e'\) are events of the
+same process
+\item all pairs \((e,e')\) where \(e\) is a send event and \(e'\) is the receive event for the same message
+\item all pairs \((e,e')\) where there exists a third event \(e''\) s.t. \(e\xRightarrow{S}e''\) and \(e''\xRightarrow{S}e'\)
+\end{enumerate}
+
+A \textbf{causal shuffle} \(S'\) of \(S\) is a permutation of \(S\) that is consistent with the happens-before
+relation on \(S\)
+
+\begin{lemma}[]
+Let \(S'\) be a permutation of the events in \(S\). TFAE:
+\begin{enumerate}
+\item \(S'\) is a causal shuffle of \(S\)
+\item \(S'\) is the schedule of an execution fragment of a message-passing system with \(S|p=S'|p\)
+for all \(p\)
+\end{enumerate}
+\end{lemma}
+\subsection{Logical clocks}
+\label{sec:org7f2a88b}
+\subsubsection{Lamport clock}
+\label{sec:org83176b8}
+Every process maintains a local variable \(\clock\). When a process sends a message or executes an
+internal step, it sets \(\clock\gets\clock+1\). When a process receives a message with timestamp \(t\), it
+sets \(\clock\gets\max(\clock,t)+1\)
 \section{Problems}
-\label{sec:orgad03eca}
+\label{sec:orgf1e6bfa}
 \begin{center}
 \begin{tabular}{lll}
 Link & Problems & \\
