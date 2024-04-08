@@ -18,7 +18,8 @@
 ;; - `doom-symbol-font' -- for symbols
 ;; - `doom-serif-font' -- for the `fixed-pitch-serif' face
 (setq doom-font (font-spec :family "DejaVu Sans Mono" :size 13)
-      doom-symbol-font (font-spec :family "DejaVu Sans Mono" :size 13)
+      ;;doom-symbol-font (font-spec :family "Noto Sans Math" :size 13)
+      doom-symbol-font (font-spec :family "JuliaMono" :size 13)
       ;;doom-variable-pitch-font (font-spec :family "Source Han Serif SC" :size 1)
       doom-variable-pitch-font (font-spec :family "Merriweather" :size 1)
       )
@@ -107,28 +108,6 @@
   (sp-local-pair 'org-mode "\\left|" "\\right|" :trigger "\\l|" :post-handlers '(sp-latex-insert-spaces-inside-pair))
   )
 
-(custom-theme-set-faces
- 'user
- `(org-level-1 ((t (:bold t :weight bold :foreground "#e45649" :height 1.75))))
- `(org-level-2 ((t (:bold t :weight bold :foreground "#da8548" :height 1.5))))
- `(org-level-3 ((t (:bold t :weight bold :foreground "#b751b6" :height 1.25))))
- `(org-level-4 ((t (:bold t :weight bold :foreground "#6f99f5" :height 1.1))))
- `(org-level-5 ((t (:bold t :weight bold :foreground "#bc5cba"))))
- `(org-level-6 ((t (:bold t :weight bold :foreground "#9fbbf8"))))
- `(org-level-7 ((t (:bold t :weight bold :foreground "#d292d1"))))
- `(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
- `(org-document-title ((t (:bold t :foreground "#a626a4" :weight bold :height 2.0))))
- '(org-block-begin-line
-   ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5" ))))
- '(org-block
-   ((t (:background "#fff7fb"))))
- '(org-block-end-line
-   ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
- ;; '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
- ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
- ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
- )
-
 (require 'org-indent)
 (use-package org
   :hook
@@ -186,7 +165,7 @@
 
   (setq org-latex-compiler "xelatex")
 
-  (setq org-startup-with-latex-preview t)
+  (setq org-startup-with-latex-preview nil)
 
   (setq org-latex-preview-appearance-options
         '(:foreground auto
@@ -202,38 +181,65 @@
   (setq org-latex-preview-live t)
 
   ;; More immediate live-previews -- the default delay is 1 second
-  (setq org-latex-preview-live-debounce 0.25)
+  (setq org-latex-preview-live-debounce 2)
   )
 
-(setq my-symbols-alist
-      '(;;("[ ]" . ?☐)
-        ;;("[X]" . ?☑)
-        ;;("[-]" . ?⛝)
+;; (setq my-symbols-alist
+;;       '(;;("[ ]" . ?☐)
+;;         ;;("[X]" . ?☑)
+;;         ;;("[-]" . ?⛝)
+;;         ("\u200b" . ?▾)
+;;         ("#+ARCHIVE:" . ?📦)
+;;         ("#+AUTHOR:" . ?👤)
+;;         ("#+CREATOR:" . ?💁)
+;;         ("#+DATE:" . ?📆)
+;;         ("#+DESCRIPTION:" . ?⸙)
+;;         ("#+EMAIL:" . ?📧)
+;;         ("#+OPTIONS:" . ?⛭)
+;;         ("#+SETUPFILE:" . ?⛮)
+;;         ("#+TAGS:" . ?🏷)
+;;         ("#+TITLE:" . ?📓)
 
-        ("#+ARCHIVE:" . ?📦)
-        ("#+AUTHOR:" . ?👤)
-        ("#+CREATOR:" . ?💁)
-        ("#+DATE:" . ?📆)
-        ("#+DESCRIPTION:" . ?⸙)
-        ("#+EMAIL:" . ?📧)
-        ("#+OPTIONS:" . ?⛭)
-        ("#+SETUPFILE:" . ?⛮)
-        ("#+TAGS:" . ?🏷)
-        ("#+TITLE:" . ?📓)
+;;         ("#+BEGIN_SRC" . ?✎)
+;;         ("#+END_SRC" . ?□)
+;;         ("#+begin_src" . ?✎)
+;;         ("#+end_src" . ?□)
+;;         ("#+BEGIN_QUOTE" . ?»)
+;;         ("#+END_QUOTE" . ?«)
+;;         ("#+HEADERS" . ?☰)
+;;         ("#+RESULTS:" . ?💻)
+;;         ))
+;; (add-hook 'org-mode-hook
+;;           (lambda ()
+;;             (setq-local prettify-symbols-alist my-symbols-alist)))
 
-        ("#+BEGIN_SRC" . ?✎)
-        ("#+END_SRC" . ?□)
-        ("#+begin_src" . ?✎)
-        ("#+end_src" . ?□)
-        ("#+BEGIN_QUOTE" . ?»)
-        ("#+END_QUOTE" . ?«)
-        ("#+HEADERS" . ?☰)
-        ("#+RESULTS:" . ?💻)
-        ))
-(add-hook 'org-mode-hook
-          (lambda ()
-            (setq-local prettify-symbols-alist my-symbols-alist)))
+(defun org-prettify-set ()
+  (interactive)
+  (setq prettify-symbols-alist
+        (mapcan (lambda (x) (list x (cons (upcase (car x)) (cdr x))))
+                '(
+                  ("\u200b" . ?▾)
+                  ("#+ARCHIVE:" . ?📦)
+                  ("#+AUTHOR:" . ?👤)
+                  ("#+CREATOR:" . ?💁)
+                  ("#+DATE:" . ?📆)
+                  ("#+DESCRIPTION:" . ?⸙)
+                  ("#+EMAIL:" . ?📧)
+                  ("#+OPTIONS:" . ?⛭)
+                  ("#+SETUPFILE:" . ?⛮)
+                  ("#+TAGS:" . ?🏷)
+                  ("#+TITLE:" . ?📓)
 
+                  ("#+BEGIN_SRC" . ?✎)
+                  ("#+END_SRC" . ?□)
+                  ("#+begin_src" . ?✎)
+                  ("#+end_src" . ?□)
+                  ("#+BEGIN_QUOTE" . ?»)
+                  ("#+END_QUOTE" . ?«)
+                  ("#+HEADERS" . ?☰)
+                  ("#+RESULTS:" . ?💻)
+                  ))) (prettify-symbols-mode 1))
+(add-hook 'org-mode-hook 'org-prettify-set)
 
 (use-package org-appear
   :after org
@@ -290,12 +296,10 @@
   )
 
 ;; for vertico
-;; (use-package consult
-;;   :bind (("C-s" . consult-line)
-;;          )
-;;   )
-(use-package swiper
-  :bind (("C-s" . swiper-isearch)))
+(use-package consult
+  :bind (("C-s" . consult-line)
+         )
+  )
 
 ;; https://www.reddit.com/r/emacs/comments/ev7igv/why_is_auctex_loaded_using_usepackage_tex_instead/
 (use-package tex
@@ -381,9 +385,93 @@
 (setq warning-minimum-level :error)
 
 (add-to-list 'org-latex-classes
-                 '("fduthesis" "\\documentclass{fduthesis}"
-                   ("\\chapter{%s}" . "\\section*{%s}")
-                   ("\\section{%s}" . "\\subsection*{%s}")
-                   ("\\subsection{%s}" . "\\subsubsection*{%s}")
-                   ("\\paragraph{%s}" . "\\paragraph*{%s}")
-                   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+             '("fduthesis" "\\documentclass{fduthesis}"
+               ("\\chapter{%s}" . "\\section*{%s}")
+               ("\\section{%s}" . "\\subsection*{%s}")
+               ("\\subsection{%s}" . "\\subsubsection*{%s}")
+               ("\\paragraph{%s}" . "\\paragraph*{%s}")
+               ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+
+
+;; chinese emphasis
+;; https://emacs-china.org/t/org-mode/22313
+;; https://emacs-china.org/t/org-mode/597/77
+;; (add-hook 'org-mode-hook 'embrace-org-mode-hook)
+;; (add-hook! org-mode-hook
+;;       (dolist (item '((?\* . ("\x200B*" . "*\x200B"))
+;;                       (?\+ . ("\x200B+" . "+\x200B"))
+;;                       (?\/ . ("\x200B/" . "/\x200B"))
+;;                       (?\~ . ("\x200B~" . "~\x200B"))
+;;                       (?\= . ("\x200B=" . "=\x200B"))
+;;                       (?\$ . ("\x200B$" . "$\x200B"))
+;;                       (?\_ . ("\x200B_" . "_\x200B"))
+;;                       (?\! . ("\x200B!!" . "!!\x200B"))
+;;                       (?\@ . ("\x200B!@" . "!@\x200B"))))
+;;         (embrace-add-pair (car item) (cadr item) (cddr item))))
+
+;; (font-lock-add-keywords 'org-mode
+;;                         '(("\\cc\\( \\)[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)?\\cc?"
+;;                            (1 (prog1 () (compose-region (match-beginning 1) (match-end 1) ""))))
+;;                           ("\\cc?\\( \\)?[/+*_=~][^a-zA-Z0-9/+*_=~\n]+?[/+*_=~]\\( \\)\\cc"
+;;                            (2 (prog1 () (compose-region (match-beginning 2) (match-end 2) "")))))
+;;                         'append)
+;; (with-eval-after-load 'ox
+;;   (defun eli-strip-ws-maybe (text _backend _info)
+;;     (let* ((text (replace-regexp-in-string
+;;                   "\\(\\cc\\) *\n *\\(\\cc\\)"
+;;                   "\\1\\2" text));; remove whitespace from line break
+;;            ;; remove whitespace from `org-emphasis-alist'
+;;            (text (replace-regexp-in-string "\\(\\cc\\) \\(.*?\\) \\(\\cc\\)"
+;;                                            "\\1\\2\\3" text))
+;;            ;; restore whitespace between English words and Chinese words
+;;            (text (replace-regexp-in-string "\\(\\cc\\)\\(\\(?:<[^>]+>\\)?[a-z0-9A-Z-]+\\(?:<[^>]+>\\)?\\)\\(\\cc\\)"
+;;                                            "\\1 \\2 \\3" text)))
+;;       text))
+;;   (add-to-list 'org-export-filter-paragraph-functions #'eli-strip-ws-maybe))
+
+;;zero width space
+(define-key org-mode-map (kbd "M-SPC M-SPC")
+            (lambda () (interactive) (insert "\u200b")))
+
+;; https://orgmode.org/manual/Conflicts.html
+(map! :after yasnippet
+      :map yas-keymap
+      "C-j" #'yas-next-field
+      "C-k" #'yas-prev-field)
+
+(defun +org-export-remove-zero-width-space (text _backend _info)
+  "Remove zero width spaces from TEXT."
+  (unless (org-export-derived-backend-p 'org)
+    (replace-regexp-in-string "\u200b" "" text)))
+(with-eval-after-load 'ox    ; 没有这一行的话，会因变量未定义而报错。
+  (add-to-list 'org-export-filter-final-output-functions #'+org-export-remove-zero-width-space t))
+
+
+(custom-theme-set-faces
+ 'user
+ `(org-level-1 ((t (:bold t :weight bold :foreground "#e45649" :height 1.75))))
+ `(org-level-2 ((t (:bold t :weight bold :foreground "#da8548" :height 1.5))))
+ `(org-level-3 ((t (:bold t :weight bold :foreground "#b751b6" :height 1.25))))
+ `(org-level-4 ((t (:bold t :weight bold :foreground "#6f99f5" :height 1.1))))
+ `(org-level-5 ((t (:bold t :weight bold :foreground "#bc5cba"))))
+ `(org-level-6 ((t (:bold t :weight bold :foreground "#9fbbf8"))))
+ `(org-level-7 ((t (:bold t :weight bold :foreground "#d292d1"))))
+ `(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
+ `(org-document-title ((t (:bold t :foreground "#a626a4" :weight bold :height 2.0))))
+ '(org-block-begin-line
+   ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5" ))))
+ '(org-block
+   ((t (:background "#fafafa"))))
+ ;; '(org-block
+ ;;   ((t (:background "#fff7fb"))))
+ '(org-block-end-line
+   ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
+ ;; '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
+ ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
+ ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
+ )
+
+(use-package! lsp-bridge
+  :config
+  (setq lsp-bridge-enable-log nil)
+  (global-lsp-bridge-mode))

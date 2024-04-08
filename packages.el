@@ -50,7 +50,8 @@
 ;; (unpin! t)
 
 ;; (package! org-mode :pin "b55e388")
-
+(package! magic-latex-buffer
+  :recipe (:host github :repo "zk-phi/magic-latex-buffer"))
 (package! org-appear)
 (package! org-ref)
 (package! org-sticky-header)
@@ -87,3 +88,13 @@
   :pin nil)
 
 (unpin! org)
+
+(when (package! lsp-bridge
+        :recipe (:host github
+                 :repo "manateelazycat/lsp-bridge"
+                 :branch "master"
+                 :files ("*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+                 ;; do not perform byte compilation or native compilation for lsp-bridge
+                 :build (:not compile)))
+  (package! markdown-mode)
+  (package! yasnippet))

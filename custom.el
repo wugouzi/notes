@@ -60,6 +60,27 @@
      "76ed126dd3c3b653601ec8447f28d8e71a59be07d010cd96c55794c3008df4d7"
      "ab058aa22bdaf17b5d8a9e21632a62c8966728ae10ef8fd07e95637e9cdf7a7b"
      "f0eb51d80f73b247eb03ab216f94e9f86177863fb7e48b44aacaddbfe3357cf1" default))
+ '(magit-todos-insert-after '(bottom) nil nil "Changed by setter of obsolete option `magit-todos-insert-at'")
+ '(mixed-pitch-fixed-pitch-faces
+   '(diff-added diff-context diff-file-header diff-function diff-header
+     diff-hunk-header diff-removed font-latex-math-face font-latex-sedate-face
+     font-latex-warning-face font-latex-sectioning-5-face font-lock-builtin-face
+     font-lock-comment-delimiter-face font-lock-constant-face font-lock-doc-face
+     font-lock-function-name-face font-lock-keyword-face
+     font-lock-negation-char-face font-lock-preprocessor-face
+     font-lock-regexp-grouping-backslash font-lock-regexp-grouping-construct
+     font-lock-string-face font-lock-type-face font-lock-variable-name-face
+     line-number line-number-current-line line-number-major-tick
+     line-number-minor-tick markdown-code-face markdown-gfm-checkbox-face
+     markdown-inline-code-face markdown-language-info-face
+     markdown-language-keyword-face markdown-math-face message-header-name
+     message-header-to message-header-cc message-header-newsgroups
+     message-header-xheader message-header-subject message-header-other
+     mu4e-header-key-face mu4e-header-value-face mu4e-link-face
+     mu4e-contact-face mu4e-compose-separator-face mu4e-compose-header-face
+     org-block-begin-line org-block-end-line org-document-info-keyword org-code
+     org-indent org-latex-and-related org-checkbox org-formula org-meta-line
+     org-table org-verbatim))
  '(mouse-wheel-progressive-speed nil)
  '(org-agenda-files
    '("/Users/wu/Library/CloudStorage/OneDrive-zju.edu.cn/courses/论文/中期/paper/paper.org"
@@ -76,7 +97,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(org-block ((t (:background "#fff7fb"))))
+ '(org-block ((t (:background "#fafafa"))))
  '(org-block-begin-line ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
  '(org-block-end-line ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
  '(org-document-title ((t (:bold t :foreground "#a626a4" :weight bold :height 2.0))))
@@ -87,6 +108,5 @@
  '(org-level-5 ((t (:bold t :weight bold :foreground "#bc5cba"))))
  '(org-level-6 ((t (:bold t :weight bold :foreground "#9fbbf8"))))
  '(org-level-7 ((t (:bold t :weight bold :foreground "#d292d1"))))
- '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc"))))
- '(variable-pitch ((t (:family "Source Han Serif SC" :height 120)))))
+ '(org-level-8 ((t (:bold t :weight bold :foreground "#d8e4fc")))))
 (put 'customize-group 'disabled nil)
