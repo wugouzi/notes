@@ -1,0 +1,91 @@
+#+TITLE: Principles of Transaction Processing
+
+* Two-Phase Commit
+
+** The Two-Phase Commit Protocol
+        The protocol makes the following assumptions about each transaction \(T\):
+        1. Transaction \(T\) accesses resources from time to time.
+
+           If it experiences a serious error at any time, such a deadlock or illegal operation, it issues an
+           abort operation. If it terminates normally without any errors, it issues a commit. In response to
+           the commit, the system runs the two-phase commit protocol.
+        2. Each resource manager can commit or abort its part of \(T\)
+        3. One and only one program issues the commit operation on \(T\).
+
+           That is, one program decides when to start committing \(T\) by running the two-phase commit
+           protocol, and no other program will later start running the protocol on \(T\) independently. In
+           some cases, a second attempt to run two-phase commit while the first attempt is still running will
+           cause the protocol to break; that is, cause it to commit at one resource manager and abort at another.
+        4. Transaction \(T\) has terminated executing at all resource managers before issuing the commit operation.
+        5. Every system and resource manager fails by stopping.
+
+           It is possible for a failure to causes the protocol to do something that is inconsistent with its
+           specification, such as sending bogus messages. These are called *Byzantine failures*.
+
+        In the remainder of this section, we will use the term *coordinator* as the name of the component that
+        runs the two-phase commit protocol on behalf of one transaction. That is, the coordinator is the
+        component that receives the commit or abort request from the application program.
+
+        The reosurce managers that did work on behalf of the transaction are called *participants*.     
+*** Being Prepared
+        A participant \(P\) is said to be *prepared* if all of transaction \(T\)'s after-images are in stable
+        storage. It is essential that \(T\) does not commit at _any_ participant until _all_ participants are
+        prepared.
+
+        Suppose the rule is violated by having one participant, \(P_1\), commit \(T\) before another
+        participant \(P_2\), is prepared. If \(P_2\) subsequently fails, before it is prepared and after \(P_1\)
+        commits, then \(T\) will not be atomic.
+
+        _Ensuring that all participants are prepared before any of them commits is the essence of_
+        _two-phase commit._ .
+*** The Protocol
+        Begin Phase 1:
+        1. To commit the transaction, the coordinator starts by sending a
+           ~REQUEST-TO-PREPARE~ message to each participant.
+        2. The coordinator waits for all participants to "vote" on the request.
+        3. In response to receiving a ~REQUEST-TO-PREPARE~ message, each participant votes by sending a message
+           back to the coordinator as follows:
+           * It votes ~PREPARED~ if its is prepared to commit.
+           * It may vote ~NO~ for any reason, usually because it cannot prepare the transaction due to a local failure
+           * It any delay voting indefinitely, for example, because its system is overburdened with other work
+             or because it failed.
+        Phase 2:
+        1. If the coordinator receives ~PREPARED~ from *all* participants, it decides to commit. The transaction
+           is now officially committed. Otherwise, it either received a ~NO~ message or gave up waiting for some
+           participant, so it decides to abort.
+        2. The coordinator sends its decision to all participants (i.e., ~COMMIT~ or ~ABORT~).
+        3. Participants acknowledge receipt of the commit or abort by replying ~DONE~.
+        4. After receiving ~DONE~ from all participants, the coordinator can *forget* the transaction, meaning
+           that it can deallocate any memory it was using to keep track of information about the transaction.
+*** Performance
+        The performance of two-phase commit is measured by counting the number of messages required to commit
+        the transaction. There are four rounds of messages to or from all participants.
+*** Blocking
+        Before a participant votes, it can abort unilaterally, any time it wants. Once it sends ~PREPARED~, and
+        until it receives a message containing the coordinator's decision, it is unable to commit or abort. If
+        it did, it might make a decision opposite to the coordinator's, producing an inconsistent result.
+        During this period, it is said to be *uncertain*.
+
+        Uncertainty is a bad property of two-phase commit. If the coordinator fails while a participant is
+        uncertain, the participant is *blocked*.
+
+        This leads one to wonder whether two-phase commit is a good protocol at all. Are there other protocols
+        one could adopt that avoid blocking? Unfortunately, the answer is no, as stated in the following
+        theorem:
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        For every possible commit protocol (not just two-phase commit), a communication failure can cause a
+        participant to become blocked.
+        #+END_theorem
+
+        There is a related problem, essentially the recovery-time version of blocking. If a participant fails
+        while it is uncertain, and subsequently recovers, it is possible that when it recovers the coordinator
+        is down. In this case, it is still uncertain and therefore cannot completely recover, since it doesn’t
+        know whether to commit or abort the transaction. That is, the participant cannot *independently*
+        *recover*. Like blocking, this too is unavoidable.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        No commit protocol can guarantee independent recovery of failure participants.
+        #+END_theorem
+** Failure Handling
