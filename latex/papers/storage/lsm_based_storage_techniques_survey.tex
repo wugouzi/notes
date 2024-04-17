@@ -1,4 +1,4 @@
-% Created 2024-04-16 Tue 20:13
+% Created 2024-04-17 Wed 19:40
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -35,9 +35,9 @@
 \url{https://doi.org/10.1007/s00778-019-00555-y}
 LSM-tree: bigtable, dynamo, hbase, cassandra, leveldb, rocksdb, asterixdb
 \section{LSM-tree basics}
-\label{sec:org8b2db00}
+\label{sec:org0214abc}
 \subsection{Basic Structure}
-\label{sec:org441986b}
+\label{sec:org4e102de}
 \begin{itemize}
 \item Memory component: concurrent data structure, skip-list/\(B^+\)-tree
 \item Disk component, SSTables: a data block stores key-value pairs ordered by keys, and the index blocks
@@ -62,7 +62,7 @@ will then be merged into level \(L+1\), and it will then be merged into level \(
 \uline{Better write performance}.
 \end{itemize}
 \subsection{Well-Known Optimizations}
-\label{sec:org78c9d70}
+\label{sec:orgf2e75c0}
 \textbf{Bloom filter}:
 \begin{itemize}
 \item built on top of disk components.
@@ -123,7 +123,7 @@ SSTables merged from the previous level. A merge operation selects the SSTables 
 ranges from all of the groups at a level, and the resulting SSTables are added to the active group at
 the next level.
 \subsection{Concurrency Control and Recovery}
-\label{sec:org851635e}
+\label{sec:org6839f06}
 Depending on the transactional isolation requirement, today's LSM-tree implementations either use a
 locking scheme or a multi-version scheme. A multi-version scheme works well with an LSM-tree since
 obsolete can be \uline{garbage-collected} during merges.
@@ -155,7 +155,8 @@ changes to the structural metadata, such as adding or deleting SSTables. The sta
 structure can then be reconstructed by replaying the metadata log during recovery.
 \end{itemize}
 \subsection{Cost Analysis}
-\label{sec:orgbe14dff}
+\label{sec:org44c8a82}
+\label{2.3}
 The cost of writes and queries is measured by counting the number of disk I/Os per operation. This
 analysis considers an unpartitioned LSM-tree and represents a worst-case cost.
 
@@ -226,9 +227,9 @@ Tiering & \(O(\frac{L}{B})\) & \(O(T\cdot L\cdot e^{-\frac{M}{N}})/O(1)\) & \(O(
 \end{tabular}
 \end{center}
 \section{LSM-tree Improvements}
-\label{sec:org6f79e2c}
+\label{sec:org390619f}
 \subsection{A Taxonomy of LSM-tree Improvements}
-\label{sec:org6efba46}
+\label{sec:org7439ddf}
 \begin{itemize}
 \item \textbf{Write Amplification}:
 \item \textbf{Merge Operations}: Moreover, merge operations can have negative impacts on the system, including
@@ -240,9 +241,9 @@ space- optimal at the same time.
 \item \textbf{Secondary Indexing}:
 \end{itemize}
 \subsection{Reducing Write Amplification}
-\label{sec:org1d7f90c}
+\label{sec:orge5c59d8}
 \subsubsection{Tiering}
-\label{sec:orgac3bd2c}
+\label{sec:org580a848}
 WriteBuffer (WB) tree:
 \begin{enumerate}
 \item hash-partitioning to achieve workload balance so that each SSTable group roughly stores the same
@@ -265,7 +266,7 @@ introduces a threshold based on the number of real SSTables to trigger actual me
 queries trigger actual merges if a virtual SSTable pointing too many SSTables is encountered during
 query processing.
 \subsubsection{Merge Skipping}
-\label{sec:orge5cc7e3}
+\label{sec:org8b32ac1}
 The skip-tree proposes a merge skipping idea to improve write performance. The observation is that
 each entry must be merged from level 0 down to the largest level. If some entries can be directly
 pushed to a higher level by skipping some level-by-level merges, then the total write cost will be
@@ -281,7 +282,7 @@ correctness, a key from level \(L\) can be pushed to level \(L+K\) only if this 
 any of the intermediate levels \(L+1,\dots,L+K-1\). This condition can be tested efficiently by
 checking the Bloom filters of the intermediate levels.
 \subsubsection{Exploiting Data Skew}
-\label{sec:org1752e0c}
+\label{sec:org7e9719e}
 TRIAD reduces write amplification for skewed update workloads where some hot keys are updated
 frequently. The basic idea is to separate hot keys from cold keys in the memory component so that only
 cold keys are flushed to disk. Even though hot keys are not flushed to disk, they are periodically
@@ -294,13 +295,13 @@ Finally, it presents an optimization that avoids creating new disk components af
 the transaction log itself is used as a disk component and an index structure is built on top of it to
 improve lookup performance.
 \subsubsection{Summary}
-\label{sec:org5d1c21a}
+\label{sec:org23ae03b}
 Tiering has been widely used to improve the write performance of LSM-trees, but this will decrease
 query performance and space utilization
 \subsection{Optimizing Merge Operations}
-\label{sec:org3e47c12}
+\label{sec:orga9515aa}
 \subsubsection{Improving Merge Performance}
-\label{sec:org56d85c5}
+\label{sec:orgfe528da}
 The VT-tree presents a stitching operation to improve merge performance. The basic idea is that when
 merging multiple SSTables, if the key range of a page from an input SSTable does not overlap the key
 ranges of any pages from other SSTables, then this page can be simply pointed to by the resulting
@@ -318,7 +319,7 @@ accessing the original keys.
 
 Or we could slightly merge the phases of merge\cite{6877309} .
 \subsubsection{Reducing Buffer Cache Misses}
-\label{sec:org2f9bcb3}
+\label{sec:org2b812bf}
 Merge operations can interfere with the caching behavior of a system. After a new component is
 enabled, queries may experience a large number of buffer cache misses since the new component has not
 been cached yet.
@@ -334,7 +335,7 @@ SSTables are searched by queries as well to minimize buffer cache misses, and th
 gradually based on their access frequency. This approach is mainly effective for skewed workloads
 where only a small range of keys are frequently accessed.
 \subsubsection{Minimizing Write Stalls}
-\label{sec:org18f4c97}
+\label{sec:org2462c0f}
 bLSM proposes a spring-and-gear merge scheduler to minimize write stalls for the unpartitioned
 leveling merge policy. Its basic idea is to tolerate an extra component at each level so that merges
 at different levels can proceed in parallel. Furthermore, the merge scheduler controls the progress of
@@ -345,11 +346,11 @@ bLSM was only designed for the unpartitioned leveling merge policy. Moreover, it
 maximum latency of writing to memory components while the queuing latency, which is often a major
 source of performance variability, is ignored.
 \subsubsection{Summary}
-\label{sec:orgbef8700}
+\label{sec:org3cee1a6}
 \subsection{Hardware Opportunities}
-\label{sec:org494f2fc}
+\label{sec:org80b7899}
 \subsubsection{Large Memory}
-\label{sec:orga4e085d}
+\label{sec:org5a9d2df}
 \begin{itemize}
 \item If a memory component is implemented directly using on-heap data structures, large memory can result
 in a large number of small objects that lead to significant GC overheads.
@@ -392,9 +393,152 @@ component is full, instead of being flushed to disk, it is simply flushed into a
 component via an in-memory flush operation. Similarly, such immutable memory components can be merged
 via in-memory merge operations to improve query performance and reclaim space occupied by obsolete entries.
 \subsubsection{Multi-Core}
-\label{sec:org84efd77}
+\label{sec:org7684a76}
+cLSM\cite{10.1145/2741948.2741973} optimized for multi-core machines and presents new concurrency control algorithms for various
+LSM-tree operations. It organizes LSM components into a concurrent linked list to minimize blocking
+caused by synchronization. Flush and merge operations are carefully designed so that they only result
+in atomic modifications to the linked list that will never block queries. When a memory component
+becomes full, a new memory component is allocated while the old one will be flushed.
+\subsubsection{SSD/NVM}
+\label{sec:org9322926}
+The FD-tree uses a similar design to LSM-trees to reduce random writes on SSDs. One major difference
+is that the FD-tree exploits \textbf{fractional cascading}\cite{10.1007/BF01840440} to improve query performance
+instead of Bloom filters.
+For the component at each level, the FD-tree additionally stores fence pointers at each level. For
+example,
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/db/12.png}
+\captionof{figure}{\label{}Example of FD-tree}
+\end{center}
+the pages at level 2 are pointed at by are pointed by fence pointers with keys 1, 27, 51, 81 at
+level 1. After performing a binary search at level 0, a query can follow these fence pointers to
+traverse all of the levels.
+
+However, when the component at level \(L\) is merged into level \(L+1\), all of the previous levels 0
+to \(L-1\) must be merged as well to rebuild the fence pointers.
+
+The FD+tree improves the merge process of the FD-tree.
+
+MaSM(materialized sort-merge) is designed for supporting efficient updates for data warehousing
+workloads by exploiting SSDs. MaSM first buffers all updates into an SSD. It uses the tiering policy
+to merge intermediate components with low write amplification. The updates are then merged back to the
+base data.
+
+Since SSDs support efficient random reads, separating values from keys becomes a viable solution to
+improve the write performance of LSM-trees. This approach was first implemented by WiscKey and
+subsequently adopted by HashKV and SifrDB. WiscKey stores key-value pairs into an append-only log and
+the LSM-tree simply serves as a primary index that maps each key to its location in the log.
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/db/13.png}
+\captionof{figure}{\label{}WIscKey stores values into an append-only log to reduce the write amplification}
+\end{center}
+As shown in Figure, WIscKey stores key-value pairs into an append-only log and the LSM-tree simply
+serves as a primary index that maps each key to its location in the log. While this can greatly reduce
+the write cost by only merging keys, range query will be significantly impacted. Moreover, the value
+log must be garbage-collected efficiently to reclaim the storage space.
+
+In WiscKey, garbage-collection is performed in three steps:
+\begin{enumerate}
+\item scan the log tail and validates each entry by performing point lookups against the LSM-tree to find
+out whether the location of each key has changed or not.
+\item Valid entries, whose locations haven't changed, are then appended to the log their locations are
+updated in the LSM-tree as well
+\item log tail is truncated to reclaim the storage space.
+\end{enumerate}
+
+HashKV introduces a more efficient approach to garbage-collect obsolete values. The basic idea is to
+hash-partition the value log into multiple partitions based on keys and to garbage-collect each
+partition independently. In order to garbage-collect a partition, HashKV performs a group-by operation
+on the keys to find the latest value for each key. Valid key-value pairs are added to a new log and
+their locations are then updated in the LSM-tree. HashKV further stores cold entries separately so
+that they can be garbage-collected less frequently.
+
+NoveLSM is an implementation of LSM-trees on NVMs.
+\subsubsection{Native Storage}
+\label{sec:orge59843d}
+\subsection{Handling Special Workloads}
+\label{sec:orgeb124bb}
+temporal data, small data, semi-sorted data, append-mostly data.
+\subsection{Auto-Tuning}
+\label{sec:org62ace6c}
+\subsubsection{Parameter Tuning}
+\label{sec:org29dcaba}
+\cite{10.5555/2930583.2930595}  presented an analytical model that incorporates the key distribution to
+improve the cost estimation of LSM-tree operations and further used this model to tune the parameters
+of LSM-trees. If a key is found to be deleted or updated during an early merge, it will not
+participate in future merges and thus its overall write cost will be reduced. The proposed model
+assumes a priori knowledge of the key distribution using a probability mass function \(f_X(k)\) that
+measures the probability that a specific key \(k\) is written by a write request. Given \(p\) total
+write requests, the number of unique keys is estimated using its expection as
+\(Unique(p)=N-\sum_{k\in K}(1-f_X(k))^p\), where \(N\) is the total number of unique keys and \(K\) is
+the total key space.
+
+Monkey co-tunes the merge policy, size ratio, and memory allocation between memory components and
+Bloom filters to find an optimal LSM-tree design for a given workload.
+
+Monkey shows that the usual Bloom filter memory allocation scheme, which allocates the same number
+of bits per key for all Bloom filters, results in sub-optimal performance: the intuition is that
+the \(T\) components at the last level, which contain most of the data, consume most of the Bloom
+filter memory but their Bloom filters can only save at most \(T\) disk I/Os for a point lookup. To
+minimize the overall false positive rates across all of the Bloom filters, Monkey analytically
+shows that more bits should be allocated to the components at the lower level, and the new I/O
+becomes \(O(e^{-\frac{M}{N}})\) for leveling and \(O(T\cdot e^{-\frac{M}{N}})\) for tiering. Monkey
+then finds an optimal LSM-tree design by maximizing the overall throughput using a cost model similar
+to the one in \ref{2.3}.
+\subsubsection{Tuning Merge Policies}
+\label{sec:org7599398}
+For leveling, the cost of zero-result point lookups, long range queries, and space amplification are
+dominated by the largest level, but the write cost derives equally from all of the levels. To address
+this, Dostoevsky\cite{10.1145/3183713.3196927} introduces a lazy-leveling merge policy that performs
+tiering at the lower levels but leveling at the largest level.
+
+Lazy-leveling has much better write cost than leveling, but has similar point lookup cost, long range
+query cost, and space amplification to leveling. It only has a worse short range query cost than
+leveling.
+\subsubsection{Dynamic Bloom Filter Memory Allocation}
+\label{sec:org831ebde}
+ElasticBF dynamically adjusts the Bloom filter false positive rates based on the data hotness and
+access frequency to optimize read performance. Given a budget of \(k\) Bloom filter bits per key,
+ElasticBF constructs multiple smaller Bloom filters with \(k_1,\dots,k_n\) bits so that
+\(k_1+\dots+k_n=k\). When all of these Bloom filters are used together, they provide the same false
+positive rate as the original monolithic Bloom filter. ElasticBF then dynamically activates and
+deactivates these Bloom filters based on the access frequency to minimize the total amount of extra
+I/O. Their experiments reveal that ElasticBF is mainly effective when the overall Bloom filter memory is very limited.
+\subsubsection{Optimizing Data Placement}
+\label{sec:org694bb06}
+For cloud
+\subsection{Secondary Indexing}
+\label{sec:orgb70854c}
+In general, an LSM-based storage system will contain a primary index with multiple secondary indexes.
+The primary index stores the record values indexed by their primary keys. Each Secondary index stores
+the corresponding primary keys for each secondary key using either a composite key approach or a key
+list approach:
+\begin{itemize}
+\item In the composite key approach, the index key of a secondary index is the composition of the
+secondary key and the primary key.
+\item In the key list approach, a secondary index associates a list
+\end{itemize}
+of primary keys with each secondary key.
+
+Either way, to process a query using a secondary index, the secondary index is first searched to
+return a list of matching primary keys, and those are then used to fetch the records from the primary
+index if needed. For example:
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/db/14.png}
+\captionof{figure}{\label{}Example LSM-based secondary indexes}
+\end{center}
+\subsubsection{Index Structures}
+\label{sec:org59f1200}
+\subsubsection{Index Maintenance}
+\label{sec:org0cd6200}
+\section{{\bfseries\sffamily TODO} Papers that worth read [0/0]}
+\label{sec:orgbfd7d73}
+\begin{itemize}
+\item[{$\square$}] Monkey
+\end{itemize}
 \section{References}
-\label{sec:org3660303}
+\label{sec:org17833f1}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 
