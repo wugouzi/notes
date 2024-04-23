@@ -1,0 +1,40 @@
+#+title: Impossibility of Distributed Consensus with One Faulty Process
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/consensus/impossibility_of_distributed_consensus.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/consensus/}}
+#+OPTIONS: toc:nil
+* Introduction
+        In this paper, we show that *no completely asynchronous consensus protocol can tolerate even a single*
+        *unannounced process death*.
+
+        Assumption:
+        1. No Byzantine failure,
+        2. message system is reliable.
+
+        Nevertheless, even with these assumptions, the stopping of a single process at an inopportune time can
+        cause any distributed commit protocol to fail to reach agreement. Thus, this important problem has no
+        robust solution without further assumptions about the computing environment or still greater
+        restrictions on the kind of failures to be tolerated!
+
+        The impossibility result applies to even a very weak form of the *consensus problem*. Assume that every
+        process starts with an initial value in \(\{0,1\}\). A nonfaulty process decides on a value in
+        \(\{0,1\}\) by entering an appropriate decision state. All nonfaulty processes that make a decision
+        are required to choose the same value.
+* Consensus Protocols
+        A *consensus protocol* \(P\) is an asynchronous system of \(N\) processes (\(N\ge 2\)). Each process
+        \(p\) has a one-bit *input register* \(x_p\), an *output register* \(y_p\) with values in \(\{b,0,1\}\),
+        and an unbounded amount of internal storage.  The values in the input and output registers, together
+        with the program counter and internal storage, comprise the *internal state*. *Initial states* prescribe
+        fixed starting values for all but the input register; in particular, the output register starts with
+        value \(b\). The states where the output register has value 0 or 1 are distinguished as being
+        *decision states*. \(p\) acts deterministically according to a *transition* function. The transition
+        function cannot change the value of the output register once the process has reached a decision state;
+        that is, the output register is "write-once".
+
+        Processes communicate by sending each other messages. A *message* is a pair \((p,m)\), where \(p\) is
+        the name of the destination process and \(m\) is a "message value" from a fixed universe \(M\). The
+        *message system* maintains a multiset, called the *message buffer*, of messages that haven been sent but
+        not yet delivered. It supports two abstract operations:
+        * \(send(p,m)\): Places \((p,m)\) in the message buffer;
+        * \(receive(p)\): Deletes some message \((p,m)\) from the buffer and returns \(m\), in which case we
+          say \((p,m)\) is *delivered*, or returns the special null marker \(\emptyset\) and leaves the buffer unchanged.

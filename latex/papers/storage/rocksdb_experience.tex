@@ -1,0 +1,205 @@
+% Created 2024-04-22 Mon 19:25
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/storage/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   underline, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage[normalem]{ulem}
+
+%% end ox-latex features
+
+
+\author{wu}
+\date{\today}
+\title{Evolution of Development Priorities in Key-value Stores Serving Large-scale Applications: The RocksDB Experience}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={Evolution of Development Priorities in Key-value Stores Serving Large-scale Applications: The RocksDB Experience},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 29.1 (Org mode 9.7-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+RocksDB is a key-value store targeting large-scale distributed systems and optimized for \uline{Solid State Drives}
+(SSDs). This paper describes how our \uline{priorities} in developing RocksDB have evolved. We describe how and why
+RocksDB’s resource optimization target migrated from write amplification, to space amplification, to CPU
+utilization.
+
+Lessons from running large-scale applications taught us that:
+\begin{enumerate}
+\item resource allocation needs to be managed across different RocksDB instances,
+\item data format needs to remain backward and forward compatible to allow incremental software rollout,
+\item appropriate support for database replication and backups are needed.
+\end{enumerate}
+
+Lessons from failure handling taught us that:
+\begin{enumerate}
+\item data corruption errors needed to be detected earlier and at every layer of the system.
+\end{enumerate}
+\section{Introduction}
+\label{sec:org350423d}
+Each RocksDB instance manages data on storage devices of just a single server node; it does not handle
+any inter-host operations, such as replication and load balancing, and it does not perform
+high-level operations, such as checkpoints
+
+RocksDB and its various components are highly customizable, customizations can include the
+\uline{write-ahead log (WAL) treatment}, the \uline{compression strategy}, and the \uline{compaction strategy}. RocksDB may be
+tuned for high write throughput or high read throughput, for space efficiency, or something in
+between.
+
+
+Used in
+\begin{itemize}
+\item \textbf{Database}:
+\item \textbf{Stream processing}:
+\item \textbf{Logging/queuing services}:
+\item \textbf{Index service}:
+\item \textbf{Caching on SSD}:
+\end{itemize}
+
+
+
+\begin{table}[htbp]
+\caption{RocksDB use cases and their workload characteristics}
+\centering
+\begin{tabular}{llll}
+\hline
+ & Read/Write & Read Types & Special Characteristics\\
+\hline
+Databases & Mixed & Get + Iterator & Transactions and backups\\
+Stream Processing & Write-Heavy & Get or Iterator & Time window and checkpoints\\
+Logging/Queues & Write-Heavy & Iterator & Support on HDD too\\
+Index Services & Read-Heavy & Iterator & Bulk loading\\
+Cache & Write-Heavy & Get & Can drop data\\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[htbp]
+\caption{System metrics for a typical use case from each application category}
+\centering
+\begin{tabular}{lllll}
+\hline
+ & CPU & Space Util & Flash Endurance & Read Bandwidth\\
+\hline
+Stream Processing & 11\% & 48\% & 16\% & 1.6\%\\
+Logging/Queues & 46\% & 45\% & 7\% & 1.0\%\\
+Index Services & 47\% & 61\% & 5\% & 10.0\%\\
+Cache & 3\% & 78\% & 74\% & 3.5\%\\
+\hline
+\end{tabular}
+\end{table}
+\section{Background}
+\label{sec:orgcc6a34e}
+\subsection{Embedded storage on flash based SSDs}
+\label{sec:orgd473101}
+The high performance of the SSD, in many cases, also shifted the performance bottleneck from device
+I/O to the network for both of latency and throughput. It became more attractive for applications to
+design their architecture to store data on local SSDs rather than use a remote data storage ser- vice.
+This increased the demand for a key-value store engines that are embedded in applications.
+\subsection{RocksDB architecture}
+\label{sec:org61d5af0}
+\textbf{Writes}. Whenever data is written to RocksDB, it is added to an in-memory write buffer called \textbf{MemTable}, as well as an
+on-disk \textbf{Write Ahead Log (WAL)}. Memtable is implemented as a skiplist so keep the data ordered with \(O(\log n)\) insert and
+search overhead. The WAL is used for recovery after a failure, but is not mandatory. Once the size of the MemTable reaches
+a configured size, then
+\begin{enumerate}
+\item the MemTable and WAL become immutable,
+\item a new MemTable and WAL are allocated for subsequent writes,
+\item the contents of the MemTable are flushed to a “Sorted String Table” (SSTable) data file on disk,
+\item the flushed MemTable and associated WAL are discarded.
+\end{enumerate}
+Each SSTable stores data in sorted order, divided into uniformly-sized blocks. Each SSTable also has an index block
+with one index entry per SSTable block for binary search.
+
+\textbf{Compaction}. Levels higher than Level-0 are created by a process called \textbf{compaction}. The size of
+SSTables on a given level are limited by configuration parameters. When level-L’s size target is exceeded, some
+SSTables in level-L are selected and merged with the overlapping SSTables in level-(L+1). This process
+gradually migrates written data from Level-0 to the last level. Compaction I/O is efficient as it can
+be parallelized and only involves bulk reads and writes of entire files.
+
+\textbf{Reads}. In the read path, a key lookup occurs at each successive level until the key is found or it is
+determined that the key is not present in the last level.
+
+RocksDB supports multiple different types of compaction:
+\begin{itemize}
+\item \textbf{Leveled Compaction}: levels are assigned exponentially increasing size
+\item \textbf{Tiered Compaction} (\textbf{Universal Compaction} in RocksDB): Similar to Cassandra or HBase. Multiple sorted runs are lazily compacted
+together, either when there are too many sorted runs, or the ratio between total DB size over the
+size of the largest sorted run exceeds a configurable threshold.
+\item \textbf{FIFO Compaction}: discards old files once the DB hits a size limit and only performs lightweight
+compaction. It targets in-memory caching applications.
+\end{itemize}
+
+
+\#+CAPTION Write amplification, overhead and read I/O for three compaction types
+\begin{center}
+\begin{tabular}{lrrr}
+\hline
+Compaction & Leveled & Tiered & FIFO\\
+\hline
+Write Amplification & 16.07 & 4.8 & 2.14\\
+Max Space Overhead & 9.8\% & 94.4\% & N/A\\
+Avg Space Overhead & 9.5\% & 45.5\% & N/A\\
+\# I/O per Get() with bloom filter & 0.99 & 1.03 & 1.16\\
+\# I/O per Get() without bloom filter & 1.7 & 3.39 & 528\\
+\# I/O per iterator seek & 1.84 & 4.80 & 967\\
+\hline
+\end{tabular}
+\end{center}
+\section{Evolution of resource optimization targets}
+\label{sec:org82299e6}
+\subsection{Write amplification}
+\label{sec:org47e09eb}
+Write amplification emerges at two levels:
+\begin{enumerate}
+\item SSDs themselves introduct write amplification: by their observation between 1.1 and 3.
+\item Storage and database software also generae write amplification; this can sometimes be as high as
+100 (e.g., when an entire 4KB/8KB/16KB page is written out for changes of less than 100 bytes)
+
+Level Compaction in RocksDB usually exhibits write amplification between 10 and 30, which is
+several times better than when using B-trees in many cases.
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+ & \# keys & 200 & 400 & 600 & 800 & 1000 \\
+ & (millions) & & & & & \\
+ & & & & & & \\
+\hline
+ & Fully & 12.0 & 24.0 & 36.0 & 48.0 & 60.1 \\
+Dynamgic & compacted size & & & & & \\
+Leveled & (GB) & & & & & \\
+\cline{2-7}
+ & Steady DB size & 13.5 & 26.9 & 40.4 & 54.2 & 67.5 \\
+ & (GB) & & & & & \\
+\cline{2-7}
+ & Space overhead & 12.4 & 11.8 & 12.2 & 12.7 & 12.4 \\
+ & (\%) & & & & & \\
+ & & & & & & \\
+\hline
+ & Fully & 12.0 & 24.0 & 36.4 & 48.3 & 60.3 \\
+LevelDB-style & Compacted size & & & & & \\
+Compaction & (GB) & & & & & \\
+\cline{2-7}
+ & Steady DB & 15.1 & 26.9 & 42.5 & 57.9 & 73.8 \\
+ & size (GB) & & & & & \\
+\cline{2-7}
+ & Space & 25.6 & 12.2 & 16.9 & 19.7 & 22.4 \\
+ & overhead (\%) & & & & & \\
+ & & & & & & \\
+\hline
+\end{tabular}
+\end{center}
+\end{enumerate}
+\end{document}

@@ -1,0 +1,63 @@
+#+TITLE: Cppcon
+#+EXPORT_FILE_NAME: ../latex/cppcon/cppcon.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+
+* 2023
+** A Long Journey of Changing std::sort Implementation at Scale
+        Gcc now use ~introsort~ for ~sort~.
+        * It is almost like a quick sort.
+        * If we suspect a lot of recursion calls, use heap sort
+        * GCC ~libstdc++~ uses \(2\log_2 n\) depth limit
+        * Only 0.01% of all calls got into the heap sort fallback in production
+
+        What is a good sort?
+        * \(O(n\log n)\) comparisons.
+        * Recognizes almost sorted patterns
+        * fast for mordern hardware
+        * fewer comparisons for heavy comparison sorting
+
+        How ~libcxx~ has achieved that? Insertion sort on every step up to 8 insertions
+        #+begin_src cpp
+const unsigned __limit = 8;
+unsigned __count       = 0;
+for (_RandomAccessIterator __i = __j + difference_type(1); __i != __last; ++__i) {
+    if (__comp(*__i, *__j)) {
+        value_type __t(_Ops::__iter_move(__i));
+        _RandomAccessIterator __k = __j;
+        __j                       = __i;
+        do {
+            ,*__j = _Ops::__iter_move(__k);
+            __j  = __k;
+        } while (__j != __first && __comp(__t, *--__k));
+        ,*__j = std::move(__t);
+        if (++__count == __limit)
+            return ++__i == __last;
+    }
+    __j = __i;
+}
+        #+end_src
+
+        Problem: Ties (when we sort by first dimension, the order of second dimension is undefined, therefore
+        we can't use the elements in second dimension in tests)
+
+        Randomization also for ~std:nth_element~, ~std::partial_sort~
+
+        #+begin_src c++
+int64_t median(const std::vector<int64_t>& v) {
+    int64_t med = v.size() / 2;
+    std::nth_element(v.begin(), v.begin() + med, v.end());
+    int64_t result = v[med];
+    if (v.size() % 2 == 0) {
+        std::nth_element(v.begin(), v.begin() + med - 1, v.end());
+        result = (v[med] + v[med - 1]) / 2;
+    }
+}
+        #+end_src
+
+        This code has a bug since ~std::nth_element~ doesn't keep the original order of the data, so in the
+        second range, ~v[med]~ is not the median we want.
+
+        Use ~_LIBCPP_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY~ with libcxx
+* tee
