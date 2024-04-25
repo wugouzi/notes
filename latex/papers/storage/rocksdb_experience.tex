@@ -1,4 +1,4 @@
-% Created 2024-04-22 Mon 19:25
+% Created 2024-04-25 Thu 20:02
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -46,7 +46,7 @@ Lessons from failure handling taught us that:
 \item data corruption errors needed to be detected earlier and at every layer of the system.
 \end{enumerate}
 \section{Introduction}
-\label{sec:org350423d}
+\label{sec:org644f62f}
 Each RocksDB instance manages data on storage devices of just a single server node; it does not handle
 any inter-host operations, such as replication and load balancing, and it does not perform
 high-level operations, such as checkpoints
@@ -100,15 +100,15 @@ Cache & 3\% & 78\% & 74\% & 3.5\%\\
 \end{tabular}
 \end{table}
 \section{Background}
-\label{sec:orgcc6a34e}
+\label{sec:org7dae739}
 \subsection{Embedded storage on flash based SSDs}
-\label{sec:orgd473101}
+\label{sec:org3f768f2}
 The high performance of the SSD, in many cases, also shifted the performance bottleneck from device
 I/O to the network for both of latency and throughput. It became more attractive for applications to
 design their architecture to store data on local SSDs rather than use a remote data storage ser- vice.
 This increased the demand for a key-value store engines that are embedded in applications.
 \subsection{RocksDB architecture}
-\label{sec:org61d5af0}
+\label{sec:orgc2f5fad}
 \textbf{Writes}. Whenever data is written to RocksDB, it is added to an in-memory write buffer called \textbf{MemTable}, as well as an
 on-disk \textbf{Write Ahead Log (WAL)}. Memtable is implemented as a skiplist so keep the data ordered with \(O(\log n)\) insert and
 search overhead. The WAL is used for recovery after a failure, but is not mandatory. Once the size of the MemTable reaches
@@ -158,9 +158,9 @@ Avg Space Overhead & 9.5\% & 45.5\% & N/A\\
 \end{tabular}
 \end{center}
 \section{Evolution of resource optimization targets}
-\label{sec:org82299e6}
+\label{sec:org19a3a20}
 \subsection{Write amplification}
-\label{sec:org47e09eb}
+\label{sec:org3d2bfda}
 Write amplification emerges at two levels:
 \begin{enumerate}
 \item SSDs themselves introduct write amplification: by their observation between 1.1 and 3.
@@ -169,6 +169,17 @@ Write amplification emerges at two levels:
 
 Level Compaction in RocksDB usually exhibits write amplification between 10 and 30, which is
 several times better than when using B-trees in many cases.
+\end{enumerate}
+\subsection{Space amplification}
+\label{sec:org400aeb8}
+We observed that for most applications, space utilization was far more important than write
+amplification, given that neither flash write cycles nor write overhead were constraining.
+
+In fact the number of IOPS utilized in practice was low compared to what the SSD could provide. As a
+result, we shifted our resource optimization target to disk space.
+
+We developed \textbf{Dynamic Leveled Compaction}, where the size of each level in the tree is automatically
+adjusted based on the actual size of the last level.
 
 \begin{center}
 \begin{tabular}{|l|l|l|l|l|l|l|}
@@ -201,5 +212,74 @@ Compaction & (GB) & & & & & \\
 \hline
 \end{tabular}
 \end{center}
+\subsection{CPU utilization}
+\label{sec:org68fb47b}
+\begin{enumerate}
+\item prefix bloom filter
+\item applying the bloom filter before index lookups
+\item bloom filter improvements
 \end{enumerate}
+\subsection{Adapting to newer technologies}
+\label{sec:org00cd418}
+Disaggregated (remote) storage appears to be a much more interesting optimization target and is a
+current priority. Faster networks currently allow many more I/Os to be served remotely, so the
+performance of running RocksDB with remote storage has become viable for an increasing number of applications.
+\subsection{Main Data Structure Revisited}
+\label{sec:org27ed733}
+WiscKey/ForrestDB
+\section{Lessons on serving large-scale systems}
+\label{sec:org95862dc}
+\subsection{Resource management}
+\label{sec:orgdf3af3a}
+The fact that a host may run many RocksDB instances has implications on resource management. Given
+that the instances share the host’s resources, the resources need to be managed both globally (per
+host) and locally (per instance) to ensure they are used fairly and efficiently. When running in
+single process mode, having global resource limits is im- portant, including for
+\begin{enumerate}
+\item memory for write buffer and block cache
+\item compaction I/O bandwidth
+\item compaction threads
+\item total disk usage
+\item file deletion rate
+\end{enumerate}
+\subsection{WAL treatment}
+\label{sec:org0793894}
+For example, if copies of the same data exist in multiple replicas, and one replica becomes corrupted
+or inaccessible, then the storage system uses valid replica(s) from other unaffected hosts to rebuild
+the replica of the failed host. For such systems, RocksDB WAL writes are less critical. Further,
+distributed systems often have their own replication logs (e.g., Paxos logs), in which case RocksDB
+WAL are not needed at all.
+\subsection{Rate-limited file deletions}
+\label{sec:org15b1c86}
+Rate-limited file deletions RocksDB typically interacts with the underlying storage device via a file
+system. These file systems are flash-SSD-aware; e.g., XFS, with realtime discard, may issue a \textbf{TRIM}
+command to the SSD whenever a file is deleted. TRIM commands are commonly believed to improve
+performance and flash endurance. However, it may also cause \uline{performance issue}. In addition to updating
+the address mapping, the SSD firmware also needs to write these changes to FTL(Flash Translation
+Layer)'s journal in flash, which in turn may trigger SSD's internal garbage collection. To avoid TRIM
+activity spikes and associated increases in I/O latency, we introduced rate limiting for file deletion
+to prevent multiple files from being deleted simultaneously.
+\subsection{Data format compatibility}
+\label{sec:orge4fc426}
+It is important that the data on disk remain both backward and forward compatible across the different
+software versions.
+\subsection{Managing configurations}
+\label{sec:org77edd22}
+\subsection{Replication and backup support}
+\label{sec:orge2a99b1}
+Bootstraping a new replica by copying all the data from an existing one can be done in two ways:
+\begin{enumerate}
+\item read all keys from a source replica and then written to the destination replica (\textbf{logical copying}).
+On the source side, RocksDB supports data scanning operations by offering the ability to minimize
+the impact on concurrent online queries; e.g., by providing the option to not cache the result of
+these operations
+\item Copying SSTables and other files directly (\textbf{physical copying}). RocksDB assist physical copying by
+identifying existing database files at a current point in time, and preventing them from being
+deleted or mutated.
+\end{enumerate}
+\section{Lessons on failure handling}
+\label{sec:orga9052b4}
+\subsection{Frequency of silent corruptions}
+\label{sec:org9390862}
+CPU/memory corruption does happen rarely and it is difficult to accurately quantify.
 \end{document}

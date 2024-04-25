@@ -107,3 +107,78 @@ explicit ~fsync()~ on a file descriptor for the directory is also needed.
         2. it adds these new values' addresses and current tail to the LSM-tree in a synchronous manner; the
            tail is stored in the LSM-tree as ~<tail, tail-vLog-offset>~
         3. the free space in the vLog is reclaimed.
+*** Crash Consistency
+        WiscKey provides same crash guarantees by using an interesting property of modern file systems (ext4,
+        btrfs, xfs).
+
+        Consider a file that contains the sequence of bytes \(\la b_1b_2\dots b_n\ra\) and the user appends
+        the sequence \(\la b_{n+1}b_{n+2}\dots b_{n+m}\ra\) to it. If a crash happens, after file-system recovery
+        in modern file systems, the file will be observed to contain the sequence of bytes
+        \(\la b_1\dots b_n\dots b_{n+1}\dots b_{n+x}\ra\) where \(x<m\) [[cite:&186194]]. Since values are
+        appended sequentially to the end of the vLog file in WiscKey, the aforementioned property conveniently
+        translates as follows: *if a value \(X\) in the vLog is lost in a crash, all future values are lost
+        too*.
+
+        When the user queries a key-value pair,
+        * if WiscKey cannot find the key in the LSM-tree because the key had been lost during a system crash,
+          WiscKey behaves exactly like traditional LSM-trees: even if the value had been written in vLog before the crash, it will be garbage collected later.
+        * if the key could be found in the LSM-tree, an additional step is required to maintain consistency.
+          1. verifies whether the value address retrieved from the LSM-tree falls within the current valid
+             range of the vLog, and then whether the value found corresponds to the queried key
+          2. if the verification fails, WiscKey assumes that the value was lost during a system crash, deletes
+             the key from the LSM-tree, and informs the user that the key was not found.
+** Optimizations
+*** Value-Log Write Buffer
+        For each ~Put()~, WiscKey needs to append the value to the vLog by using a ~write()~ system call. However,
+        for an insert-intensive workload, issuing a large number of small writes to a ﬁle system can introduce
+        a noticeable overhead, especially on a fast storage device. Figure ref:fig7 shows the total time to
+        sequentially write a 10-GB file in ext4.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: fig7
+        #+CAPTION: Impact of Write Unit Size
+        [[../../images/db/17.png]]
+
+        To reduce overhead, WiscKey buffers values in a userspace buffer, and ﬂushes the buffer only when the
+        buffer size exceeds a threshold or when the user requests a synchronous insertion.
+
+        TODO: how does leveldb handle crash
+*** Optimizing the LSM-tree Log
+        In WiscKey, the LSM-tree is only used for keys and value addresses. Moreover, the vLog also records
+        inserted keys to support garbage collection as described in the previous section. Hence, writes to the
+        LSM-tree log ﬁle can be avoided without affecting correctness.
+
+        If a crash happens before the keys are persistent in the LSM-tree, they can be recovered by scanning
+        the vLog.
+        As to require scanning only a small portion of the vLog, WiscKey records the head of the vLog
+        periodically in the LSM-tree, as a key-value pair ~<head, head-vLog-offset>~
+
+        vLog is the WAL in essence.
+* Evaluation
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/18.png]]
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/19.png]]
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/20.png]]
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/21.png]]
+
+** Crash Consistency
+        Not good illustration
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -1,4 +1,4 @@
-% Created 2024-04-25 Thu 13:34
+% Created 2024-04-25 Thu 20:01
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -32,11 +32,11 @@
 
 \maketitle
 \section{Abstract}
-\label{sec:org61a1e88}
+\label{sec:orge940db8}
 WiscKey is a persistent LSM-tree-based key-value store with a performance-oriented data layout that
 \textbf{separates keys from values to minimize I/O amplification}.
 \section{Introduction}
-\label{sec:orgfb65a28}
+\label{sec:org9437f3d}
 As compared to HDDs, SSDs are fundamentally different in their performance and reliability
 characteristics; when considering key-value storage system design, we believe the following three
 differences are of paramount importance:
@@ -77,9 +77,9 @@ WiscKey leverages an interesting property in modern ﬁle systems, that appends 
 garbage data on a crash.
 \end{enumerate}
 \section{Background and Motivation}
-\label{sec:org71ee783}
+\label{sec:org44d50cc}
 \subsection{Write and Read Amplification}
-\label{sec:orge6aae86}
+\label{sec:orgff64b7d}
 \begin{table}[htbp]
 \caption{Write and Read Amplification}
 \centering
@@ -91,13 +91,13 @@ Data Size & Write Amplification & Read Amplification\\
 \end{tabular}
 \end{table}
 \subsection{Fast Storage Hardware}
-\label{sec:orgccc720a}
+\label{sec:org05b012c}
 \begin{center}
 \includegraphics[width=.7\textwidth]{../../images/db/15.png}
 \captionof{figure}{\label{fig1}Sequential and Random Reads on SSD}
 \end{center}
 \section{WiscKey}
-\label{sec:orge7a286c}
+\label{sec:org62a577e}
 To realize an SSD-optimized key-value store, WiscKey includes four critical ideas:
 \begin{enumerate}
 \item separate keys and values
@@ -108,21 +108,21 @@ the value log.
 \item removing the LSM-tree log without sacrificing consistency.
 \end{enumerate}
 \subsection{Design Goals}
-\label{sec:orgf1c3f5a}
+\label{sec:org11a6527}
 \subsection{Key-Value Separation}
-\label{sec:org7be21a8}
+\label{sec:orgd892f13}
 Compaction only needs to sort keys, while values can be managed separately.
 \subsection{Challenges}
-\label{sec:orgd6e255e}
+\label{sec:org8e192c8}
 \subsubsection{Parallel Range Query}
-\label{sec:org6cba5ac}
+\label{sec:org827951e}
 Based on Figure \ref{fig1}, parallel random reads with a fairly large request size can fully utilize the
 device's internal parallelism, getting performance similar to sequential reads.
 
 To make range queries efﬁcient, WiscKey leverages the parallel I/O characteristic of SSD devices to
 prefetch values from the vLog during range queries.
 \subsubsection{Garbage Collection}
-\label{sec:orgb21fa57}
+\label{sec:orgff1fe4e}
 In WiscKey, only invalid keys are reclaimed by the LSM-tree compaction. Since WiscKey does not compact
 values, it needs a special garbage collector to reclaim free space in the vLog.
 
@@ -159,4 +159,89 @@ explicit \texttt{fsync()} on a file descriptor for the directory is also needed.
 tail is stored in the LSM-tree as \texttt{<tail, tail-vLog-offset>}
 \item the free space in the vLog is reclaimed.
 \end{enumerate}
+\subsubsection{Crash Consistency}
+\label{sec:orgceeee9e}
+WiscKey provides same crash guarantees by using an interesting property of modern file systems (ext4,
+btrfs, xfs).
+
+Consider a file that contains the sequence of bytes \(\la b_1b_2\dots b_n\ra\) and the user appends
+the sequence \(\la b_{n+1}b_{n+2}\dots b_{n+m}\ra\) to it. If a crash happens, after file-system recovery
+in modern file systems, the file will be observed to contain the sequence of bytes
+\(\la b_1\dots b_n\dots b_{n+1}\dots b_{n+x}\ra\) where \(x<m\) \cite{186194}. Since values are
+appended sequentially to the end of the vLog file in WiscKey, the aforementioned property conveniently
+translates as follows: \textbf{if a value \(X\) in the vLog is lost in a crash, all future values are lost
+too}.
+
+When the user queries a key-value pair,
+\begin{itemize}
+\item if WiscKey cannot find the key in the LSM-tree because the key had been lost during a system crash,
+WiscKey behaves exactly like traditional LSM-trees: even if the value had been written in vLog before the crash, it will be garbage collected later.
+\item if the key could be found in the LSM-tree, an additional step is required to maintain consistency.
+\begin{enumerate}
+\item verifies whether the value address retrieved from the LSM-tree falls within the current valid
+range of the vLog, and then whether the value found corresponds to the queried key
+\item if the verification fails, WiscKey assumes that the value was lost during a system crash, deletes
+the key from the LSM-tree, and informs the user that the key was not found.
+\end{enumerate}
+\end{itemize}
+\subsection{Optimizations}
+\label{sec:org3558613}
+\subsubsection{Value-Log Write Buffer}
+\label{sec:org4c47d64}
+For each \texttt{Put()}, WiscKey needs to append the value to the vLog by using a \texttt{write()} system call. However,
+for an insert-intensive workload, issuing a large number of small writes to a ﬁle system can introduce
+a noticeable overhead, especially on a fast storage device. Figure \ref{fig7} shows the total time to
+sequentially write a 10-GB file in ext4.
+\begin{center}
+\includegraphics[width=.7\textwidth]{../../images/db/17.png}
+\captionof{figure}{\label{fig7}Impact of Write Unit Size}
+\end{center}
+
+To reduce overhead, WiscKey buffers values in a userspace buffer, and ﬂushes the buffer only when the
+buffer size exceeds a threshold or when the user requests a synchronous insertion.
+
+TODO: how does leveldb handle crash
+\subsubsection{Optimizing the LSM-tree Log}
+\label{sec:org946f38f}
+In WiscKey, the LSM-tree is only used for keys and value addresses. Moreover, the vLog also records
+inserted keys to support garbage collection as described in the previous section. Hence, writes to the
+LSM-tree log ﬁle can be avoided without affecting correctness.
+
+If a crash happens before the keys are persistent in the LSM-tree, they can be recovered by scanning
+the vLog.
+As to require scanning only a small portion of the vLog, WiscKey records the head of the vLog
+periodically in the LSM-tree, as a key-value pair \texttt{<head, head-vLog-offset>}
+
+vLog is the WAL in essence.
+\section{Evaluation}
+\label{sec:org94fdfad}
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/db/18.png}
+\label{}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/db/19.png}
+\label{}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/db/20.png}
+\label{}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/db/21.png}
+\label{}
+\end{center}
+\subsection{Crash Consistency}
+\label{sec:org11bd409}
+Not good illustration
+\section{References}
+\label{sec:orgcf4ebd5}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../../../references}
 \end{document}
