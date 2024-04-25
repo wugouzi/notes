@@ -1,0 +1,109 @@
+#+title: WiscKey: Separating Keys from Values in SSD-Conscious Storage
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/storage/wisckey.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/storage/}}
+#+OPTIONS: toc:nil
+
+* Abstract
+        WiscKey is a persistent LSM-tree-based key-value store with a performance-oriented data layout that
+        *separates keys from values to minimize I/O amplification*.
+
+* Introduction
+        As compared to HDDs, SSDs are fundamentally different in their performance and reliability
+        characteristics; when considering key-value storage system design, we believe the following three
+        differences are of paramount importance:
+        1. the difference between random and sequential performance is not nearly as large as with HDDs; thus,
+           an LSM-tree that performs a large number of sequential I/Os to reduce later random I/Os may be
+           wasting bandwidth needlessly
+        2. Second, SSDs have a large degree of internal parallelism; an LSM built atop an SSD must be
+           carefully designed to harness said parallelism
+        3. Third, SSDs can wear out through repeated writes; the high write ampliﬁcation in LSM-trees can
+           signiﬁcantly reduce device lifetime.
+
+        The combination of these factors greatly impacts LSM-tree performance on SSDs, reducing throughput by
+        90% and increasing write load by a factor over 10.
+
+        The central idea behind WiscKey is the separation of keys and values; only keys are kept sorted in the
+        LSM-tree, while values are stored separately in a log.
+        1. reduce write amplification by avoiding the unnecessary movement of values while sorting
+        2. decrease size of the LSM-tree
+
+        Separating keys from values introduces a number of challenges and optimization opportunities
+        1. range query (scan) performance may be affected because values are not stored in sorted order
+           anymore.
+
+           WiscKey solves this challenge by using the abundant internal parallelism of SSD devices.
+
+        2. WiscKey needs garbage collection to reclaim the free space used by invalid values.
+
+           WiscKey proposes an online and lightweight garbage collector which only involves sequential I/Os
+           and impacts the foreground workload minimally.
+        3. separating keys and values makes crash consistency challenging;
+
+           WiscKey leverages an interesting property in modern ﬁle systems, that appends never result in
+           garbage data on a crash.
+* Background and Motivation
+** Write and Read Amplification
+        #+CAPTION: Write and Read Amplification
+        | Data Size | Write Amplification | Read Amplification |
+        |-----------+---------------------+--------------------|
+        | 1GB       |                 3.1 |                8.2 |
+        | 100GB     |                  14 |                327 |
+** Fast Storage Hardware
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: fig1
+        #+CAPTION: Sequential and Random Reads on SSD
+        [[../../images/db/15.png]]
+* WiscKey
+        To realize an SSD-optimized key-value store, WiscKey includes four critical ideas:
+        1. separate keys and values
+        2. to deal with unsorted values, WiscKey uses the parallel random-read characteristic of SSD devices
+           as shown in Figure ref:fig1.
+        3. WiscKey utilizes unique crash-consistency and garbage-collection techniques to efficiently manage
+           the value log.
+        4. removing the LSM-tree log without sacrificing consistency.
+** Design Goals
+** Key-Value Separation
+        Compaction only needs to sort keys, while values can be managed separately.
+** Challenges
+*** Parallel Range Query
+        Based on Figure ref:fig1, parallel random reads with a fairly large request size can fully utilize the
+        device's internal parallelism, getting performance similar to sequential reads.
+
+        To make range queries efﬁcient, WiscKey leverages the parallel I/O characteristic of SSD devices to
+        prefetch values from the vLog during range queries.
+*** Garbage Collection
+        In WiscKey, only invalid keys are reclaimed by the LSM-tree compaction. Since WiscKey does not compact
+        values, it needs a special garbage collector to reclaim free space in the vLog.
+
+        We introduce a small change to WiscKey’s basic data layout: while storing values in the vLog, we also
+        store the corresponding key along with the value. The new data layout is shown in Figure ref:fig5: the
+        tuple ~(key size, value size, key, value)~ is stored in the vLog.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: fig5
+        #+CAPTION: WiscKey New Data Layout for Garbage Collection
+        [[../../images/db/16.png]]
+
+        WiscKey's garbage collection aims to keep valid values in a _contiguous range_ of tghe vLog, as shown in
+        Figure ref:fig5. *head* always corresponds to the end of the vLog where new values will be appended.
+        *tail* is where garbage collection starts freeing space whenever it is triggered. Only the part of the
+        vLog between the head and the tail contains valid values and will be searched during lookups.
+
+        During garbage collection, WiscKey first reads a chunk of key-value pairs from the tail of the vLog,
+        then finds which of those values are valid by querying the LSM-tree. WiscKey then appends valid values
+        back to the head of the vLog. Finally, it frees the space occupied previously by the chunk, and
+        updates the tail accordingly.
+
+        To avoid losing any data if a crash happens, WiscKey has to make sure that the newly appended valid
+        values and the new tail are persistent on the device before actually freeing space. WiscKey achieves
+        this using the following steps.
+        1. After appending the valid values to the vLog, the garbage collection calls a ~fsync()~ on the vLog.
+           #+begin_quote
+Calling ~fsync()~ does not necessarily ensure that the entry in the
+directory containing the file has also reached disk.  For that an
+explicit ~fsync()~ on a file descriptor for the directory is also needed.
+           #+end_quote
+        2. it adds these new values' addresses and current tail to the LSM-tree in a synchronous manner; the
+           tail is stored in the LSM-tree as ~<tail, tail-vLog-offset>~
+        3. the free space in the vLog is reclaimed.

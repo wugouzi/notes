@@ -1,0 +1,300 @@
+#+TITLE: The Design and Implementation of Modern Column-Oriented Database Systems
+
+#+EXPORT_FILE_NAME: ../latex/DesignAndImplementationOfModernColumnOrientedDatabaseSystems/DesignAndImplementationOfModernColumnOrientedDatabaseSystems.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+
+    Focus on:
+    * Virtual IDs:
+    * Block-oriented and vectorized processing
+    * Late materialization: a select operator scans a single column at a time with a tight for-loop, resulting
+      in cache and CPU friendly patterns
+    * Column-specific compression
+    * Direct operation on compressed data
+    * Efficient join implementation
+    * Redundant representation of individual columns in different sort orders
+    * Database cracking and adaptive indexing
+    * Efficient loading architectures
+
+* History, trends, and performance tradeoffs
+    Figure 2.1 comes from [[cite:&10.5555/645927.672367]], summary of which by [[https://www.cs.cmu.edu/~kgao/course/15823/ailamaki01.html][Kun Gao]]:
+    Partition Attributes Across (PAX) is a new layout technique that groups the same attribute of different
+    tuples on the same page together to improve cache performance and reduce the cost of joining attributes.
+    This provides better performance than existing NSM and DSM storage layout methods.
+
+* Column-store Architecture
+** C-Store
+        The primary representation of data on disk is a set of column files. Each column-file contains data
+        from one column, compressed using a column-specific compression method, and sorted according to some
+        atrribute in the table that the column belongs to. This collection of files is known as the "read
+        optimized store" (ROS). Additionally, newly loaded data is stored in a write-optimized store (WOS),
+        where data is uncompressed and not vertically partitioned. Periodically, data is moved from the WOS
+        into the ROS via a background "tuple mover" process, which sorts, compresses, and writes re-organized
+        data to disk in a columnar form.
+
+        Each column in C-Store may be stored several times in several different sort orders. Groups of columns
+        sorted on the same attribute are referred to as “projections”. Typically there is at least one
+        projection containing all columns that can be used to answer any query.
+
+        C-Store support efficient indexing into sorted projections through the use of *sparse indexes*. A sparse
+        index is a small tree-based index that stores the first value contained on each physical page of a
+        column. A typical page in C-Store would be a few megabytes in size. Given a value in a sorted
+        projection, a lookup in this tree returns the first page that contains that value. The page can then
+        be scanned to find the actual value.
+** MonetDB and VectorWise
+        MonetDB stores data one column-at-a-time both in memory and on disk and exploits bulk processing and
+        late materialization. MonetDB differs from traditional RDBMS architecture in many aspects, such as
+        its:
+        * Execution engine, which uses a column at-a-time-algebra
+        * Processing algorithms, that minimize CPU cache misses rather than IOs
+        * Indexing, which is not a DBA task but happens as a by-product of query execution, i.e., database cracking
+        * Query optimization, which is done at run-time, during query incremental execution
+        * Transaction management, which is implemented using explicit additional tables and algebraic
+          operations, so read-only workloads can omit these and avoid all transaction overhead
+
+        MonetDB works by performing simple operations column-at-a-time. In this way, MonetDB aimed at
+        mimicking the success  of scientific computation programs in extracting efficiency from modern CPUs,
+        by expressing its calculations typically in tight loops over fixed-width and dense arrays,
+
+        The column-at-a-time processing is realized through the BAT Algebra, which offers operations that work
+        only on a handful of BATs, and produce new BATs. BAT stands for Binary Association Table, and refers
+        to a two-column <surrogate,value> table as proposed in DSM.
+
+        To handle updates, MonetDB uses a collection of pending updates columns for each base column in a
+        database. Every update action affects initially only the pending updates columns, i.e., every update is
+        practically translated to an append action on the pending update columns. Every query on-the-fly
+        merges updates by reading data both from the base columns and from the pending update columns.
+** Other Implementations
+* Column-store internals and advanced techniques
+** Vectorized Processing
+        Vectorized execution separates query progress control logic from data processing logic
+        * Regarding control flow, the operators in vectorized processing are similar to those in tuple
+          pipelining, with the sole distinction that the ~next()~ method of each operator returns a vector of N
+          tuples as opposed to only a single tuple.
+        * Regarding data processing, the so-called primitive functions that operators use to do actual work
+          (e.g., adding or comparing data values) look much like MonetDB’s BAT Algebra, processing data
+          vector-at-a-time.
+
+        The typical size for the vectors used in vectorized processing is such that each vector comfortably
+        fits in L1 cache (N = 1000 is typical in VectorWise) as this minimizes reads and writes throughout the
+        memory hierarchy. Given that modern column-stores work typically on one vector of one column at a time
+        this means that only one vector plus possible output vectors and auxiliary data structures have to fit
+        in L1.
+
+        Advantages:
+        * *Reduced interpretation overhead*:
+        * *Better cache locality*
+        * *Compiler optimization opportunities*
+        * *Block algorithms*
+        * *Parallel memory access*
+        * *Profiling*
+        * *Adaptive execution*
+** Compression
+        *Compressing one column-at-a-time*: better compression rate
+
+        *Exploiting extra CPU cycles*: compression to eliminate I/O from disk
+
+        *Fixed-width arrays and SIMD*: Light-weight compression schemes that compress a column into mostly
+        fixed-width (smaller) values (with exceptions handled carefully) are often since this allows a
+        compressed column to be treated as an array.
+
+        *Frequency partitioning*: The main motivation of frequency partitioning is to increase the compression
+        ratio while still providing an architecture that relies on fixed-width arrays and can exploit
+        vectorization.
+
+        *Compression algorithms*
+*** Run-length Encoding
+        Run-length encoding (RLE) compresses runs of the same value in a column to a compact singular
+        representation. These runs are replaced with triples: (value, start position, runLength)
+*** Bit-Vector Encoding
+*** Dictionary
+*** Frame of Reference(FOR)
+        If the column distribution has value locality, one may represent it as some constant base plus a
+        value. The base may hold for an entire disk block, or for smaller segments in a disk block. The value
+        then is a small integer.
+*** The Patching Technique
+** Operating Directly on Compressed Data
+        One solution to this problem is to abstract the general properties of compression algorithms in order
+        to facilitate their direct operation so that operators only have to be concerned with these
+        properties.
+
+        This is done by adding a component to the query executor that encapsulates an intermediate
+        representation for compressed data called a compression block. A compression block contains a buffer
+        of column data in compressed format and provides an API that allows the buffer to be accessed by query
+        operators in several ways. In general, a storage block can be broken up into multiple compression
+        blocks. These compression blocks expose key properties to the query operators.
+
+        Properties that are highly relevant to many query operators are ~isSorted()~, ~isPositionContiguous()~,
+        and ~isOneValue()~. Based on these properties, query operators can elect to extract high level
+        information about the block (such as ~getSize()~, ~getFirstValue()~, and ~getEndPosition()~) instead of
+        iterating through the compression block, one value at a time.
+
+        If an engineer desires to add a new compression scheme, the engineer must implement an interface that
+        includes the following code:
+        1. code converts raw data into a compressed representation
+        2. code that breaks up compressed data into compression blocks during a scan of compressed data from
+           storage
+        3. code that iterates through compression blocks and optionally decompresses the data values during
+           this scan
+        4. values for all relevant properties of the compression algorithm that is exposed by the compression
+           block, and
+        5. code that derives the high level information described above (such as ~getSize()~) from a compression
+           block.
+** Late Materialization
+        At some point in most query plans, data from multiple columns must be combined together into ‘rows’ of
+        information about an entity. Consequently, this join-like materialization of tuples (also called
+        “tuple construction”) is an extremely common operation in a column store.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: An example of a select-project-join query with late materialization
+        [[../images/bigdatabase/14.png]]
+
+        Advantage:
+        1. selection and aggregation operators tend to render the construction of some tuples unnecessary.
+           Therefore, if the executor waits long enough before constructing a tuple, it might be able to avoid
+           the overhead of constructing it altogether.
+        2. if data is compressed using a column-oriented compression method (that potentially allow
+           compression symbols to span more than one value within a column, such as RLE), it must be
+           decompressed during tuple reconstruction, to enable individual values from one column to be
+           combined with values from other columns within the newly constructed rows. This removes the
+           advantages of operating directly on compressed data, described above.
+        3. cache performance is improved when operating directly on column data, since a given cache line is
+           not polluted with surrounding irrelevant attributes for a given operation
+        4. the vectorized optimizations described above have a higher impact on performance for fixed-length
+           attributes.
+
+
+        A *multi-column block* or *vector block* contains a cache-resident, horizontal partition of some subset of
+        attributes from a particular relation, stored in their original compressed representation.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: An example multi-column block containing values for the SHIPDATE,
+RETFLAG, and LINENUM columns.
+        [[../images/bigdatabase/15.png]]
+** Joins
+        Unsorted positional output is problematic since typically after the join, other columns from the
+        joined tables will be needed (e.g., the query:
+        #+begin_src sql
+SELECT emp.age, dept.name
+FROM emp, dept
+WHERE emp.dept_id = dept.id
+        #+end_src
+        ). Unordered positional lookups are problematic since extracting values from a column in this
+        unordered fashion requires jumping around storage for each position, causing significant slowdown
+        since most storage devices have much slower random access than sequential.
+
+        One idea is to use a "Jive Join". For example, when we joined the column of size 5 with a column of
+        size 4, we received the following positional output
+        #+BEGIN_center
+        \begin{tabular}{|c|}
+        \hline 1\\
+        \hline 2\\
+        \hline 3\\
+        \hline 5\\\hline
+        \end{tabular}
+        \hspace{1cm}
+        \begin{tabular}{|c|}
+        \hline 2\\
+        \hline 4\\
+        \hline 2\\
+        \hline 1\\
+        \hline
+        \end{tabular}
+        #+END_center
+
+        The list of positions for the right (inner) table is out of order. Let’s assume that we want to
+        extract the customer name attribute from the inner table according to this list of positions, which
+        contains the following four customers:
+        #+BEGIN_center
+        \begin{tabular}{|c|}
+        \hline Smith\\
+        \hline Johnson\\
+        \hline Williams\\
+        \hline Jones\\
+        \hline
+        \end{tabular}
+        #+END_center
+
+        The basic idea of the Jive join is to add an additional column to the list of positions that we want
+        to extract, that is a densely increasing sequence of integers:
+        #+BEGIN_center
+        \begin{tabular}{|c|c|}
+        \hline 2&1\\
+        \hline 4&2\\
+        \hline 2&3\\
+        \hline 1&4\\
+        \hline
+        \end{tabular}
+        #+END_center
+        This output is then sorted by the list of positions that we want to extract
+        #+BEGIN_center
+        \begin{tabular}{|c|c|}
+        \hline 1&4\\
+        \hline 2&1\\
+        \hline 2&3\\
+        \hline 4&2\\
+        \hline
+        \end{tabular}
+        #+END_center
+        This columns from the table are then scanned in order, with values at the list of positions extracted
+        and added to current data structure
+        #+BEGIN_center
+        \begin{tabular}{|c|c|c|}
+        \hline 1&4&Smith\\
+        \hline 2&1&Johnson\\
+        \hline 2&3&Johnson\\
+        \hline 4&2&Jones\\
+        \hline
+        \end{tabular}
+        #+END_center
+        Finally the data structure is sorted by the second field.
+
+        Alternatively, for the right (inner) table, instead of sending only the column(s) which compose the
+        join predicate, all relevant columns (i.e., columns to be materialized after the join plus the
+        predicate column) are materialized before the join and input to the join operator, while the left
+        (outer) relation sends only the single join predicate column.
+** Group-by, Aggregation and Arithmetic Operations
+** Inserts/updates/deletes
+** Indexing,  Adaptive Indexing and Database Cracking
+        The main innovation is that the physical data store is continuously changing with each incoming query
+        \(q\), using \(q\) as a hint on how data should be stored.
+
+        Assume a query requests \(A<10\). In response, a cracking DBMS clusters all tuples of \(A\) with
+        \(A<10\) at the beginning of the respective column \(C\), while pushing all tuples with \(A\ge 10\) to
+        the end. A subsequent query requesting \(A\ge v_1\), where \(v_1\ge 10\), has to search and crack only the
+        last part of \(C\) where values \(A\ge 10\) reside. Likewise, a query that requests \(A<v2\) , where
+        \(v2\le10\), searches and cracks only the first part of \(C\). All crack actions happen as part of the
+        query operators, requiring no external administration.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Cracking a column
+        [[../images/bigdatabase/16.png]]
+** Summary and Design Principles Taxonomy
+        #+BEGIN_center
+        \begin{tabular}{|m{4cm}|m{4cm}|m{4cm}|}
+        \hline&\textbf{Row-stores}&\textbf{Column-stores}\\
+        \hline\textbf{Minimize Bits Read}&&\\
+        \hline1. Skip loading of non-selected attributes&
+        Vertical partitioning\newline
+        PAX\newline
+        Multi-resolution blocks\newline
+        Column indexes&Columnar storage\\
+        \hline2. Work on selected attributes only&
+        Index only plans\newline Index anding&Late materialization\\
+        \hline3. Skip non-qualified values&
+        Indexes\newline Multi-dimensional clustering\newline Zone maps&
+        Projections\newline Cracking\\
+        \hline4. Skip redundant bits&Compression&Per-column compression\\
+        \hline5. Adaptive/partial indexing&Partial indexes&Database cracking\\
+        \hline\textbf{Minimize CPU Time}&&\\
+        \hline1. Minimize instruction and data misses&
+        Block processing\newline
+        Buffer operators\newline
+        Cache conscious operators&Vectorized execution\\
+        \hline2. Minimize processing for each bit read&Operating on compressed data&
+        Operating on compressed columns\\
+        \hline3. Tailored operators&Compiled queries&RISC style algebra
+        \end{tabular}
+        #+END_center

@@ -60,4 +60,152 @@ int64_t median(const std::vector<int64_t>& v) {
         second range, ~v[med]~ is not the median we want.
 
         Use ~_LIBCPP_DEBUG_RANDOMIZE_UNSPECIFIED_STABILITY~ with libcxx
+* 2016
+** Chandler Carruth “High Performance Code 201: Hybrid Data Structures"
+        #+begin_src c++
+template <typename T, int N>
+class SmallVector {
+    T *Begin, *End;
+    size_t Capacity;
+    char Buffer[sizeof(T) * N];
+
+    public:
+        SmallVector() : Begin((T *)Buffer), End((T *)Buffer), Capacity(N) {}
+        //
+}
+        #+end_src
+
+        Why not ~std::vector~? Iterator invalidation.
+
+        #+begin_src c++
+template<typename T>
+class SmallVectorImpl {
+    T *Begin, *End;
+    size_t Capacity;
+
+    protected:
+        SmallVectorImpl(T *Begin, T *End, size_t Capacity);
+
+    public:
+        iterator begin() { return Begin; }
+        iterator end() { return End; }
+
+        void push_back(const T &Element);
+        void pop_back();
+}
+
+
+template <typename T, int N>
+class SmallVector : public SmallVectorImpl<T> {
+
+    char Buffer[sizeof(T) * N];
+
+    public:
+        SmallVector() : SmallVectorImpl((T *)Buffer, (T *)Buffer, N) {}
+        //
+}
+
+        #+end_src
+
+        Why not just use a allocator?
+        1. hard to maintain?
+
+        #+begin_src c++
+template<class A, int N>
+using SmallVector =
+    std::vector<T, short_alloc<T, N>;
+
+void f() {
+    SmallVector<int, 4>::allocator_type::arena_type a;
+    SmallVector<int> v{a};
+}
+        #+end_src
+
+        What if?
+        #+begin_src c++
+template<class A, int N>
+using SmallVector =
+    std::vector<T, short_alloc<T, N>;
+
+void g(SmallVector<int, 4> &v);
+
+void f() {
+    SmallVector<int, 8>::allocator_type::arena_type a;
+    SmallVector<int> v{a};
+
+    g(v); // Booom
+}
+        #+end_src
+
+        #+begin_src c++
+template<class A, int N>
+using SmallVector =
+    std::vector<T, short_alloc<T, N>;
+
+SmallVector<T, 4> f() {
+    SmallVector<int, 4>::allocator_type::arena_type a;
+    SmallVector<int> v{a}
+    // 
+    return v; // Hard problem
+}
+        #+end_src
+
+        How can we make the values small?
+        1. Give large objects *address identity*: typically for large objects, there is some unique identity of
+           that object, e.g. id. Therefore we could use a stable address with identity as offset
+           #+begin_src c++
+SmallVector<std::unique_ptr<BigObject>, 4> Objects;
+           #+end_src
+           But this has no locality.
+           #+begin_src c++
+class BumpPtrAllocator {
+    constexpr int SlabSize = 4096;
+    SmallVector<void *, 4> Slabs;
+    void *CurPtr, *End;
+
+    public:
+        void *Allocate(int Size) {
+            if (Size >= (End - CurPtr)) {
+                CurPtr = malloc(SlabSize);
+                End = CurPtr + SlabSize;
+                Slabs.push_back(CurPtr);
+            }
+
+            void *Ptr = CurPtr;
+            CurPtr += Size;
+            return Ptr;
+        }
+}
+           #+end_src
+           Bad memory usage but has better locality.
+
+        2. If pointers are too large, use an index
+
+        3. aggressively pack the bit
+
+
+
+        #+begin_src c++
+template<typename T>
+class TinyPtrVector {
+    enum State {Inline, Vector};
+    typedef SmallVector<T, 4> VecT;
+    typedef PointerSumType<State,
+        PointerSumTypeMember<Inline, T>,
+        PointerSumTypeMember<Vector, std::unique_ptr<VecT>>
+        SumT;
+    SumT Value;
+
+    public:
+    T &Operator[](int i) const {
+        if (Value.template is<Inline>()) {
+        assert(i == 0);
+        return Value.template get<Inline>();
+    }
+        return (*Value.template get<Vector>())[i];        
+    }
+}
+        #+end_src
+
+        Use bitfields everywhere.
 * tee
