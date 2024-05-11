@@ -1,0 +1,152 @@
+#+title: All File Systems Are Not Created Equal: On the Complexity of Crafting Crash-Consistent Applications
+
+* Abstract
+        We present the *first* comprehensive study of application-level crash-consistency protocols built atop
+        modern file systems.
+
+        We find that applications use complex update protocols to persist state, and that the correctness of
+        these protocols is _highly dependent_ on subtle behaviors of the underlying file system, which we term
+        *persistence properties*.
+
+        * We develop a tool named \textsc{BOB} that empirically tests persistence properties, and use it to demonstrate
+          that these properties vary widely among six popular Linux file systems.
+        * We build a framework named \textsc{ALICE} that analyzes application update protocols and finds crash
+          vulnerabilities, i.e., update protocol code that requires specific persistence properties to hold
+          for correctness.
+
+* Introduction
+        Achieving crash consistent atop modern file systems is challenging for two fundamental reasons:
+        1. exact guarantees provided by file systems are unclear and unspecified.
+           While the POSIX standard specifies the effect of a system call in memory, specifications of how
+           disk state is mutated in the event of a crash are widely misunderstood and [[https://www.austingroupbugs.net/view.php?id=672][debated]]:
+           #+begin_quote
+POSIX documents a way of ensuring data is actually sync'ed on permanent storage through ~fsync()~, ~fdatasync()~ and ~aio_fsync()~.
+
+This way, previously written data, and/or modified meta-data, are guaranteed to be actually protected against a reasonably unexpected situation (system crash, power outage ...)
+
+However, when dealing with file entry handling, such as:
+  * file creation (~open(O_CREAT)~)
+  * file renaming (~rename()~)
+  * symlinking (~symlink()~)
+  * hard-linking (~link()~)
+  * etc.
+there is no documented way to actually give the same guarantee.
+           #+end_quote
+        2. building a high-performance application-level crash-consistency protocol is not straightforward.
+
+
+        In this paper, we address these two challenges directly, by answering two important questions:
+        1. what are the behaviors exhibited by modern file systems that are relevant to building
+           crash-consistent applications?
+
+           We label these behaviors *persistence properties*. They break down into two global categories: the
+           *atomicity* of operations, and the *ordering* of operations
+        2. Do modern applications implement crash consistency protocol correctly?
+
+           \textsc{Alice} takes advantage of the fact that, no matter how complex the application source code,
+           the update protocol boils down to a sequence of file-system related system calls. By analyzing
+           permutations of the system-call trace of work-loads, \textsc{Alice} produces protocol diagrams:
+           rich annotated graphs of update protocols that abstract away low-level details to clearly present
+           the underlying logic.
+
+* Persistence Properties
+        These properties determine which possible post-crash file system states are possible for a given file
+        system.
+
+        ext2, ext3, ext4, btrfs, xfs, reiserfs
+** An Example
+        Two properties:
+        * *Atomicity*: does the update from the call happen all at once, or are there possible intermediate states that might arise due to an untimely crash?
+        * *Ordering*: can this system call be persisted after a later system call?
+
+        Consider
+        #+begin_src c++
+write(f1, "pp");
+write(f2, "qq");
+        #+end_src
+
+        Figure 2 shows a few possible crash states that can result.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/23.png]]
+        a. append is not atomic, referred as *size-atomicity*
+        b. append it not atomic, referred as *content-atomicity*
+        c. out of order
+** Study and Results
+        Use a \textsc{Bob} tool
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/24.png]]
+* The Application-Level Intelligent Crash Explorer  (ALICE)
+        \textsc{Alice} constructs different on-disk file states that may result due to a crash, and then
+        verifies application correctness on each created state.
+
+        \textsc{Alice} achieves this by constructing file states directly from the system-call trace of an
+        application workload.
+
+        \textsc{Alice} uses file-system *Abstract Persistence Models* (APMs) to define the exact crash states
+        possible in a given file system.
+** Crash States and APMs
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/26.png]]
+
+        The user-supplied workload is first run, and a system-call trace obtained; the trace represents an
+        execution of the application’s update protocol. The trace is converted into a sequence of logical
+        operations by \textsc{Alice}. The sequence of logical operations, along with an APM, is used to
+        calculate the different crash states that are possible from the initial state.
+*** Logical Operations
+        For example, ~write()~, ~pwrite()~, ~writev()~, ~pwritev()~, and ~mmap()~-writes are all translated into ~overwrite~ or ~append~ logical operations.
+*** Abstract Persistence Models
+        An APM specifies *all* constraints on the atomicity and ordering of logical operations for a given file
+        system, thus defining which crash states are possible.
+
+        APMs represent crash states as consisting of two logical entities: *file inodes* conaining data and a
+        file size and *directories* containing directory entries. Each logical operation operates on one or more
+        of these entities. Additionally, each crash state also includes any output printed to the terminal
+        during the time of the crash as a separate entity.
+
+        To capture intermediate crash states, APMs break logical operations into *micro-operations*, i.e., the
+        smallest atomic modification that can be performed upon each logical entity. There are five micro-ops:
+        * *write_block*: A write of size /block/ to a file. Two special arguments to /write_block/ are /zeroes/ and
+          /random/: /zeroes/ indicates the file system initializing a newly allocated block to zero; /random/
+          indicates an uninitialized block. Writes beyond the end of a file cause data to be stored without changing file size.
+        * *change_file_size*:
+        * *create_dir_entry*
+        * *delete_dir_entry*
+        * *stdout*
+
+        The APM specifies atomicity constraints by defining how logical operations are translated into
+        micro-ops. The APM specifies ordering constraints by defining which micro-ops can reach the disk
+        before other micro-ops.
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/25.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/27.png]]
+** Finding Application Requirements
+        By default, \textsc{Alice} targets specific crash states that concern the ordering and atomicity of each
+        individual system call:
+        * *Atomicity /across/ System Calls*: \textsc{Alice} constructs one crash state for each prefix applied. In
+          the sequence of crash states generated in this manner, the first crash state to have an application
+          invariant violated indicates the start of an atomic group.
+        * *System-call Atomicity*
+        * *Ordering Dependency among System Calls*
+** Static Vulnerabilities
+* Application Vulnerabilities
+** Workloads and Checkers
+** Overview
+*** Databases and Key-Value Stores
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/db/28.png]]

@@ -208,4 +208,99 @@ class TinyPtrVector {
         #+end_src
 
         Use bitfields everywhere.
+
+* 2014
+** Herb Sutter "Lock-Free Programming (or, Juggling Razor Blades)
+        *Key tool: ordered atomic variable*.
+        * ~C++11~ ~atomic<T>~ and ~C11 atomic_ *~
+
+        Semantics and operations:
+        * Each individual read and write is atomic, no locking required
+        * Reads/writes are guarenteed not to be reordered
+        * Compare-and-swap
+        * ~compare_exchange_weak~ for use in loops (is allowed to fail spuriously)
+        * ~exchange~ for when a "blind write" that returns the old value is sufficient
+*** Basic Example: Double-Checked Locking
+        The Double-Checked Locking (DCL) pattern
+        #+begin_src c++
+atomic<Widget *> Widget::pInstance{ nullptr };
+Widget* Widget::Instance() {
+    if (pInstance == nullptr) {         // 1: first check
+        lock_guard<mutex> lock{ mutW }; // 2. acquire lock                                         
+        if (pInstance == nullptr) {     // 3. second check
+            pInsance = new Widget();    // 4. create and assign
+        }
+    }
+    return pInstance;
+}
+        #+end_src
+
+        Slight opmitization: (1 vs. 2 atomic loads in the main case, the ~return~)
+        #+begin_src c++
+atomic<Widget *> Widget::pInstance{ nullptr };
+Widget* Widget::Instance() {
+    Widget *p = pInstance;
+    if (p == nullptr) {                  // 1: first check
+        lock_guard<mutex> lock{ mutW };  // 2. acquire lock
+        if ((p = pInstance) == nullptr) {// 3. second check
+            pInsance = p = new Widget(); // 4. create and assign
+        }
+    }
+    return p;
+}
+        #+end_src
+
+        The general-purpose way to spell lazy initialization in ~C++11~ is:
+        #+begin_src c++
+static unique_ptr<widget> widget::instance;
+static std::once_flag widget::create;
+
+widget& widget::get_instance() {
+    std::call_once(create, [=]{ instance = make_unique<widget>();});
+    return instance;
+}
+        #+end_src
+
+        *Best of all*: The special-purpose way that you should use when you can (aks Meyers Singleton):
+        #+begin_src c++
+widget& widget::get_instance() {
+    static widget instance;
+    return instance;
+}
+        #+end_src
+*** Producer-Consumer Variations
+        Create and Publish Queue Items: 1 producer, many consumers, using locks
+        #+begin_src c++
+// Thread 1 (producer)
+while (ThereAreMoreTasks()) {
+    task = AllocateAndBuildNewTask();
+    {
+        lock_guard<mutex> lock{mut};
+        queue.push(task);
+    }
+    cv.notify();
+}
+
+{
+    lock_guard<mutex> lock{mut};
+    queue.push(done);
+}
+cv.notify();
+
+// Thread 2..N (consumers)
+myTask = null;
+while (myTask != done) {
+    {
+        lock_guard<mutex> lock{mut};
+        while (queue.empty())
+            cv.wait(mut);
+        myTask = queue.first();
+        if (myTask != done)
+            queue.pop();
+    }
+
+    if (myTask != don)
+        DoWork(myTask);
+}
+        #+end_src
 * tee

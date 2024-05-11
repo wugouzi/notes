@@ -1,0 +1,182 @@
+% Created 2024-05-10 Fri 13:43
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/storage/}}
+\def \dinsert{\delta\textbf{insert}}
+\def \dmerge {\delta\textbf{merge}}
+\def \dremove{\delta\textbf{remove}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\author{wu}
+\date{\today}
+\title{Building a Bw Tree Takes More Than Just Buzz Words}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={Building a Bw Tree Takes More Than Just Buzz Words},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 29.1 (Org mode 9.7-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Abstract}
+\label{sec:orgb53b260}
+Bw-tree is a lock-free index that provides high throughput for transactional database workloads in SQL
+Server’s Hekaton engine. The Bw-Tree avoids locks by appending delta record to tree nodes and using an
+indirection layer that allows it to atomically update physical pointers using compare-and-swap (CaS).
+
+This paper has two contributions:
+\begin{enumerate}
+\item First, it is the missing guide for how to build an \textbf{in-memory} lock-free Bw-Tree.
+\item our evaluation shows that despite our improvements, the Bw-Tree still does not perform as well as
+other concurrent data structures that use locks.
+\end{enumerate}
+
+
+Background HackerNews's \href{https://news.ycombinator.com/item?id=5521029}{discussion}.
+\section{Introduction}
+\label{sec:org2619408}
+The high-level idea of the Bw-Tree is that it avoids locks by using an indirection layer that maps
+logical identifiers to physical pointers for the tree’s internal components. Threads then apply
+concurrent updates to a tree node by appending delta records to that node’s modification log.
+Subsequent operations on that node must replay these deltas to obtain its current state.
+
+
+The indirection layer and delta records provide two benefits.
+\begin{enumerate}
+\item it avoids coherence traffic of locks by decomposing every global state change into atomic steps.
+\item it incurs fewer cache invalidations on a multi-core CPU because threads append delta records to
+make changes to the index instead of overwriting existing nodes.
+\end{enumerate}
+\section{Bw-tree Essentials}
+\label{sec:org63bb185}
+Assume that the Bw-Tree is deployed inside of a database management system with a thread pool, and has
+worker threads accessing the index to process queries. If non-cooperative garbage collection is used,pn
+the DBMS also launches one or more background threads periodically to perform garbage collection on
+the index.
+
+The most prominent difference between the Bw-Tree and other B+Tree-based indexes is that the Bw-Tree
+avoids directly editing tree nodes because it causes cache line invalidation. Instead, it stores
+modifications to a node in a delta record (e.g., insert, update, delete), and maintains a chain of
+such records for every node in the tree. This per-node structure, called a \textbf{Delta Chain}, allows the
+Bw-Tree to perform atomic updates via CaS. The \textbf{Mapping Table} serves as an indirection layer that maps
+logical node IDs to phisical pointers, making atomic updates of several references to a tree node
+possible.
+
+\begin{center}
+\includegraphics[width=.9\textwidth]{../../images/db/29.png}
+\label{fig1}
+\end{center}
+
+As in Fig. \ref{fig1}, every node in the Bw-tree has a unique logical node ID (64-bit). Instead of
+using pointers, nodes refer to other nodes using these IDs (\textbf{logical links}). When a thread needs the
+physical location of a node, it consults the Mapping Table to translate a node ID to its memory
+address.
+\subsection{Base Nodes and Delta Chains}
+\label{sec:org9f0a616}
+A \textbf{logical node} in the Bw-Tree has two components:
+\begin{enumerate}
+\item a base node:
+\begin{enumerate}
+\item \textbf{inner base node} holds a sorted (key, node ID) array
+\item \textbf{leaf base node} holds a sorted (key, value) array
+\end{enumerate}
+\item a Delta Chain.
+\end{enumerate}
+Initially, the Bw-Tree consists of two nodes, an empty leaf base node, and an inner base node that
+contains one separator item referring to the empty leaf node. Base nodes are immutable.
+
+As shown in Fig. \ref{fig2}, a Delta Chain is a singly linked list that contains a
+chronologically-ordered history of the modifications made to the base node. The entries in the Delta
+Chain are connected using physical pointers, with the tail pointing to the base node. The entries in
+the Delta Chain are connected using physical pointers, with the tail pointing to the base node. Both
+the base node and its delta records contain additional meta-data that represent the state of the
+logical node at that point in time. That is, when a worker thread updates a logical node, they compute
+the latest attributes of the logical node and store them in the delta record.
+
+\begin{center}
+\includegraphics[width=.9\textwidth]{../../images/db/30.png}
+\label{fig2}
+\end{center}
+
+\begin{table}[htbp]
+\caption{\label{tab1}Node Attributes - The list of the attributes that are stored in the logical node's elementes}
+\centering
+\begin{tabular}{|l|l|}
+\hline
+Attribute & Description \\
+\hline
+low-key & The smallest key stored at the logical node. In a node \\
+ & split, the low-key of the right sibling is set to the \\
+ & split key. Otherwise it is inherited from the element's \\
+ & predecessor. \\
+\hline
+high-key & The smallest key of a logical node's right sibling. ∆split \\
+ & records use the split key for this attribute. ∆merge \\
+ & records use the high-key of the right branch. Otherwise, \\
+ & it is inherited from the element's predecessor. \\
+\hline
+right-sibling & The ID of the logical node's right sibling \\
+ & \\
+\hline
+size & The number of items in the logical node. It is incremented \\
+ & for ∆insert records and decremented for ∆delete records. \\
+\hline
+depth & The number of records in the logical node's Delta Chain \\
+\hline
+offset & The location of the inserted or deleted item in the base \\
+ & node if they were applied to the base node. Only valid for \\
+ & ∆insert and ∆delete records \\
+\hline
+\end{tabular}
+\end{table}
+\subsection{Mapping Table}
+\label{sec:org2f765db}
+Bw-Tree allows a thread to update all references to a node in a single CaS instruction that is
+available on all modern CPUs. If a thread's CaS fails then it aborts its operation and restarts. This
+restart is transparent to the higher-level DBMS components. Threads always restart an operation by
+traversing again from the tree's root. The nodes that a thread will revisit after a restart will
+likely be in the CPU cache anyway.
+\subsection{Consolidation and Garbage Collection}
+\label{sec:org329a132}
+Worker threads will periodically consolidate a logical node’s delta records into a new base node.
+Consolidation is triggered when Delta Chain’s length exceeds some threshold. Microsoft reported that a
+length of eight was a good setting.
+
+At the beginning of consolidation, the thread copies the logical node’s base node contents to its
+private memory and then applies the Delta Chain. It then updates the node’s logical link in the
+Mapping Table with the new base node. After consolidation, the index reclaims the old base node and
+Delta Chain memory after all other threads in the system are finished accessing them.
+
+The original Bw-Tree uses a centralized epoch-based garbage collection scheme to determine when it is
+safe to reclaim memory
+\subsection{Structural Modification}
+\label{sec:org1552117}
+As with a B+Tree, a Bw-Tree’s logical node is subject to overflow or underflow. These cases require
+\textbf{splitting} a logical node with too many items into two separate nodes or \textbf{merging} together underfull
+nodes into a new node. Bw-Tree’s \textbf{structural modification} (SMO) protocols for handling node splits and
+merges without using locks. The main idea is to use special delta records to represent internal
+structural modifications.
+
+The SMO operation is divided into two phases:
+\begin{enumerate}
+\item \textbf{logical phase}: appends special deltas to notify other threads of an ongoing SMO
+
+some thread \(t\) appends a \(\dinsert\), \(\dmerge\) or \(\dremove\)
+
+\item \textbf{physical phase}: performs the SMO
+\end{enumerate}
+\end{document}
