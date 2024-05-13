@@ -155,6 +155,16 @@ Two safety requirements:
            majority of the acceptors, it knows that the value \(v\) has been chosen and communicates that fact
            to all inerested processes with a phase 3 message
 
+           The algorithm can be optimized in two independent ways:
+           1. We can reduce the number of messages in the normal fault-free case by having the leader send
+              phase 2a messages only to a majority of the acceptors. The leader will know that value v is
+              chosen if it receives phase 2b messages from that majority of acceptors. It can send phase 2a
+              messages to additional acceptors if it does not receive enough phase 2b messages.
+           2. The second optimization is to eliminate the message delay of phase 3, at the cost of extra
+              messages, by having acceptors send their phase 2b messages directly to all processes that need
+              to know the chosen value. Like the leader, those processes learn the chosen value when they
+              receive phase 2b messages from a majority of the acceptors.
+
            The Paxos algorithm guarantees that at most one value is chosen despite any non-malicious failure
            of any part of the system—that is, as long as processes do not make errors in executing the
            algorithm and the communication network does not undetectably corrupt messages. It guarantees
@@ -172,3 +182,41 @@ Two safety requirements:
         decision each RM makes of whether to prepare or abort - a decision we represent by the values
         *Prepared* and *Aborted*. So, there is one instance of the consensus algorithm for each RM. The
         transaction is committed iff each RM's instance chooses *Prepared*; otherwise the transaction is aborted.
+
+        Paxos Commit uses the same set of \(2F+1\) acceptors and the same current leader for each instance of
+        Paxos. So the cast of characters consists of \(N\) RMs, \(2F+1\) acceptors and the current leader. We
+        assume for now that the RMs know the acceptors in advance. In ordinary Paxos, a ballot 0 phase 2a
+        message can have any value \(v\). While the leader usually sends such a message, the Paxos algorithm
+        obviously remains correct if the sending of that message is delegated to any single process chosen in
+        advance.
+
+        In Paxos Commit, each RM announces its prepare/abort decision by sending, in its instance of Paxos, a
+        ballot 0 phase 2a message with the value *Prepared* or *Aborted*.
+
+        Execution of Paxos Commit normally starts when some RM decides to prepare and sends a *BeginCommit*
+        message to the leader. The leader then sends a *Prepare* message to all the other RMs. If an RM decides
+        that it wants to prepare, it sends a phase 2a message with value *Prepared* and ballot number 0 in its
+        instance of the Paxos algorithm. Otherwise, it sends a phase 2a message with the value *Aborted* and
+        ballot number 0.
+
+        For each instance, an acceptor sends its phase 2b message to the leader. The leader knows the outcome
+        of this instance if it receives \(F+1\) phase 2b messages for ballot number 0, whereupon it can send
+        its phase 3 message annoucing the outcome to the RMs. (Phase 3 can be eliminated by having the
+        acceptors send their phase 2b messages directly to the RMs.) The transaction is committed iff every
+        RM's instance of the Paxos algorithm chooses *Prepared*; otherwise the transaction is aborted.
+
+        For efficiency, an acceptor can bundle its phase 2b messages for all instances of the Paxos algorithm
+        into a single physical message. The leader can distill its phase 3 mesages for all instances into a
+        single *Commit* or *Abort* message, depending on whether or not all instances chose the value *Prepared*.
+
+        The instances of the Paxos algorithm for one or more RMs may not reach a decision with ballot
+        number 0. In that case, the leader (alterted by a timeout) assumes that each of those RMs has failed
+        and executes phase 1a for a larger ballot number in each of their instances of Paxos. If, in phase 2a,
+        the leader learns that its choice is free (so that instance of Paxos has not yet chosen a value), then
+        it tries to get *Aborted* chosen in phase 2b.
+        #+LATEX: \wu{
+        Why?
+        #+LATEX: }
+
+
+        An examination
