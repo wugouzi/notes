@@ -278,12 +278,12 @@
   (require 'org-ref-wos))
 
 
-(use-package latex-pretty-symbols
-  :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
-  ;;:load-path "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el"
-  :hook
-  (org-mode . latex-unicode-simplified)
-  )
+;; (use-package latex-pretty-symbols
+;;   :init (load-file "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el")
+;;   ;;:load-path "~/.doom.d/latex-pretty-symbols/latex-pretty-symbols.el"
+;;   :hook
+;;   (org-mode . latex-unicode-simplified)
+;;   )
 
 (use-package svg-tag-mode
   :after org
@@ -466,12 +466,19 @@
  ;;   ((t (:background "#fff7fb"))))
  '(org-block-end-line
    ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
+ '(table-cell ((t (:foreground "#000000"))))
  ;; '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
  ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
 
-(use-package! lsp-bridge
-  :config
-  (setq lsp-bridge-enable-log nil)
-  (global-lsp-bridge-mode))
+;; (use-package! lsp-bridge
+;;   :config
+;;   (setq lsp-bridge-enable-log nil)
+;;   (global-lsp-bridge-mode))
+
+(use-package magit-delta
+  :hook (magit-mode . magit-delta-mode))
+
+(add-hook! 'rainbow-mode-hook
+  (hl-line-mode (if rainbow-mode -1 +1)))
