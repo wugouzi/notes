@@ -1,0 +1,152 @@
+#+title: Aries: A Transaction Recovery Method Supporting Fine-Granularity Locking and Partial Rollbacks Using Write-Ahead Logging
+
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/aries.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+
+* Abstract
+        ARIES (Algorithm for Recovery and Isolation Exploiting Semantics) supports partial rollbacks of
+        transactions, fine-granularity locking and recovery using write-ahead logging.
+* Introduction
+** Logging, Failures, and Recovery Methods
+        Metrics:
+        1. degree of concurrency supported with a page and across pages
+        2. complexity of the resulting logic
+        3. space overhead on non-volatile storage and in memory for data and the log
+        4. overhead in terms of the number of synchronous and asyncronous I/Os required during restart
+           recovery and normal processing
+        5. kinds of functionality supported (partial transaction rollbacks, etc.)
+        6. amount of processing performed during restart recovery
+        7. degree of concurrent processing supported during restart recovery
+        8. extent of system-induced transaction rollbacks caused by deadlocks
+        9. restrictions placed on sorted data
+        10. ability to support novel lock modes which allow the concurrent execution
+
+        In this paper we introduce a new recovery method, called *ARIES*  (Algorithm for Recovery and Isolation
+        Exploiting Semantics), which fares very well with respect to all these metrics. It also provides
+        flexibility.
+
+        To meet transaction and data recovery guarantees, ARIES records in a *log* the process of a transaction,
+        and its action which cause changes to recoverable data objects.
+        * Every log record is assigned a unique *log sequence number* (LSN) when that record is appended to the
+          log.
+        * If more than one log is used for storing the log records relating to _different_ pieces of data, then
+          a form of two-phase commit procotol must be used.
+        * The nonvolatile version of the log is stored on *stable storage*.
+        * Whenever log records are written, they are placed first only in the _volatile_ storage buffers of the
+          log file. Only at certain times (e.g., at commit time) are the log records up to a certain point
+          (LSN) written, in log page sequence, to stable storage. This is called *forcing* the log up to that
+          LSN. Besides forces caused by transaction and buffer manager activities, a system process may, in
+          the background, periodically force the log buffers as they fill up.
+        * The *undo* (respectively, *redo*) portion of a log record provides information on how to undo
+          (respectively, redo) changes performed by the transaction. A log record which contains both the undo
+          and the redo information is called an *undo-redo log record*. We have *redo-only log record* and
+          *undo-only log record* too.
+
+        ARIES uses write ahead logging (WAL) protocol. In WAL-based systems, an updates page is written back
+        to the same nonvolatile storage location from where it was read.
+
+        The *WAL protocol* asserts that the log records representing changes to some data _must_ already be on
+        stable storage _before_ the changed data is allowed to replace the previous version of that data on
+        nonvolatile storage.
+        * the system is not allowed to write an updated page to the nonvolatile storage version of the
+          database until at least the undo portions of the log records which describe the updates to the page
+          have been written to stable storae.
+        * To enable the enforcement of this protocol, systems using the WAL method of recovery store in every
+          page the LSN of the log record that describes the most recent update performed on that page.
+
+        Transaction status is also stored in the log and no transaction can be considered complete until its
+        committed status and all its log data are safely recorded on stable storage by forcing the log up to
+        the transaction's commit log record's LSN.
+
+        We deal with three types of failures: transaction or process, system, and media or device.
+        1. When a transaction or process failure occurs, typically the transaction would be in such a state
+           that its updates would have to be undone. It is possible that the transaction had corrupted some
+           pages in the buffer pool if it was in the middle of performing some updates when the process disappeared.
+        2. When a system failure occurs, typically the virtual storage contents would be lost and the
+          transaction system would have to be restarted and recovery performed using the nonvolatile storage
+          versions of the database and the log.
+        3. When a media or device failure occurs, typically the contents of that media would be lost and the
+           lost data would have to be recovered using an image copy version of the lost data and the log.
+
+
+
+        * *Forward processing* refers to the updates performed when the system is in normal processing  and the
+          transaction is updating the database because of the data manipulation (e.g., SQL) calls issued by
+          the user or the aplication program.
+        * *Partial rollback* refers to the ability to set up *savepoints* during the execution of a transaction
+          and later in the transaction request the rolling back of the changes performed by the transaction
+          since the establishment of a previous savepoint.
+        * *Total rollback*
+        * *Nested rollback*: a partial rollback were to be later followed by a total rollback or another partial
+          rollback whose point of termination is an earlier point in the transaction than the point of
+          termination of the first rollback.
+        * *Normal undo*: a total or partial transaction rollback when the system is in normal operation. A
+          normal undo may be caused by a transaction request to rollback or it may be system initiated because
+          of deadlocks or errors.
+        * *Restart undo*: a transaction rollback during restart recovery after a system failure
+        * *Page-oriented redo*: occur if the log record whose update is being redone describes which page of the
+          database was originally modified during normal processing and if the same page is modified during
+          the redo processing. Being able to perform page-oriented redo allows the system to provide *recovery*
+          *independence amongst objects*.
+        * *Page-oriented undo*
+        * *logical undo*
+** Latches and Locks
+        Usually, *latches* are used to guarantee physical consistency of data, while *locks* are used to assure
+        logical consistency of data. Latches are usually held for a much shorter period than are locks.
+
+        Acquiring and releasing a latch is much cheaper than acquiring and releasing a lock because the
+        *latch control information* is always in virtual memory in a fixed place, and direct addressability to
+        the latch information is possible given the latch name.
+
+        Locks may be obtained in different *modes* such as S(Shared), X(eXclusive), IX(Intention eXclusive),
+        IS(Intention Shared) and SIX(Shared Intention eXclusive)
+
+        #+CAPTION: Lock mode compatability
+        |-----+---+---+----+----+-----|
+        |     | S | X | IS | IX | SIX |
+        |-----+---+---+----+----+-----|
+        | S   | y |   | y  |    |     |
+        | X   |   |   |    |    |     |
+        | IS  | y |   | y  | y  | y   |
+        | IX  |   |   | y  | y  |     |
+        | SIX |   |   | y  |    |     |
+        |-----+---+---+----+----+-----|
+
+        With *hierarchical locking*, the intention locks are generally obtained on the higher levels of the
+        hierarchy (e.g. table) and the S and X locks are obtained on the lower level (e.g. record). The
+        nonintention mode locks, when obtained on an object at a certain level of the hierarchy, /implicitly/
+        grant locks of the corresponding mode on the lower level objects of that higher level object.
+
+** Fine-Granularity Locking
+
+
+** Buffer Management
+
+* Overview of ARIES
+        ARIES guarantees the atomicity and durability properties of transactions in the fact of process,
+        transaction, system and media failures. For this purpose, ARIES keep track of the changes made to the
+        database by using a log and it does write-ahead logging. Besides logging, on a per-affected-page
+        basis, update activities performed during forward processing of transactions, ARIES also logs,
+        typically using compensation log records (CLRS), updates performed during partial or total rollbacks
+        of transactions during both normal and restart processing.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Partial rollback example
+        [[../../images/papers/7.png]]
+* Problems
+| Problems | Desc |
+|----------+------|
+|          |      |
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib
