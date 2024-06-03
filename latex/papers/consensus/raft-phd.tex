@@ -1,0 +1,135 @@
+% Created 2024-06-03 Mon 15:56
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/consensus/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\author{wu}
+\date{\today}
+\title{Consensus Bridging Theory And Practice}
+\hypersetup{
+ pdfauthor={wu},
+ pdftitle={Consensus Bridging Theory And Practice},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 29.1 (Org mode 9.7-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Motivation}
+\label{sec:org06d6775}
+
+\subsection{Achieving fault tolerance with replicated state machines}
+\label{sec:org75aa22d}
+Keeping the replicated log consistent is the job of the consensus algorithm. The consensus module on a
+server receives commands from clients and adds them to its log. It communicates with the consensus
+modules on other servers to ensure that every log eventually contains the same requests in the same
+order, even if some servers fail. Once commands are properly replicated, they are said to be
+\textbf{committed}. Each server’s state machine processes committed commands in log order, and the outputs are
+returned to clients. As a result, the servers appear to form a single, highly reliable state machine.
+\section{Basic Raft algorithm}
+\label{sec:org6002d9d}
+\subsection{Raft overview}
+\label{sec:org58030d5}
+Given the leader approach, Raft decomposes the consensus problem into three relatively independent
+subproblems:
+\begin{itemize}
+\item Leader election: a new leader must be chosen when starting the cluster and when an existing leader fails
+\item Log replication: the leader must accept log entries from clients and replicate them across the cluster, forcing the other logs to agree with its own
+\item Safety: the key safety property for Raft is the State Machine Safety Property
+\end{itemize}
+
+
+Raft \textbf{SAFETY}:
+\begin{itemize}
+\item \textbf{Election Safty}: At most one leader can be elected in a given term.
+\item \textbf{Leader Append-Only}: A leader never overwrites or deletes entries in its log; it only appends new entries.
+\item \textbf{Log Matching}: If two logs contain an entry with the same index and term, then the logs are identical
+in all entries up through the given index.
+\item \textbf{Leader Completeness}: If a log entry is committed in a given term, then that entry will be present in
+the logs of the leaders for all higher-numbered terms.
+\item \textbf{State Machine Safety}: If a server has applied a log entry at a given index to its state machine, no
+other server will ever apply a different log entry for the same index.
+\end{itemize}
+\subsection{Log replication}
+\label{sec:orga2a9e9f}
+The leader decides when it is safe to apply a log entry to the state machines; such an entry is called
+\textbf{committed}. Raft guarantees that committed entries are durable and will eventually be executed by all
+of the available state machines. A log entry is committed once the leader that created the entry has
+replicated it on a majority of the servers. This also commits all preceding entries in the leader’s
+log, including entries created by previous leaders. The leader keeps track of the highest index it
+knows to be committed, and it includes that index in future AppendEntries RPCs (including heartbeats)
+so that the other servers eventually find out. Once a follower learns that a log entry is committed,
+it applies the entry to its local state machine (in log order).
+
+Raft maintains the following properties, which together constitute the Log Matching Property:
+\begin{itemize}
+\item If two entries in different logs have the same index and term, then they store the same command.
+\item If two entries in different logs have the same index and term, then the logs are identical in all
+preceding entries.
+\end{itemize}
+
+The first 
+\subsection{Safty}
+\label{sec:orge075e70}
+This section completes the Raft algorithm by adding a restriction on which servers may be elected
+leader. The restriction ensures that the leader for any given term contains all of the entries committed in previous terms.
+\subsubsection{Election restriction}
+\label{sec:orgd98c07f}
+In any leader-based consensus algorithm, the leader \textbf{must} eventually store all of the committed log
+entries.
+
+Raft uses the voting process to prevent a candidate from winning an election unless its log contains
+all committed entries:
+\begin{itemize}
+\item A candidate must contact a majority of the cluster in order to be elected, which means that every committed entry must be present in at least one of those servers.
+\item If the candidate’s log is at least as \textbf{up-to-date} as any other log in that majority, then it will
+hold all the committed entries.
+\end{itemize}
+
+Raft determines which of two logs is more \textbf{up-to-date} by comparing the index and term of the last
+entries in the logs.
+\begin{itemize}
+\item If the logs have last entries with different terms, then the log with the later term is more up-to-date.
+\item If the logs end with the same term, then whichever log is longer is more up-to-date.
+\end{itemize}
+\subsubsection{Committing entries from previous terms}
+\label{sec:org6213ddd}
+A leader cannot immediately conclude that an entry from a previous term is committed once it is stored
+on a majority of servers:
+\begin{center}
+\includegraphics[width=.9\textwidth]{../../images/papers/12.png}
+\label{3.7}
+\end{center}
+
+To eliminate problems like the one in Figure \ref{3.7}, Raft never commits log entries from previous
+terms by counting replicas; once an entry from the current term has been committed in this way, then all prior
+entries are committed indirectly because of the Log Matching Property.
+\section{Client Interaction}
+\label{sec:orgccf23c9}
+\subsection{Processing read-only queries more efficiently}
+\label{sec:org6a9c2b7}
+Fortunately, it is possible to bypass the Raft log for read-only queries and still preserve
+linearizability. To do so, the leader takes the following steps:
+\begin{enumerate}
+\item If the leader has not yet marked an entry from its current term committed, it waits until it has
+done so. The Leader Completeness Property guarantees that a leader has all committed entries, but
+at the start of its term, it may not know which those are. To find out, it needs to commit an entry
+from its term. Raft handles this by having each leader commit a blank no-op entry into the log at
+the start of its term. As soon as this no-op entry is committed, the leader’s commit index will be at least as large as any other servers’ during its term.
+\item 
+\end{enumerate}
+\end{document}

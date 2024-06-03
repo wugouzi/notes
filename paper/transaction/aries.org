@@ -138,6 +138,24 @@
         #+NAME:
         #+CAPTION: Partial rollback example
         [[../../images/papers/7.png]]
+
+        In ARIES, CLRs have the property that they are redo-only log records. By approapriate chaining of the
+        CLRs to log records written during rollbacks, even in the face of repeated failures during restart or
+        of nested rollbacks.
+
+        In ARIES, as Figure [[ref:5]] shows, when the undo of a log record causes a CLR to be written, the CLR,
+        besides containing a description of the compensating action for redo purposes, is made to contain the
+        ~UndoNxtLSN~ which points to the predecessor of the just undone log record. It tells the system from
+        where to continue the rollback of the transaction, if a system failure were to interrupt the
+        completion of transaction or if a nested rollback were to be performed.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 5
+        #+CAPTION: ARIES' technique for avoiding compensating compensations and duplicate compensations
+        [[../../images/papers/8.png]]
+
+        ARIES uses a single LSN on each page to track the page's state. Whenever a page is updated and a log
+        record is written, the LSN of the log record is placed in the ~page_LSN~ field of the updated page.
 * Problems
 | Problems | Desc |
 |----------+------|

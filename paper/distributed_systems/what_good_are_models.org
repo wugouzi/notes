@@ -1,0 +1,61 @@
+#+title: What Good are Models and What Models are Good?
+#+AUTHOR: Fred B. Schneider
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/distributed_systems/what_good_are_models.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/distributed_systems/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Refining Intuition
+* Good Models
+        A model for an object is a collection of attributes and a set of rules that govern how these
+        attributes interact. A model is accurate to the extent that analyzing it yields truths about the
+        object of interest. A model is *tractable* if such an analysis is actually possible.
+
+        In building models for distributed systems, we typically seek answers to two fundamental questions:
+        * *Feasibility*: What classes of problems can be solved?
+        * *Cost*: For those classes that can be solved, how expensive must the solution be?
+
+
+        We established that the Coordination Problem could not be solved by building a simple, informal model.
+        Two insights were used in this model:
+        1. All protocols between two processes are equivalent to a series of message exchanges.
+        2. Actions taken by a process depend only on the sequence of messages it has received.
+* Synchronous versus Asynchronous Systems
+        With an asynchronous system, we make no assumptions about process execution speeds and/or message
+        delivery delays; with a synchronous system, we do make assumptions about these parameters.
+
+        Every system is asynchronous.
+
+        In practice, postulating that a system is synchronous constrains how processes and communications
+        channels are implemented. Asserting that the relative speeds of processes is bounded is equivalent to
+        assuming that all processors in the system have access to approximately rate-synchronized real-time
+        clocks.
+** Election Protocol
+        In asserting that a system is synchronous, we rule out certain system behaviors. This, in turn,
+        enables us to employ simpler or cheaper protocols than would be required to solve the same problem in
+        an asynchronous system. An example is the following election problem.
+
+        Election Problem. A set of processes \(P_1,\dots,P_n\) must select a leader. Each process \(P_i\) has
+        a unique identifier \(uid(i)\). Devise a protocol so that all of the processes learn the identity of
+        the leader. Assume all processes start executing at the same time and that all communicate using
+        broadcasts that are reliable.
+
+        Solving this problem in an asynchronous system is not difficult but somewhat expensive. Each process
+        \(P_i\) broadcasts \(\la i,uid(i)\ra\). Every process will eventually receive these broadcasts, so
+        each can independently "elect" the \(P_i\) for which \(uid(i)\) is smallest.
+
+        In a synchronous system, it is possible to solve the Election Problem with only a single broadcast.
+        Let \(\tau\) be a known constant bigger than the largest mesage delivery delay plus the largest
+        difference that can be observed at any instant by reading clocks at two arbitrary processors. Now it
+        suffices for each process \(P_i\) to wait until either
+        1. it receives a broad
+        2. \(\tau*uid(i)\) seconds elapse on its clock at which time it broadcasts \(\la i\ra\)
+
+        The first process that makes a broadcast is elected.l
+* Failure Models
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

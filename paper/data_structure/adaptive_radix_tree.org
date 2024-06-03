@@ -1,0 +1,139 @@
+#+title: The Adaptive Radix Tree: ARTful Indexing for Main-Memory Databases
+
+#+AUTHOR: Viktor Leis, Alfons Kemper, Thomas Neumann
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/data_structure/adaptive_radix_tree.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/data_structure/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+
+* Introduction
+        ART, adaptive radix tree (trie), for efficient indexing in main memory.
+        * lookup performance
+        * efficient insertions and deletions
+        * space efficient
+
+
+
+        * ART adapts the representation of every individual node, optimizing /global/ space utilization and
+          access efficiency at the same time.
+        * Nodes are represented using a small number of efficient and compact data structures, chosen
+          dynamically depending on the number of child nodes.
+        * Path compression and lazy expansion allow ART to efficiently index long keys by collapsing nodes and
+          thereby decreasing the tree height.
+
+
+        A useful property of radix trees is that the order of the keys is not random as in hash tables;
+        rather, the keys are ordered bitwise lexicographically. We show how typical data types can be
+        reordered efficiently to support all operations that require the data to be ordered (e.g., range scan,
+        prefix lookup, top-k, minimum, and maximum).
+
+
+        * We prove that the space consumption per key is bounded to 52 bytes, even for arbitrarily long keys.
+          We show experimentally, that the space consumption is much lower in practice, often as low as 8.1
+          bytes per key.
+        *  We describe how common built-in data types can be stored in radix trees while retaining their order
+
+* Related Work
+        While most research focused on indexing character strings, our goal is to index other data types as
+        well.
+
+
+* Adaptive Radix Tree
+** Preliminaries
+        Radix trees have a number of interesting properties that distinguish them from comparison-based search
+        trees:
+        * The height (and complexity) of radix trees depends on the length of the keys but in general not on
+          the number of elements in the tree.
+        * Radix trees require no rebalancing operations and all insertion orders result in the same tree.
+        * The keys are stored in lexicographic order.
+        * The path to a leaf node represents the key of that leaf. Therefore, keys are stored implicitly and
+          can be reconstructed from paths.
+
+
+        Radix trees consist of two types of nodes: Inner nodes, which map partial keys to other nodes, and
+        leaf nodes, which store the values corresponding to the keys.
+        * The most efficient representation of an inner node is as an array of \(2^s\) pointers. During tree
+          traversal, an \(s\) bit chunk of the key is used as the index into that array and thereby determines
+          the next child node without any additional comparisons. The parameter \(s\), which we call *span*, is
+          critical for the performance of radix trees, because it determines the height of the tree for a
+          given key length: A radix tree storing \(k\) bit keys has \(\floor{k/s}\) levels of inner nodes.
+          With 32 bit keys, for example, a radix tree using \(s=1\) has 32 levels, while a span of 8 results
+          in only 4 levels.
+** Adaptive Nodes
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/9.png]]
+
+        The key idea that achieves both space and time efficiency is to adaptively use different node sizes
+        with the same, relatively large span, but with different fanout.
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/10.png]]
+
+        In order to efficiently support incremental updates, it is too expensive to resize nodes after each
+        update. Therefore, we use a small number of node types, each with a different fanout. Depending on the
+        number of non-null children, the appropriate node type is used. When the capacity of a node is
+        exhausted due to insertion, it is replaced by a larger node type. Correspondingly, when a node becomes
+        underfull due to key removal, it is replaced by a smaller node type.
+** Structure of Inner Nodes
+        * We use four data structures with different capacities.
+        * The child pointers can be scanned in sorted order, which allows to implement range scans.
+        * We use a span of 8 bits, corresponding to partial keys of 1 byte and resulting a relatively large
+          fanout.
+
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/11.png]]
+        <<Problem1>>
+** Structure of Leaf Nodes
+        _We assume that only unique keys are stored_. The values can be stored in different ways:
+        * Single-value leaves: The values are stored using an additional leaf node type which stores one value.
+        * Multi-value leaves: The values are stored in one of four different leaf node types, which mirror the
+          structure of inner nodes, but contain values instead of pointers.
+        * Combined pointer/value slots: If values fit into pointers, no separate node types are necessary.
+          Instead, each pointer storage location in an inner node can either store a pointer or a value.
+          Values and pointers can be distinguished using one additional bit per pointer or with pointer
+          tagging.
+
+** Collapsing Inner Nodes
+        *Lazy expansion*: inner nodes are only created if they are required to distinguish at least two leaf
+        nodes.
+
+        *Path compression*: removes all inner nodes that have only a single child. There are two approaches to
+        deal with it:
+        * Pessimistic: At each inner node, a variable length (possibly empty) partial key vector is stored. It
+          contains the keys of all preceding one-way nodes which have been removed. During lookup this vector
+          is compared to the search key before proceeding to the next child.
+        * Optimistic:
+
+        #+CAPTION: Search algorithm
+        #+begin_src python
+def search(node, key, depth):
+    if node == NULL:
+        return NULL
+    if isLeaf(node):
+        if leafMatches(node, key, depth):
+            return node
+        return NULL
+    if checkPrefix(node, key, depth) != node.prefixLen:
+        return NULL
+    depth = depth + node.prefixLen
+    next = findChild(node, key[depth])
+    return search(next, key, depth+1)
+        #+end_src
+* Problems
+        1. [[Problem1]]: Whats the difference between 48 and 256?
+           A pointer is 8 bytes, so Node48 only uses \(256*1\) bytes for child indexes
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

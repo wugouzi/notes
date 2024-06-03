@@ -1,0 +1,112 @@
+#+title: Leases: An Efficient Fault-Tolerant Mechanism for Distributed File Cache Consistency
+
+#+AUTHOR: Cary G. Gray & David R. Cheriton
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/distributed_systems/leases.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/distributed_systems/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        In this paper, *leases* are proposed as a consistency protocol that handles host and communication
+        failures using physical clocks.
+
+        Caching introduces the problem of ensuring consistency between the cached data and its primary
+        location of storage. By *consistent*, we mean that the behavior is equivalent to there being only a
+        single (uncached) copy of the data except for the performance benefit of the cache.
+* Leases and Cache Consistency
+        A *lease* is a contract that gives its holder specified rights over property for a limited period of
+        time.
+
+        In the context of caching, a lease grants to its holder control over writes to the covered datum
+        during the term of the lease, such that the server must obtain the approval of the leaseholder before
+        the datum may be written. When a leaseholder grants approval for a write, it invalidates its local
+        copy of the datum.
+
+        A cache using leases requires a valid lease on the datum (in addition to holding the datum) before it
+        returns the datum in response to a read, or modifies the datum in response to a write.
+        * When a datum is fetched from the server (the primary storage site of the datum), the server also
+          returns a lease guaranteeing that the data will not be written by any client during the lease *term*
+          unless the server first obtains the approval of this leaseholder.
+        * If the datum is read again within the term of the lease (and the datum is still in the cache), the
+          cache provides immediate access to the datum without communicating with the server.
+        * After the lease expires,
+          * a read of the datum requires that the cache first extend the lease on the datum, updating the
+            cache if the datum has been modified since the lease expired.
+          * When a client writes a datum, the server must defer the request until each leaseholder has granted
+            approval or the term of its lease has expired.
+
+
+        Short lease terms have several advantages:
+        * Minimize the delay resulting from client and server failures:
+          * When the server cannot communicate with a client, the server must delay writes to a file for which the failed client holds a lease until that lease expires.
+          * When a server is recovering after crashing, it must honor the leases it granted before it crashed.
+        * Minimize false write-sharing: *False sharing* refers to a lease conflict when no actual conflict in
+          file access exists. Speciftcally, false sharing occurs when a client writes to a file which is
+          covered by a lease held by another client when the other client is not currently accessing the file.
+        * Reduce the storage requirements
+
+
+        Longer-term leases are significantly more efficient both for the client and server on files that are
+        accessedrepeatedly and have relatively little write-sharing.
+* Choosing the Lease Term
+        Trade-off between minimizing lease extension overhead versus minimizing false sharing.
+** A Simple Analytic Model
+        We consider a system consisting of a single server, characterized by the performance parameters given
+        in Table [[ref:1]]. That is, the server has _one_ file and \(N\) clients for that file, where each client's
+        reads and writes follow _Poisson_ distributions with rates \(R\) and \(W\), respectively. The file is
+        shared by \(S\) of the caches at each point it is written. There is at most _one_ lease per client for
+        the file.
+
+        #+CAPTION: Performance parameters
+        #+NAME: 1
+        |---+--------------+----------------------------------------------|
+        |   | Symbol       | Description                                  |
+        | / | <            | >                                            |
+        |---+--------------+----------------------------------------------|
+        |   | \(N\)        | number of clients (caches)                   |
+        |   | \(R\)        | rate of reads for each client                |
+        |   | \(W\)        | rate of writes for each client               |
+        |   | \(S\)        | number of caches in which the file is shared |
+        |---+--------------+----------------------------------------------|
+        |   | \(m_{prop}\) | propagation delay for a message              |
+        |   | \(m_{proc}\) | time to process a message (send or receive)  |
+        |   | \(\epsilon\) | allowance for uncertainty in clocks          |
+        |---+--------------+----------------------------------------------|
+        |   | \(t_S\)      | lease term (at server)                       |
+        |---+--------------+----------------------------------------------|
+
+        We assume that the message processing time \(m_{proc}\)  at both the sender and recipient and the
+        message propagation time \(m_{prop}\) are the same for all hosts. Thus a message is received
+        \(m_{prop}+2m_{proc}\) after it is sent and a unicast request and reply takes \(2m_{prop}+4m_{proc}\).
+        Multicast messages are sent once, and received with high probability by the recipients using a
+        multicast facility; it requires time \(2m_{prop}+(n+3)m_{proc}\) to send a multicast message and
+        receive \(n\) replies. #+LATEX: \wu{
+        It assumes that \(n\) receivers handles the message simultaneously.
+                               #+LATEX: }
+
+        For a lease with term \(t_S\), the effective term \(t_C\) at the cache is
+        \begin{equation*}
+        t_C=\max(0, t_S-(m_{prop}+2m_{proc})-\epsilon)
+        \end{equation*}
+
+
+        If a cache handles an expected \(Rt_C\) reads over the term of the lease not counting the read that
+        results in the lease request, the cost of the lease request is amortized over \(1+Rt_C\) reads, so
+        that the rate of extension-related messages handled by the server is
+        \begin{equation*}
+        \frac{2NR}{1+Rt_C}
+        \end{equation*}
+        adding an average delay of
+        \begin{equation*}
+        \frac{2(m_{prop}+2m_{proc})}{1+Rt_C}
+        \end{equation*}
+        to each read request.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib
