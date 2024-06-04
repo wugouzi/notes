@@ -16,6 +16,10 @@
         returned to clients. As a result, the servers appear to form a single, highly reliable state machine.
 * Basic Raft algorithm
 ** Raft overview
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/17.png]]
         Given the leader approach, Raft decomposes the consensus problem into three relatively independent
         subproblems:
         * Leader election: a new leader must be chosen when starting the cluster and when an existing leader fails
@@ -130,6 +134,7 @@
         terms by counting replicas; once an entry from the current term has been committed in this way, then all prior
         entries are committed indirectly because of the Log Matching Property.
 *** Safety argument
+        [[label:3.3]]
         Assume Leader Completeness Property does not hold. Suppose the leader for term \(T\) \(leader_T\)
         commits a log entry from its term, but that log entry is not stored by the leader of some future term.
         Consider the smallest term \(U>T\) whose leader \(leader_U\) does not store the entry.
@@ -154,13 +159,296 @@
            committed in term \(T\).
         9. The Log Matching Property guarantees that future leaders will also contain entries that are
            committed indirectly.
+
+
+
+        Given the Leader Completeness Property, we can prove the State Machine Safety Property from, which
+        states that if a server has applied a log entry at a given index to its state machine, no other server
+        will ever apply a different log entry for the same index:
+        * At the time a server applies a log entry to its state machine, its log must be identical to the
+          leader’s log up through that entry, and the entry must be committed. Now consider the lowest term in
+          which any server applies a given log index; the Leader Completeness Property guarantees that the
+          leaders for all higher terms will store that same log entry, so servers that apply the index in
+          later terms will apply the same value. Thus, the State Machine Safety Property holds.
+
+
+        Finally, Raft requires servers to apply entries in log index order. Combined with the State Machine
+        Safety Property, this means that all servers will apply exactly the same set of log entries to their
+        state machines, in the same order.
+*** Followe rand candidate crashes
+*** Persisted state and server restarts
+        * current term and vote: prevent the server from voting twice \wu{means vote for different candidates}
+          in the same term or replacing log entries from a newer leader with those from a deposed
+          leader\wu{term}.
+        * new log entries before they are committed: prevents committed entries from being lost or
+          “uncommitted” when servers restart.
+        * /last applied/ index
+*** Timing and availability
+*** Leadership transfer extention
+        To transfer leadership in Raft, the prior leader sends its log entries to the target server, then the
+        target server runs an election without waiting for the election timeout to elaspe.
+        1. The prior leader stops accepting new client requests.
+        2. The prior leader fully updates the target server's log to match its own, using the normal log
+           replication mechanism
+        3. The prior leader sends a /TimeoutNow/ request to the target server.
+
+        Once the target server receives the TimeoutNow request, it is highly likely to start an election
+        before any other server and become leader in the next term. Its next message to the prior leader will
+        include its new term number, causing the prior leader to step down. At this point, leadership transfer
+        is complete.
+
+        It is also possible for the target server to fail; in this case, the cluster must resume client
+        operations. If leadership transfer does not complete after about an election timeout, the prior leader
+        aborts the transfer and resumes accepting client requests. If the prior leader was mistaken and the
+        target server is actually operational, then at worst this mistake will result in an extra election,
+        after which client operations will be restored.
+* Cluster membership changes
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/14.png]]
+** Safety
+        * Goal: no point during the transition where it is possible for two leaders to be elected for the same term.
+        * Difficulty: it isn’t possible to atomically switch all of the servers at once, so the cluster can
+          potentially split into two independent majorities during the transition
+          #+ATTR_LATEX: :width .99\textwidth :float nil
+          #+NAME: 4.2
+          #+CAPTION:
+          [[../../images/papers/15.png]]
+
+        Raft restricts the types of changes that are allowed: only one server can be added or removed from the
+        cluster at a time. More complex changes in membership are implemented as a series of single-server
+        changes.
+
+        When adding a single server to a cluster or removing a single server from a cluster, any majority of
+        the old cluster overlaps with any majority of the new cluster. This overlap prevents the cluster from
+        splitting into two independent majorities; in terms of the safety argument of Section [[ref:3.3]], it
+        guarantees the existence of “the voter”. Thus, when adding or removing just a single server, it is
+        safe to switch directly to the new configuration.
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/16.png]]
+
+        When the leader receives a request to add or remove a server from its current configuration
+        \(C_{old}\), it appends the new configuration \(C_{new}\)  as an entry in its log and replicates that
+        entry using the normal Raft mechanism. The new configuration takes effect on each server as soon as it
+        is added to that server’s log: the \(C_{new}\) entry is replicated to the \(C_{new}\) servers, and a majority of the new
+        configuration is used to determine the \(C_{new}\) entry’s commitment.
+
+        The configuration change is complete once the \(C_{new}\) entry is committed. At this point, the leader knows
+        that a majority of the \(C_{new}\) servers have adopted \(C_{new}\) . It also knows that any servers that have not
+        moved to \(C_{new}\) can no longer form a majority of the cluster, and servers without \(C_{new}\) cannot be elected
+        leader. Commitment of \(C_{new}\) allows three things to continue:
+        1. The leader can acknowledge the successful completion of the configuration change.
+        2. If the configuration change removed a server, that server can be shut down.
+        3. Further configuration changes can be started. Before this point, overlapped configuration changes
+           could degrade to unsafe situations as in Fig [[ref:4.2]]
+
+
+
+        * _Servers always use the latest configuration in their logs, regardless of whether that configuration_
+          _entry has been committed._ This allows leaders to easily avoid overlapping configuration changes (the
+          third item above), by not beginning a new change until the previous change’s entry has committed.
+        * It is only safe to start another membership change once a majority of the old cluster has moved to
+          operating under the rules of \(C_{new}\). If servers adopted \(C_{new}\) only when they learned that \(C_{new}\)
+          was committed, Raft leaders would have a difficult time knowing when a majority of the old cluster
+          had adopted it.
+
+
+        In Raft, it is the caller’s configuration that is used in reaching consensus, both for voting and for log replication:
+        * A server accepts ~AppendEntries~ requests from a leader that is not part of the server’s latest
+          configuration. Otherwise, a new server could never be added to the cluster (it would never accept any log entries preceding the configuration entry that adds the server).
+        * _A server also grants its vote to a candidate that is not part of the server’s latest configuration_
+          (if the candidate has a sufficiently up-to-date log and a current term). This vote may occasionally
+          be needed to keep the cluster available. For example, consider adding a fourth server to a
+          three-server cluster. If one server were to fail, the new server’s vote would be needed to form a
+          majority and elect a leader.
+
+        Thus, servers process incoming RPC requests without consulting their current configurations.
+** Availability
+*** Catching up new servers
+        When a server is added to the cluster, it typically will not store any log entries. If it is added to
+        the cluster in this state, its log could take quite a while to catch up to the leader’s, and during
+        this time, the cluster is more vulnerable to unavailability:
+        * A three-server cluster can normally tolerate one failure with no loss in availability. However, if a
+          fourth server with an empty log is added to the same cluster and one of the original three servers
+          fails, the cluster will be temporarily unable to commit new entries ([[ref:4.4]] (a)).
+        * Many new servers are added to a cluster in quick succession, where the new servers are needed to
+          form a majority of the cluster ([[ref:4.4]] (b)).
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: 4.4
+        #+CAPTION:
+        [[../../images/papers/18.png]]
+
+        In order to avoid availability gaps, Raft introduces an additional phase before the configuration
+        change, in which a new server joins the cluster as a *non-voting member*. The leader replicates log
+        entries to it, but it is not yet counted towards majorities for voting or commitment purposes. Once
+        the new server has caught up with the rest of the cluster, the reconfiguration can proceed as
+        described above. (The mechanism to support non-voting servers can also be useful in other contexts;
+        for example, it can be used to replicate the state to a large number of servers, which can serve
+        read-only requests with relaxed consistency.)
+
+        We suggest the following algorithm to determine when a new server is sufficiently caught up to add to
+        the cluster:
+        * The replication of entries to the new server is split into rounds, as shown in Figure [[ref:4.5]].
+        * Each round replicates all the log entries present in the leader’s log at the start of the round to
+          the new server’s log. While it is replicating entries for its current round, new entries may arrive
+          at the leader; it will replicate these during the next round. As progress is made, the round
+          durations shrink in time.
+        * The algorithm waits a fixed number of rounds (such as 10). If the last round lasts less than an
+          election timeout, then the leader adds the new server to the cluster, under the assumption that
+          there are not enough unreplicated entries to create a significant availability gap.
+        * Otherwise, the leader aborts the configuration change with an error. The caller may always try again
+          (it will be more likely to succeed the next time, since the new server’s log will already be
+          partially caught up).
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: 4.5
+        #+CAPTION:
+        [[../../images/papers/19.png]]
+*** Removing the current leader
+*** Disruptive servers
+        Without additional mechanism, servers not in \(C_{new}\) can disrupt the cluster.
+        * Once the cluster leader has created the \(C_{new}\) entry, a server that is not in \(C_{new}\) will
+          no longer receive heartbeats, so it will time out and start new elections.
+        * Furthermore, it will not receive the \(C_{new}\) entry or learn of that entry’s commitment, so it
+          will not know that it has been removed from the cluster. The server will send ~RequestVote~ RPCs with
+          new term numbers, and this will cause the current leader to revert to follower state.
+        * A new leader from \(C_{new}\) will eventually be elected, but the disruptive server will time out
+          again and the process will repeat, resulting in poor availability. If multiple servers have been
+          removed from the cluster, the situation could degrade further.
+
+
+        First idea was that, if a server is going to start an election, it would first check that it wouldn't
+        be wasting everyone's time - that it had a chance to win the election. This introduced a new phase to
+        elections, called the *Pre-Vote phase*. A candidate would first ask other servers whether its log was
+        up-to-date enough to get their vote. Only if the candidate believed it could get votes from a majority
+        of the cluster would it increment its term and start a normal election.
+
+        Unfortunately, the Pre-Vote phase does not solve the problem of disruptive servers: there are
+        situations where the disruptive server’s log is sufficiently up-to-date, but starting an election
+        would still be disruptive. Perhaps surprisingly, these can happen even before the configuration change
+        completes.
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/20.png]]
+
+
+        Raft’s solution uses heartbeats to determine when a valid leader exists. We modify the ~RequestVote~ RPC
+        to achieve this: if a server receives a ~RequestVote~ request within the minimum election timeout of
+        hearing from a current leader, it does not update its term or grant its vote. It can either drop the
+        request, reply with a vote denial, or delay the request; the result is essentially the same. This does
+        not affect normal elections, where each server waits at least a minimum election timeout before
+        starting an election. However, it helps avoid disruptions from servers not in \(C_{new}\) : while a leader is
+        able to get heartbeats to its cluster, it will not be deposed by larger term numbers. <<Problem1>>
+*** Availability
+        <<Problem2>>
+        We show that the algorithm will be able to maintain and replace leaders during membership changes and
+        that the leader(s) will both service client requests and complete the configuration changes. We
+        assume, among other things, that a majority of the old configuration is available (at least until \(C_{new}\)
+        is committed) and that a majority of the new configuration is available.
+
+        1. A leader can be elected at all steps of the configuration change:
+           * If the available server with the most up-to-date log in the new cluster has the \(C_{new}\)
+             entry, it can collect votes from a majority of \(C_{new}\) and become leader
+           * Otherwise, the \(C_{new}\) entry must not yet be committed. The available server with the most
+             up-to-date log among both the old and new clusters can collect votes from a majority of
+             \(C_{old}\) and a majority of \(C_{new}\), so no matter which configuration it uses, it can
+             become leader.
 * Client Interaction
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/21.png]]
+** Finding the cluster
+        Two general approaches:
+** Routing requests to the leader
+** Implementing linearizable semantics
+        Raft provides at-least-once semantics for clients; the replicated state machine may apply a command
+        multiple times.
+
+        In linearizability, each operation appears to execute instantaneously, exactly once, at some point
+        between its invocation and its response.
+
+        To achieve linearizability in Raft, servers must filter out duplicate requests. The basic idea is that
+        servers save the results of client operations and use them to skip executing the same request multiple
+        times. To implement this, each client is given a unique identifier, and clients assign unique serial
+        numbers to every command.
+
+        Given this filtering of duplicate requests, Raft provides linearizability. The Raft log provides a
+        serial order in which commands are applied on every server. Commands take effect instantaneously and
+        exactly once according to their first appearance in the Raft log, since any subsequent appearances are
+        filtered out by the state machines as described above.
+
 ** Processing read-only queries more efficiently
         Fortunately, it is possible to bypass the Raft log for read-only queries and still preserve
         linearizability. To do so, the leader takes the following steps:
         1. If the leader has not yet marked an entry from its current term committed, it waits until it has
            done so. The Leader Completeness Property guarantees that a leader has all committed entries, but
            at the start of its term, it may not know which those are. To find out, it needs to commit an entry
-           from its term. Raft handles this by having each leader commit a blank no-op entry into the log at
+           from its term. Raft handles this by having each leader commit a blank /no-op/ entry into the log at
            the start of its term. As soon as this no-op entry is committed, the leader's commit index will be at least as large as any other servers' during its term.
-        2.
+        2. The leader saves its current commit index in a local variable ~readIndex~.
+        3. The leader needs to make sure it hasn’t been superseded by a newer leader of which it is unaware.
+           It issues a new round of heartbeats and waits for their acknowledgments from a majority of the
+           cluster. Once these acknowledgments are received, the leader knows that there could not have
+           existed a leader for a greater term at the moment it sent the heartbeats. Thus, the ~readIndex~ was,
+           at the time, the largest commit index ever seen by any server in the cluster \wu{all later leaders
+           have the same log before \texttt{readIndex} thanks to Leader Completeness Property}.
+        4. The leader waits for its state machine to advance at least as far as the ~readIndex~; this is current enough to satisfy linearizability.
+        5. The leader issues the query against its state machine and replies to the client with the results
+
+
+        To improve efficiency further, the leader can amortize the cost of confirming its leadership: it can
+        use a single round of heartbeats for any number of read-only queries that it has accumulated.
+
+        Followers could also help offload the processing of read-only queries. However, these reads would also
+        run the risk of returning stale data without additional precautions. To serve reads safely, the
+        follower could issue a request to the leader that just asked for a current readIndex (the leader would
+        execute steps 1–3 above); the follower could then execute steps 4 and 5 on its own state machine for
+        any number of accumulated read-only queries.
+** Using clocks to reduce messaging for read-only queries
+        To use clocks instead of messages for read-only queries, the normal heartbeat mechanism would provide
+        a form of lease. Once the leader’s heartbeats were acknowledged by a majority of the cluster, the
+        leader would assume that no other server will become leader for about an election timeout, and it
+        could extend its lease accordingly. The leader would then reply to read-only queries during that
+        period without any additional communication.
+        (The leadership transfer mechanism presented in Chapter 3 allows the leader to be replaced early; a
+        leader would need to expire its lease before transferring leadership.)
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/22.png]]
+
+        The lease approach assumes a bound on clock drift across servers (over a given time period, no
+        server's clock increases more than this bound times any other). Discovering and maintaining this bound
+        might present operational challenges.
+
+        Fortunately, a simple extension can improve the guarantee provided to clients, so that even under
+        asynchronous assumptions (even if clocks were to misbehave), each client would see the replicated
+        state machine progress monotonically (sequential consistency). For example, a client would not
+        see the state as of log index \(n\), then change to a different server and see only the state as of log
+        index \(n-1\).
+        * To implement this guarantee, servers would include the index corresponding to the state machine
+          state with each reply to clients. Clients would track the latest index corresponding to results they
+          had seen, and they would provide this information to servers on each request. If a server received a
+          request for a client that had seen an index greater than the server’s last applied log index, it
+          would not service the request (yet).
+
+
+* Correctness
+** Formal specification and proof for basic Raft algorithm
+        The specification models an asynchronous system (it has no notion of time) with the following assumptions:
+        * Messages may take an arbitrary number of steps (transitions) to arrive at a server. Sending a
+          message enables a transition to occur (the receipt of the message) but with no particular timeliness.
+        * Servers fail by stopping and may later restart from stable storage on disk.
+        * The network may reorder, drop, and duplicate messages.
+* Leader election evaluation
+* Problem
+        1. [[Problem1]]: Not quite understand
+        2. [[Problem2]]: same roblem
