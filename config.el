@@ -38,7 +38,8 @@
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-one-light)
+(setq doom-theme 'modus-operandi)
+;; (setq doom-theme 'doom-one-light)
 ;; (setq doom-theme 'doom-nano-light)
 
 ;; This determines the style of line numbers in effect. If set to `nil', line
@@ -108,14 +109,23 @@
   (sp-local-pair 'org-mode "\\left|" "\\right|" :trigger "\\l|" :post-handlers '(sp-latex-insert-spaces-inside-pair))
   )
 
+(use-package mixed-pitch
+  :ensure t
+  :hook (org-mode . mixed-pitch-mode)
+  )
+
+;; so mixed pitch doesn't work for 9.0 later?
+(setq org-src-block-faces
+        '(("emacs-lisp" (:background "#EEE2FF"))
+          ("python" (:background "#e5ffb8"))))
+
 (require 'org-indent)
 (use-package org
   :hook
   ((org-mode . auto-fill-mode)
-   (org-mode . mixed-pitch-mode)
    (org-mode . (lambda () (setq fill-column 110)))
    (org-mdoe . org-latex-preview-auto-mode)
-   ;; (org-mode . valign-mode)
+   (org-mode . valign-mode)
    )
 
   :config
@@ -136,6 +146,7 @@
           ("~" org-code verbatim)
           ;; ("+" (:strike-through t))
           )
+        org-latex-listings 'minted
         )
   (set-company-backend! 'org-mode '(company-dabbrev :with company-yasnippet))
   )
@@ -229,6 +240,7 @@
                   ("#+SETUPFILE:" . ?⛮)
                   ("#+TAGS:" . ?🏷)
                   ("#+TITLE:" . ?📓)
+                  ("#+title:" . ?📓)
 
                   ("#+BEGIN_SRC" . ?✎)
                   ("#+END_SRC" . ?□)
@@ -446,7 +458,6 @@
 (with-eval-after-load 'ox    ; 没有这一行的话，会因变量未定义而报错。
   (add-to-list 'org-export-filter-final-output-functions #'+org-export-remove-zero-width-space t))
 
-
 (custom-theme-set-faces
  'user
  `(org-level-1 ((t (:bold t :weight bold :foreground "#e45649" :height 1.75))))
@@ -467,8 +478,10 @@
  '(org-block-end-line
    ((t (:overline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5"))))
  '(table-cell ((t (:foreground "#000000"))))
- ;; '(variable-pitch ((t (:family "Source Han Serif SC" :height 120))))
- ;;'(fixed-pitch ((t ( :family "iA Writer Mono S" :height 111))))
+ '(variable-pitch ((t (:family "Merriweather" :height 130))))
+ '(fixed-pitch ((t ( :family "DejaVu Sans Mono" :height 130))))
+ '(magit-diff-added-highlight ((t (:bold t :weight bold :foreground "#50a14f" :background "#f0f5f0"))))
+ '(magit-diff-added ((t (:bold t :weight bold :foreground "#40803f" :background "#f0fafa"))))
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
 
@@ -478,7 +491,32 @@
 ;;   (global-lsp-bridge-mode))
 
 (use-package magit-delta
-  :hook (magit-mode . magit-delta-mode))
+  :hook (magit-mode . magit-delta-mode)
+  :config
+  (setq magit-delta-delta-args
+        '("--24-bit-color" "always"
+          "--features" "magit-delta"
+          "--color-only"))
+)
 
 (add-hook! 'rainbow-mode-hook
   (hl-line-mode (if rainbow-mode -1 +1)))
+
+(use-package tla-ts-mode
+  :mode "\\.tla\\'"
+  :ensure t
+  :config
+  ; The grammar is called tlaplus, but the mode is called tla
+  (setq treesit-load-name-override-list '((tla "libtree-sitter-tlaplus" "tree_sitter_tlaplus")))
+)
+
+
+(global-wakatime-mode)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODUS THEME ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq modus-themes-italic-constructs t
+      modus-themes-bold-constructs nil
+      modus-themes-mixed-fonts t
+      modus-themes-variable-pitch-ui nil
+      modus-themes-disable-other-themes t)

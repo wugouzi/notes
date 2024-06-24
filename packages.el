@@ -60,6 +60,7 @@
 (package! svg-tag-mode)
 (package! ivy-bibtex)
 (package! valign)
+(package! modus-themes)
 
 (package! magit-delta)
 
@@ -100,3 +101,7 @@
 ;;                  :build (:not compile)))
 ;;   (package! markdown-mode)
 ;;   (package! yasnippet))
+(package! tla-ts-mode
+  :recipe (:host github :repo "Davidbrcz/tla-ts-mode"))
+
+(package! wakatime-mode)
