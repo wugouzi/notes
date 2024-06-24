@@ -1,0 +1,313 @@
+#+title: The Art of Multiprocessor Programming
+#+AUTHOR: Many
+#+EXPORT_FILE_NAME: ../latex/ArtOfMultiprocessorProgramming/ArtOfMultiprocessorProgramming.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \DeclareMathOperator{\flag}{\texttt{flag}}
+#+LATEX_HEADER: \DeclareMathOperator{\victim}{\texttt{victim}}
+#+LATEX_HEADER: \DeclareMathOperator{\tlevel}{\texttt{level}}
+#+LATEX_HEADER: \DeclareMathOperator{\tlabel}{\texttt{label}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+
+* Mutual exclusion
+** Critical sections
+        A good ~Lock~ algorithm should satisfy:
+        * *Mutual exclusion*: At most one thread holds the lock at any time.
+        * *Freedom from deadlock*: If a thread is attempting to acquire or release the lock, then eventually
+          some thread acquires or relases the lock. If a thread calls ~lock()~ and never returns, then other
+          threads _must complete an infinite number of critical sections_ \wu{(different from normal deadlocks we counter)}.
+        * *Freedom from starvation*: Every thread that attempts to acquire or release the lock eventually succeeds.
+** The Peterson lock
+        #+CAPTION: Pseudocode for the \texttt{Peterson} lock algorithm
+        #+NAME:
+        #+begin_src java
+class Peterson implements Lock {
+    // thread-local index, 0 or 1
+    private boolean[] flag = new boolean[2];
+    private int victim;
+    public void lock() {
+        int i = ThreadID.get();
+        int j = 1 - i;
+        flag[i] = true;                   // I’m interested
+        victim = i;                       // you go first
+        while (flag[j] && victim == i) {} // wait
+    }
+    public void unlock() {
+        int i = ThreadID.get();
+        flag[i] = false;                  // I’m not interested
+    }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+            The ~Peterson~ lock algorithm satisfies mutual exclusion
+        #+END_lemma
+
+        #+BEGIN_proof
+        Suppose not. Consider the last executions of the ~lock()~ method by threads \(A\) and \(B\).
+        \begin{align*}
+        &write_i(\flag[i]=true)\to write_i(\victim=i)\\&\quad\to read_i(\flag[j])\to read_i(\victim)\to CS_i
+        \end{align*}
+        Suppose \(A\) was the last thread to write to the ~victim~ field, then \(A\) observed ~victim~ to be
+        \(A\). Since \(A\) nevertheless entered its critical section, it must have observed \(\flag[B]\) to be
+        /false/, so we have
+        \begin{equation*}
+        write_A(\victim=A)\to read_A(\flag[B]==false)
+        \end{equation*}
+        and
+        \begin{align*}
+        &write_B(\flag[B]=true)\to write_B(\victim=B)\\&\quad\to write_A(\victim=A)\to read_A(\flag[B]==false)
+        \end{align*}
+        A contradiction.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+            The ~Peterson~ lock algorithm is starvation-free.
+        #+END_lemma
+
+        #+BEGIN_proof
+        Suppose not, so some thread runs forever in the ~lock()~ method. Suppose that it is \(A\).
+
+        If \(B\) is repeatedly entering and leaving its critical section, then \(B\) sets ~victim~ to \(B\)
+        before it reenters the critical section. Therefore \(A\) must eventually return from the ~lock()~.
+
+        So \(B\) is also stuck in its ~lock()~ method. But ~victim~ cannot be both \(A\) and \(B\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_corollary
+        The ~Peterson~ lock algorithm is deadlock-free.
+        #+END_corollary
+
+** The filter lock
+        #+CAPTION: Psudocode for the \texttt{Filter} lock algorithm
+        #+NAME:
+        #+begin_src java
+class Filter implements Lock {
+    int[] level;
+    int[] victim;
+    public Filter(int n) {
+        level = new int[n];
+        victim = new int[n]; // use 1..n-1
+        for (int i = 0; i < n; i++) {
+            level[i] = 0;
+        }
+    }
+    public void lock() {
+        int me = ThreadID.get();
+        for (int i = 1; i < n; i++) { // attempt to enter level i
+            level[me] = i;
+            victim[i] = me;
+            // spin while conflicts exist
+            while ((∃k != me) (level[k] >= i && victim[i] == me)) {};
+        }
+    }
+    public void unlock() {
+        int me = ThreadID.get();
+        level[me] = 0;
+    }
+}
+        #+end_src
+
+        The ~Filter~ lock creates \(n-1\) *levels*, that a thread must traverse before acquiring the lock. Levels
+        satisfy two properties:
+        1. At least one thread trying to enter level \(l\) succeeds.
+        2. If more than one thread is trying to enter level \(l\), then at least one is blocked (i.e.,
+           continues to wait without entering that level).
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../images/ArtOfMulti/1.png]]
+        The value of \(\texttt{level}[A]\) indicates the highest level that thread \(A\) is trying to enter.
+
+        Initially, a thread \(A\) is at level 0. \(A\) *enters* level \(l>0\) when it completes the ~while~ loop
+        with \(\tlevel[A]=l\). \(A\) enters its critical section when it enters level \(n-1\). When \(A\)
+        leaves the critical section, it sets \(\tlevel[A]=0\).
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+            For \(j\) between \(0\) and \(n-1\), at most \(n-j\) threads have entered level \(j\) (and not
+            subsequently exited the critical section).
+        #+END_lemma
+
+        #+BEGIN_proof
+        Induction. IH implies that at most \(n-j+1\) threads have entered level \(j-1\). Assume that \(n-j+1\)
+        threads have entered level \(j\). Because \(j\le n-1\), there must be at least two such threads
+        (\(n-j+1\ge 2\)).
+
+        Let \(A\) be the last thread to write \(\victim[j]\). \(A\) must have entered level \(j\) since
+        \(\victim[j]\) is written only by threads that have entered level \(j-1\), and, by the IH, every
+        thread that has entered level \(j-1\) has also entered level \(j\).
+
+        Let \(B\) be any thread other than \(A\) that has entered level \(j\). Inspecting the code, we see
+        that before \(B\) enters level \(j\), it first writes \(j\) to \(\tlevel[B]\) and then writes \(B\) to
+        \(\victim[j]\). Since \(A\) is the last to write \(\victim[j]\), we have
+        \begin{equation*}
+        write_B(\tlevel[B]=j)\to write_B(\victim[j])\to write_A(\victim[j]).
+        \end{equation*}
+        We also see that \(A\) reads \(\tlevel[B]\) after it writes to \(\victim[j]\), so
+        \begin{align*}
+        &write_B(\tlevel[B]=j)\to write_B(\victim[j])\\&\quad\to write_A(\victim[j])\to read_A(\tlevel[B]).
+        \end{align*}
+        Because \(B\) has entered level \(j\), every time \(A\) reads \(\tlevel[B]\), it observes a value
+        greater than or equal to \(j\), and since \(\victim[j]=A\), \(A\) couldn't completed its waiting loop.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_corollary
+        The ~Filter~ lock algorithm satisfies mutual exclusion.
+        #+END_corollary
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The ~Filter~ lock algorithm is starvation-free.
+        #+END_lemma
+
+        #+BEGIN_proof
+        We prove by induction on \(j\) that every thread that enters level \(n-j\) eventually enters and
+        leaves the critical section (assuming that it keeps taking steps and that every thread that enters the
+        critical section eventually leaves it). The base case, with \(j=1\), is trivial because level \(n-1\)
+        is the critical section.
+
+        For the induction step, we suppose that every thread that enters level \(n-j\) or higher eventually
+        enters and leaves the critical section, and show that every thread that enters level \(n-j-1\) does
+        too.
+
+        Suppose, for contradiction, that a thread \(A\) has entered level \(n-j-1\) and is stuck. By IH, it
+        never enters level \(n-j\), so it must be stuck at loop with \(\tlevel[A]=n-j\) and
+        \(\victim[n-j]=A\). After \(A\) writes \(\victim[n-j]\), no thread enters level \(n-j-1\).
+        Furthermore, any other thread \(B\) trying to enter level \(n-j\) will eventually succeed because
+        \(\victim[n-j]=A\neq B\), so eventually no threads other than \(A\) are trying to enter level \(n-j\).
+        Moreover, any thread that enters level \(n-j\) will, by IH, enter and leave the critical section,
+        setting its level to 0. In particular, after this point, \(\tlevel[B]<n-j\) for every thread \(B\)
+        other than \(A\), so \(A\) can enter level \(n-j\), a contradiction.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_corollary
+        The ~Filter~ lock algorithm is deadlock-free.
+        #+END_corollary
+** Fairness
+        The starvation-freedom property guarantees that every thread that calls ~lock()~ eventually enters the
+        critical section, but it makes no guarantees about how long this may take, nor does it guarantee that
+        the lock will be “fair” to the threads attempting to acquire it.
+
+        Ideally (and very informally), if \(\) calls ~lock()~ before \(B\), then \(A\) should enter the critical
+        section before \(B\). To define fairness, we split the ~lock()~ method into a *doorway* section and a *waiting*
+        section, where the doorway section always completes in a bounded number of steps.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A lock is *first-come-first-served* if its ~lock()~ method can be split into a bounded wait-free doorway
+        section followed by a waiting section so that whenever thread \(A\) finishes its doorway before thread
+        \(B\) starts its doorway, \(A\) cannot be overtaken by \(B\). That is,
+        \begin{equation*}
+        \text{if }D_A^j\to D_B^k\text{ then }CS_A^j\to CS_B^k
+        \end{equation*}
+        for any threads \(A\) and \(B\) and integers \(j\) and \(k\), where \(D_A^j\) and \(CS_A^j\) are the
+        intervals during which \(A\) executes the doorway section of its \(j\)-th call to the ~lock()~ method
+        and its \(j\)-th critical section, respectively.
+        #+END_definition
+
+        Note that any algorithm that is both deadlock-free and first-come-first-served is also starvation-free.
+** Lamport's Bakery algorithm
+        #+CAPTION: Pseducode for the \texttt{Bakery} lock algorithm
+        #+begin_src java
+class Bakery implements Lock {
+    boolean[] flag;
+    Label[] label;
+    public Bakery (int n) {
+        flag = new boolean[n];
+        label = new Label[n];
+        for (int i = 0; i < n; i++) {
+            flag[i] = false; label[i] = 0;
+        }
+    }
+    public void lock() {
+        int i = ThreadID.get();
+        flag[i] = true;
+        label[i] = max(label[0], ...,label[n-1]) + 1;
+        while ((∃k != i)(flag[k] && (label[k],k) << (label[i],i))) {};
+    }
+    public void unlock() {
+        flag[ThreadID.get()] = false;
+    }
+}
+        #+end_src
+
+        ~Bakery~ lock algorithm solves mutual exclusion problem for \(n\) threads that guarantees the
+        /first-come-first-served/ property by using a distributed version of the number-dispensing machines
+        often found in bakeries: Each thread takes a number in the doorway, and then waits until no thread
+        with an earlier number is trying to enter the critical section.
+
+        \(\flag[A]\) indicates whether \(A\) wants to enter the critical section, and \(\tlabel[A]\) indicates
+        the thread's relative order when entering the bakery, for each thread. \(\ll\) is the dictionary
+        order.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The ~Bakery~ lock algorithm is deadlock-free.
+        #+END_lemma
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The ~Bakery~ lock algorithm is first-come-first-served.
+        #+END_lemma
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_corollary
+        The ~Bakery~ lock algorithm is starvation-free.
+        #+END_corollary
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The ~Bakery~ lock algorithm satisfies mutual exclusion.
+        #+END_lemma
+** Bounded timestamps
+        Consider constructing a _sequential_ timestamping system, in which threads perform _scan_-and-_label_
+        operations one completely after the other. We can implement such a system as an array of single-writer
+        multi-reader fields, with an element for each thread \(A\) that indicates the node that \(A\) most
+        recently assigned its token. The ~scan()~ method takes a “snapshot” of the array, and
+        the ~label()~ method for thread \(A\) updates the array element for \(A\).
+
+        Consider the precedence graph
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: 2.13
+        #+CAPTION:
+        [[../images/ArtOfMulti/2.png]]
+
+        Let \(G\) be a precedence graph, and \(A\) and \(B\) subgroups of \(G\). We say that \(A\) *dominates*
+        \(B\) in \(G\) if every node of \(A\) if every node of \(A\) has edges directed to every node of
+        \(B\). Let *graph multiplication* be the following noncommutative composition operation for graphs,
+        denoted by \(G\circ H\),
+        #+begin_quote
+        Replace every node \(v\) of \(G\) by a copy of \(H\), and let \(H_v\) dominate \(H_u\) in \(G\circ H\)
+        if \(v\) dominates \(u\) in \(G\)
+        #+end_quote
+
+        Define the graph \(T^k\) as:
+        1. \(T^1\).
+        2. \(T^2\).
+        3. For \(k>2\), \(T^k=T^2\circ T^{k-1}\).
+        Each \(T^k\) can accomodates \(k\) elements.
+
+        The precedence graph \(T^n\) is the basis for an \(n\)-thread bounded sequential timestamping system.
+        We can “address” any node in the \(T^n\) graph with \(n − 1\) digits, using ternary notation. For
+        example, the nodes in graph \(T^2\) are addressed by 0, 1, and 2. The nodes in graph \(T^3\) are
+        denoted by 00, 01, . . . , 22, where the high-order digit indicates one of the three subgraphs, and
+        the low-order digit indicates one node within that subgraph.
+
+        How does the ~label()~ method work for three threads? When A calls ~label()~, if both the other threads have tokens on the same \(T^2\) subgraph, then move to a node
+        on the next highest \(T^2\) subgraph, the one whose nodes dominate that \(T^2\) subgraph.
+        For example, consider the graph \(T^3\) as illustrated in Fig. [[ref:2.13]]. We assume an initial
+        acyclic situation in which there is a token \(A\) on node 12 and
+        tokens \(B\) and \(C\) on nodes 21 and 22. Token \(B\) will move
+        to node 20 to dominate all others. Token C will then move to node 21 to dominate
+        all others, and B and C can continue to cycle in the \(T^2\) subgraph 2 forever. If A is to
+        move to dominate \(B\) and \(C\), it will move to node 00. If \(B\) now moves, it will choose node 01,
+        \(C\) will choose node 10, and so on.
+** Lower bounds on the number of locations

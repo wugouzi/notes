@@ -49,7 +49,7 @@
         * Once a follower learns that a log entry is committed, it applies the entry to its local state
           machine (in log order).
 
-        Raft maintains the following properties, which together constitute the Log Matching Property:
+        Raft maintains the following properties, which together constitute the *Log Matching Property*:
         * If two entries in different logs have the same index and term, then they store the same command.
         * If two entries in different logs have the same index and term, then the logs are identical in all
           preceding entries.
@@ -111,8 +111,8 @@
         In any leader-based consensus algorithm, the leader *must* eventually store all of the committed log
         entries.
 
-        Raft uses the voting process to prevent a candidate from winning an election unless its log contains
-        all committed entries:
+        Raft uses the voting process to _prevent a candidate from winning an election unless its log contains_
+        _all committed entries_:
         * A candidate must contact a majority of the cluster in order to be elected, which means that every
           committed entry must be present in at least one of those servers.
         * If the candidate's log is at least as *up-to-date* as any other log in that majority, then it will
@@ -122,6 +122,8 @@
         entries in the logs.
         * If the logs have last entries with different terms, then the log with the later term is more up-to-date.
         * If the logs end with the same term, then whichever log is longer is more up-to-date.
+
+        The correctness of this notion of up-to-date comes from Log Matching Property.
 *** Committing entries from previous terms
         A leader cannot immediately conclude that an entry from a previous term is committed once it is stored
         on a majority of servers:
@@ -391,7 +393,7 @@
         1. If the leader has not yet marked an entry from its current term committed, it waits until it has
            done so. The Leader Completeness Property guarantees that a leader has all committed entries, but
            at the start of its term, it may not know which those are. To find out, it needs to commit an entry
-           from its term. Raft handles this by having each leader commit a blank /no-op/ entry into the log at
+           from its term. Raft handles this by having each leader commit a blank *no-op* entry into the log at
            the start of its term. As soon as this no-op entry is committed, the leader's commit index will be at least as large as any other servers' during its term.
         2. The leader saves its current commit index in a local variable ~readIndex~.
         3. The leader needs to make sure it hasn’t been superseded by a newer leader of which it is unaware.
@@ -449,6 +451,14 @@
         * Servers fail by stopping and may later restart from stable storage on disk.
         * The network may reorder, drop, and duplicate messages.
 * Leader election evaluation
+** Preventing disruptions when a server rejoins the cluster
+        One downside of Raft’s leader election algorithm is that a server that has been partitioned from the
+        cluster is likely to cause a disruption when it regains connectivity.
+
+        In the Pre-Vote algorithm, a candidate only increments its term if it first learns from a majority of
+        the cluster that they would be willing to grant the candidate their votes:
+        1. if the candidate's log is sufficiently up-to-date
+        2. voters have not received heartbeats from a valid leader for at least a baseline election timeout
 * Problem
         1. [[Problem1]]: Not quite understand
         2. [[Problem2]]: same roblem
