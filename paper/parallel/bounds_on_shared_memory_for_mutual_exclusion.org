@@ -1,0 +1,56 @@
+#+title: Bounds on Shared Memory for Mutual Exclusion
+
+#+AUTHOR: James Burns & Nancy A. Lynch
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/parallel/bounds_on_shared_memory_for_mutual_exclusion.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/parallel/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+It is shown that \(n\) binary shared variables are necessary and sufficient to solve the problem of mutual
+exclusion with guaranteed global progress for \(n\) processes using only atomic reads and writes of shared
+variables for communication.
+* Read/Write Systems
+        Let \([n]=\{0,1,\dots,n-1\}\). A *system* is a 4-tuple \(S=(P,V,q_0,\phi)\) where \(P\) is a finite set
+        of \(n>0\) processes, \(V\) is a finite set of \(m>0\) variables, \(q_0\) is the initial configuration
+        of \(S\), and \(\phi\) is the transition function of \(S\). We always let
+        \(P=\{p_0,p_1,\dots,p_{n-1}\}\). The possibly infinite set \(X_i\) of states of \(p_i\) is partitioned
+        into mutually disjoint sets \(R_i,T_i,C_i\) and \(E_i\), which are called the *remainder region*,
+        *trying region*, *critical region* and *exit region*, respectively. The set of values of the \(j\)th
+        variable of \(V\) is \(V_j\). A *configuration* of \(S\) is an \((n_m)\)-tuple,
+        \(q=(x_1,\dots,x_{n-1},v_0,\dots,v_{m-1})\), where \(x_i\in X_i\) for each \(i\in[n]\), and
+        \(v_j\in V_j\) for each \(j\in[m]\); we use \(X_i,V_j\) and \(V\) as projection operators defined by
+        \(X_i(q)=x_i\), \(V_j(q)=v_j\) and \(V(q)=(v_0,\dots,v_{m-1})\).
+
+        Let \(Q\) be the set of all configurations of \(S\). Then \(\phi\) is a total function from
+        \([n]\times Q\) to \(Q\) satisfying the following conditions. Let \(i\) be an integer in \([n]\) and
+        \(q\) be a configuration of \(S\). If \(q'=\phi(i,q)\) then we write \(q\xrightarrow{i}q'\) and
+        require that
+        * \(X_j(q')=X_j(q)\) for all \(j\in[n]-\{i\}\).
+        * If \(X_i(q)\in R_i\cup T_i\), then \(X_i(q')\in T_i\cup C_i\).
+        * If \(X_i(q)\in C_i\cup E_i\), then \(X_i(q')\in E_i\cup R_i\).
+
+        The first condition implies that processes communicate only by the shared variables, since no process
+        can directly affect the state of another.
+
+        The latter two conditions enfore a cyclic order on the regions (remainder, trying, critical, exit) but
+        allow direct transitions from remainder to critical and critical to remainder.
+
+        A system \(S=(P,V,q_0,\phi)\) is a *read/write system* if for every \(i\in[n]\), \(X_i\) can be
+        partitioned into \(2m\) disjoint sets \(Read_i^k\) and \(Write_i^k\) for \(k\in[m]\) s.t. the
+        following conditions hold for every configuration \(q\) of \(S\). If \(X_i(q)\in Read_i^k\) then we
+        say \(P_i\) is *about to read* the \(k\)th variable at \(q\) and require that
+        * \(V(\phi(i,q))=V(q)\)
+        * for every configuration \(q'\) of \(S\) with \(X_i(q')=X_i(q)\), if \(V_k(q')=V_k(q)\) then
+          \(X_i(\phi(i,q'))=X_i(\phi(i,q))\).
+
+        We say that the transition \(q\to\phi(i,q)\) is a *read* of the \(k\)th variable by \(p_i\).
+
+
+* Problems
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

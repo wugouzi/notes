@@ -362,6 +362,63 @@
              up-to-date log among both the old and new clusters can collect votes from a majority of
              \(C_{old}\) and a majority of \(C_{new}\), so no matter which configuration it uses, it can
              become leader.
+* Log compaction
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/23.png]]
+
+        The various approaches to compaction share several core concepts.
+        * Instead of centralizing compaction decisions on the leader, each server compacts the committed
+          prefix of its log independently.
+        * The basic interaction between the state machine and Raft involves transferring responsibility for a
+          prefix of the log from Raft to the state machine.
+        * Once Raft has discarded a prefix of the log, the state machine takes on two new responsibilities.
+          1. If the server restarts, the state machine will need to load the state corresponding to the
+             discarded log entries from disk before it can apply any entries from the Raft log.
+          2. the state machine may need to produce a consistent image of the state so that it can be sent to a
+             slow follower.
+          It is not feasible to defer compaction until log entries have been “fully replicated” to every
+          member in the cluster, since a minority of slow followers must not keep the cluster from being
+          fully available, and new servers can be added to the cluster at any time.
+** Snapshotting memory-based state machines
+        Each server takes snapshots independently, covering just the committed entries in its log. Most of the
+        work in snapshotting involves serializing the state machine’s current state, and this is specific to a
+        particular state machine implementation. 
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/24.png]]
+
+        Once the state machine completes writing a snapshot, the log can be truncated. Raft first stores the
+        state it needs for a restart:
+        * the index and term of the last entry included in the snapshot
+        * the latest configuration as of that index.
+        Then it discards the prefix of its log up through that index. Any previous snapshots can also be
+        discarded, as they are no longer useful.
+
+
+        The leader may occasionally need to send its state to slow followers and to new servers that are
+        joining the cluster. In snapshotting, this state is just the latest snapshot, which the leader
+        transfers using a new RPC called ~InstallSnapshot~:
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/25.png]]
+        When a follower receives a snapshot with this RPC, it must decide what to do with its existing log
+        entries.
+        * Usually the snapshot will contain new information not already in the follower’s log. In this case,
+          the follower discards its entire log; it is all superseded by the snapshot and may possibly have
+          uncommitted entries that conflict with the snapshot.
+        * If the follower receives a snapshot that describes a prefix of its log (due to retransmission or by
+          mistake), then log entries covered by the snapshot are deleted but entries following the snapshot
+          are still valid and must be retained.
+*** Snapshotting concurrently
+** Snapshotting disk-based state machines
+        Disk-based state machines must be able to provide a consistent snapshot of the disk for the purpose of
+        transmitting it to slow followers.
+
+
 * Client Interaction
         #+ATTR_LATEX: :width .99\textwidth :float nil
         #+NAME:

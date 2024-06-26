@@ -1,0 +1,133 @@
+#+title: Distributed Algorithms
+
+#+AUTHOR: Nancy Lynch
+#+EXPORT_FILE_NAME: ../latex/DistributedAlgorithms/DistributedAlgorithms.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+* Modelling \rom{2}: Asynchronous System Model
+** I/O Automata
+        A *signature* \(S\) is a triple consisting of three disjoint sets of actions: the *input actions*,
+        \(in(S)\), the *output actions*, \(out(S)\), and the *internal actions*, \(int(S)\). We define the
+        *external actions*, \(ext(S)\), to be \(in(S)\cup out(S)\); and *locally controlled actions*, \(local(S)\)
+        to be \(out(S)\cup int(S)\); and \(acts(S)\) to be all the actions of \(S\). The *external signature*,
+        \(extsig(S)\), is defined to be the signature \((in(S),out(S),\emptyset)\).
+
+        An *I/O automaton* \(A\), which we also call simply an *automaton*, consists of five components:
+        * \(sig(A)\), a signature
+        * \(states(A)\)
+        * \(start(A)\), a nonempty subset of \(states(A)\) known as the *start states* or *initial states*
+        * \(trans(A)\), a *state-transition relation* where \(trans(A)\subseteq states(A)\times
+          acts(sig(A))\times states(A)\).
+        * \(tasks(A)\), a *task partition*, which is an equivalence relation on \(local(sig(A))\) having at most
+          countably many equivalence classes
+
+        We use \(acts(A)\) as shorthand for \(acts(sig(A))\), and similarly \(in(A)\), and so on.
+
+        We call an element \((s,\pi,s')\) of \(trans(A)\) a *transition*, or *step*, of \(A\). The transition
+        \((s,\pi,s')\) is called  an *input transition*, *output transition*, and so on, based on whether the
+        action \(\pi\) is an input action, output action, and so on.
+
+        If for a particular state \(s\) and action \(\pi\), \(A\) has some transition of the form
+        \((s,\pi,s')\), then we say that \(\pi\) is enabled in \(s\). Since every input action is required to
+        be enabled in every state, automata are said to be *input-enabled*. We say that state \(s\) is *quiescent*
+        if the only actions that are enabled in s are input actions.
+** Operations on Automata
+*** Composition
+        The composition identifies actions with the same name in different component automata. When any
+        component automaton performs a step involving \(\pi\), so do all component automata that have \(\pi\)
+        in their signatures.
+
+        We impose certain restrictions on the automata that may be composed.
+        1. Since internal actions of an automaton \(A\) are intended to be unobservable by any other automaton
+           \(B\), we do not allow \(A\) to be composed with \(B\) unless the internal actions of A are
+           disjoint from the actions of B.
+
+           Otherwise, A's performance of an internal action could force B to take a step.
+        2. In order that the composition operation might satisfy nice properties, we establish a convention
+           that at most one component automaton "controls" the performance of any given action; that is, we do
+           not allow \(A\) and \(B\) to be composed unless the sets of output actions of A and B are disjoint.
+        3. We do not preclude the possibility of composing a countably infinite collection of automata, but we
+           do require in this case that each action must be an action of only finitely many of the component automata.
+
+        A countable collection \(\{S_i\}_{i\in I}\) of signatures to be *compatible* if for all \(i,j\in I\),
+        \(i\neq j\), all of the following hold:
+        1. \(int(S_i)\cap acts(S_j)=\emptyset\)
+        2. \(out(S_i)\cap out(S_j)=\emptyset\)
+        3. No action is contained in infinitely many sets \(acts(S_i)\)
+        We say that a collection of automata is *compatible* if their signatures are compatible.
+
+        The *composition* \(S=\prod_{i\in I}S_i\) of a countable compatible collection of signatures
+        \(\{S_i\}_{i\in I}\) is defined to be the signature with
+        * \(out(S)=\bigcup_{i\in I}out(S_i)\)
+        * \(int(S)=\bigcup_{i\in I}int(S_i)\)
+        * \(in(S)=\bigcup_{i\in I}in(S_i)-\bigcup_{i\in I}out(S_i)\)
+
+        Now the *composition* \(A=\prod_{i\in I}A_i\) of a countable, compatible collection of I/O automata
+        \(\{A_i\}_{i\in I}\) can be defined. It is the automaton defined as:
+        * \(sig(A)=\prod_{i\in I}sig(A_i)\)
+        * \(states(A)=\prod_{i\in I}states(A_i)\)
+        * \(start(A)=\prod_{i\in I}start(A_i)\)
+        * \(trans(A)\) is the set of triples \((s,\pi,s')\) s.t., for all \(i\in I\), if \(\pi\in acts(A_i)\),
+          then \((s_i,\pi,s_i')\in trans(A_i)\); otherwise \(s_i=s_i'\).
+
+
+
+* Mutual Exclusion
+
+** Asynchronous Shared Memory Model
+        The system is modelled as a collection of processes and shared variables,
+        with interactions. Each process \(i\) is a kind of state machine, with a set statesi of states and a subset \(start\) of \(states_i\) indicating the
+        start states, just as in the synchronous setting. However, now process \(i\) also has labelled
+        \(actions\), describing the activities in which it participates. These are classified as either
+        \(input\), \(output\), or \(internal\) actions. We further distinguish between two different kinds of
+        internal actions: those that involve the shared memory and those that involve strictly local
+        computation. If an action involves the shared memory, we assumethat it only involves one shared
+        variable.
+
+        There is a transition relation \(trans\) for the entire system, which is a set of \((s,\pi,s')\)
+        triples, where \(s\) and \(s'\) are *automaton states*, that is, combinations of states for all the
+        processes and values for all the shared variables, and where \(\pi\)  is the label of an input,
+        output, or internal action. We call these combinations of process states and variable values
+        "automaton states" because  the entire system is modelled as a single automaton. The statement that
+        \((s,\pi,s')\in trans\) says that from automaton state \(s\) it is possible to go to automaton state
+        \(s'\) as a result of performing action \(\pi\).
+
+        We assume that input actions can always happen, that is, that the system is input-enabled. Formally,
+        this means that for every automaton state \(s\) and input action \(\pi\), there exists \(s'\) such
+        that \((s,\pi,s')\in trans\). In contrast, output and internal steps might be enabled only in a subset
+        of the states. The intuition behind the input-enabling property is that the input actions are
+        controlled by an arbitrary external user, while the internal and output actions are controlled by the
+        system itself.
+
+
+** The Problem
+        The mutual exclusion problem involves the allocation of a single, indivisible, nonshareable resource
+        among \(n\) *users*, \(U_1,\dots,U_n\).
+
+        A user with access to the resource is modelled as being in a *critical region*, which is simply a
+        designated subset of its states. When a user is not involved in any way with the resource, it is said
+        to be in the *remainder region*. In order to gain admittance to its critical region, a user executes a
+        *trying protocol*, and after it is done with the resource, it executes an (often trivial) *exit protocol*.
+        This procedure can be repeated, so that each user follows a cycle, moving from its
+        /remainder region/ (R) to its /trying region/ (T), then to its /critical region/ (C), then to its /exit
+        region/ (E), and then back again to its remainder region.  
+
+        #+ATTR_LATEX: :width .2\textwidth :float nil
+        #+NAME: 10.2
+        #+CAPTION: The cycle of regions of a single user
+        [[../images/DistributedAlgorithms/1.png]]
+
+        Each of the users \(U_i\), \(1\le i\le n\), is modelled as a state machine (formally, an *I/O
+        automaton*) that communicates with its agent process using the \(try_i\), \(crit_i\), \(exit_i\) and
+        \(rem_i\) actions:
+        #+ATTR_LATEX: :width .2\textwidth :float nil
+        #+NAME: 10.3
+        #+CAPTION: External interface of user \(U_i\)
+        [[../images/DistributedAlgorithms/2.png]]
+
+        We define a sequence of \(try_i\), \(crit_i\), \(exit_i\) and \(rem_i\) actions to be *well-formed* for
+        user \(i\) if it is a prefix of the cyclically ordered sequence
+        \(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) *preserve* the *trace property*
+        defined by the set of sequences that are well-ordered for user \(i\).
