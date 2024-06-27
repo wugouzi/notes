@@ -30,9 +30,94 @@
         action \(\pi\) is an input action, output action, and so on.
 
         If for a particular state \(s\) and action \(\pi\), \(A\) has some transition of the form
-        \((s,\pi,s')\), then we say that \(\pi\) is enabled in \(s\). Since every input action is required to
+        \((s,\pi,s')\), then we say that \(\pi\) is *enabled* in \(s\). Since every input action is required to
         be enabled in every state, automata are said to be *input-enabled*. We say that state \(s\) is *quiescent*
         if the only actions that are enabled in s are input actions.
+
+        A task \(C\) is *enabled* in a state \(s\) means somes action in \(C\) is enabled in \(s\).
+
+        #+ATTR_LATEX: :options [Channel I/O automaton]
+        #+BEGIN_examplle
+        [[label:8.1.1]]
+        Consider a communication channel automaton \(C_{i,j}\). Let \(M\) be a fixed message alphabet.
+        * *Signature*:
+          \begin{alignat*}{2}
+          &\text{Input}:\hspace{3cm}&&\text{Output:}\\
+          &\quad send(m)_{i,j},m\in M&&\quad receive(m)_{i,j},m\in M
+          \end{alignat*}
+        * *States*: \(queue\), a FIFO queue of elements of \(M\), initially empty
+        * *Transitions*:
+          \begin{alignat*}{2}
+          &send(m)_{i,j}\hspace{3cm}&&receive(m)_{i,j}\\
+          &\quad\text{Effect:}&&\quad\text{Precondition:}\\
+          &\quad\quad\text{add }m\text{ to }queue&&\quad\quad m\text{ is first on }queue\\
+          &&&\quad\text{Effect:}\\
+          &&&\quad\quad\text{remove first element of }queue
+          \end{alignat*}
+        * *Tasks*: \(\{receive(m)_{i,j}:m\in M\}\)
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Process I/O automata]
+        #+BEGIN_examplle
+        [[label:8.1.2]]
+
+        Consider a process automaton \(P_i\). \(V\) is a fixed value set, \(null\) is a special value not in \(V\), \(f\) is a fixed function,
+        \(f:V^n\to V\)
+        * *Signature*:
+          * Input:
+            * \(init(v)_i,v\in V\)
+            * \(receive(v)_{j,i}\), \(v\in V\), \(1\le j\le n\), \(j\neq i\)
+          * Output:
+            * \(decide(v)_i\), \(v\in V\)
+            * \(send(v)_{i,j}\), \(v\in V\), \(1\le j\le n\), \(j\neq i\)
+        * *States*: \(val\), a vector indexed by \(\{1,\dots,n\}\) of elements in \(V\cup\{null\}\), all
+          initially \(null\)
+        * *Transitions*:
+          \begin{alignat*}{2}
+          &init(v)_i,v\in V\hspace{2cm}&&receive(v)_{j,i},v\in V\\
+          &\quad\text{Effect:}&&\quad\text{Effect:}\\
+          &\quad\quad val(i):=v&&\quad\quad val(j):=v\\\\
+          &send(v)_{i,j}, v\in V&&decide(v)_i,v\in V\\
+          &\quad\text{Precondition:}&&\quad\text{Precondition:}\\
+          &\quad\quad val(i)=v&&\quad\quad\text{for all }j, 1\le j\le n:\\
+          &\quad\text{Effect:}&&\quad\quad\quad val(j)\neq null\\
+          &\quad\quad\quad\text{none}&&\quad\quad v=f(val(1),\dots,val(n))\\
+          &&&\quad\text{Effect:}\\
+          &&&\quad\quad\text{none}
+          \end{alignat*}
+        * *Tasks*: for every \(j\neq i\): \(\{send(v)_{i,j}:v\in V\}\), \(\{decide(v)_i:v\in V\}\).
+
+        An *execution fragment* of \(A\) is either a finite sequence \(s_0,\pi_1,s_1,\pi_2,\dots,\pi_r,s_r\) or
+        an infinite sequence \(s_0,\pi_1,s_1,\pi_2,\dots\), of alternating states and actions of \(A\) s.t.
+        \((s_k,\pi_{k+1},s_{k+1})\) is a transition of \(A\) for every \(k\ge 0\). An execution fragment
+        beginning with a start state is called an *execution*. We denote the set of executions of \(A\) by
+        \(execs(A)\). A state is *reachable* if it is the final state of a finite execution of \(A\).
+
+        If \(\alpha\) is a finite execution fragment of \(A\) and \(\alpha'\) is any execution fragment of
+        \(A\) that begins with the last state of \(\alpha\), then we write \(\alpha\cdot\alpha'\) to represent
+        the sequence obtained by concatenating \(\alpha\) and \(\alpha'\), eliminating the duplicate
+        occurrence of the last state of \(\alpha\).
+        #+END_examplle
+
+        The *trace* of an execution \(\alpha\) of \(A\), denoted by \(trace(\alpha)\), is the subsequence of
+        \(\alpha\) consisting of all the external actions. We say that \(\beta\) is a *trace* of \(A\)  if
+        \(\beta\) is the trace of an execution of \(A\). We denote the set of traces of \(A\) by
+        \(traces(A)\).
+
+        #+ATTR_LATEX: :options [Executions]
+        #+BEGIN_examplle
+        [[label:8.1.3]]
+
+        The following are three executions of the automaton \(C_{i,j}\) described in Example ref:8.1.1
+        (assuming that the message alphabet \(M\) is equal to the set \(\{1,2\}\)). Here we indicate the
+        states by putting the sequences in /queue/ in brackets; \(\lambda\) denotes the empty sequence.
+
+        \begin{align*}
+        &[\lambda],send(1)_{i,j},[1],receive(1)_{i,j},[\lambda],send(2)_{i,j},[2],receive(2)_{i,j},[\lambda]\\
+        &[\lambda],send(1)_{i,j},[1],receive(1)_{i,j},[\lambda],send(2)_{i,j},[2]\\
+        &[\lambda],send(1)_{i,j},[1],send(1)_{i,j},[11],send(1)_{i,j},[111],\dots
+        \end{align*}
+        #+END_examplle
 ** Operations on Automata
 *** Composition
         The composition identifies actions with the same name in different component automata. When any
@@ -73,9 +158,163 @@
           then \((s_i,\pi,s_i')\in trans(A_i)\); otherwise \(s_i=s_i'\).
 
 
+        Note that an action \(\pi\) that is an output of one component and an input of another is classified
+        as an output action in the composition, not as an internal action. This is because we want to permit
+        the possibility of further communication using \(\pi\).
 
+        #+ATTR_LATEX: :options [Composition of automata]
+        #+BEGIN_examplle
+        [[label:8.2.1]]
+        Consider a fixed index set \(I=\{1,\dots,n\}\) and let \(A\) be the composition of all the process
+        automata \(P_i\), \(i\in I\) from Example [[ref:8.1.2]]. In order to compose them, we must assume that the
+        message alphabet \(M\) for the channel automata contains the value set \(V\) for the process automata.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 8.3
+        #+CAPTION: Composition of \(P_i\)s and \(C_{i,j}\)s
+        [[../images/DistributedAlgorithms/3.png]]
+
+        1. An \(init(v)_i\) input action, which deposits a value in \(P_i\)'s \(val(i)\) variable, \(val(i)_i\).
+        2. A \(send(v)_{i,j}\) output action, by which \(P_i\)'s value \(val(i)_i\) gets put into channel \(C_{i,j}\).
+        3. A \(receive(v)_{i,j}\) output action, by which the first message in \(C_{i,j}\) is removed and
+           simultaneously placed into \(P_j\)'s variable \(val(i)_j\).
+        4. A \(decide(v)_i\) output action, by which \(P_i\) announcs its current computed value.
+
+        #+END_examplle
+
+        Given an execution \(\alpha=s_0,\pi_1,s_1,\dots\), of \(A\), let \(\alpha|A_i\) be the sequence
+        obtained by deleting each pair \(pi_r,s_r\) for which \(\pi_r\) is not an action of \(A_i\) and
+        replacing each remaining \(s_r\) by \((s_r)_i\).
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        1. If \(\alpha\in execs(A)\), then \(\alpha|A_i\in execs(A_i)\) for every \(i\in I\).
+        2. If \(\beta\in traces(A)\), then \(\beta|A_i\in traces(A_i)\) for every \(i\in I\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        Suppose \(\alpha_i\) is an execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
+        sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=traces(\alpha_i)\) for every \(i\in I\). Then there
+        is an execution \(\alpha\) of \(A\) s.t. \(\beta=trace(\alpha)\) and \(\alpha_i=\alpha|A_i\) for every
+        \(i\in I\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\)  be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in traces(A_i)\) for every
+        \(i\in I\), then \(\beta\in traces(A)\).
+        #+END_theorem
+*** Hiding
+        If \(S\) is a signature and \(\Phi\subset out(S)\), then \(hide_\phi(S)\) is defined to be the new
+        signature \(S'\), where \(in(S')=in(S)\), \(out(S')=out(S)-\Phi\) and \(int(S')=int(S)\cup\Phi\).
+
+        If \(A\) is an automaton and \(\Phi\subseteq out(A)\), then \(hide_\Phi(A)\) is the automaton \(A'\)
+        obtained from \(A\) by replacing \(sig(A)\) with \(sig(A')=hide_\Phi(sig(A))\).
+*** Fairness
+        An execution fragment \(\alpha\) of an I/O automaton \(A\) is said to be *fair* if the following
+        conditions hold for each class \(C\) of \(tasks(A)\):
+        1. If \(\alpha\) is finite, then \(C\) is not enabled in the final state of \(\alpha\)
+        2. If \(\alpha\) is infinite, then \(\alpha\) contains either infinitely many events from \(C\) or
+           infinitely many occurrences of states in which \(C\) is not enabled.
+
+        We use the term *event* to denote the occurrence of an action in a sequence.
+
+        * We can understand the definition of fairness as saying that infinitely often, each task \(C\) is
+          given a turn. Whenever this happens, either an action of \(C\) gets performed or no action from
+          \(C\) could possibly be performed since no such action is enabled.
+        * We can think of a finite fair execution as an execution at the end of which the automaton
+          repeatedly gives turns to all the tasks in round-robin order, but never succeeds in performing any
+          action since none are enabled in the final state. <<P1>>
+
+        We denote the set of fair executions of \(A\) by \(fairexecs(A)\). We say that \(\beta\) is a *fair
+        trace* of \(A\) if \(\beta\) is the trace of a fair execution of \(A\), and we denote the set of fair
+        traces of \(A\) by \(fairtraces(A)\).
+
+        #+ATTR_LATEX: :options [Fairness]
+        #+BEGIN_examplle
+        In Example [[ref:8.1.3]], the first execution given is fair, because no \(receive\) action is enabled in
+        its final state. The second is not fair, because it is finite and a \(receive\) action is enabled in
+        the final state. The third is not fair, because it is infinite, contains no \(receive\) events, and
+        has \(receive\) actions enabled at every point after the first step.
+        #+END_examplle
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        1. If \(\alpha\in fairexecs(A)\), then \(\alpha|A_i\in fairexecs(A_i)\) for every \(i\in I\).
+        2. If \(\beta\in fairtraces(A)\), then \(\beta|A_i\in fairtraces(A_i)\) for every \(i\in I\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        Suppose \(\alpha_i\) is a fair execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
+        sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=trace(\alpha_i)\) for every \(i\in I\). Then there
+        is a fair execution \(\alpha\) of \(A\) s.t. \(\beta=trace(\alpha)\) and \(\alpha_i=\alpha|A_i\) for
+        every \(i\in I\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+        Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in fairexecs(A_i)\)  for
+        every \(i\in I\), then \(\beta\in fairexecs(A)\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options [Fairness]
+        #+BEGIN_examplle
+        Consider the fair executions of the system of three processes and three channels in Example ref:8.2.1.
+        In every fair execution, every message that is sent is eventually received.
+
+        In every fair execution containing least one \(init_i\) event for each \(i\), each process sends
+        infinitely many messages to each other processes and each process performs infinitely many \(decide\) steps
+
+        In every fair execution that does not contain at least one \(init\) event for each process, no process
+        ever performs a \(decide\) step.
+        #+END_examplle
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(A\) be any I/O automaton.
+        1. If \(\alpha\) is a finite execution of \(A\), then there is a fair execution of \(A\) that starts
+           with \(\alpha\).
+        2. If \(\beta\) is a finite trace of \(A\), then there is a fair trace of \(A\) that starts with \(\beta\).
+        3. If \(\alpha\) is a finite execution of \(A\) and \(\beta\) is any sequence of input actions of
+           \(A\), then there is a fair execution \(\alpha\cdot\alpha'\) of \(A\) s.t. the sequence of input
+           actions in \(\alpha'\) is exactly \(\beta\)
+        4. If \(\beta\) is a finite trace of \(A\) and \(\beta'\) is any sequence of input actions of \(A\),
+           then there is a fair execution \(\alpha\cdot\alpha'\) of \(A\) s.t. \(trace(\alpha)=\beta\) and
+           s.t. the sequence of input actions in \(\alpha'\) is exactly \(\beta'\)
+        #+END_theorem
+** Inputs and Outputs for Problems
+** Properties and Proof Methods
+*** Invariant Assertions
+*** Trace Properties
+        A *trace property* \(P\) consists of the following:
+        * \(sig(P)\), a signature containing no internal actions
+        * \(traces(P)\), a set of (finite or infinite) sequences of actions in \(acts(sig(P))\)
+
+        That is, a trace property specifies both an external interface and a set (in other words, a property)
+        of sequences observed at that interface. We write \(acts(P)\) as shorthand for \(acts(sig(P))\), and
+        similarly \(in(P)\), and so on.
+
+        The statement that an I/O automaton \(A\) satisfies a trace property \(P\) can be mean either of two
+        different things:
+        1. \(extsig(A)=sig(P)\) and \(traces(A)\subseteq traces(P)\)
+        2. \(extsig(A)=sig(P)\) and \(fairtraces(A)\subseteq traces(P)\)
+        The fact that \(A\) is input-enabled ensures that \(fairtraces(A)\) contains a response by \(A\) to
+        each possible sequence of input actions. If \(fairtraces(A)\subseteq traces(P)\), then all of the
+        resulting sequences must be included in the property \(P\).
+
+        #+ATTR_LATEX: :options [Automata and trace properties]
+        #+BEGIN_examplle
+        Consider automata and trace properties with input set \(\{0\}\) and output set \(\{1,2\}\). First
+        suppose that
+        #+END_examplle
 * Mutual Exclusion
-
 ** Asynchronous Shared Memory Model
         The system is modelled as a collection of processes and shared variables,
         with interactions. Each process \(i\) is a kind of state machine, with a set statesi of states and a subset \(start\) of \(states_i\) indicating the
@@ -131,3 +370,5 @@
         user \(i\) if it is a prefix of the cyclically ordered sequence
         \(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) *preserve* the *trace property*
         defined by the set of sequences that are well-ordered for user \(i\).
+* Q&A
+        1. [[P1]]. Need think.

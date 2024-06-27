@@ -1,4 +1,4 @@
-% Created 2024-06-26 Wed 18:38
+% Created 2024-06-27 Thu 19:20
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -32,11 +32,302 @@
 \maketitle
 \tableofcontents
 
-\section{Mutual Exclusion}
-\label{sec:orgd2ea250}
+\section{Modelling \rom{2}: Asynchronous System Model}
+\label{sec:org344abac}
+\subsection{I/O Automata}
+\label{sec:orge480873}
+A \textbf{signature} \(S\) is a triple consisting of three disjoint sets of actions: the \textbf{input actions},
+\(in(S)\), the \textbf{output actions}, \(out(S)\), and the \textbf{internal actions}, \(int(S)\). We define the
+\textbf{external actions}, \(ext(S)\), to be \(in(S)\cup out(S)\); and \textbf{locally controlled actions}, \(local(S)\)
+to be \(out(S)\cup int(S)\); and \(acts(S)\) to be all the actions of \(S\). The \textbf{external signature},
+\(extsig(S)\), is defined to be the signature \((in(S),out(S),\emptyset)\).
 
+An \textbf{I/O automaton} \(A\), which we also call simply an \textbf{automaton}, consists of five components:
+\begin{itemize}
+\item \(sig(A)\), a signature
+\item \(states(A)\)
+\item \(start(A)\), a nonempty subset of \(states(A)\) known as the \textbf{start states} or \textbf{initial states}
+\item \(trans(A)\), a \textbf{state-transition relation} where \(trans(A)\subseteq states(A)\times
+          acts(sig(A))\times states(A)\).
+\item \(tasks(A)\), a \textbf{task partition}, which is an equivalence relation on \(local(sig(A))\) having at most
+countably many equivalence classes
+\end{itemize}
+
+We use \(acts(A)\) as shorthand for \(acts(sig(A))\), and similarly \(in(A)\), and so on.
+
+We call an element \((s,\pi,s')\) of \(trans(A)\) a \textbf{transition}, or \textbf{step}, of \(A\). The transition
+\((s,\pi,s')\) is called  an \textbf{input transition}, \textbf{output transition}, and so on, based on whether the
+action \(\pi\) is an input action, output action, and so on.
+
+If for a particular state \(s\) and action \(\pi\), \(A\) has some transition of the form
+\((s,\pi,s')\), then we say that \(\pi\) is \textbf{enabled} in \(s\). Since every input action is required to
+be enabled in every state, automata are said to be \textbf{input-enabled}. We say that state \(s\) is \textbf{quiescent}
+if the only actions that are enabled in s are input actions.
+
+A task \(C\) is \textbf{enabled} in a state \(s\) means somes action in \(C\) is enabled in \(s\).
+
+\begin{examplle}[Channel I/O automaton]
+\label{8.1.1}
+Consider a communication channel automaton \(C_{i,j}\). Let \(M\) be a fixed message alphabet.
+\begin{itemize}
+\item \textbf{Signature}:
+\begin{alignat*}{2}
+&\text{Input}:\hspace{3cm}&&\text{Output:}\\
+&\quad send(m)_{i,j},m\in M&&\quad receive(m)_{i,j},m\in M
+\end{alignat*}
+\item \textbf{States}: \(queue\), a FIFO queue of elements of \(M\), initially empty
+\item \textbf{Transitions}:
+\begin{alignat*}{2}
+&send(m)_{i,j}\hspace{3cm}&&receive(m)_{i,j}\\
+&\quad\text{Effect:}&&\quad\text{Precondition:}\\
+&\quad\quad\text{add }m\text{ to }queue&&\quad\quad m\text{ is first on }queue\\
+&&&\quad\text{Effect:}\\
+&&&\quad\quad\text{remove first element of }queue
+\end{alignat*}
+\item \textbf{Tasks}: \(\{receive(m)_{i,j}:m\in M\}\)
+\end{itemize}
+\end{examplle}
+
+\begin{examplle}[Process I/O automata]
+\label{8.1.2}
+
+Consider a process automaton \(P_i\). \(V\) is a fixed value set, \(null\) is a special value not in \(V\), \(f\) is a fixed function,
+\(f:V^n\to V\)
+\begin{itemize}
+\item \textbf{Signature}:
+\begin{itemize}
+\item Input:
+\begin{itemize}
+\item \(init(v)_i,v\in V\)
+\item \(receive(v)_{j,i}\), \(v\in V\), \(1\le j\le n\), \(j\neq i\)
+\end{itemize}
+\item Output:
+\begin{itemize}
+\item \(decide(v)_i\), \(v\in V\)
+\item \(send(v)_{i,j}\), \(v\in V\), \(1\le j\le n\), \(j\neq i\)
+\end{itemize}
+\end{itemize}
+\item \textbf{States}: \(val\), a vector indexed by \(\{1,\dots,n\}\) of elements in \(V\cup\{null\}\), all
+initially \(null\)
+\item \textbf{Transitions}:
+\begin{alignat*}{2}
+&init(v)_i,v\in V\hspace{2cm}&&receive(v)_{j,i},v\in V\\
+&\quad\text{Effect:}&&\quad\text{Effect:}\\
+&\quad\quad val(i):=v&&\quad\quad val(j):=v\\\\
+&send(v)_{i,j}, v\in V&&decide(v)_i,v\in V\\
+&\quad\text{Precondition:}&&\quad\text{Precondition:}\\
+&\quad\quad val(i)=v&&\quad\quad\text{for all }j, 1\le j\le n:\\
+&\quad\text{Effect:}&&\quad\quad\quad val(j)\neq null\\
+&\quad\quad\quad\text{none}&&\quad\quad v=f(val(1),\dots,val(n))\\
+&&&\quad\text{Effect:}\\
+&&&\quad\quad\text{none}
+\end{alignat*}
+\item \textbf{Tasks}: for every \(j\neq i\): \(\{send(v)_{i,j}:v\in V\}\), \(\{decide(v)_i:v\in V\}\).
+\end{itemize}
+
+An \textbf{execution fragment} of \(A\) is either a finite sequence \(s_0,\pi_1,s_1,\pi_2,\dots,\pi_r,s_r\) or
+an infinite sequence \(s_0,\pi_1,s_1,\pi_2,\dots\), of alternating states and actions of \(A\) s.t.
+\((s_k,\pi_{k+1},s_{k+1})\) is a transition of \(A\) for every \(k\ge 0\). An execution fragment
+beginning with a start state is called an \textbf{execution}. We denote the set of executions of \(A\) by
+\(execs(A)\). A state is \textbf{reachable} if it is the final state of a finite execution of \(A\).
+
+If \(\alpha\) is a finite execution fragment of \(A\) and \(\alpha'\) is any execution fragment of
+\(A\) that begins with the last state of \(\alpha\), then we write \(\alpha\cdot\alpha'\) to represent
+the sequence obtained by concatenating \(\alpha\) and \(\alpha'\), eliminating the duplicate
+occurrence of the last state of \(\alpha\).
+\end{examplle}
+
+The \textbf{trace} of an execution \(\alpha\) of \(A\), denoted by \(trace(\alpha)\), is the subsequence of
+\(\alpha\) consisting of all the external actions. We say that \(\beta\) is a \textbf{trace} of \(A\)  if
+\(\beta\) is the trace of an execution of \(A\). We denote the set of traces of \(A\) by
+\(traces(A)\).
+
+\begin{examplle}[Executions]
+\label{8.1.3}
+
+The following are three executions of the automaton \(C_{i,j}\) described in Example \ref{8.1.1}
+(assuming that the message alphabet \(M\) is equal to the set \(\{1,2\}\)). Here we indicate the
+states by putting the sequences in \emph{queue} in brackets; \(\lambda\) denotes the empty sequence.
+
+\begin{align*}
+&[\lambda],send(1)_{i,j},[1],receive(1)_{i,j},[\lambda],send(2)_{i,j},[2],receive(2)_{i,j},[\lambda]\\
+&[\lambda],send(1)_{i,j},[1],receive(1)_{i,j},[\lambda],send(2)_{i,j},[2]\\
+&[\lambda],send(1)_{i,j},[1],send(1)_{i,j},[11],send(1)_{i,j},[111],\dots
+\end{align*}
+\end{examplle}
+\subsection{Operations on Automata}
+\label{sec:orgbf68c0b}
+\subsubsection{Composition}
+\label{sec:org0c4633e}
+The composition identifies actions with the same name in different component automata. When any
+component automaton performs a step involving \(\pi\), so do all component automata that have \(\pi\)
+in their signatures.
+
+We impose certain restrictions on the automata that may be composed.
+\begin{enumerate}
+\item Since internal actions of an automaton \(A\) are intended to be unobservable by any other automaton
+\(B\), we do not allow \(A\) to be composed with \(B\) unless the internal actions of A are
+disjoint from the actions of B.
+
+Otherwise, A's performance of an internal action could force B to take a step.
+\item In order that the composition operation might satisfy nice properties, we establish a convention
+that at most one component automaton ``controls'' the performance of any given action; that is, we do
+not allow \(A\) and \(B\) to be composed unless the sets of output actions of A and B are disjoint.
+\item We do not preclude the possibility of composing a countably infinite collection of automata, but we
+do require in this case that each action must be an action of only finitely many of the component automata.
+\end{enumerate}
+
+A countable collection \(\{S_i\}_{i\in I}\) of signatures to be \textbf{compatible} if for all \(i,j\in I\),
+\(i\neq j\), all of the following hold:
+\begin{enumerate}
+\item \(int(S_i)\cap acts(S_j)=\emptyset\)
+\item \(out(S_i)\cap out(S_j)=\emptyset\)
+\item No action is contained in infinitely many sets \(acts(S_i)\)
+\end{enumerate}
+We say that a collection of automata is \textbf{compatible} if their signatures are compatible.
+
+The \textbf{composition} \(S=\prod_{i\in I}S_i\) of a countable compatible collection of signatures
+\(\{S_i\}_{i\in I}\) is defined to be the signature with
+\begin{itemize}
+\item \(out(S)=\bigcup_{i\in I}out(S_i)\)
+\item \(int(S)=\bigcup_{i\in I}int(S_i)\)
+\item \(in(S)=\bigcup_{i\in I}in(S_i)-\bigcup_{i\in I}out(S_i)\)
+\end{itemize}
+
+Now the \textbf{composition} \(A=\prod_{i\in I}A_i\) of a countable, compatible collection of I/O automata
+\(\{A_i\}_{i\in I}\) can be defined. It is the automaton defined as:
+\begin{itemize}
+\item \(sig(A)=\prod_{i\in I}sig(A_i)\)
+\item \(states(A)=\prod_{i\in I}states(A_i)\)
+\item \(start(A)=\prod_{i\in I}start(A_i)\)
+\item \(trans(A)\) is the set of triples \((s,\pi,s')\) s.t., for all \(i\in I\), if \(\pi\in acts(A_i)\),
+then \((s_i,\pi,s_i')\in trans(A_i)\); otherwise \(s_i=s_i'\).
+\end{itemize}
+
+
+Note that an action \(\pi\) that is an output of one component and an input of another is classified
+as an output action in the composition, not as an internal action. This is because we want to permit
+the possibility of further communication using \(\pi\).
+
+\begin{examplle}[Composition of automata]
+\label{8.2.1}
+Consider a fixed index set \(I=\{1,\dots,n\}\) and let \(A\) be the composition of all the process
+automata \(P_i\), \(i\in I\) from Example \ref{8.1.2}. In order to compose them, we must assume that the
+message alphabet \(M\) for the channel automata contains the value set \(V\) for the process automata.
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/DistributedAlgorithms/3.png}
+\captionof{figure}{\label{8.3}Composition of \(P_i\)s and \(C_{i,j}\)s}
+\end{center}
+
+\begin{enumerate}
+\item An \(init(v)_i\) input action, which deposits a value in \(P_i\)'s \(val(i)\) variable, \(val(i)_i\).
+\item A \(send(v)_{i,j}\) output action, by which \(P_i\)'s value \(val(i)_i\) gets put into channel \(C_{i,j}\).
+\item A \(receive(v)_{i,j}\) output action, by which the first message in \(C_{i,j}\) is removed and
+simultaneously placed into \(P_j\)'s variable \(val(i)_j\).
+\item A \(decide(v)_i\) output action, by which \(P_i\) announcs its current computed value.
+\end{enumerate}
+\end{examplle}
+
+Given an execution \(\alpha=s_0,\pi_1,s_1,\dots\), of \(A\), let \(\alpha|A_i\) be the sequence
+obtained by deleting each pair \(pi_r,s_r\) for which \(\pi_r\) is not an action of \(A_i\) and
+replacing each remaining \(s_r\) by \((s_r)_i\).
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+\begin{enumerate}
+\item If \(\alpha\in execs(A)\), then \(\alpha|A_i\in execs(A_i)\) for every \(i\in I\).
+\item If \(\beta\in traces(A)\), then \(\beta|A_i\in traces(A_i)\) for every \(i\in I\).
+\end{enumerate}
+\end{theorem}
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+Suppose \(\alpha_i\) is an execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
+sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=traces(\alpha_i)\) for every \(i\in I\). Then there
+is an execution \(\alpha\) of \(A\) s.t. \(\beta=trace(\alpha)\) and \(\alpha_i=\alpha|A_i\) for every
+\(i\in I\).
+\end{theorem}
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\)  be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in traces(A_i)\) for every
+\(i\in I\), then \(\beta\in traces(A)\).
+\end{theorem}
+\subsubsection{Hiding}
+\label{sec:org8fc045e}
+If \(S\) is a signature and \(\Phi\subset out(S)\), then \(hide_\phi(S)\) is defined to be the new
+signature \(S'\), where \(in(S')=in(S)\), \(out(S')=out(S)-\Phi\) and \(int(S')=int(S)\cup\Phi\).
+
+If \(A\) is an automaton and \(\Phi\subseteq out(A)\), then \(hide_\Phi(A)\) is the automaton \(A'\)
+obtained from \(A\) by replacing \(sig(A)\) with \(sig(A')=hide_\Phi(sig(A))\).
+\subsubsection{Fairness}
+\label{sec:org61b0302}
+An execution fragment \(\alpha\) of an I/O automaton \(A\) is said to be \textbf{fair} if the following
+conditions hold for each class \(C\) of \(tasks(A)\):
+\begin{enumerate}
+\item If \(\alpha\) is finite, then \(C\) is not enabled in the final state of \(\alpha\)
+\item If \(\alpha\) is infinite, then \(\alpha\) contains either infinitely many events from \(C\) or
+infinitely many occurrences of states in which \(C\) is not enabled.
+\end{enumerate}
+
+We use the term \textbf{event} to denote the occurrence of an action in a sequence.
+
+\begin{itemize}
+\item We can understand the definition of fairness as saying that infinitely often, each task \(C\) is
+given a turn. Whenever this happens, either an action of \(C\) gets performed or no action from
+\(C\) could possibly be performed since no such action is enabled.
+\item We can think of a finite fair execution as an execution at the end of which the automaton
+repeatedly gives turns to all the tasks in round-robin order, but never succeeds in performing any
+action since none are enabled in the final state. \label{P1}
+\end{itemize}
+
+We denote the set of fair executions of \(A\) by \(fairexecs(A)\). We say that \(\beta\) is a \textbf{fair
+trace} of \(A\) if \(\beta\) is the trace of a fair execution of \(A\), and we denote the set of fair
+traces of \(A\) by \(fairtraces(A)\).
+
+\begin{examplle}[Fairness]
+In Example \ref{8.1.3}, the first execution given is fair, because no \(receive\) action is enabled in
+its final state. The second is not fair, because it is finite and a \(receive\) action is enabled in
+the final state. The third is not fair, because it is infinite, contains no \(receive\) events, and
+has \(receive\) actions enabled at every point after the first step.
+\end{examplle}
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+\begin{enumerate}
+\item If \(\alpha\in fairexecs(A)\), then \(\alpha|A_i\in fairexecs(A_i)\) for every \(i\in I\).
+\item If \(\beta\in fairtraces(A)\), then \(\beta|A_i\in fairtraces(A_i)\) for every \(i\in I\).
+\end{enumerate}
+\end{theorem}
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+Suppose \(\alpha_i\) is a fair execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
+sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=trace(\alpha_i)\) for every \(i\in I\). Then there
+is a fair execution \(\alpha\) of \(A\) s.t. \(\beta=trace(\alpha)\) and \(\alpha_i=\alpha|A_i\) for
+every \(i\in I\).
+\end{theorem}
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
+Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in fairexecs(A_i)\)  for
+every \(i\in I\), then \(\beta\in fairexecs(A)\).
+\end{theorem}
+
+\begin{examplle}[Fairness]
+Consider the fair executions of the system of three processes and three channels in Example \ref{8.2.1}.
+In every fair execution:
+\begin{itemize}
+\item every message that is sent is eventually received
+\item contains at least one \(init_i\) event for each \(i\)
+\item each process sends infinitely many messages to each other processes
+\item each process performs infinitely many \(decide\) steps
+\end{itemize}
+\end{examplle}
+\section{Mutual Exclusion}
+\label{sec:org6f284ba}
 \subsection{Asynchronous Shared Memory Model}
-\label{sec:org16414bd}
+\label{sec:orgdc23c77}
 The system is modelled as a collection of processes and shared variables,
 with interactions. Each process \(i\) is a kind of state machine, with a set statesi of states and a subset \(start\) of \(states_i\) indicating the
 start states, just as in the synchronous setting. However, now process \(i\) also has labelled
@@ -47,7 +338,7 @@ computation. If an action involves the shared memory, we assumethat it only invo
 variable.
 
 There is a transition relation \(trans\) for the entire system, which is a set of \((s,\pi,s')\)
-triples, where and \(s'\) are \textbf{automaton states}, that is, combinations of states for all the
+triples, where \(s\) and \(s'\) are \textbf{automaton states}, that is, combinations of states for all the
 processes and values for all the shared variables, and where \(\pi\)  is the label of an input,
 output, or internal action. We call these combinations of process states and variable values
 ``automaton states'' because  the entire system is modelled as a single automaton. The statement that
@@ -61,7 +352,7 @@ of the states. The intuition behind the input-enabling property is that the inpu
 controlled by an arbitrary external user, while the internal and output actions are controlled by the
 system itself.
 \subsection{The Problem}
-\label{sec:org90fefda}
+\label{sec:orge4f32ef}
 The mutual exclusion problem involves the allocation of a single, indivisible, nonshareable resource
 among \(n\) \textbf{users}, \(U_1,\dots,U_n\).
 
@@ -78,5 +369,21 @@ region} (E), and then back again to its remainder region.
 \captionof{figure}{\label{10.2}The cycle of regions of a single user}
 \end{center}
 
-Each 
+Each of the users \(U_i\), \(1\le i\le n\), is modelled as a state machine (formally, an \textbf{I/O
+automaton}) that communicates with its agent process using the \(try_i\), \(crit_i\), \(exit_i\) and
+\(rem_i\) actions:
+\begin{center}
+\includegraphics[width=.2\textwidth]{../images/DistributedAlgorithms/2.png}
+\captionof{figure}{\label{10.3}External interface of user \(U_i\)}
+\end{center}
+
+We define a sequence of \(try_i\), \(crit_i\), \(exit_i\) and \(rem_i\) actions to be \textbf{well-formed} for
+user \(i\) if it is a prefix of the cyclically ordered sequence
+\(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) \textbf{preserve} the \textbf{trace property}
+defined by the set of sequences that are well-ordered for user \(i\).
+\section{Q\&A}
+\label{sec:org81ffa1b}
+\begin{enumerate}
+\item \ref{P1}. Need think.
+\end{enumerate}
 \end{document}
