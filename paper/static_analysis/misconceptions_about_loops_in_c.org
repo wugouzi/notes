@@ -1,0 +1,87 @@
+#+title: Misconceptions about Loops In C
+
+#+AUTHOR: Martin Brain & Mahdi Malkawi
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/static_analysis/misconception_about_loops_in_C.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/static_analysis/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* What Are Loops?
+* Common Mistakes About Loop Structure
+** Entering Loops
+        *Loops have one entry edge*:
+        #+begin_src c++
+if (choose())
+    green();
+else
+    orange();
+
+while (choose())
+    purple();
+        #+end_src
+
+        *All entry edges go to the same location*:
+        #+begin_src c++
+switch (n & 0x3) {
+    do {
+        case 0: dest[i++] = src[j++];
+        case 1: dest[i++] = src[j++];
+        case 2: dest[i++] = src[j++];
+        case 3: dest[i++] = src[j++];
+    } while (j < n);
+}
+        #+end_src
+
+        *Multiple loop entry locations can be fixed by one unrolling*
+
+        *The first instruction must be entry location*:
+        #+begin_src c++
+if (choose( ))
+    goto one;
+else if (choose())
+    goto two;
+else
+    goto three;
+
+while(choose()) {
+    while(choose()) {
+        red();
+    one:
+        orange();
+    two:
+        yellow();
+    three :
+        green();
+    }
+}
+        #+end_src
+** Inside Loops
+        *Loops have contents*
+        #+begin_src c++
+void busy_wait(void) {
+    while (zero_to_unlock);
+    return;
+}
+        #+end_src
+
+        *The entry location is a test for exiting the loop*
+
+        *End of a loop is an unconditional jump*.
+** Simplification, Preprocessing and Optimizing
+        *Simplification do not affect loop analysis*
+        #+begin_src c++
+#define INIT_SUBSYSTEM(X) do {                  \
+        bzero((X), sizeof(structsubsystem));    \
+        load_system_config((X));                \
+        register_subsystem((X));                \
+    } while (0)
+        #+end_src
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

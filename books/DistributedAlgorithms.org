@@ -87,6 +87,7 @@
           \end{alignat*}
         * *Tasks*: for every \(j\neq i\): \(\{send(v)_{i,j}:v\in V\}\), \(\{decide(v)_i:v\in V\}\).
 
+        [[index:execution]]
         An *execution fragment* of \(A\) is either a finite sequence \(s_0,\pi_1,s_1,\pi_2,\dots,\pi_r,s_r\) or
         an infinite sequence \(s_0,\pi_1,s_1,\pi_2,\dots\), of alternating states and actions of \(A\) s.t.
         \((s_k,\pi_{k+1},s_{k+1})\) is a transition of \(A\) for every \(k\ge 0\). An execution fragment
@@ -99,6 +100,8 @@
         occurrence of the last state of \(\alpha\).
         #+END_examplle
 
+
+        [[index:trace]]
         The *trace* of an execution \(\alpha\) of \(A\), denoted by \(trace(\alpha)\), is the subsequence of
         \(\alpha\) consisting of all the external actions. We say that \(\beta\) is a *trace* of \(A\)  if
         \(\beta\) is the trace of an execution of \(A\). We denote the set of traces of \(A\) by
@@ -187,13 +190,20 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.1]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         1. If \(\alpha\in execs(A)\), then \(\alpha|A_i\in execs(A_i)\) for every \(i\in I\).
         2. If \(\beta\in traces(A)\), then \(\beta|A_i\in traces(A_i)\) for every \(i\in I\).
         #+END_theorem
 
+        #+BEGIN_proof
+        1. Execution of any automaton \(A_j\) where \(j\neq i\) doesn't affect automaton \(A_i\).
+        2. Immediately
+        #+END_proof
+
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.2]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         Suppose \(\alpha_i\) is an execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
         sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=traces(\alpha_i)\) for every \(i\in I\). Then there
@@ -201,8 +211,10 @@
         \(i\in I\).
         #+END_theorem
 
+
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.3]]
         Let \(\{A_i\}_{i\in I}\)  be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in traces(A_i)\) for every
         \(i\in I\), then \(\beta\in traces(A)\).
@@ -214,6 +226,7 @@
         If \(A\) is an automaton and \(\Phi\subseteq out(A)\), then \(hide_\Phi(A)\) is the automaton \(A'\)
         obtained from \(A\) by replacing \(sig(A)\) with \(sig(A')=hide_\Phi(sig(A))\).
 *** Fairness
+        [[index:fair]]
         An execution fragment \(\alpha\) of an I/O automaton \(A\) is said to be *fair* if the following
         conditions hold for each class \(C\) of \(tasks(A)\):
         1. If \(\alpha\) is finite, then \(C\) is not enabled in the final state of \(\alpha\)
@@ -243,10 +256,20 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.4]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         1. If \(\alpha\in fairexecs(A)\), then \(\alpha|A_i\in fairexecs(A_i)\) for every \(i\in I\).
         2. If \(\beta\in fairtraces(A)\), then \(\beta|A_i\in fairtraces(A_i)\) for every \(i\in I\).
         #+END_theorem
+
+        #+BEGIN_proof
+        1. If \(\alpha\in fairexecs(A)\).
+           * If \(\alpha\) is finite, then for each task \(C\), \(C\) is not enabled in the final state of
+             \(\alpha\), therefore each \(C|A_i\) is not enabled in the final state of \(\alpha|A_i\) too.
+           * If \(\alpha\) is infinite, then blabla
+           Therefore \(\alpha|A_i\in fairexecs(A_i)\)
+        2. same
+        #+END_proof
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
@@ -312,8 +335,140 @@
         #+ATTR_LATEX: :options [Automata and trace properties]
         #+BEGIN_examplle
         Consider automata and trace properties with input set \(\{0\}\) and output set \(\{1,2\}\). First
-        suppose that
+        suppose that \(traces(P)\) is the set of sequences over \(\{0,1,2\}\) that include at least 1. Then
+        \(fairtraces(A)\subseteq traces(P)\) means that in every fair execution, \(A\) must output at least
+        one.
+
+        It is easy to design an I/O automaton for which this is the case - for example, it can include a task
+        whose entire job is to output 1. The fairness condition is used to ensure that this task actually does
+        get a change to output 1. On the other hand, there does not exist any automaton \(A\) for which
+        \(traces(A)\subseteq traces(P)\), because \(traces(A)\) always includes the empty string \(\lambda\),
+        which does not contain a 1.
+
+        Now suppose that \(traces(P)\) is the set of sequences over \(\{0,1,2\}\) that include at least one 0.
+        In this case, there is no I/O automaton \(A\) for which \(fairtraces(A)\subseteq traces(P)\), because
+        \(fairtraces(A)\) must contain some sequence that includes no inputs.
         #+END_examplle
+
+        A countable collection \(\{P_i\}_{i\in I}\) of trace properties is *compatible* if their signatures are
+        compatible. Then the *composition* \(P=\prod_{i\in I}P_i\) is the trace property s.t.
+        * \(sig(P)=\prod_{i\in I}sig(P_i)\).
+        * \(traces(P)\) is the set of sequences \(\beta\) of external actions of \(P\) s..t
+          \(\beta|acts(P_i)\in traces(P_i)\) for all \(i\in I\).
+*** Safety and Liveness Properties
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A trace property \(P\) is a *trace safety property*, or a *safety property* for short, provided that \(P\)
+        satisfies the following conditions:
+        1. \(traces(P)\) is nonempty
+        2. \(traces(P)\) is *prefix-closed*, that is, if \(\beta\in traces(P)\) and \(\beta'\) is a finite
+           prefix of \(\beta\), then \(\beta'\in traces(P)\)
+        3. \(traces(P)\) is *limit-closed*, that is, if \(\beta_1,\beta_2,\dots\) is an infinite sequence of
+           finite sequences in \(traces(P)\), and for each \(i\), \(\beta_i\) is a prefix of \(\beta_{i+1}\),
+           then \(\beta=\bigcup_{i\in\omega}\beta_i\in traces(P)\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Trace safety property]
+        #+BEGIN_examplle
+        Suppose \(sig(P)\) consists of inputs \(init(v)\), \(v\in V\) and outputs \(decide(v)\), \(v\in V\).
+        Suppose \(traces(P)\) is the set of sequences of \(init\) and \(decide\) actions in which no
+        \(decide(v)\) occurs without a preceding \(init(v)\) (for the same \(v\)). Then \(P\) is a safety property.
+        #+END_examplle
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        If \(P\) is a safe property, TFAE:
+        1. \(traces(A)\subseteq traces(P)\)
+        2. \(fairtraces(A)\subseteq traces(P)\)
+        3. finite traces of \(A\) are all in traces \(P\).
+        #+END_proposition
+
+        #+BEGIN_proof
+        \((2\Rightarrow(3)\): For any finite trace \(\beta\in traces(A)\), there is
+        \(\beta'\in fairtraces(A)\)  that starts in \(\beta\). Thus \(\beta\in traces(P)\) because of
+        prefix-closedness.
+
+        \((3)\Rightarrow(1)\): For any infinite trace \(\beta\in traces(A)\), we can have such a infinite
+        sequence of traces \(\beta_1,\beta_2,\dots\) of \(A\), where \(\beta_i\) is a prefix of
+        \(\beta_{i+1}\) for any \(i\), and \(\beta=\bigcup_{i\in\omega}\beta_i\). Therefore
+        \(\beta\in traces(P)\) because of limit-closedness.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A trace property \(P\) is a *trace liveness property*, or a *liveness property* for short, provided that
+        every finite sequence over \(acts(P)\) has some extension in \(traces(P)\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Suppose \(sig(P)\) consists of input \(init(v)\), \(v\in V\) and outputs \(decide(v)\), \(v\in V\).
+        Suppose \(traces(P)\) is the set of sequences \(\beta\) of \(init\) and \(decide\) actions in which,
+        for every \(init\) event in \(\beta\), there is some \(decide\) event occuring later in \(\beta\).
+        Then \(P\)  is a liveness property.
+        #+END_examplle
+
+        Often one wants to prove that \(fairtraces(A)\subseteq traces(P)\) for some automaton \(A\) and
+        liveness property \(P\). Methods based on *temporal logic* work well in practice for proving such
+        claims. Another method for proving liveness claims, which we call the *progress function method*, is
+        specially designed for proving that some particular goal is eventually reached.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        If \(P\) is both a safety property and a liveness property, then \(P\) is the set of all (finite and
+        infinite) sequence of actions in \(acts(P)\).
+        #+END_theorem
+
+        #+BEGIN_proof
+        Suppose that \(P\) is both a safety and a liveness property and let \(\beta\) be an arbitrary sequence
+        of elements of \(acts(P)\). If \(\beta\) is finite, then since \(P\) is a liveness property, \(\beta\)
+        has some extension \(\beta'\) in \(traces(P)\). Then since \(P\) is a safety property, \(\beta\in
+        traces(P)\).
+
+        If \(\beta\) is infinite, then for each \(i\ge 1\), define \(\beta_i\) to be the length \(i\) prefix
+        of \(\beta\). Then \(\beta\in traces(P)\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        If \(P\) is an arbitrary trace property with \(traces(P)\neq\emptyset\), then there exist a safety
+        property \(S\) and a liveness property \(L\) s.t.
+        1. \(sig(S)=sig(L)=sig(P)\).
+        2. \(traces(P)=traces(S)\cap traces(L)\)
+        #+END_theorem
+
+        #+BEGIN_proof
+        Let \(traces(S)\) be the prefix- and limit-closure of \(traces(P)\). Let
+        \begin{align*}
+        traces(L)=&traces(P)\\
+        &\cup\{\beta:\beta\text{ is a finite sequence and no extension of $\beta$ is in }traces(P)\}
+        \end{align*}
+        #+BEGIN_claim
+        \(L\) is a liveness property
+        #+END_claim
+        Now \(traces(P)\subseteq traces(S)\cap traces(L)\). If there is \(\beta\in traces(S)\cap
+        traces(L)\setminus traces(P)\),
+        then \(\beta\) is a finite sequence and no extension of \(\beta\) is in \(traces(P)\). <<P2>>
+        #+END_proof
+*** Compositional Reasoning
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
+        \(\{P_i\}_{i\in I}\) be a (compatible) collection of trace properties and let \(P=\prod_{i\in I}P_i\)
+        1. If \(extsig(A_i)=sig(P_i)\) and \(traces(A_i)\subseteq traces(P_i)\) for every \(i\), then
+           \(extsig(A)=sig(P)\) and \(traces(A)\subseteq traces(P)\).
+        2. If \(extsig(A_i)=sig(P_i)\) and \(fairtraces(A_i)\subseteq traces(P_i)\) for every \(i\), then
+           \(extsig(A)=sig(P)\) and \(fairtraces(A)\subseteq traces(P)\).
+        #+END_theorem
+
+        #+BEGIN_proof
+        1. If \(\beta\in traces(A)\), then by Theorem ref:8.1,
+           \(\beta|A_i\in traces(A_i)\subseteq traces(P_i)\) for every \(i\in I\). Then by Theorem ref:8.3,
+           \(\beta\in traces(P)\).
+        2.
+           
+        #+END_proof
+
 * Mutual Exclusion
 ** Asynchronous Shared Memory Model
         The system is modelled as a collection of processes and shared variables,
@@ -372,3 +527,4 @@
         defined by the set of sequences that are well-ordered for user \(i\).
 * Q&A
         1. [[P1]]. Need think.
+        2. [[P2]]

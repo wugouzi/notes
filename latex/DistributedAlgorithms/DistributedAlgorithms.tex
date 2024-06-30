@@ -1,4 +1,4 @@
-% Created 2024-06-27 Thu 19:20
+% Created 2024-06-30 Sun 15:11
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -25,7 +25,7 @@
  pdftitle={Distributed Algorithms},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 29.1 (Org mode 9.8-pre)}, 
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)}, 
  pdflang={English}}
 \begin{document}
 
@@ -33,9 +33,9 @@
 \tableofcontents
 
 \section{Modelling \rom{2}: Asynchronous System Model}
-\label{sec:org344abac}
+\label{sec:orge26adf7}
 \subsection{I/O Automata}
-\label{sec:orge480873}
+\label{sec:org3862f31}
 A \textbf{signature} \(S\) is a triple consisting of three disjoint sets of actions: the \textbf{input actions},
 \(in(S)\), the \textbf{output actions}, \(out(S)\), and the \textbf{internal actions}, \(int(S)\). We define the
 \textbf{external actions}, \(ext(S)\), to be \(in(S)\cup out(S)\); and \textbf{locally controlled actions}, \(local(S)\)
@@ -156,9 +156,9 @@ states by putting the sequences in \emph{queue} in brackets; \(\lambda\) denotes
 \end{align*}
 \end{examplle}
 \subsection{Operations on Automata}
-\label{sec:orgbf68c0b}
+\label{sec:orgeae5610}
 \subsubsection{Composition}
-\label{sec:org0c4633e}
+\label{sec:org25c6459}
 The composition identifies actions with the same name in different component automata. When any
 component automaton performs a step involving \(\pi\), so do all component automata that have \(\pi\)
 in their signatures.
@@ -254,14 +254,14 @@ Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in trac
 \(i\in I\), then \(\beta\in traces(A)\).
 \end{theorem}
 \subsubsection{Hiding}
-\label{sec:org8fc045e}
+\label{sec:orgc7d6418}
 If \(S\) is a signature and \(\Phi\subset out(S)\), then \(hide_\phi(S)\) is defined to be the new
 signature \(S'\), where \(in(S')=in(S)\), \(out(S')=out(S)-\Phi\) and \(int(S')=int(S)\cup\Phi\).
 
 If \(A\) is an automaton and \(\Phi\subseteq out(A)\), then \(hide_\Phi(A)\) is the automaton \(A'\)
 obtained from \(A\) by replacing \(sig(A)\) with \(sig(A')=hide_\Phi(sig(A))\).
 \subsubsection{Fairness}
-\label{sec:org61b0302}
+\label{sec:orgb546c52}
 An execution fragment \(\alpha\) of an I/O automaton \(A\) is said to be \textbf{fair} if the following
 conditions hold for each class \(C\) of \(tasks(A)\):
 \begin{enumerate}
@@ -316,18 +316,118 @@ every \(i\in I\), then \(\beta\in fairexecs(A)\).
 
 \begin{examplle}[Fairness]
 Consider the fair executions of the system of three processes and three channels in Example \ref{8.2.1}.
-In every fair execution:
-\begin{itemize}
-\item every message that is sent is eventually received
-\item contains at least one \(init_i\) event for each \(i\)
-\item each process sends infinitely many messages to each other processes
-\item each process performs infinitely many \(decide\) steps
-\end{itemize}
+In every fair execution, every message that is sent is eventually received.
+
+In every fair execution containing least one \(init_i\) event for each \(i\), each process sends
+infinitely many messages to each other processes and each process performs infinitely many \(decide\) steps
+
+In every fair execution that does not contain at least one \(init\) event for each process, no process
+ever performs a \(decide\) step.
 \end{examplle}
+
+\begin{theorem}[]
+Let \(A\) be any I/O automaton.
+\begin{enumerate}
+\item If \(\alpha\) is a finite execution of \(A\), then there is a fair execution of \(A\) that starts
+with \(\alpha\).
+\item If \(\beta\) is a finite trace of \(A\), then there is a fair trace of \(A\) that starts with \(\beta\).
+\item If \(\alpha\) is a finite execution of \(A\) and \(\beta\) is any sequence of input actions of
+\(A\), then there is a fair execution \(\alpha\cdot\alpha'\) of \(A\) s.t. the sequence of input
+actions in \(\alpha'\) is exactly \(\beta\)
+\item If \(\beta\) is a finite trace of \(A\) and \(\beta'\) is any sequence of input actions of \(A\),
+then there is a fair execution \(\alpha\cdot\alpha'\) of \(A\) s.t. \(trace(\alpha)=\beta\) and
+s.t. the sequence of input actions in \(\alpha'\) is exactly \(\beta'\)
+\end{enumerate}
+\end{theorem}
+\subsection{Inputs and Outputs for Problems}
+\label{sec:orgd9c68b6}
+\subsection{Properties and Proof Methods}
+\label{sec:org7c3b337}
+\subsubsection{Invariant Assertions}
+\label{sec:org852c9e6}
+\subsubsection{Trace Properties}
+\label{sec:org8280c3d}
+A \textbf{trace property} \(P\) consists of the following:
+\begin{itemize}
+\item \(sig(P)\), a signature containing no internal actions
+\item \(traces(P)\), a set of (finite or infinite) sequences of actions in \(acts(sig(P))\)
+\end{itemize}
+
+That is, a trace property specifies both an external interface and a set (in other words, a property)
+of sequences observed at that interface. We write \(acts(P)\) as shorthand for \(acts(sig(P))\), and
+similarly \(in(P)\), and so on.
+
+The statement that an I/O automaton \(A\) satisfies a trace property \(P\) can be mean either of two
+different things:
+\begin{enumerate}
+\item \(extsig(A)=sig(P)\) and \(traces(A)\subseteq traces(P)\)
+\item \(extsig(A)=sig(P)\) and \(fairtraces(A)\subseteq traces(P)\)
+\end{enumerate}
+The fact that \(A\) is input-enabled ensures that \(fairtraces(A)\) contains a response by \(A\) to
+each possible sequence of input actions. If \(fairtraces(A)\subseteq traces(P)\), then all of the
+resulting sequences must be included in the property \(P\).
+
+\begin{examplle}[Automata and trace properties]
+Consider automata and trace properties with input set \(\{0\}\) and output set \(\{1,2\}\). First
+suppose that \(traces(P)\) is the set of sequences over \(\{0,1,2\}\) that include at least 1. Then
+\(fairtraces(A)\subseteq traces(P)\) means that in every fair execution, \(A\) must output at least
+one.
+
+It is easy to design an I/O automaton for which this is the case - for example, it can include a task
+whose entire job is to output 1. The fairness condition is used to ensure that this task actually does
+get a change to output 1. On the other hand, there does not exist any automaton \(A\) for which
+\(traces(A)\subseteq traces(P)\), because \(traces(A)\) always includes the empty string \(\lambda\),
+which does not contain a 1.
+
+Now suppose that \(traces(P)\) is the set of sequences over \(\{0,1,2\}\) that include at least one 0.
+In this case, there is no I/O automaton \(A\) for which \(fairtraces(A)\subseteq traces(P)\), because
+\(fairtraces(A)\) must contain some sequence that includes no inputs.
+\end{examplle}
+
+A countable collection \(\{P_i\}_{i\in I}\) of trace properties is \textbf{compatible} if their signatures are
+compatible. Then the \textbf{composition} \(P=\prod_{i\in I}P_i\) is the trace property s.t.
+\begin{itemize}
+\item \(sig(P)=\prod_{i\in I}sig(P_i)\).
+\item \(traces(P)\) is the set of sequences \(\beta\) of external actions of \(P\) s..t
+\(\beta|acts(P_i)\in traces(P_i)\) for all \(i\in I\).
+\end{itemize}
+\subsubsection{Safety and Liveness Properties}
+\label{sec:org8f98f5d}
+\begin{definition}[]
+A trace property \(P\) is a \textbf{trace safety property}, or a \textbf{safety property} for short, provided that \(P\)
+satisfies the following conditions:
+\begin{enumerate}
+\item \(traces(P)\) is nonempty
+\item \(traces(P)\) is \textbf{prefix-closed}, that is, if \(\beta\in traces(P)\) and \(\beta'\) is a finite
+prefix of \(\beta\), then \(\beta'\in traces(P)\)
+\item \(traces(P)\) is \textbf{limit-closed}, that is, if \(\beta_1,\beta_2,\dots\) is an infinite sequence of
+finite sequences in \(traces(P)\), and for each \(i\), \(\beta_i\) is a prefix of \(\beta_{i+1}\),
+then \(\beta=\bigcup_{i\in\omega}\beta_i\in traces(P)\).
+\end{enumerate}
+\end{definition}
+
+\begin{examplle}[Trace safety property]
+Suppose \(sig(P)\) consists of inputs \(init(v)\), \(v\in V\) and outputs \(decide(v)\), \(v\in V\).
+Suppose \(traces(P)\) is the set of sequences of \(init\) and \(decide\) actions in which no
+\(decide(v)\) occurs without a preceding \(init(v)\) (for the same \(v\)). Then \(P\) is a safety property.
+\end{examplle}
+
+\begin{proposition}[]
+If \(P\) is a safe property, TFAE:
+\begin{enumerate}
+\item \(traces(A)\subseteq traces(P)\)
+\item \(fairtraces(A)\subseteq traces(P)\)
+\item finite traces of \(A\) are all in traces \(P\).
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+        
+\end{proof}
 \section{Mutual Exclusion}
-\label{sec:org6f284ba}
+\label{sec:org737011f}
 \subsection{Asynchronous Shared Memory Model}
-\label{sec:orgdc23c77}
+\label{sec:org04f8130}
 The system is modelled as a collection of processes and shared variables,
 with interactions. Each process \(i\) is a kind of state machine, with a set statesi of states and a subset \(start\) of \(states_i\) indicating the
 start states, just as in the synchronous setting. However, now process \(i\) also has labelled
@@ -352,7 +452,7 @@ of the states. The intuition behind the input-enabling property is that the inpu
 controlled by an arbitrary external user, while the internal and output actions are controlled by the
 system itself.
 \subsection{The Problem}
-\label{sec:orge4f32ef}
+\label{sec:org7f8cc7c}
 The mutual exclusion problem involves the allocation of a single, indivisible, nonshareable resource
 among \(n\) \textbf{users}, \(U_1,\dots,U_n\).
 
@@ -382,7 +482,7 @@ user \(i\) if it is a prefix of the cyclically ordered sequence
 \(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) \textbf{preserve} the \textbf{trace property}
 defined by the set of sequences that are well-ordered for user \(i\).
 \section{Q\&A}
-\label{sec:org81ffa1b}
+\label{sec:orgbfef732}
 \begin{enumerate}
 \item \ref{P1}. Need think.
 \end{enumerate}
