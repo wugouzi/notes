@@ -1,0 +1,72 @@
+% Created 2024-07-01 Mon 13:37
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/parallel/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc,
+%   !announce-end.
+
+%% end ox-latex features
+
+
+\author{Maged M. Michael}
+\date{\today}
+\title{ABA Prevention Using Single-Word Instructions}
+\hypersetup{
+ pdfauthor={Maged M. Michael},
+ pdftitle={ABA Prevention Using Single-Word Instructions},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:orgf517764}
+The ABA problem is a fundamental problem that affects almost all lock-free algorithms. The atomic
+primitives LL/SC/VL (Load-Linked, Store-Conditional, Validate) oﬀer a convenient way for algorithm
+designers to reason about lock-free algorithms, without concern for the ABA problem. However, for
+practical architectural reasons, no processor architecture supports the ideal semantics of LL/VL/SC.
+
+This report presents simple lock-free constructions using only practical single-word instructions for
+implementing ideal LL/SC/VL, and hence preventing the ABA problem, with reasonable space overhead.
+
+\begin{minted}[]{c++}
+// Shared variables
+NodeType *Top; // Initially null
+
+void Push(NodeType *node) {
+    NodeType *t;
+    do {
+        t = Top;
+        node->Next = t;
+    } while (!CAS(&Top, t, node));
+}
+
+NodeType *Pop() {
+    NodeType *t, *next;
+    do {
+        t = Top;
+        if (!t) return null;
+        next = t->Next;
+    } while (!CAS(&Top, t, next));
+    return t;
+}
+\end{minted}
+Consider a list that contains three nodes \(A, B\) and \(C\). Thread \(X\) reads
+\section{Problems}
+\label{sec:org8b1b949}
+
+
+\section{References}
+\label{sec:org9de86cb}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../../../references}
+\end{document}

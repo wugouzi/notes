@@ -1,0 +1,125 @@
+#+title: ABA Prevention Using Single-Word Instructions
+
+#+AUTHOR: Maged M. Michael
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/parallel/aba_prevention.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/parallel/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        The ABA problem is a fundamental problem that affects almost all lock-free algorithms. The atomic
+        primitives LL/SC/VL (Load-Linked, Store-Conditional, Validate) oﬀer a convenient way for algorithm
+        designers to reason about lock-free algorithms, without concern for the ABA problem. However, for
+        practical architectural reasons, no processor architecture supports the ideal semantics of LL/VL/SC.
+
+        This report presents simple lock-free constructions using only practical single-word instructions for
+        implementing ideal LL/SC/VL, and hence preventing the ABA problem, with reasonable space overhead.
+
+        #+begin_src c++
+// Shared variables
+NodeType *Top; // Initially null
+
+void Push(NodeType *node) {
+    NodeType *t;
+    do {
+        t = Top;
+        node->Next = t;
+    } while (!CAS(&Top, t, node));
+}
+
+NodeType *Pop() {
+    NodeType *t, *next;
+    do {
+        t = Top;
+        if (!t) return nullptr;
+        next = t->Next;
+    } while (!CAS(&Top, t, next));
+    return t;
+}
+        #+end_src
+        Consider a list that contains three nodes ~A~, ~B~ and ~C~. Thread \(X\) reads the value ~A~ from
+        the shared variable ~Top~ in line 15 and then proceeds to line 17  and reads the value ~B~ from ~A->Next~,
+        and then get delayed. Then a thread \(Y\), pops the node ~A~ from the list, then pops the node ~B~, and
+        finally pushes ~A~ again. When \(X\) resumes execution, it proceeds to line 18 and the CAS instruction
+        succeeds, thus setting ~Top~ to ~B~ and consequently corrupting the list.
+
+        If it can be guaranteed that the CAS in line 18 cannot succeed if the value of Top has changed since
+        the current thread’s execution of line 15, then the ABA problem becomes impossible.
+
+        Tightly related to the ABA problem is the set of instructions LL/SC/VL (Load-Linked,
+        Store-Conditional, Validate). LL takes one argument: the address of a memory location, and returns its
+        contents. SC takes two arguments: the address of a memory location and a new value. Only if no other
+        thread has written the memory location since the current thread last read it using LL, the new value
+        is written to the memory location, atomically. A Boolean return value indicates whether the write
+        occurred. VL takes one argument: the address of a memory location, and returns a Boolean value that
+        indicates whether any other thread has written the memory location since the current thread last read
+        it using LL.
+
+        If ABA-prone validation conditions and CAS instructions are replaced by VL and SC, and if the original
+        read of the target variable is replaced by LL, then the ABA problem becomes impossible.
+        #+begin_src c++
+NodeType *Pop() {
+    NodeType *t, *next;
+    do {
+        t = LL(&Top);
+        if (!t) return nullptr;
+        next = t->Next;
+    } while (~SC(&Top, next));
+}
+        #+end_src
+* Under Garbage Collection
+        Code below shows a lock-free stack algorithm, where GC indeed prevents the ABA problem.
+        #+begin_src c++
+void Push(DataType data) {
+    NodeType *node, *t;
+    node = NewNode();
+    node->Data = data;
+    do {
+        t = Top;
+        node->Next = t;
+    } while !CAS(&Top, t, node);
+}
+
+DataType Pop() {
+    NodeType *t, *next;
+    do {
+        t = Top;
+        if (!t) return nullptr;
+        next = t->Next;
+    } while (!CAS(&Top, t, next));
+    return t->Data;
+}
+        #+end_src
+
+        GC makes it impossible for thread \(Y\) to allocate node ~A~ after it has been popped, since at that
+        time thread \(X\) is still holding a reference to \(A\).
+
+        On the other hand, consider a program that moves dynamic nodes back and forth between two lists using
+        the
+
+        #+begin_src c++
+std::pair<DataType, *DataType> LL(addr) {
+    oldptr = *addr;
+    data = *ptr;
+    return make_pair(data, oldptr);
+}
+
+bool SC(int64 addr, DataType newval, DataType *oldptr) {
+    newptr = NewBlock();
+    ,*newptr = newval;
+    return CAS(addr, oldptr, newptr);
+}
+
+bool VL(addr, oldptr) {
+
+}
+        #+end_src
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

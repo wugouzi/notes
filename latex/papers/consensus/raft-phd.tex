@@ -1,4 +1,4 @@
-% Created 2024-06-26 Wed 11:39
+% Created 2024-07-01 Mon 15:18
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -26,16 +26,16 @@
  pdftitle={Consensus Bridging Theory And Practice},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 29.1 (Org mode 9.8-pre)}, 
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)}, 
  pdflang={English}}
 \begin{document}
 
 \maketitle
 \section{Motivation}
-\label{sec:org0f16dc8}
+\label{sec:orgc81f286}
 
 \subsection{Achieving fault tolerance with replicated state machines}
-\label{sec:orgc674558}
+\label{sec:org0bc4d9b}
 Keeping the replicated log consistent is the job of the consensus algorithm. The consensus module on a
 server receives commands from clients and adds them to its log. It communicates with the consensus
 modules on other servers to ensure that every log eventually contains the same requests in the same
@@ -43,9 +43,9 @@ order, even if some servers fail. Once commands are properly replicated, they ar
 \textbf{committed}. Each server’s state machine processes committed commands in log order, and the outputs are
 returned to clients. As a result, the servers appear to form a single, highly reliable state machine.
 \section{Basic Raft algorithm}
-\label{sec:org8d669b9}
+\label{sec:org982b7f7}
 \subsection{Raft overview}
-\label{sec:org7d0cb1f}
+\label{sec:org6eee8cb}
 \begin{center}
 \includegraphics[width=.99\textwidth]{../../images/papers/17.png}
 \label{}
@@ -71,7 +71,7 @@ the logs of the leaders for all higher-numbered terms.
 other server will ever apply a different log entry for the same index.
 \end{itemize}
 \subsection{Log replication}
-\label{sec:orgbe4aadb}
+\label{sec:org7a63981}
 The leader decides when it is safe to apply a log entry to the state machines; such an entry is called
 \textbf{committed}.
 \begin{itemize}
@@ -147,11 +147,11 @@ nextIndex to bypass all of the conflicting entries in that term;
 from its own; this has better worst-case behavior.
 \end{itemize}
 \subsection{Safty}
-\label{sec:org57e5be8}
+\label{sec:org69a2b51}
 This section completes the Raft algorithm by adding a restriction on which servers may be elected
 leader. The restriction ensures that the leader for any given term contains all of the entries committed in previous terms.
 \subsubsection{Election restriction}
-\label{sec:org459241d}
+\label{sec:org8c0a827}
 In any leader-based consensus algorithm, the leader \textbf{must} eventually store all of the committed log
 entries.
 
@@ -173,7 +173,7 @@ entries in the logs.
 
 The correctness of this notion of up-to-date comes from Log Matching Property.
 \subsubsection{Committing entries from previous terms}
-\label{sec:org2492c77}
+\label{sec:org29e9f89}
 A leader cannot immediately conclude that an entry from a previous term is committed once it is stored
 on a majority of servers:
 \begin{center}
@@ -185,7 +185,7 @@ To eliminate problems like the one in Figure \ref{3.7}, Raft never commits log e
 terms by counting replicas; once an entry from the current term has been committed in this way, then all prior
 entries are committed indirectly because of the Log Matching Property.
 \subsubsection{Safety argument}
-\label{sec:org80fc364}
+\label{sec:org2c57b12}
 \label{3.3}
 Assume Leader Completeness Property does not hold. Suppose the leader for term \(T\) \(leader_T\)
 commits a log entry from its term, but that log entry is not stored by the leader of some future term.
@@ -232,21 +232,21 @@ Finally, Raft requires servers to apply entries in log index order. Combined wit
 Safety Property, this means that all servers will apply exactly the same set of log entries to their
 state machines, in the same order.
 \subsubsection{Followe rand candidate crashes}
-\label{sec:orgb3791b1}
+\label{sec:org06db8ff}
 \subsubsection{Persisted state and server restarts}
-\label{sec:org8b92ded}
+\label{sec:orge29e943}
 \begin{itemize}
 \item current term and vote: prevent the server from voting twice \wu{means vote for different candidates}
 in the same term or replacing log entries from a newer leader with those from a deposed
 leader\wu{term}.
 \item new log entries before they are committed: prevents committed entries from being lost or
-“uncommitted” when servers restart.
+``uncommitted'' when servers restart.
 \item \emph{last applied} index
 \end{itemize}
 \subsubsection{Timing and availability}
-\label{sec:org23f328d}
+\label{sec:org766f3c4}
 \subsubsection{Leadership transfer extention}
-\label{sec:org79def38}
+\label{sec:org265b7e4}
 To transfer leadership in Raft, the prior leader sends its log entries to the target server, then the
 target server runs an election without waiting for the election timeout to elaspe.
 \begin{enumerate}
@@ -267,13 +267,13 @@ aborts the transfer and resumes accepting client requests. If the prior leader w
 target server is actually operational, then at worst this mistake will result in an extra election,
 after which client operations will be restored.
 \section{Cluster membership changes}
-\label{sec:orgd9da6e7}
+\label{sec:orgb7e7bd4}
 \begin{center}
 \includegraphics[width=.99\textwidth]{../../images/papers/14.png}
 \label{}
 \end{center}
 \subsection{Safety}
-\label{sec:org43557f7}
+\label{sec:org1032c5d}
 \begin{itemize}
 \item Goal: no point during the transition where it is possible for two leaders to be elected for the same term.
 \item Difficulty: it isn’t possible to atomically switch all of the servers at once, so the cluster can
@@ -291,7 +291,7 @@ changes.
 When adding a single server to a cluster or removing a single server from a cluster, any majority of
 the old cluster overlaps with any majority of the new cluster. This overlap prevents the cluster from
 splitting into two independent majorities; in terms of the safety argument of Section \ref{3.3}, it
-guarantees the existence of “the voter”. Thus, when adding or removing just a single server, it is
+guarantees the existence of ``the voter''. Thus, when adding or removing just a single server, it is
 safe to switch directly to the new configuration.
 
 \begin{center}
@@ -342,9 +342,9 @@ majority and elect a leader.
 
 Thus, servers process incoming RPC requests without consulting their current configurations.
 \subsection{Availability}
-\label{sec:orgc76fa2f}
+\label{sec:org3862a4a}
 \subsubsection{Catching up new servers}
-\label{sec:org944db65}
+\label{sec:org4f2137e}
 When a server is added to the cluster, it typically will not store any log entries. If it is added to
 the cluster in this state, its log could take quite a while to catch up to the leader’s, and during
 this time, the cluster is more vulnerable to unavailability:
@@ -390,9 +390,9 @@ partially caught up).
 \label{4.5}
 \end{center}
 \subsubsection{Removing the current leader}
-\label{sec:orgac8cb1e}
+\label{sec:org800d84b}
 \subsubsection{Disruptive servers}
-\label{sec:orgebde0c5}
+\label{sec:org05a34cc}
 Without additional mechanism, servers not in \(C_{new}\) can disrupt the cluster.
 \begin{itemize}
 \item Once the cluster leader has created the \(C_{new}\) entry, a server that is not in \(C_{new}\) will
@@ -431,7 +431,7 @@ not affect normal elections, where each server waits at least a minimum election
 starting an election. However, it helps avoid disruptions from servers not in \(C_{new}\) : while a leader is
 able to get heartbeats to its cluster, it will not be deposed by larger term numbers. \label{Problem1}
 \subsubsection{Availability}
-\label{sec:org8623771}
+\label{sec:orgcd9ce06}
 \label{Problem2}
 We show that the algorithm will be able to maintain and replace leaders during membership changes and
 that the leader(s) will both service client requests and complete the configuration changes. We
@@ -449,8 +449,48 @@ up-to-date log among both the old and new clusters can collect votes from a majo
 become leader.
 \end{itemize}
 \end{enumerate}
+\subsection{Arbitrary configuration changes using joint consensus}
+\label{sec:org8c295a0}
+To ensure safety across arbitrary configuration changes, the cluster first switches to a transitional
+configuration we call \textbf{joint consensus}; once the joint consensus has been committed, the system then
+transitions to the new configuration. The joint consensus combines both the old and new
+configurations:
+\begin{itemize}
+\item Log entries are replicated to all servers in both configurations
+\item Any server from either configuration may serve as leader
+\item Agreement (for elections and entry commitment) requires separate majorities from \textbf{both} the old and
+new configurations.
+\end{itemize}
+
+The joint consensus allows individual servers to transition between configurations at different times
+without compromising safety. Furthermore, joint consensus allows the cluster to continue servicing
+client requests throughout the configuration change.
+
+This approach extends the single-server membership change algorithm with an intermediate log entry for
+the joint configuration; Figure 4.8 illustrates the process.
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/papers/26.png}
+\label{}
+\end{center}
+\begin{itemize}
+\item When the leader receives a request to change the configuration from \(C_{old}\) to \(C_{new}\), it
+stores the configuration for joint consensus (\(C_{old,new}\) in the figure) as a log entry and
+replicates that entry using the normal Raft mechanism.
+\item As with the single-server configuration change algorithm, each server starts using a new
+configuration as soon as it stores the configuration in its log. This means that the leader will use
+the rules of \(C_{old,new}\) to determine when the log entry for \(C_{old,new}\) is committed. If
+the leader crashes, a new leader may be chosen under either \(C_{old}\) or \(C_{old,new}\),
+depending on whether the winning candidate has received \(C_{old,new}\)
+\item Once \(C_{old,new}\) has been committed, neither \(C_{old}\) and \(C_{new}\) can make decisions
+without approval of the other, and the Leader Completeness Property ensures that only servers with
+the \(C_{old,new}\) log entry can be elected as leader. It is now safe for the leader to create a
+log entry describing \(C_{new}\) and replicate it to the cluster. Again this configuration will take
+effect on each server as soon as it is seens. When the \(C_{new}\) log entry has been committed
+under the rules of \(C_{new}\) , the old configuration is irrelevant and servers not in the new
+configuration can be \uline{shut down}.
+\end{itemize}
 \section{Log compaction}
-\label{sec:org1ed09e3}
+\label{sec:orgcb769c6}
 \begin{center}
 \includegraphics[width=.99\textwidth]{../../images/papers/23.png}
 \label{}
@@ -469,29 +509,90 @@ discarded log entries from disk before it can apply any entries from the Raft lo
 \item the state machine may need to produce a consistent image of the state so that it can be sent to a
 slow follower.
 \end{enumerate}
-It is not feasible to defer compaction until log entries have been “fully replicated” to every
+It is not feasible to defer compaction until log entries have been ``fully replicated'' to every
 member in the cluster, since a minority of slow followers must not keep the cluster from being
 fully available, and new servers can be added to the cluster at any time.
 \end{itemize}
 \subsection{Snapshotting memory-based state machines}
-\label{sec:org93b5ad1}
+\label{sec:org3bdeac1}
+Each server takes snapshots independently, covering just the committed entries in its log. Most of the
+work in snapshotting involves serializing the state machine’s current state, and this is specific to a
+particular state machine implementation. 
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/papers/24.png}
+\label{}
+\end{center}
+
+Once the state machine completes writing a snapshot, the log can be truncated. Raft first stores the
+state it needs for a restart:
+\begin{itemize}
+\item the index and term of the last entry included in the snapshot
+\item the latest configuration as of that index.
+\end{itemize}
+Then it discards the prefix of its log up through that index. Any previous snapshots can also be
+discarded, as they are no longer useful.
+
+
+The leader may occasionally need to send its state to slow followers and to new servers that are
+joining the cluster. In snapshotting, this state is just the latest snapshot, which the leader
+transfers using a new RPC called \texttt{InstallSnapshot}:
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/papers/25.png}
+\label{}
+\end{center}
+When a follower receives a snapshot with this RPC, it must decide what to do with its existing log
+entries.
+\begin{itemize}
+\item Usually the snapshot will contain new information not already in the follower’s log. In this case,
+the follower discards its entire log; it is all superseded by the snapshot and may possibly have
+uncommitted entries that conflict with the snapshot.
+\item If the follower receives a snapshot that describes a prefix of its log (due to retransmission or by
+mistake), then log entries covered by the snapshot are deleted but entries following the snapshot
+are still valid and must be retained.
+\end{itemize}
+\subsubsection{Snapshotting concurrently}
+\label{sec:orgbb45437}
+Creating a snapshot can take a long time, both in serializing the state and in writing it to disk.
+Thus, both serializing and writing snapshots must be concurrent with normal operations to avoid
+availability gaps.
+
+Fortunately, copy-on-write techniques allow new updates to be applied without impacting the snapshot
+being written. There are two approaches to this:
+\begin{itemize}
+\item State machines can be built with immutable (functional) data structures to support this. Because
+state machine commands would not modify the state in place, a snapshotting task could keep a
+reference to some prior state and write it consistently into a snapshot.
+\end{itemize}
+• Alternatively, the operating system’s copy-on-write support can be used (where the programming
+environment allows it). On Linux for example, in-memory state machines can use fork to make a copy of
+the server’s entire address space. Then, the child process can write out the state machine’s state and
+exit, all while the parent process continues servicing requests. The LogCabin implementation currently
+uses this approach.
+\subsubsection{When to snapshot}
+\label{sec:org36a2554}
+Fortunately, using the size of the \textbf{previous} snapshot rather than the size of the next one results in reasonable behavior.
+\subsubsection{Implementation concerns}
+\label{sec:org7846f9b}
+\begin{itemize}
+\item \textbf{Saving and loading snapshots}:
+\end{itemize}
 \subsection{Snapshotting disk-based state machines}
-\label{sec:orgf9ed8f2}
+\label{sec:org7f16a3e}
 Disk-based state machines must be able to provide a consistent snapshot of the disk for the purpose of
 transmitting it to slow followers.
 \section{Client Interaction}
-\label{sec:orgc6fa17a}
+\label{sec:orgf8c2dcc}
 \begin{center}
 \includegraphics[width=.99\textwidth]{../../images/papers/21.png}
 \label{}
 \end{center}
 \subsection{Finding the cluster}
-\label{sec:org49ffd5f}
+\label{sec:orgf3a73a9}
 Two general approaches:
 \subsection{Routing requests to the leader}
-\label{sec:org26b18ae}
+\label{sec:org7270ebc}
 \subsection{Implementing linearizable semantics}
-\label{sec:org0a3791d}
+\label{sec:org206ec42}
 Raft provides at-least-once semantics for clients; the replicated state machine may apply a command
 multiple times.
 
@@ -508,7 +609,7 @@ serial order in which commands are applied on every server. Commands take effect
 exactly once according to their first appearance in the Raft log, since any subsequent appearances are
 filtered out by the state machines as described above.
 \subsection{Processing read-only queries more efficiently}
-\label{sec:orga12116c}
+\label{sec:orgb616181}
 Fortunately, it is possible to bypass the Raft log for read-only queries and still preserve
 linearizability. To do so, the leader takes the following steps:
 \begin{enumerate}
@@ -534,11 +635,11 @@ use a single round of heartbeats for any number of read-only queries that it has
 
 Followers could also help offload the processing of read-only queries. However, these reads would also
 run the risk of returning stale data without additional precautions. To serve reads safely, the
-follower could issue a request to the leader that just asked for a current readIndex (the leader would
+follower could issue a request to the leader that just asked for a current \texttt{readIndex} (the leader would
 execute steps 1–3 above); the follower could then execute steps 4 and 5 on its own state machine for
 any number of accumulated read-only queries.
-\subsection{Using clocks to reduce messaging for read-only queries}
-\label{sec:orgd70e2a1}
+\subsubsection{Using clocks to reduce messaging for read-only queries}
+\label{sec:org8aeafc9}
 To use clocks instead of messages for read-only queries, the normal heartbeat mechanism would provide
 a form of lease. Once the leader’s heartbeats were acknowledged by a majority of the cluster, the
 leader would assume that no other server will become leader for about an election timeout, and it
@@ -568,9 +669,9 @@ request for a client that had seen an index greater than the server’s last app
 would not service the request (yet).
 \end{itemize}
 \section{Correctness}
-\label{sec:orgdabc022}
+\label{sec:org9d58e0b}
 \subsection{Formal specification and proof for basic Raft algorithm}
-\label{sec:orgaaa39ed}
+\label{sec:org4e12c2e}
 The specification models an asynchronous system (it has no notion of time) with the following assumptions:
 \begin{itemize}
 \item Messages may take an arbitrary number of steps (transitions) to arrive at a server. Sending a
@@ -579,9 +680,9 @@ message enables a transition to occur (the receipt of the message) but with no p
 \item The network may reorder, drop, and duplicate messages.
 \end{itemize}
 \section{Leader election evaluation}
-\label{sec:orgf9ff11f}
+\label{sec:orgdb9fa7e}
 \subsection{Preventing disruptions when a server rejoins the cluster}
-\label{sec:org1d0cb4d}
+\label{sec:orged9cfdc}
 One downside of Raft’s leader election algorithm is that a server that has been partitioned from the
 cluster is likely to cause a disruption when it regains connectivity.
 
@@ -592,7 +693,7 @@ the cluster that they would be willing to grant the candidate their votes:
 \item voters have not received heartbeats from a valid leader for at least a baseline election timeout
 \end{enumerate}
 \section{Problem}
-\label{sec:org8a2cab6}
+\label{sec:org00ca297}
 \begin{enumerate}
 \item \ref{Problem1}: Not quite understand
 \item \ref{Problem2}: same roblem
