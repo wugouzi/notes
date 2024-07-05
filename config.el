@@ -120,6 +120,12 @@
           ("python" (:background "#e5ffb8"))))
 
 (require 'org-indent)
+
+;;                                                     ┏┓      ┳┳┓   ┓
+;;                                                     ┃┃┏┓┏┓  ┃┃┃┏┓┏┫┏┓
+;;                                                     ┗┛┛ ┗┫  ┛ ┗┗┛┗┻┗
+;;                                                          ┛
+
 (use-package org
   :hook
   ((org-mode . auto-fill-mode)
@@ -153,6 +159,7 @@
 
 (use-package org-latex-preview
   :config
+  (require 'org-macs)
   ;; Increase preview width
   (plist-put org-latex-preview-appearance-options
              :page-width 1.0)
@@ -284,6 +291,7 @@
   (define-key bibtex-mode-map (kbd "H-b") 'org-ref-bibtex-hydra/body)
   (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
   (define-key org-mode-map (kbd "s-[") 'org-ref-insert-link-hydra/body)
+  (define-key org-mode-map (kbd "C-c [") 'org-ref-insert-ref-link)
   ;; (require 'org-ref-ivy)
   (require 'org-ref-arxiv)
   (require 'org-ref-scopus)
@@ -312,6 +320,11 @@
   :bind (("C-s" . consult-line)
          )
   )
+
+
+;;                                                         ┓
+;;                                                         ┃ ┏┓╋┏┓┓┏
+;;                                                         ┗┛┗┻┗┗ ┛┗
 
 ;; https://www.reddit.com/r/emacs/comments/ev7igv/why_is_auctex_loaded_using_usepackage_tex_instead/
 (use-package tex
@@ -520,3 +533,15 @@
       modus-themes-mixed-fonts t
       modus-themes-variable-pitch-ui nil
       modus-themes-disable-other-themes t)
+
+
+;;;;;;;; go
+(after! lsp-mode
+  (setq  lsp-go-analyses '((fieldalignment . t)
+                           (nilness . t)
+                           (shadow . t)
+                           (unusedparams . t)
+                           (unusedwrite . t)
+                           (useany . t)
+                           (unusedvariable . t)))
+)
