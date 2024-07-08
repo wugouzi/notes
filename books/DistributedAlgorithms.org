@@ -5,6 +5,13 @@
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \SetKw{KwShared}{Shared variables:}
+#+LATEX_HEADER: \SetKw{KwProcess}{Process $i$:\\}
+#+LATEX_HEADER: \SetKwData{KwRem}{\ruleline{Remainder region}\\}
+#+LATEX_HEADER: \SetKwData{KwCrit}{\ruleline{Critical region}\\}
+#+LATEX_HEADER: \SetKwData{KwTry}{\ruleline{Trying region}\\}
+#+LATEX_HEADER: \SetKwData{KwExit}{\ruleline{Exit region}\\}
+#+LATEX_HEADER: \SetKw{KwGoTo}{go to}
 #+STARTUP: shrink
 * Modelling \rom{2}: Asynchronous System Model
 ** I/O Automata
@@ -159,6 +166,7 @@
         * \(start(A)=\prod_{i\in I}start(A_i)\)
         * \(trans(A)\) is the set of triples \((s,\pi,s')\) s.t., for all \(i\in I\), if \(\pi\in acts(A_i)\),
           then \((s_i,\pi,s_i')\in trans(A_i)\); otherwise \(s_i=s_i'\).
+        * \(tasks(A)=\bigcup_{i\in I}tasks(A_i)\)
 
 
         Note that an action \(\pi\) that is an output of one component and an input of another is classified
@@ -273,6 +281,7 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.5]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         Suppose \(\alpha_i\) is a fair execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
         sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=trace(\alpha_i)\) for every \(i\in I\). Then there
@@ -282,6 +291,7 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.6]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
         Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in fairexecs(A_i)\)  for
         every \(i\in I\), then \(\beta\in fairexecs(A)\).
@@ -453,6 +463,7 @@
 *** Compositional Reasoning
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        label:8.10
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
         \(\{P_i\}_{i\in I}\) be a (compatible) collection of trace properties and let \(P=\prod_{i\in I}P_i\)
         1. If \(extsig(A_i)=sig(P_i)\) and \(traces(A_i)\subseteq traces(P_i)\) for every \(i\), then
@@ -469,6 +480,138 @@
            
         #+END_proof
 
+        #+ATTR_LATEX: :options [Satisfying a product trace property]
+        #+BEGIN_examplle
+        Consider the composed system of Example ref:8.2.1. Each process automaton \(P_i\) satisfies a trace
+        safety property that asserts that any \(decide_i\) event has a preceding \(init_i\) event. Also, each
+        channel automaton \(C_{i,j}\)  satisfies a trace safety property that asserts taht the sequence of
+        messages in \(receive_{i,j}\) events is a prefix of athe sequence of messages in \(send_{i,j}\)
+        events.
+
+        Then it follows from Theorem ref:8.10 that the composed system satisfies the product trace safety
+        property. This means that in an trace of the combined system, the following hold:
+        1. For every \(i\), any \(decide_i\) event has a preceding \(init_i\) event
+        2. For every \(i\) and \(j\), \(i\neq j\), the sequence of messages in \(receive_{i,j}\) events is a
+           prefix of the sequence of messages in \(send_{i,j}\) events.
+        #+END_examplle
+
+        Second, suppose that we want to show that a particular sequence of actions is a trace of a composed
+        system \(A=\prod_{i\in I}A_i\).  Theorem ref:8.3 shows that it is enough to show taht the projection
+        of the sequence on each of the system components is a trace of that component. Theorem ref:8.6 implies
+        an analogous result for fair traces.
+
+        Third, consider the compositional proof of safety properties. Suppose we want to show that a composed
+        system \(A=\prod_{i\in I}A_i\) satisfies a safety property \(P\). One strategy is to show that none of
+        the components \(A_i\) is the first to violate \(P\).
+
+        Let \(A\) be an I/O automaton and let \(P\) be a safety property with \(acts(P)\cap int(A)=\emptyset\)
+        and \(in(P)\cap out(A)=\emptyset\). We say that \(A\) *preserves* \(P\) if for every finite sequence
+        \(\beta\) of actions that does not include any internal actions of \(A\), and every \(\pi\in out(A)\),
+        the following holds: If \(\beta|acts(P)\in traces(P)\) and \(\beta\pi|A\in traces(A)\), then
+        \(\beta\pi|acts(P)\in traces(P)\). This says that \(A\) is not the first to violate \(P\), as long as
+        \(A\)'s environment only provides inputs to \(A\) in such a way that the cumulative behaviour
+        satisfies \(P\), then \(A\) will only perform outputs s.t. the cumulative behaviour satisfies \(P\).
+
+        The key fact about preservation of safety properties is that if all the components in a composed
+        system preserve a safety property, then so does the entire system. Moreover, if the composed system is
+        closed, then it actually satisfies the safety property.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
+        \(P\) be a safety property with \(acts(P)\cap int(A)=\emptyset\) and \(in(P)\cap out(A)=\emptyset\).
+        1. If \(A_i\) preserves \(P\) for every \(i\in I\), then \(A\) preserves \(P\)
+        2. If \(A\) is a closed automaton, \(A\) preserves \(P\), and \(acts(P)\subseteq ext(A)\), then
+           \(traces(A)|acts(P)\subseteq traces(P)\)
+        3. If \(A\) is a closed automaton, \(A\) preserves \(P\), and \(acts(P)=ext(A)\), then
+           \(traces(A)\subseteq traces(P)\).
+        #+END_theorem
+*** Hierarchical Proofs
+** Complexity Measures
+* Modelling \rom{3}: Asynchronous Shared Memory Model
+** Shared Memory Systems
+        We mode lthe entire system as one big I/O automaton \(A\).
+
+        As in the synchronous network model, we assume that the processes in the system are indexed by
+        \(1,\dots,n\). Suppose that each process \(i\) has an associated set of *states*, \(states_i\), among
+        which some are designated as *start states*, \(start_i\). Also suppose that each shared variable \(x\)
+        in the system has an associated set of *values*, \(values_x\), among which some are designated as the
+        *initial values*, \(initial_x\). Then each state in \(states(A)\) (the set of states of the system
+        automaton \(A\)) consists of a state in \(states_i\) for each process \(i\), plus a value in
+        \(values_x\) for each shared variable \(x\). Each state in \(start(A)\) consists of a state in
+        \(start_i\) for each process \(i\), plus a value in \(initial_x\) for each shared variable \(x\).
+
+        We assume that each action in \(acts(A)\) is associated with one of the processes. In addition, some
+        of the internal actions in \(int(A)\) may be associated with a shared variable. The input actions and
+        output actions associated with process \(i\) are used for interaction between process \(i\) and the
+        outside world; we say they occur on *port* \(i\). The internal actions of process \(i\) that do not have
+        an associated shared variable are used for local computation, while the internal actions of \(i\) that
+        are associated with shared variable \(x\) are used for performing operations on \(x\).
+
+        The set \(trans(A)\) of transitions has some locality restrictions, which model the process and shared
+        variable structure of the system.
+        1. Consider an action \(\pi\) that is associated with process \(i\) but with no variable; as we noted
+           above, \(\pi\) is used for local computation. Then only the state of \(i\) can be involved in any
+           \(\pi\) step. That is, the set of \(\pi\) transitions can be generated from some set of triples of
+           the form \((s,\pi,s')\), where \(s,s'\in states_i\), by attaching any combination of states for the
+           other processes and values for the shared variables to both \(s\) and \(s'\) 
+        2. Consider an action \(\pi\) that is associated with both a process \(i\) and a variable \(x\);
+           \(\pi\) is used by \(i\) to perform an operation on \(x\). The set of \(\pi\) transitions can be
+           generated from some set of triples of the form \((s,v),\pi,(s',v')\), where \(s,s'\in states_i\)
+           and \(v,v'\in values_x\), by attaching any combination of states for the other processes and values
+           for the other shared variables. There is a _technicality_: if \(\pi\) is associated with process
+           \(i\) and variable \(x\), then whether or not \(\pi\) is enabled should depend only on the state of
+           process \(i\)
+
+        The task partitioon \(tasks(A)\) must be consistent with the process structure: that is, each
+        equivalence class (task) should include locally controlled actions of only one process.
+
+        #+ATTR_LATEX: :options [Shared memory system]
+        #+BEGIN_examplle
+        Let \(V\) be a fixed value set. Consider a shared memory system \(A\) consisting of \(n\) processes,
+        numbered \(1,\dots,n\), and a single shared variable \(x\) with values in \(V\cup\{unknown\}\),
+        initially \(unknown\). The inputs are of the form \(init(v)_i\), where \(v\in V\) and \(i\) is a
+        process index. The outputs are of the form \(decide(v)_i\), The internal actions are of the form
+        \(access_i\). All the actions with subscript \(i\) are associated with process \(i\), and in addition,
+        the \(access\) actions are associated with variable \(x\).
+
+        After process \(i\) receives an \(init(v)_i\) input, it accesses \(x\). If it finds \(x=unknown\),
+        then it writes its value \(v\) into \(x\) and decides \(v\). If it finds \(x=w\), where \(w\in V\),
+        then it does not write anything into \(x\), but decides \(w\).
+
+        Formally:
+
+        *States of \(i\)*:
+        \begin{align*}
+        &status\in\{idle,access,decide,done\}, \text{ initially } idle\\
+        &input\in V\cup\{unknown\},  \text{ initially } unknown\\
+        &output\in V\cup\{unknown\}, \text{ initially } unknown
+        \end{align*}
+        *Transitions of \(i\)*:
+        \begin{alignat*}{2}
+        &init(v)_i\hspace{3.5cm}&&decide(v)_i\\
+        &\quad\text{Effect:}&&\quad\text{Precondition:}\\
+        &\quad\quad input:=v&&\quad\quad status=decide\\
+        &\quad\quad\text{if }status=idle\text{ then}&&\quad\quad output=v\\
+        &\quad\quad\quad status:=access&&\quad\text{Effect:}\\
+        &&&\quad\quad status:=done\\
+        &access_i\\
+        &\quad\text{Precondition:}\\
+        &\quad\quad status=access\\
+        &\quad\text{Effect:}\\
+        &\quad\quad\text{if }x=unknown\text{ then }x:=input\\
+        &\quad\quad output:=x\\
+        &\quad\quad status:=decide
+        \end{alignat*}
+
+        There is one task per process, which contains all the \(access\) and \(decide\) actions for that
+        process.
+
+        It is not hard to see that in every fair execution \(\alpha\) of \(A\), any process that receives an
+        \(init\) input eventually performs a \(decide\) output. Moreover, every execution satisfies the
+        "agreement property" that no two processes decide on different values, and the "validity property"
+        that every decision value is the initial value of some process.
+        #+END_examplle
 * Mutual Exclusion
 ** Asynchronous Shared Memory Model
         The system is modelled as a collection of processes and shared variables,
@@ -513,6 +656,14 @@
         #+CAPTION: The cycle of regions of a single user
         [[../images/DistributedAlgorithms/1.png]]
 
+        The inputs to process \(i\) are the \(try_i\) action, which models a request by user \(U_i\) for
+        access to the resource, and the \(exit_i\) action, which models an annoucement by user \(U_i\) that it
+        is done with the resource. The outputs of process \(i\) are \(crit_i\), which models the granting of
+        the resource to \(U_i\) and \(rem_i\), which tells \(U_i\) that it can continue with the reset of its
+        work. The \(try\), \(crit\), \(exit\), and \(rem\) actions are the only external actions of the shared
+        memory system. The processes are responsible for performing the trying and exit protocols. Each
+        process \(i\) acts as an "agent" on behalf of user \(U_i\).
+
         Each of the users \(U_i\), \(1\le i\le n\), is modelled as a state machine (formally, an *I/O
         automaton*) that communicates with its agent process using the \(try_i\), \(crit_i\), \(exit_i\) and
         \(rem_i\) actions:
@@ -520,11 +671,91 @@
         #+NAME: 10.3
         #+CAPTION: External interface of user \(U_i\)
         [[../images/DistributedAlgorithms/2.png]]
-
+        The only thing that we assume about \(U_i\) is that it obeys the cyclic region protocol.
         We define a sequence of \(try_i\), \(crit_i\), \(exit_i\) and \(rem_i\) actions to be *well-formed* for
         user \(i\) if it is a prefix of the cyclically ordered sequence
         \(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) *preserve* the *trace property*
         defined by the set of sequences that are well-ordered for user \(i\).
+
+        In executions of \(U_i\) that do observe the cyclic order of actions, we say that \(U_i\) is
+        * in its *remainder region* initially and in between any \(rem_i\) event and the following \(try_i\) event
+        * in its *trying region* in between \(try_i\) event and the following \(crit_i\) event
+        * in its *critical region* in between any \(crit_i\) event and the following \(exit_i\) event. During
+          the time, \(U_i\) should be thought of as being free to use the resource
+        * in its *exit region* in between any \(exit_i\) event and the following \(rem_i\) event
+
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: 10.4
+        #+CAPTION: Interactions between components for the mutual exclusion problem
+        [[../images/DistributedAlgorithms/4.png]]
+
+        The combination of \(A\) and the users must satisfy the following conditions:
+        * *Well-formedness*: In any execution, and for any \(i\), the subsequence describing the interactions
+          between \(U_i\) and \(A\) is well-formed for \(i\).
+        * *Mutual exclusion*: There is no reachable system state where more than one user is in the critical
+          region \(C\)
+        * *Progress*: At any point in a /fair execution/
+          1. (Progress for the trying region) If at least one user is in \(T\) and no user is in \(C\), then
+             at some later point some user enters \(C\)
+          2. (Progress for the exit region) If at least one user is in \(E\), then at some later point some
+             user enters \(R\).
+
+        We say that a shared memory system \(A\) *solves the mutual exclusion problem* provided that it solves
+        it for every collection of users.
+
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        [[label:10.1]]
+        Let \(A\) be an algorithm that solves the mutual exclusion problem. Let \(U_1,\dots,U_n\) be any
+        particular collection of users, and let \(B\) be the combination of \(A\) and the given collection of
+        users. Let \(s\) be a reachable state of \(B\).
+
+        If process \(i\) is in its trying or exit region in state \(s\), then some locally controlled action
+        of process \(i\) is enabled in \(s\).
+        #+END_lemma
+
+        #+BEGIN_proof
+        WLOG, we may assume that each of the users always returns the resource.
+
+        Let \(\alpha\) be a finite execution of \(B\) ending in \(s\), and assume that process \(i\) is in
+        either its trying or exit region in state \(s\), and no locally controlled action of process \(i\) is
+        enabled in \(s\). Then we claim that no events involving \(i\) occur in any execution of \(B\) that
+        extends \(\alpha\), after the prefix \(\alpha\). This follows from the fact that enabling of locally
+        controlled actions is determined only by the local process state, plus the fact that well-formedness
+        prevents inputs to process \(i\) while process \(i\) is in \(T\) or \(E\).
+
+        Now let \(\alpha'\) be a fair execution of \(B\) that extends \(\alpha\), in which no \(try\) events
+        occur after the prefix \(\alpha\). Repeated use of the progress assumption, plus the fact that the
+        users always return the resource, imply that process \(i\) must eventually perform either a \(crit_i\)
+        or a \(rem_i\) action. But this contradicts the fact that \(\alpha'\) contains no further actions of \(i\).
+        #+END_proof
+
+** Dijkstra's Mutual Exclusion Algorithm
+*** The Algorithm
+        \begin{algorithm}
+        \caption{DijkstraME algorithm}
+        \KwShared{\\\quad\(turn\in\{1,\dots,n\}\), initally arbitrary, writable and readable by all processes\\
+                for every \(i\), \(1\le i\le n\):\\
+                \quad\(flag(i)\in\{0,1,2\}\), initially 0, writable by process \(i\) and readable by all processes}\;
+        \KwProcess
+        \KwRem
+        \(try_i\)\;
+        \nlset{L}\label{zzzL}\(flag(i):=1\)\;
+        \While{\(turn\neq i\)}{
+                \uIf{\(flag(turn)=0\)}{\(turn:=i\)\;}
+        }
+        \(flag(i):=2\)\;
+        \For{\(j\neq i\)}{
+                \uIf{\(flag(j)=2\)}{\KwGoTo \ref{zzzL}\;}
+        }
+        \(crit_i\)\;
+        \KwCrit
+        \(exit_i\)\;
+        \(flag(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
 * Q&A
         1. [[P1]]. Need think.
         2. [[P2]]

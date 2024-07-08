@@ -1,16 +1,25 @@
-% Created 2024-06-30 Sun 15:11
+% Created 2024-07-08 Mon 13:58
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
 \input{/Users/wu/notes/preamble.tex}
 \graphicspath{{../../books/}}
 \makeindex
+\SetKw{KwShared}{Shared variables:}
+\SetKw{KwProcess}{Process $i$:\\}
+\SetKwData{KwRem}{\ruleline{Remainder region}\\}
+\SetKwData{KwCrit}{\ruleline{Critical region}\\}
+\SetKwData{KwTry}{\ruleline{Trying region}\\}
+\SetKwData{KwExit}{\ruleline{Exit region}\\}
+\SetKw{KwGoTo}{go to}
 
 %% ox-latex features:
 %   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
-%   image, !announce-end.
+%   underline, image, !announce-end.
 
 \usepackage{capt-of}
+
+\usepackage[normalem]{ulem}
 
 \usepackage{graphicx}
 
@@ -33,9 +42,9 @@
 \tableofcontents
 
 \section{Modelling \rom{2}: Asynchronous System Model}
-\label{sec:orge26adf7}
+\label{sec:org6aa8dde}
 \subsection{I/O Automata}
-\label{sec:org3862f31}
+\label{sec:orge852cef}
 A \textbf{signature} \(S\) is a triple consisting of three disjoint sets of actions: the \textbf{input actions},
 \(in(S)\), the \textbf{output actions}, \(out(S)\), and the \textbf{internal actions}, \(int(S)\). We define the
 \textbf{external actions}, \(ext(S)\), to be \(in(S)\cup out(S)\); and \textbf{locally controlled actions}, \(local(S)\)
@@ -125,6 +134,7 @@ initially \(null\)
 \item \textbf{Tasks}: for every \(j\neq i\): \(\{send(v)_{i,j}:v\in V\}\), \(\{decide(v)_i:v\in V\}\).
 \end{itemize}
 
+\index{execution}
 An \textbf{execution fragment} of \(A\) is either a finite sequence \(s_0,\pi_1,s_1,\pi_2,\dots,\pi_r,s_r\) or
 an infinite sequence \(s_0,\pi_1,s_1,\pi_2,\dots\), of alternating states and actions of \(A\) s.t.
 \((s_k,\pi_{k+1},s_{k+1})\) is a transition of \(A\) for every \(k\ge 0\). An execution fragment
@@ -137,6 +147,8 @@ the sequence obtained by concatenating \(\alpha\) and \(\alpha'\), eliminating t
 occurrence of the last state of \(\alpha\).
 \end{examplle}
 
+
+\index{trace}
 The \textbf{trace} of an execution \(\alpha\) of \(A\), denoted by \(trace(\alpha)\), is the subsequence of
 \(\alpha\) consisting of all the external actions. We say that \(\beta\) is a \textbf{trace} of \(A\)  if
 \(\beta\) is the trace of an execution of \(A\). We denote the set of traces of \(A\) by
@@ -156,9 +168,9 @@ states by putting the sequences in \emph{queue} in brackets; \(\lambda\) denotes
 \end{align*}
 \end{examplle}
 \subsection{Operations on Automata}
-\label{sec:orgeae5610}
+\label{sec:org26263f7}
 \subsubsection{Composition}
-\label{sec:org25c6459}
+\label{sec:org23ae963}
 The composition identifies actions with the same name in different component automata. When any
 component automaton performs a step involving \(\pi\), so do all component automata that have \(\pi\)
 in their signatures.
@@ -202,6 +214,7 @@ Now the \textbf{composition} \(A=\prod_{i\in I}A_i\) of a countable, compatible 
 \item \(start(A)=\prod_{i\in I}start(A_i)\)
 \item \(trans(A)\) is the set of triples \((s,\pi,s')\) s.t., for all \(i\in I\), if \(\pi\in acts(A_i)\),
 then \((s_i,\pi,s_i')\in trans(A_i)\); otherwise \(s_i=s_i'\).
+\item \(tasks(A)=\bigcup_{i\in I}tasks(A_i)\)
 \end{itemize}
 
 
@@ -233,6 +246,7 @@ obtained by deleting each pair \(pi_r,s_r\) for which \(\pi_r\) is not an action
 replacing each remaining \(s_r\) by \((s_r)_i\).
 
 \begin{theorem}[]
+\label{8.1}
 Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 \begin{enumerate}
 \item If \(\alpha\in execs(A)\), then \(\alpha|A_i\in execs(A_i)\) for every \(i\in I\).
@@ -240,7 +254,15 @@ Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\pro
 \end{enumerate}
 \end{theorem}
 
+\begin{proof}
+\begin{enumerate}
+\item Execution of any automaton \(A_j\) where \(j\neq i\) doesn't affect automaton \(A_i\).
+\item Immediately
+\end{enumerate}
+\end{proof}
+
 \begin{theorem}[]
+\label{8.2}
 Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 Suppose \(\alpha_i\) is an execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
 sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=traces(\alpha_i)\) for every \(i\in I\). Then there
@@ -248,20 +270,23 @@ is an execution \(\alpha\) of \(A\) s.t. \(\beta=trace(\alpha)\) and \(\alpha_i=
 \(i\in I\).
 \end{theorem}
 
+
 \begin{theorem}[]
+\label{8.3}
 Let \(\{A_i\}_{i\in I}\)  be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in traces(A_i)\) for every
 \(i\in I\), then \(\beta\in traces(A)\).
 \end{theorem}
 \subsubsection{Hiding}
-\label{sec:orgc7d6418}
+\label{sec:orgf2ba556}
 If \(S\) is a signature and \(\Phi\subset out(S)\), then \(hide_\phi(S)\) is defined to be the new
 signature \(S'\), where \(in(S')=in(S)\), \(out(S')=out(S)-\Phi\) and \(int(S')=int(S)\cup\Phi\).
 
 If \(A\) is an automaton and \(\Phi\subseteq out(A)\), then \(hide_\Phi(A)\) is the automaton \(A'\)
 obtained from \(A\) by replacing \(sig(A)\) with \(sig(A')=hide_\Phi(sig(A))\).
 \subsubsection{Fairness}
-\label{sec:orgb546c52}
+\label{sec:org0bf4a38}
+\index{fair}
 An execution fragment \(\alpha\) of an I/O automaton \(A\) is said to be \textbf{fair} if the following
 conditions hold for each class \(C\) of \(tasks(A)\):
 \begin{enumerate}
@@ -293,6 +318,7 @@ has \(receive\) actions enabled at every point after the first step.
 \end{examplle}
 
 \begin{theorem}[]
+\label{8.4}
 Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 \begin{enumerate}
 \item If \(\alpha\in fairexecs(A)\), then \(\alpha|A_i\in fairexecs(A_i)\) for every \(i\in I\).
@@ -300,7 +326,21 @@ Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\pro
 \end{enumerate}
 \end{theorem}
 
+\begin{proof}
+\begin{enumerate}
+\item If \(\alpha\in fairexecs(A)\).
+\begin{itemize}
+\item If \(\alpha\) is finite, then for each task \(C\), \(C\) is not enabled in the final state of
+\(\alpha\), therefore each \(C|A_i\) is not enabled in the final state of \(\alpha|A_i\) too.
+\item If \(\alpha\) is infinite, then blabla
+\end{itemize}
+Therefore \(\alpha|A_i\in fairexecs(A_i)\)
+\item same
+\end{enumerate}
+\end{proof}
+
 \begin{theorem}[]
+\label{8.5}
 Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 Suppose \(\alpha_i\) is a fair execution of \(A_i\) for every \(i\in I\), and suppose \(\beta\) is a
 sequence of actions in \(ext(A)\) s.t. \(\beta|A_i=trace(\alpha_i)\) for every \(i\in I\). Then there
@@ -309,6 +349,7 @@ every \(i\in I\).
 \end{theorem}
 
 \begin{theorem}[]
+\label{8.6}
 Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\).
 Suppose \(\beta\) is a sequence of actions in \(ext(A)\). If \(\beta|A_i\in fairexecs(A_i)\)  for
 every \(i\in I\), then \(\beta\in fairexecs(A)\).
@@ -340,13 +381,13 @@ s.t. the sequence of input actions in \(\alpha'\) is exactly \(\beta'\)
 \end{enumerate}
 \end{theorem}
 \subsection{Inputs and Outputs for Problems}
-\label{sec:orgd9c68b6}
+\label{sec:org8d72bdf}
 \subsection{Properties and Proof Methods}
-\label{sec:org7c3b337}
+\label{sec:org2eed92d}
 \subsubsection{Invariant Assertions}
-\label{sec:org852c9e6}
+\label{sec:org7210e0f}
 \subsubsection{Trace Properties}
-\label{sec:org8280c3d}
+\label{sec:org526957b}
 A \textbf{trace property} \(P\) consists of the following:
 \begin{itemize}
 \item \(sig(P)\), a signature containing no internal actions
@@ -392,7 +433,7 @@ compatible. Then the \textbf{composition} \(P=\prod_{i\in I}P_i\) is the trace p
 \(\beta|acts(P_i)\in traces(P_i)\) for all \(i\in I\).
 \end{itemize}
 \subsubsection{Safety and Liveness Properties}
-\label{sec:org8f98f5d}
+\label{sec:orga6a6f2c}
 \begin{definition}[]
 A trace property \(P\) is a \textbf{trace safety property}, or a \textbf{safety property} for short, provided that \(P\)
 satisfies the following conditions:
@@ -422,12 +463,236 @@ If \(P\) is a safe property, TFAE:
 \end{proposition}
 
 \begin{proof}
-        
+\((2\Rightarrow(3)\): For any finite trace \(\beta\in traces(A)\), there is
+\(\beta'\in fairtraces(A)\)  that starts in \(\beta\). Thus \(\beta\in traces(P)\) because of
+prefix-closedness.
+
+\((3)\Rightarrow(1)\): For any infinite trace \(\beta\in traces(A)\), we can have such a infinite
+sequence of traces \(\beta_1,\beta_2,\dots\) of \(A\), where \(\beta_i\) is a prefix of
+\(\beta_{i+1}\) for any \(i\), and \(\beta=\bigcup_{i\in\omega}\beta_i\). Therefore
+\(\beta\in traces(P)\) because of limit-closedness.
 \end{proof}
+
+\begin{definition}[]
+A trace property \(P\) is a \textbf{trace liveness property}, or a \textbf{liveness property} for short, provided that
+every finite sequence over \(acts(P)\) has some extension in \(traces(P)\).
+\end{definition}
+
+\begin{examplle}[]
+Suppose \(sig(P)\) consists of input \(init(v)\), \(v\in V\) and outputs \(decide(v)\), \(v\in V\).
+Suppose \(traces(P)\) is the set of sequences \(\beta\) of \(init\) and \(decide\) actions in which,
+for every \(init\) event in \(\beta\), there is some \(decide\) event occuring later in \(\beta\).
+Then \(P\)  is a liveness property.
+\end{examplle}
+
+Often one wants to prove that \(fairtraces(A)\subseteq traces(P)\) for some automaton \(A\) and
+liveness property \(P\). Methods based on \textbf{temporal logic} work well in practice for proving such
+claims. Another method for proving liveness claims, which we call the \textbf{progress function method}, is
+specially designed for proving that some particular goal is eventually reached.
+
+\begin{theorem}[]
+If \(P\) is both a safety property and a liveness property, then \(P\) is the set of all (finite and
+infinite) sequence of actions in \(acts(P)\).
+\end{theorem}
+
+\begin{proof}
+Suppose that \(P\) is both a safety and a liveness property and let \(\beta\) be an arbitrary sequence
+of elements of \(acts(P)\). If \(\beta\) is finite, then since \(P\) is a liveness property, \(\beta\)
+has some extension \(\beta'\) in \(traces(P)\). Then since \(P\) is a safety property, \(\beta\in
+        traces(P)\).
+
+If \(\beta\) is infinite, then for each \(i\ge 1\), define \(\beta_i\) to be the length \(i\) prefix
+of \(\beta\). Then \(\beta\in traces(P)\).
+\end{proof}
+
+\begin{theorem}[]
+If \(P\) is an arbitrary trace property with \(traces(P)\neq\emptyset\), then there exist a safety
+property \(S\) and a liveness property \(L\) s.t.
+\begin{enumerate}
+\item \(sig(S)=sig(L)=sig(P)\).
+\item \(traces(P)=traces(S)\cap traces(L)\)
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Let \(traces(S)\) be the prefix- and limit-closure of \(traces(P)\). Let
+\begin{align*}
+traces(L)=&traces(P)\\
+&\cup\{\beta:\beta\text{ is a finite sequence and no extension of $\beta$ is in }traces(P)\}
+\end{align*}
+\begin{claim}
+\(L\) is a liveness property
+\end{claim}
+Now \(traces(P)\subseteq traces(S)\cap traces(L)\). If there is \(\beta\in traces(S)\cap
+        traces(L)\setminus traces(P)\),
+then \(\beta\) is a finite sequence and no extension of \(\beta\) is in \(traces(P)\). \label{P2}
+\end{proof}
+\subsubsection{Compositional Reasoning}
+\label{sec:org4a0159b}
+\begin{theorem}[]
+\label{8.10}
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
+\(\{P_i\}_{i\in I}\) be a (compatible) collection of trace properties and let \(P=\prod_{i\in I}P_i\)
+\begin{enumerate}
+\item If \(extsig(A_i)=sig(P_i)\) and \(traces(A_i)\subseteq traces(P_i)\) for every \(i\), then
+\(extsig(A)=sig(P)\) and \(traces(A)\subseteq traces(P)\).
+\item If \(extsig(A_i)=sig(P_i)\) and \(fairtraces(A_i)\subseteq traces(P_i)\) for every \(i\), then
+\(extsig(A)=sig(P)\) and \(fairtraces(A)\subseteq traces(P)\).
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\begin{enumerate}
+\item If \(\beta\in traces(A)\), then by Theorem \ref{8.1},
+\(\beta|A_i\in traces(A_i)\subseteq traces(P_i)\) for every \(i\in I\). Then by Theorem \ref{8.3},
+\(\beta\in traces(P)\).
+\item 
+\end{enumerate}
+\end{proof}
+
+\begin{examplle}[Satisfying a product trace property]
+Consider the composed system of Example \ref{8.2.1}. Each process automaton \(P_i\) satisfies a trace
+safety property that asserts that any \(decide_i\) event has a preceding \(init_i\) event. Also, each
+channel automaton \(C_{i,j}\)  satisfies a trace safety property that asserts taht the sequence of
+messages in \(receive_{i,j}\) events is a prefix of athe sequence of messages in \(send_{i,j}\)
+events.
+
+Then it follows from Theorem \ref{8.10} that the composed system satisfies the product trace safety
+property. This means that in an trace of the combined system, the following hold:
+\begin{enumerate}
+\item For every \(i\), any \(decide_i\) event has a preceding \(init_i\) event
+\item For every \(i\) and \(j\), \(i\neq j\), the sequence of messages in \(receive_{i,j}\) events is a
+prefix of the sequence of messages in \(send_{i,j}\) events.
+\end{enumerate}
+\end{examplle}
+
+Second, suppose that we want to show that a particular sequence of actions is a trace of a composed
+system \(A=\prod_{i\in I}A_i\).  Theorem \ref{8.3} shows that it is enough to show taht the projection
+of the sequence on each of the system components is a trace of that component. Theorem \ref{8.6} implies
+an analogous result for fair traces.
+
+Third, consider the compositional proof of safety properties. Suppose we want to show that a composed
+system \(A=\prod_{i\in I}A_i\) satisfies a safety property \(P\). One strategy is to show that none of
+the components \(A_i\) is the first to violate \(P\).
+
+Let \(A\) be an I/O automaton and let \(P\) be a safety property with \(acts(P)\cap int(A)=\emptyset\)
+and \(in(P)\cap out(A)=\emptyset\). We say that \(A\) \textbf{preserves} \(P\) if for every finite sequence
+\(\beta\) of actions that does not include any internal actions of \(A\), and every \(\pi\in out(A)\),
+the following holds: If \(\beta|acts(P)\in traces(P)\) and \(\beta\pi|A\in traces(A)\), then
+\(\beta\pi|acts(P)\in traces(P)\). This says that \(A\) is not the first to violate \(P\), as long as
+\(A\)'s environment only provides inputs to \(A\) in such a way that the cumulative behaviour
+satisfies \(P\), then \(A\) will only perform outputs s.t. the cumulative behaviour satisfies \(P\).
+
+The key fact about preservation of safety properties is that if all the components in a composed
+system preserve a safety property, then so does the entire system. Moreover, if the composed system is
+closed, then it actually satisfies the safety property.
+
+\begin{theorem}[]
+Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
+\(P\) be a safety property with \(acts(P)\cap int(A)=\emptyset\) and \(in(P)\cap out(A)=\emptyset\).
+\begin{enumerate}
+\item If \(A_i\) preserves \(P\) for every \(i\in I\), then \(A\) preserves \(P\)
+\item If \(A\) is a closed automaton, \(A\) preserves \(P\), and \(acts(P)\subseteq ext(A)\), then
+\(traces(A)|acts(P)\subseteq traces(P)\)
+\item If \(A\) is a closed automaton, \(A\) preserves \(P\), and \(acts(P)=ext(A)\), then
+\(traces(A)\subseteq traces(P)\).
+\end{enumerate}
+\end{theorem}
+\subsubsection{Hierarchical Proofs}
+\label{sec:org292c490}
+\subsection{Complexity Measures}
+\label{sec:orged3e381}
+\section{Modelling \rom{3}: Asynchronous Shared Memory Model}
+\label{sec:org3e58b92}
+\subsection{Shared Memory Systems}
+\label{sec:orga6e6135}
+We mode lthe entire system as one big I/O automaton \(A\).
+
+As in the synchronous network model, we assume that the processes in the system are indexed by
+\(1,\dots,n\). Suppose that each process \(i\) has an associated set of \textbf{states}, \(states_i\), among
+which some are designated as \textbf{start states}, \(start_i\). Also suppose that each shared variable \(x\)
+in the system has an associated set of \textbf{values}, \(values_x\), among which some are designated as the
+\textbf{initial values}, \(initial_x\). Then each state in \(states(A)\) (the set of states of the system
+automaton \(A\)) consists of a state in \(states_i\) for each process \(i\), plus a value in
+\(values_x\) for each shared variable \(x\). Each state in \(start(A)\) consists of a state in
+\(start_i\) for each process \(i\), plus a value in \(initial_x\) for each shared variable \(x\).
+
+We assume that each action in \(acts(A)\) is associated with one of the processes. In addition, some
+of the internal actions in \(int(A)\) may be associated with a shared variable. The input actions and
+output actions associated with process \(i\) are used for interaction between process \(i\) and the
+outside world; we say they occur on \textbf{port} \(i\). The internal actions of process \(i\) that do not have
+an associated shared variable are used for local computation, while the internal actions of \(i\) that
+are associated with shared variable \(x\) are used for performing operations on \(x\).
+
+The set \(trans(A)\) of transitions has some locality restrictions, which model the process and shared
+variable structure of the system.
+\begin{enumerate}
+\item Consider an action \(\pi\) that is associated with process \(i\) but with no variable; as we noted
+above, \(\pi\) is used for local computation. Then only the state of \(i\) can be involved in any
+\(\pi\) step. That is, the set of \(\pi\) transitions can be generated from some set of triples of
+the form \((s,\pi,s')\), where \(s,s'\in states_i\), by attaching any combination of states for the
+other processes and values for the shared variables to both \(s\) and \(s'\)
+\item Consider an action \(\pi\) that is associated with both a process \(i\) and a variable \(x\);
+\(\pi\) is used by \(i\) to perform an operation on \(x\). The set of \(\pi\) transitions can be
+generated from some set of triples of the form \((s,v),\pi,(s',v')\), where \(s,s'\in states_i\)
+and \(v,v'\in values_x\), by attaching any combination of states for the other processes and values
+for the other shared variables. There is a \uline{technicality}: if \(\pi\) is associated with process
+\(i\) and variable \(x\), then whether or not \(\pi\) is enabled should depend only on the state of
+process \(i\)
+\end{enumerate}
+
+The task partitioon \(tasks(A)\) must be consistent with the process structure: that is, each
+equivalence class (task) should include locally controlled actions of only one process.
+
+\begin{examplle}[Shared memory system]
+Let \(V\) be a fixed value set. Consider a shared memory system \(A\) consisting of \(n\) processes,
+numbered \(1,\dots,n\), and a single shared variable \(x\) with values in \(V\cup\{unknown\}\),
+initially \(unknown\). The inputs are of the form \(init(v)_i\), where \(v\in V\) and \(i\) is a
+process index. The outputs are of the form \(decide(v)_i\), The internal actions are of the form
+\(access_i\). All the actions with subscript \(i\) are associated with process \(i\), and in addition,
+the \(access\) actions are associated with variable \(x\).
+
+After process \(i\) receives an \(init(v)_i\) input, it accesses \(x\). If it finds \(x=unknown\),
+then it writes its value \(v\) into \(x\) and decides \(v\). If it finds \(x=w\), where \(w\in V\),
+then it does not write anything into \(x\), but decides \(w\).
+
+Formally:
+
+\textbf{States of \(i\)}:
+\begin{align*}
+&status\in\{idle,access,decide,done\}, \text{ initially } idle\\
+&input\in V\cup\{unknown\},  \text{ initially } unknown\\
+&output\in V\cup\{unknown\}, \text{ initially } unknown
+\end{align*}
+\textbf{Transitions of \(i\)}:
+\begin{alignat*}{2}
+&init(v)_i\hspace{3.5cm}&&decide(v)_i\\
+&\quad\text{Effect:}&&\quad\text{Precondition:}\\
+&\quad\quad input:=v&&\quad\quad status=decide\\
+&\quad\quad\text{if }status=idle\text{ then}&&\quad\quad output=v\\
+&\quad\quad\quad status:=access&&\quad\text{Effect:}\\
+&&&\quad\quad status:=done\\
+&access_i\\
+&\quad\text{Precondition:}\\
+&\quad\quad status=access\\
+&\quad\text{Effect:}\\
+&\quad\quad\text{if }x=unknown\text{ then }x:=input\\
+&\quad\quad output:=x\\
+&\quad\quad status:=decide
+\end{alignat*}
+
+There is one task per process, which contains all the \(access\) and \(decide\) actions for that
+process.
+
+It is not hard to see that in every fair execution \(\alpha\) of \(A\), any process that receives an
+\(init\) input eventually performs a \(decide\) output. Moreover, every execution satisfies the
+``agreement property'' that no two processes decide on different values, and the ``validity property''
+that every decision value is the initial value of some process.
+\end{examplle}
 \section{Mutual Exclusion}
-\label{sec:org737011f}
+\label{sec:orge8fed09}
 \subsection{Asynchronous Shared Memory Model}
-\label{sec:org04f8130}
+\label{sec:org11b4ed4}
 The system is modelled as a collection of processes and shared variables,
 with interactions. Each process \(i\) is a kind of state machine, with a set statesi of states and a subset \(start\) of \(states_i\) indicating the
 start states, just as in the synchronous setting. However, now process \(i\) also has labelled
@@ -452,7 +717,7 @@ of the states. The intuition behind the input-enabling property is that the inpu
 controlled by an arbitrary external user, while the internal and output actions are controlled by the
 system itself.
 \subsection{The Problem}
-\label{sec:org7f8cc7c}
+\label{sec:org779d158}
 The mutual exclusion problem involves the allocation of a single, indivisible, nonshareable resource
 among \(n\) \textbf{users}, \(U_1,\dots,U_n\).
 
@@ -469,6 +734,14 @@ region} (E), and then back again to its remainder region.
 \captionof{figure}{\label{10.2}The cycle of regions of a single user}
 \end{center}
 
+The inputs to process \(i\) are the \(try_i\) action, which models a request by user \(U_i\) for
+access to the resource, and the \(exit_i\) action, which models an annoucement by user \(U_i\) that it
+is done with the resource. The outputs of process \(i\) are \(crit_i\), which models the granting of
+the resource to \(U_i\) and \(rem_i\), which tells \(U_i\) that it can continue with the reset of its
+work. The \(try\), \(crit\), \(exit\), and \(rem\) actions are the only external actions of the shared
+memory system. The processes are responsible for performing the trying and exit protocols. Each
+process \(i\) acts as an ``agent'' on behalf of user \(U_i\).
+
 Each of the users \(U_i\), \(1\le i\le n\), is modelled as a state machine (formally, an \textbf{I/O
 automaton}) that communicates with its agent process using the \(try_i\), \(crit_i\), \(exit_i\) and
 \(rem_i\) actions:
@@ -476,14 +749,101 @@ automaton}) that communicates with its agent process using the \(try_i\), \(crit
 \includegraphics[width=.2\textwidth]{../images/DistributedAlgorithms/2.png}
 \captionof{figure}{\label{10.3}External interface of user \(U_i\)}
 \end{center}
-
+The only thing that we assume about \(U_i\) is that it obeys the cyclic region protocol.
 We define a sequence of \(try_i\), \(crit_i\), \(exit_i\) and \(rem_i\) actions to be \textbf{well-formed} for
 user \(i\) if it is a prefix of the cyclically ordered sequence
 \(try_i,crit_i,exit_i,rem_i,try_i,\dots\). Then we require that \(U_i\) \textbf{preserve} the \textbf{trace property}
 defined by the set of sequences that are well-ordered for user \(i\).
+
+In executions of \(U_i\) that do observe the cyclic order of actions, we say that \(U_i\) is
+\begin{itemize}
+\item in its \textbf{remainder region} initially and in between any \(rem_i\) event and the following \(try_i\) event
+\item in its \textbf{trying region} in between \(try_i\) event and the following \(crit_i\) event
+\item in its \textbf{critical region} in between any \(crit_i\) event and the following \(exit_i\) event. During
+the time, \(U_i\) should be thought of as being free to use the resource
+\item in its \textbf{exit region} in between any \(exit_i\) event and the following \(rem_i\) event
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=.9\textwidth]{../images/DistributedAlgorithms/4.png}
+\captionof{figure}{\label{10.4}Interactions between components for the mutual exclusion problem}
+\end{center}
+
+The combination of \(A\) and the users must satisfy the following conditions:
+\begin{itemize}
+\item \textbf{Well-formedness}: In any execution, and for any \(i\), the subsequence describing the interactions
+between \(U_i\) and \(A\) is well-formed for \(i\).
+\item \textbf{Mutual exclusion}: There is no reachable system state where more than one user is in the critical
+region \(C\)
+\item \textbf{Progress}: At any point in a \emph{fair execution}
+\begin{enumerate}
+\item (Progress for the trying region) If at least one user is in \(T\) and no user is in \(C\), then
+at some later point some user enters \(C\)
+\item (Progress for the exit region) If at least one user is in \(E\), then at some later point some
+user enters \(R\).
+\end{enumerate}
+\end{itemize}
+
+We say that a shared memory system \(A\) \textbf{solves the mutual exclusion problem} provided that it solves
+it for every collection of users.
+
+
+\begin{lemma}[]
+\label{10.1}
+Let \(A\) be an algorithm that solves the mutual exclusion problem. Let \(U_1,\dots,U_n\) be any
+particular collection of users, and let \(B\) be the combination of \(A\) and the given collection of
+users. Let \(s\) be a reachable state of \(B\).
+
+If process \(i\) is in its trying or exit region in state \(s\), then some locally controlled action
+of process \(i\) is enabled in \(s\).
+\end{lemma}
+
+\begin{proof}
+WLOG, we may assume that each of the users always returns the resource.
+
+Let \(\alpha\) be a finite execution of \(B\) ending in \(s\), and assume that process \(i\) is in
+either its trying or exit region in state \(s\), and no locally controlled action of process \(i\) is
+enabled in \(s\). Then we claim that no events involving \(i\) occur in any execution of \(B\) that
+extends \(\alpha\), after the prefix \(\alpha\). This follows from the fact that enabling of locally
+controlled actions is determined only by the local process state, plus the fact that well-formedness
+prevents inputs to process \(i\) while process \(i\) is in \(T\) or \(E\).
+
+Now let \(\alpha'\) be a fair execution of \(B\) that extends \(\alpha\), in which no \(try\) events
+occur after the prefix \(\alpha\). Repeated use of the progress assumption, plus the fact that the
+users always return the resource, imply that process \(i\) must eventually perform either a \(crit_i\)
+or a \(rem_i\) action. But this contradicts the fact that \(\alpha'\) contains no further actions of \(i\).
+\end{proof}
+\subsection{Dijkstra's Mutual Exclusion Algorithm}
+\label{sec:org1131af2}
+\subsubsection{The Algorithm}
+\label{sec:org45ceb4d}
+\begin{algorithm}
+\caption{DijkstraME algorithm}
+\KwShared{\\\quad\(turn\in\{1,\dots,n\}\), initally arbitrary, writable and readable by all processes\\
+        for every \(i\), \(1\le i\le n\):\\
+        \quad\(flag(i)\in\{0,1,2\}\), initially 0, writable by process \(i\) and readable by all processes}
+\KwProcess
+\KwRem
+\(try_i\)\;
+\nlset{L}\label{zzzL}\(flag(i):=1\)\;
+\While{\(turn\neq i\)}{
+        \uIf{\(flag(turn)=0\)}{\(turn:=i\)\;}
+}
+\(flag(i):=2\)\;
+\For{\(j\neq i\)}{
+        \uIf{\(flag(j)=2\)}{\KwGoTo \ref{zzzL}\;}
+}
+\(crit_i\)\;
+\KwCrit
+\(exit_i\)\;
+\(flag(i):=0\)\;
+\(rem_i\)\;
+\end{algorithm}
 \section{Q\&A}
-\label{sec:orgbfef732}
+\label{sec:org10a5a9a}
 \begin{enumerate}
 \item \ref{P1}. Need think.
+\item \ref{P2}
 \end{enumerate}
 \end{document}

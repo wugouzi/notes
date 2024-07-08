@@ -164,8 +164,70 @@ void Scan(HPRecType *head) {
 
         We use the term *node* to describe a range of memory locations that at some time may be viewed as a
         logical entity either through its actual use in an object that uses hazard pointers, or from the point
-        of view of a participating thread.
+        of view of a participating thread. Thus, it is possible for multiple nodes to overlap physically, but
+        still be viewed as distinct logical entities.
 
+        At any time \(t\), each *node* \(n\) is in one of the following states:
+        1. *Allocated*: \(n\) is allocated by a participating thread, but is not yet inserted in an associated object
+        2. *Reachable*: \(n\) is reachable by following valid pointers starting from the roots of an associated object
+        3. *Removed*: \(n\) is no longer reachable, but may still be in use by the removing thread
+        4. *Retired*: \(n\) is already removed and consumed by the removing thread, but not yet free
+        5. *Free*: \(n\)'s memory is available for allocation
+        6. *Unavailable*: all or part of \(n\)'s memory is used by an unrelated object
+        7. *Undefined*: \(n\)'s range of memory locations is not currently viewed as a node
+
+        *Own*: A thread \(j\) /owns/ a node \(n\) at time \(t\), iff at \(t\), \(n\) is /allocated/, /removed/, or
+        /retired/ by \(j\). Each node can have at most one /owner/. The /owner/ of an /allocated/ node is the
+        thread that allocated it. The /owner/ of a /removed/ node is the thread that executed the step that
+        removed it from the object (i.e., changed its state from reachable to removed). The /owner/ of a
+        /retired/ node is the same one that removed it.
+
+        *Safe*: A node \(n\) is /safe/ for a thread \(j\) at time \(t\), iff at time \(t\), either \(n\) is
+        /reachable/, or \(j\) owns \(n\).
+
+        *Possibly unsafe*: A node is /possibly unsafe/ at time \(t\) from the point of view of thread \(j\), if
+        it is impossible solely by examing \(j\)'s private variables and the semantics of the algorithm to
+        determine definitely in the affirmative that at time \(t\) the node is /safe/ for \(j\).
+
+        *Access hazard*: A step \(s\) in thread \(j\)'s algorithm is an /access hazard/ iff it may result in
+        access to a node that is /possibly unsafe/ for \(j\) at the time of its execution.
+
+        *ABA hazard*: A step \(s\) in thread \(j\)'s algorithm is an /ABA hazard/ iff it includes an ABA-prone
+        comparison that involves a dynamic node that is /possibly unsafe/ for \(j\) at the time of the
+        execution of \(s\), s.t. either
+        1. the node's address is an expected value of the ABA-prone comparison, or
+        2. a memory location contained in the dynamic node is the target of the ABA-prone comparison
+
+        *Access-hazardous reference*: A thread \(j\) holds an /access-hazardous reference/ to a node \(n\) at time
+        \(t\), iff at time \(t\) one or more of \(j\)'s private variables holds \(n\)'s address or an
+        arithmetic version of it, and \(j\) is guaranteed - unless it crashes - to reach an /access hazard/ that
+        uses \(n\)'s address hazardously, i.e., accesses \(n\) when \(n\) is /possibly unsafe/.
+
+        *ABA-hazardous reference*: A thread \(j\) holds an /ABA-hazardous reference/ to a node \(n\) at time
+        \(t\), iff at time \(t\), one or more of \(j\)'s private variables holds \(n\)'s address or a
+        mathematical variation of it, and \(j\) is guaranteed—unless it crashes—to reach an /ABA hazard/ \(s\)
+        that uses \(n\)'s address hazardously.
+
+        *Hazardous reference*: A reference is /hazardous/ if it is /access-hazardous/ and/or /ABA-hazardous/
+
+        .
+** Correctness
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        For any time \(t\), thread \(j\), and nodes \(n\),
+        \begin{align*}
+        &(\forall hp\in HP_j, t'\le t, (\forall t''\in[t',t], n\text{ is not safe for }j\text{ at }t'')\wedge\\
+        &\hspace{3.04cm}(\exists t''\in[t',t],hp\neq\&n\text{ at }t''))\\
+        &\Rightarrow(\text{at }t, j\text{ does not hold a hazardous reference to }n)
+        \end{align*}
+        #+END_lemma
+
+        Informally, if a scan of the hazard pointers of a thread \(j\) finds no match for a retired node
+        \(n\), then it must be the case that \(j\) holds no hazardous reference to \(n\) at the end of the scan.
+
+        #+BEGIN_proof
+        Assume the lemma is false. Then, at \(t\), \(j\) holds a hazardous reference to \(n\).
+        #+END_proof
 * Implementation
         [[https://critical27.github.io/%E8%AE%BA%E6%96%87/hazard-pointer-part-1/][maybe]]
 * Problems
