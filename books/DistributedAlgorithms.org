@@ -736,6 +736,7 @@
 *** The Algorithm
         \begin{algorithm}
         \caption{DijkstraME algorithm}
+        \label{DijME}
         \KwShared{\\\quad\(turn\in\{1,\dots,n\}\), initally arbitrary, writable and readable by all processes\\
                 for every \(i\), \(1\le i\le n\):\\
                 \quad\(flag(i)\in\{0,1,2\}\), initially 0, writable by process \(i\) and readable by all processes}\;
@@ -756,6 +757,43 @@
         \(flag(i):=0\)\;
         \(rem_i\)\;
         \end{algorithm}
+
+        The \(turn\) variable is a \(multi\text{-}writer\)/\(multi\text{-}reader\) register. Each \(flag(i)\) is a
+        \(single\text{-}writer\)/\(multi\text{-}reader\) register.
+
+
+        The state of each process should consist of the values of its local variables plus some other
+        information that is not represented explicitly in the code, including
+        * temporary variables needed to remember values just read from shared variables
+        * a program counter
+        * temporary variables introduced by the flow of control of the program
+        * a region designation, \(R\), \(T\), \(C\), or \(E\)
+
+
+        The unique start state of each process should consist of specified initial values for local variables,
+        arbitrary values for temporary variables, and the program counter and the region designation
+        indicating the remainder region.
+
+        There are some ambiguities in the code that need to be resolved in the automaton.
+        1. Although the code describes the changes to the local and shared variables, it does not say
+           explicitly what happens to the implicit variables
+        2. The code also does not specify exactly which portions of the code comprise indivisible steps.
+
+
+        #+ATTR_LATEX: :options {\textit{DijkstraME} algorithm (rewritten)}
+        #+BEGIN_Block
+        *Shared variables*:\\
+        \(turn\in\{1,\dots,n\}\), initially arbitrary\\
+        for every \(i\), \(1\le i\le n\):\\
+        \indent\(flag(i)\in\{0,1,2\}\), initially 0
+        \(test\mhyphen wef\)
+        \noindent *Actions of \(i\)*:\\
+        #+ATTR_LATEX: :mode table :center nil
+        | Input:\hspace{3cm} | Internal: |
+        | \(​\Q try_i\)   | \(​\Q set\text{-}flag\text{-}1_i\) |
+        #+END_Block
+
+
 * Q&A
         1. [[P1]]. Need think.
         2. [[P2]]
