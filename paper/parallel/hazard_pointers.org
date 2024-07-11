@@ -210,7 +210,20 @@ void Scan(HPRecType *head) {
 
         *Hazardous reference*: A reference is /hazardous/ if it is /access-hazardous/ and/or /ABA-hazardous/
 
-        .
+        * A thread that holds a reference to a node uses hazard pointers to announce to other threads that it
+          may use the reference later without further validation in a hazardous step.
+        * However, this announcement is useless if it happens after the reference is already hazardous, or in
+          other words, after the node is possibly unsafe, since another thread might have already removed the
+          node, and then scanned the HP list and found no match for that node.
+
+        Formally, the *condition* is as follows, where \(HP_j\) is the set of thread \(j\)'s hazard pointers
+        \begin{align*}
+        &\forall\text{ times }t, \text{ thread }j,\text{ and nodes }n,\\
+        &\qq(\text{at }t, j\text{ holds a hazardous reference to }n)\Rightarrow\\
+        &\qq(\exists hp\in HP_j,t'\le t,\\
+        &\qq\qq(\text{at }t', n\text{ is safe for }j)\wedge\\
+        &\qq\qq(\forall\text{ times during }[t',t],hp=\&n))
+        \end{align*}
 ** Correctness
         #+ATTR_LATEX: :options []
         #+BEGIN_lemma
@@ -226,7 +239,8 @@ void Scan(HPRecType *head) {
         \(n\), then it must be the case that \(j\) holds no hazardous reference to \(n\) at the end of the scan.
 
         #+BEGIN_proof
-        Assume the lemma is false. Then, at \(t\), \(j\) holds a hazardous reference to \(n\).
+        Assume the lemma is false. Then, at \(t\), \(j\) holds a hazardous reference to \(n\). Then by the
+        condition,
         #+END_proof
 * Implementation
         [[https://critical27.github.io/%E8%AE%BA%E6%96%87/hazard-pointer-part-1/][maybe]]

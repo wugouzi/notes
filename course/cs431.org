@@ -18,3 +18,87 @@ auto data_ptr = (int *)&data_guard;
         #+end_src
 
         Solution: Rust's type system based on *ownership* and *lifetime*
+
+        SMA: shared mutable accesses
+
+        How to detect SMA's?
+        * Calculate each owner/borrower's _lifetime_
+        * list up the pair of _overlapping lifetimes_
+        * remove pairs of borrowee & borrower
+        * the remaining pairs are regared as SMAs
+        * Incomplete: not all pairs are actually SMAs
+
+
+        But shared mutable accesses are inevitable in concurrency
+
+        ~RefCell<T>~
+        * Checking ownership at runtime
+        * ~RefCell<T>::try_borrow()~, ~RefCell<T>::try_borrow_mut()~
+
+        #+begin_src rust
+fn f1() -> bool { true }
+fn f2() -> bool { !f1() }
+fn main() {
+    let mut v1 = 42;
+    let mut v2 = 666;
+    let p1 = if f1() { &v1 } else { &v2 };
+    if f2() {
+        let p2 = &mut v1;
+        *p2 = 37;
+        println!("p2: {}", *p2);
+    }
+    println!("p1: {}", *p1);
+}
+        #+end_src
+
+        #+begin_src rust
+use std::cell::RefCell;
+
+fn f1() -> bool { true }
+fn f2() -> bool { !f1() }
+fn main() {
+    let v1 = RefCell::new(42);
+    let v2 = RefCell::new(666);
+    let p1 = if f1() { &v1 } else { &v2 }
+    .try_borrow().unwrap();
+    if f2() {
+        let mut p2 = v1
+            .try_borrow_mut().unwrap();
+        *p2 = 37;
+        println!("p2: {}", *p2);
+    }
+
+    println!("p1: {}", *p1);
+}
+        #+end_src
+** Safe API
+        Rust std:
+        * Thread: agent of execution
+          * Safety: 'static closure (not function pointer), typed join handle
+        * Scoped thread: restricting thread’s lifetime within a scope
+          * Motivation: safe sharing of non-'static data
+          * Safety: thread should be joined before the scope ('s) ends
+        * Arc: reference counter, immutably sharing data among multiple threads
+          * Safety: Deref, not DerefMut
+        * Send: transferable to other thread
+          * Implementers: ~usize~, ~&usize~, ~Arc<T>~, ~&Arc<T>~ (but not ~Rc<T>~, ~&Rc<T>~)
+        * Sync: concurrently accessible from multiple threads
+          * Implementers: ~usize~, ~Arc<T>~ (but not ~Rc<T>~)
+          * Property: ~T: Sync~ if and only if ~&T: Send~
+
+
+        * ~Lock<L: RawLock, T>~: owns ~T~ that is protected by an ~L~ lock
+          * Guarantee: the ~T~ object is not concurrently accessed (not code region)
+          * Examples: ~Lock<SpinLock, Vec<usize>>~, ~Lock<ClhLock, &’t TLS>~
+          * Property: ~Send + Sync~ if ~T~ is Send (i.e., meaningful only if T is Send)
+        * ~LockGuard<'s, L: RawLock, T>~: proves the lock is acquired
+          * Guarantee: the lock is held, ~T~ is accessible w/ ~Deref~ / ~DerefMut~
+          * RAII: it releases the lock when dropped
+          * Property: ~Send~ if T is ~Send~, ~Sync~ if ~T~ is ~Sync~ (i.e., transparent accessor)
+
+
+        * crossbeam
+          * ~Channel~: sending/receiving values among threads
+          * ~CachePadded~: align with 128 bytes
+            * motivation: to defeat "false sharing"
+** Implementation

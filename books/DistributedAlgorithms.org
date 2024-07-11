@@ -11,6 +11,14 @@
 #+LATEX_HEADER: \SetKwData{KwCrit}{\ruleline{Critical region}\\}
 #+LATEX_HEADER: \SetKwData{KwTry}{\ruleline{Trying region}\\}
 #+LATEX_HEADER: \SetKwData{KwExit}{\ruleline{Exit region}\\}
+#+LATEX_HEADER: \def \rem {rem}
+#+LATEX_HEADER: \def \setflagi {set\mhyphen flag\mhyphen 1}
+#+LATEX_HEADER: \def \testturn {test\mhyphen turn}
+#+LATEX_HEADER: \def \testflag {test\mhyphen flag}
+#+LATEX_HEADER: \def \setturn {set\mhyphen turn}
+#+LATEX_HEADER: \def \setflagii {set\mhyphen flag\mhyphen 2}
+#+LATEX_HEADER: \def \leavetry {leave\mhyphen try}
+#+LATEX_HEADER: \def \leaveexit {leave\mhyphen exit}
 #+LATEX_HEADER: \SetKw{KwGoTo}{go to}
 #+STARTUP: shrink
 * Modelling \rom{2}: Asynchronous System Model
@@ -518,6 +526,7 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:8.11]]
         Let \(\{A_i\}_{i\in I}\) be a compatible collection of automata and let \(A=\prod_{i\in I}A_i\). Let
         \(P\) be a safety property with \(acts(P)\cap int(A)=\emptyset\) and \(in(P)\cap out(A)=\emptyset\).
         1. If \(A_i\) preserves \(P\) for every \(i\in I\), then \(A\) preserves \(P\)
@@ -786,13 +795,230 @@
         \(turn\in\{1,\dots,n\}\), initially arbitrary\\
         for every \(i\), \(1\le i\le n\):\\
         \indent\(flag(i)\in\{0,1,2\}\), initially 0
-        \(test\mhyphen wef\)
+
         \noindent *Actions of \(i\)*:\\
         #+ATTR_LATEX: :mode table :center nil
-        | Input:\hspace{3cm} | Internal: |
-        | \(​\Q try_i\)   | \(​\Q set\text{-}flag\text{-}1_i\) |
-        #+END_Block
+        | Input:\hspace{3cm} | Internal:                                          |
+        | \(​\qw try_i\)     | \(​\qw set\text{-}flag\text{-}1_i\)                |
+        | \(\qw exit_i\)     | \(\qw test\mhyphen turn_i\)                        |
+        | Output:            | \(\qw test\mhyphen flag(j)_i,1\le j\le n,j\neq i\) |
+        | \(\qw crit_i\)     | \(\qw set\mhyphen turn_i\)                         |
+        | \(\qw rem_i\)      | \(\qw set\mhyphen flag\mhyphen 2_i\)               |
+        |                    | \(\qw check(j)_i,1\le j\le n,j\neq i\)             |
+        |                    | \(\qw reset_i\)                                    |
 
+
+        \noindent *States of \(i\)*:\\
+        \(pc\in\{\rem,\setflagi,\testturn,\testflag(j),\setturn,\allowbreak \setflagii,check,\\\leavetry,crit,reset,\leaveexit\}\),
+        initially \(rem\).
+
+        \(S\), a set of process indices, initially \(\emptyset\).
+
+        \noindent *Transitions of \(i\)*:
+
+        #+LATEX: \resizebox{0.9\linewidth}{!}{
+        \begin{tabular}{l|l}
+\(try_i\) & \(\setturn_i\)\\
+\qw Effect: & \qw Precondition:\\
+\(\qw\qw pc:=\setflagi\) & \(\qw\qw pc=\setturn\)\\
+ & \qw Effect:\\
+\(\setflagi_1\) & \(\qw\qw turn:=i\)\\
+\qw Precondition: & \(\qw\qw pc:=\setflagii\)\\
+\(\qw\qw pc=\setflagi\) & \\
+\qw Effect: & \(\setflagii_i\)\\
+\(\qw\qw flag(i):=1\) & \qw Precondition:\\
+\(\qw\qw pc:=\testturn\) & \(\qw\qw pc=\setflagii\)\\
+ & \qw Effect:\\
+\(\testturn_i\) & \(\qw\qw flag(i):=2\)\\
+\qw Precondition: & \(\qw\qw S:=\{i\}\)\\
+\(\qw\qw pc=\testturn\) & \(\qw\qw pc:=check\)\\
+\qw Effect: & \\
+\qw\qw if \(turn=i\) then \(pc:=\setflagii\) & \(check(j)_i\)\\
+\qw\qw else \(pc:=\testflag(turn)\) & \qw Precondition:\\
+ & \(\qw\qw pc=check\)\\
+\(\testflag(j)_i\) & \(\qw\qw j\notin S\)\\
+\qw Precondition: & \qw Effect:\\
+\(\qw\qw pc=\testflag(j)\) & \qw\qw if \(flag(j)=2\) then\\
+\qw Effect: & \(\qw\qw\qw S:=\emptyset\)\\
+\qw\qw if \(flag(j)=0\) then \(pc:=\setturn\) & \(\qw\qw\qw pc:=\setflagi\)\\
+\qw\qw else \(pc:=\testturn\) & \qw\qw else\\
+ & \(\qw\qw\qw S:=S\cup\{j\}\)\\
+\(crit_i\) & \qw\qw\qw\qw if \(\abs{S}=n\) then \(pc:=\leavetry\)\\
+\qw Precondition: & \\
+\(\qw\qw pc=\leavetry\) & \(reset_i\)\\
+\qw Effect: & \qw Precondition:\\
+\(\qw\qw pc:=crit\) & \qw\qw\(pc=reset\)\\
+ & \qw Effect:\\
+\(exit_i\) & \qw\qw \(flag(i):=0\)\\
+\qw Effect: & \qw\qw \(S:=\emptyset\)\\
+\qw\qw\(pc:=reset\) & \qw\qw \(pc:=\leaveexit\)\\
+ & \\
+ & \(rem_i\)\\
+ & \qw Precondition:\\
+ & \qw\qw \(pc=\leaveexit\)\\
+ & \qw Effect:\\
+ & \qw\qw \(pc:=rem\)\\
+        \end{tabular}
+        #+LATEX: }
+        #+END_Block
+*** A Correctness Argument
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        DijkstraME guarantees well-formedness for each user.
+        #+END_lemma
+
+        #+BEGIN_proof
+        By inspection of the code, it is easy to check that DijkstraME preserves well-formedness for each
+        user. Since, by assumption, the users also preserve well-formedness, Theorem ref:8.11 implies that the
+        system produces only well-formed sequences.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        [[label:10.3]]
+        DijkstraME satisfies mutual exclusion
+        #+END_lemma
+
+        #+BEGIN_proof
+        By contradiction. Assume that \(U_i\) and \(U_j\), \(i\neq j\), are simultaneouly in region \(C\) in
+        some reachable state. Consider the execution that leads to this state. By the code, both \(i\) and
+        \(j\) perfrom \(\setflagii\) steps before entering their critical area. Consider the last such step
+        for each process and assume, without loss of generality, that \(\setflagii_i\) comes first. Then
+        \(flag(i)\) is 2 from that point until \(i\) leaves \(C\), contradicting the fact that \(j\) enters \(C\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 105
+        #+CAPTION: Order of events in the proof of Lemma \ref{10.3}
+        [[../images/DistributedAlgorithms/6.png]]
+
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        DijkstraME guarantees progress.
+        #+END_lemma
+
+        #+BEGIN_proof
+        Progress of exit region is easy.
+
+        We consider the progress condition for the trying region. Suppose for the sake of contradiction that \(\alpha\)
+        is a fair execution that reaches a point where there is at least one user in \(T\) and no user in \(C\), and
+        suppose that after this point, no user ever enters \(C\).
+
+        Any process in \(E\) keeps taking steps, so after at most two steps, it must reach \(R\). So after
+        some point in \(\alpha\), every process must be in \(T\) or \(R\). Second, since there are only
+        finitely many processes in the system, after some point in \(\alpha\), no new processes enter \(T\).
+        Thus, after some point in \(\alpha\), every process is in \(T\) or \(R\), and no process every again
+        changes region. This implies that \(\alpha\) has a suffix \(\alpha_1\) in which there is a fixed
+        nonempty set of processes in \(T\), continuing to take steps forever, and no region changes occur.
+        Call these processes *contenders*.
+
+        Note that after at most a single step in \(\alpha_1\), each contender \(i\) ensures that
+        \(flag(i)\ge1\)  and it remains \(\ge 1\) for the rest of \(\alpha_1\). So we can assume, WLOG, that
+        \(flag(i)\ge 1\) for all contenders throughout \(\alpha_1\).
+
+        #+BEGIN_claim
+        In \(\alpha_1\), turn eventually acquires a contender's index.
+        #+END_claim
+
+        #+BEGIN_proof
+        Suppose not, that is, suppose the value of \(turn\) remains equal to the index of a non-contender
+        throughout \(\alpha_1\). Consider any contender \(i\).
+
+        If \(pc_i\) reaches \(\testturn\), which is happened since \(i\) fails to enter \(C\), then
+        \(\testturn_i\) finds that \(turn\) equal to some \(j\neq i\).
+        Then it performs a \(\testturn_i\) and finds \(flag(j)=0\). Process \(i\) therefore performs
+        \(\setturn_i\), setting \(turn\) to \(i\).
+
+        #+END_proof
+        Once \(turn\) is set to a contender's index, it is always thereafter equal to /some/ contender's index.
+        Then any later \(\testturn\) and subsequent \(\testflag\) yield \(flag(turn)\ge 1\). Thus, \(turn\)
+        will not changed as a result of these tests. Therefore, eventually \(turn\) stabilizes to a final
+        indx. Let \(\alpha_2\) be a suffix of \(\alpha_1\) in which the value of \(turn\) is stablized at some
+        contender's index, say \(i\).
+
+        Next, we claim that in \(\alpha_2\), any contender \(j\neq i\) eventually ends up with its program
+        counter looping forever between \(\testturn\) and \(\testflag\). So let \(\alpha_3\) be a suffix of
+        \(\alpha_2\) where all contenders other than \(i\)  loop forever between \(\testturn\) and
+        \(\testflag\). Note that this means that all contenders other than \(i\) have their flag variables equal
+        to 1 throughout \(\alpha_3\).
+
+        We conclude the argument by claiming that in \(\alpha_3\), process \(i\) (the one whose index is in
+        turn) has nothing to stand in the way of its reaching \(C\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        DijkstraME solves the mutual exclusion problem.
+        #+END_theorem
+*** An Assertion Proof of the Mutual Exclusion Condition
+        #+ATTR_LATEX: :options [another proof of Lemma \ref{10.3}]
+        #+BEGIN_proof
+        #+BEGIN_assertion
+        [[label:10.3.1]]
+        In any reachable system state, \(\abs{\{i:pc_i=crit\}}\le 1\)
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.3.2]]
+        In any reachable system state, if \(pc_i\in\{\leavetry,crit,reset\}\), then \(\abs{S_i}=n\)
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.3.3]]
+        In any reachable system state, there do not exist \(i\) and \(j\), \(i\neq j\), s.t. \(i\in S_j\) and
+        \(j\in S_i\).
+        #+END_assertion
+
+        If both Assertions ref:10.3.2 and ref:10.3.3 are true, then Assertion ref:10.3.1 follows.
+
+        Assertion ref:10.3.2 is easy.
+
+        #+BEGIN_assertion
+        [[label:10.3.4]]
+        In any reachable system state, if \(S_i\neq\emptyset\), then \(pc_i\in\{check,\leavetry,crit,reset\}\).
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.3.5]]
+        In any reachable system state, if \(pc_i\in\{check,\leavetry,crit,reset\}\), then \(flag(i)=2\)
+        #+END_assertion
+
+        Putting these together, we see that:
+        #+BEGIN_assertion
+        [[label:10.3.6]]
+        In any reachable system state, if \(S_i\neq\emptyset\), then \(flag(i)=2\).
+        #+END_assertion
+
+        Now we can prove Assertion ref:10.3.3, again by induction on the length of an execution. For the
+        inductive step, the only event that could cause a violation is one that adds an element \(j\) to
+        \(S_i\) for some \(i\) and \(j\), \(i\neq j\), that is, a \(check(j)_i\). Then it must be that
+        \(flag(j)\neq 2\) when this event occurs. But then \(S_j=\emptyset\), so \(i\notin S_j\).
+        #+END_proof
+*** Running Time
+        We impose:
+        * an upper bound of \(l\) on the time between successive steps of each process (when these steps are
+          enabled);
+        * all the precondition-effect code for one action is assumed to comprise a single step.
+        * an upper bound of \(c\) on the maximum time that any user spends in the critical region.
+
+        In terms of these assumed bounds, we can deduce upper bounds for the time required for interesting
+        activity to occur. 
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        In DijkstraME, suppose that at a particular time some user is in \(T\) and no user is in \(C\). Then
+        within \(O(ln)\), some user enters \(C\)
+        #+END_theorem
+
+        #+BEGIN_proof
+        Suppose the lemma is false and consider an execution in which, at some point, process \(i\) is in
+        \(T\) and no process is in \(C\), and in which no process enters \(C\) for time at  least \(kln\), for
+        some particular large constant \(k\).
+
+        First, it is easy to see that the time elapsed from the starting point of the analysis until there is
+        no process either in \(C\) or \(E\) is at most \(O(l)\).
+        #+END_proof
 
 * Q&A
         1. [[P1]]. Need think.
