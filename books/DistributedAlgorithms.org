@@ -13,12 +13,17 @@
 #+LATEX_HEADER: \SetKwData{KwExit}{\ruleline{Exit region}\\}
 #+LATEX_HEADER: \def \rem {rem}
 #+LATEX_HEADER: \def \setflagi {set\mhyphen flag\mhyphen 1}
+#+LATEX_HEADER: \def \setflagii {set\mhyphen flag\mhyphen 2}
+#+LATEX_HEADER: \def \setflag {set\mhyphen flag}
 #+LATEX_HEADER: \def \testturn {test\mhyphen turn}
 #+LATEX_HEADER: \def \testflag {test\mhyphen flag}
+#+LATEX_HEADER: \def \checkflag {check\mhyphen flag}
+#+LATEX_HEADER: \def \checkturn {check\mhyphen turn}
 #+LATEX_HEADER: \def \setturn {set\mhyphen turn}
-#+LATEX_HEADER: \def \setflagii {set\mhyphen flag\mhyphen 2}
 #+LATEX_HEADER: \def \leavetry {leave\mhyphen try}
 #+LATEX_HEADER: \def \leaveexit {leave\mhyphen exit}
+#+LATEX_HEADER: \def \Effect {\qw\text{Effect:}}
+#+LATEX_HEADER: \def \Precondition {\qw\text{Precondition:}}
 #+LATEX_HEADER: \SetKw{KwGoTo}{go to}
 #+STARTUP: shrink
 * Modelling \rom{2}: Asynchronous System Model
@@ -743,7 +748,7 @@
 
 ** Dijkstra's Mutual Exclusion Algorithm
 *** The Algorithm
-        \begin{algorithm}
+        \begin{algorithm}[H]
         \caption{DijkstraME algorithm}
         \label{DijME}
         \KwShared{\\\quad\(turn\in\{1,\dots,n\}\), initally arbitrary, writable and readable by all processes\\
@@ -1007,6 +1012,7 @@
 
         #+ATTR_LATEX: :options []
         #+BEGIN_theorem
+        [[label:10.7]]
         In DijkstraME, suppose that at a particular time some user is in \(T\) and no user is in \(C\). Then
         within \(O(ln)\), some user enters \(C\)
         #+END_theorem
@@ -1018,6 +1024,508 @@
 
         First, it is easy to see that the time elapsed from the starting point of the analysis until there is
         no process either in \(C\) or \(E\) is at most \(O(l)\).
+
+        Second, we claim that the additional time until process \(i\) performs a \(\testturn_i\) is at most
+        \(O(ln)\).  This is because \(i\) can at worst spend this much time checking flags in the second stage
+        before returning to \(\setflagi\).
+
+        Third, we claim that the additional time from when process i does \(\testturn_i\) until the value of
+        turn is a contender index is at most \(O(l)\).
+
+        Fourth, after an additional time \(O(l)\), a point is reached at which the value of \(turn\) has
+        stablized to the index of some particular contender, say \(j\).
+
+        Fifth, we claim that by an additional time \(O(ln)\), all contenders other than \(j\) will have their
+        program counters in \(\testturn, \testflag\).
+
+        Sixth and finally, within an additional time \(O(ln)\), \(j\) must succeed in entering \(C\)
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Order of events and time bounds in proof of Theorem \ref{10.7}
+        [[../images/DistributedAlgorithms/7.png]]
+        #+END_proof
+** Stronger Conditions for Mutual Exclusion Algorithms
+        In order to distinguish these two types of fairness, we will call the fair execution of process steps
+        and user automata steps *low-level fairness*, and the fair granting of the resource *high-level fairness*.
+
+        Another not-so-attractive property of Dijkstra's algorithm is that it uses a shared
+        /multi-writer/multi-reader/ register (turn). Such a variable is difficult and expensive to implement in
+        many kinds of multiprocessor systems (as well as in nearly all message-passing systems). It would be
+        better to design algorithms that use only /single-writer/multi-reader/ registers, or even better,
+        /single-writer/single-reader/ registers.
+
+        Each of these properties is stated for a particular mutual exclusion algorithm \(A\) composed with a
+        particular collection \(U_1,\dots,U_n\) of users.
+
+        *Lockout-freedom*: In any low-level-fair execution, the following hold:
+        1. (Lockout-freedom for the trying region) If all users always return the resource, then any user that
+           reaches \(T\) eventually enters \(C\).
+        2. (Lockout-freedom for the exit region) Any user that reaches \(E\) eventually enters \(R\).
+
+        *Time bound \(b\)*: In any low-level-fair execution with associated times, the following hold:
+        1. (Time bound \(b\) for the trying region) If each user always returns the resource within time \(c\)
+           of when it is granted, and the time between successive steps of each process in \(T\) or \(E\) is
+           at most \(l\), then any user that reaches \(T\) enters \(C\) within time \(b\).
+        2. (Time bound \(b\) for the exit region) If the time between successive steps of each process in
+           \(T\) or \(E\) is at most \(g\), then any user that reaches \(E\) enters \(R\) within time \(b\).
+
+        *Number of bypasses \(a\)*: Consider any interval of an execution starting when a process \(i\) has
+        performed a locally controlled step in \(T\), and throughout which it remains in \(T\). During this
+        interval, any other user \(j\), \(j\neq i\), can only enter \(C\) at most \(a\) times.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(A\) be a mutual exclusion algorithm, let \(U_1,\dots,U_n\) be a collecion of users, and let
+        \(B\) be the composition of \(A\) with \(U_1,\dots,U_n\). If \(B\) has any finite bypass round and is
+        lockout-free for the exit region, then \(B\) is lockout-free.
+        #+END_theorem
+
+        #+BEGIN_proof
+        Consider a low-level-fair execution of \(B\) in which all users always return the resource, and
+        suppose that at some point in the execution, \(i\) is in \(T\). Assume for the sake of contradiction
+        that \(i\) never enters \(C\). Lemma ref:10.1 implies that eventually \(i\) must perform a locally
+        controlled action in that trying region, if it has not already done so. Repeated use of the progress
+        condition and of the assumption that users always return the resource together imply that infinitely
+        many total region changes occur. But then some process other than \(i\) enters \(C\) an infinite
+        number of times while \(i\) remains in \(T\), which violates the bypass bound.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(A\) be a mutual exclusion algorithm, let \(U_1,\dots,U_n\) be a collection of users, and let
+        \(B\) be the composition of \(A\) with \(U_1,\dots,U_n\). If \(B\) has any time bound \(b\), then
+        \(B\) is lockout-free.
+        #+END_theorem
+** Lockout-Free Mutual Exclusion Algorithms
+*** A Two-Process Algorithm.
+        If \(i\in\{0,1\}\), we write \(\bari\) to indicate \(1-i\).
+        
+        #+ATTR_LATEX: :options {\textit{Peterson2P} algorithm}
+        #+BEGIN_Block
+        *Shared variables*:\\
+        \(turn\in\{0,1\}\), initially arbitrary, writable and readable by all processes
+
+        For every \(i\in\{0,1\}\):
+        \qw\(flag(i)\in\{0,1\}\), initially 0, writable by \(i\) and readable by \(\bari\)
+
+        *Process \(i\)*:\\
+        \begin{algorithm}[H]
+        \caption{}
+        \KwRem
+        \(try_i\)\;
+        \(flag(i):=1\)\;
+        \(turn:=i\)\;
+        wait for \(flag(\bari)=0\) or \(turn\neq i\)\;
+        \(crit_i\)
+        \KwCrit
+        \(exit_i\)\;
+        \(flag(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
+        #+END_Block
+
+        #+ATTR_LATEX: :options {\textit{Peterson2P} algorithm (rewritten)}
+        #+BEGIN_Block
+        *Shared variables*:\\
+        \(turn\in\{0,1\}\), initially arbitrary
+
+        \noindent for every \(i\in\{0,1\}\):\\
+        \indent\(flag(i)\in\{0,1\}\), initially 0
+
+        \noindent *Actions of \(i\)*:\\
+        \begin{tabular}{l|l}
+        Input:&Internal:\\
+        \qw\(try_i\)&\qw\(\setflag_i\)\\
+        \qw\(exit_i\)&\qw\(\setturn_i\)\\
+        Output:&\qw\(\checkflag_i\)\\
+        \qw\(crit_i\)&\qw\(\checkturn_i\)\\
+        \qw\(rem_i\)&\qw\(reset_i\)
+        \end{tabular}
+
+        \noindent *States of \(i\)*:\\
+        \(pc\in\{rem,\setflag,\setturn,\checkflag,\checkturn,\leavetry,crit,reset,\\\leaveexit\}\), initially
+        \(rem\)
+
+        \noindent *Transitions of \(i\)*:\\
+
+        \begin{center}\begin{tikzpicture}[scale=0.6,transform shape,
+        every node/.style={rectangle,draw,rounded corners,drop shadow,fill=blue!5},
+        arr/.style = {-{Stealth[length=1mm, width=1mm]},shorten >=1pt,rounded corners=10pt},]
+        \node (try)
+        {$\begin{aligned}
+        &try_i\\
+        &\qw\text{Effect:}\\
+        &\qw\qw pc:=\setflag
+        \end{aligned}$};
+        \node (setflag) [below=of try]
+        {$\begin{aligned}
+        &\setflag_i\\
+        &\qw\text{Precondition}:\\
+        &\qw\qw pc=\setflag\\
+        &\qw\text{Effect}:\\
+        &\qw\qw flag(i):=1\\
+        &\qw\qw pc:=\setturn
+         \end{aligned}$};
+        \node (setturn) [below=of setflag]
+        {$\begin{aligned}
+        &\setturn_i\\
+        &\qw\text{Precondition:}\\
+        &\qw\qw pc=\setturn\\
+        &\qw\text{Effect:}\\
+        &\qw\qw turn:=i\\
+        &\qw\qw pc:=\checkflag
+         \end{aligned}$};
+        \node (checkflag) [below=of setturn]
+        {$\begin{aligned}
+        &\checkflag_i\\
+        &\qw\text{Precondition:}\\
+        &\qw\qw pc=\checkflag\\
+        &\qw\text{Effect:}\\
+        &\qw\qw \text{ if }flag(\bari)=0\text{ then}\\
+        &\qw\qw\qw pc:=\leavetry\\
+        &\qw\qw\text{else}\\
+        &\qw\qw\qw pc:=\checkturn
+         \end{aligned}$};
+        \node (crit) [below=of checkflag]
+        {$\begin{aligned}
+        &crit_i\\
+        &\qw\text{Precondition:}\\
+        &\qw\qw pc=\leavetry\\
+        &\qw\text{Effect:}\\
+        &\qw\qw pc:=crit
+         \end{aligned}$};
+        \node[right=of checkflag] (checkturn)
+        {$\begin{aligned}
+        &\checkturn_i\\
+        &\qw\text{Precondition:}\\
+        &\qw\qw pc=\checkturn\\
+        &\qw\text{Effect:}\\
+        &\qw\qw\text{ if }turn\neq i\text{ then}\\
+        &\qw\qw\qw pc:=\leavetry\\
+        &\qw\qw\text{else}\\
+        &\qw\qw\qw pc:=\checkflag
+         \end{aligned}$};
+        \node[right =5cm of try] (exit)
+        {$\begin{aligned}
+        &exit_i\\
+        &\qw\text{Effect:}\\
+        &\qw\qw pc:=reset\\
+         \end{aligned}$};
+        \node[below=of exit] (reset)
+        {$\begin{aligned}
+        &reset_i\\
+        &\Precondition\\
+        &\qw\qw pc=reset\\
+        &\Effect\\
+        &\qw\qw flag(i):=0\\
+        &\qw\qw pc:=\leaveexit
+         \end{aligned}$};
+        \node[below=of reset] (rem)
+        {$\begin{aligned}
+        &rem_i\\
+        &\Precondition\\
+        &\qw\qw pc=\leaveexit\\
+        &\Effect\\
+        &\qw\qw pc:=rem
+         \end{aligned}$};
+        \path[->,arr] (try) edge (setflag)
+                                 (setflag) edge (setturn)
+                                 (setturn) edge (checkflag)
+                                 (checkflag) edge (crit)
+                                (checkflag)  edge (checkturn)
+                                 (exit) edge (reset)
+                                 (reset) edge (rem)
+                                (checkturn) edge (checkflag)
+                                (checkturn.south) edge (crit.east);
+        \end{tikzpicture}\end{center}
+        #+END_Block
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Peterson2P satisfies mutual exclusion
+        #+END_lemma
+
+        #+BEGIN_proof
+        #+BEGIN_assertion
+        In any reachable system state, if \(flag(i)=0\), then \(pc_i\in\{\leaveexit,rem,\setflag\}\)
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.5.2]]
+        In any reachable system state, if \(pc_i\in\{\leavetry,crit,reset\}\), and
+        \(pc_{\bari}\in\{\checkflag,\checkturn,\leavetry,crit,reset\}\), then \(turn\neq i\).
+        #+END_assertion
+        That is, if \(i\) has won the competition, and if \(\bari\) is a competitor, then the \(turn\)
+        variable is set favorably for \(i\).
+
+        Suppose both \(i\) and \(\bari\) are in \(C\), then Assertion ref:10.5.2, applied twice for \(i\) and
+        \(\bari\), implies that both \(turn\neq i\) and \(turn\neq\bari\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Peterson2P guarantees progress.
+        #+END_lemma
+
+        #+BEGIN_proof
+        Suppose \(\alpha\) is a low-level-fair execution that reaches a point where at least one of the
+        processes, say \(i\), is in \(T\) and neither process is in \(C\), and suppose that after this point,
+        neither process ever enters \(C\).
+        1. If \(\bari\) is in \(T\) sometime after the given point in \(\alpha\), then both processes must get
+           stuck in their \(check\) loops, which is impossible
+        2. If \(\bari\) is never in \(T\) after the given point in \(\alpha\), we can show that
+           \(flag(\bari)\) eventually becomes and stays equal to 0.
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Peterson2P is lockout-free
+        #+END_lemma
+
+        #+BEGIN_proof
+        Consider the lockout-freedom for trying region.
+
+        Suppose the contrary, that is, that at some point in execution \(\alpha\), process \(i\) is in \(T\)
+        after having performed \(\setflag_i\), and thereafter, while \(i\) remains in \(T\), process \(\bari\)
+        enters \(C\) three times.
+
+        Note that in each of the second and third times, it must be that \(\bari\) first sets \(turn:=\bari\)
+        and then sees \(turn=i\); it cannot see \(flag(i)=0\). This means that there are at least two
+        occurrences of \(\setturn_i\) after the given point in \(\alpha\). But \(\setturn_i\) is only
+        performed once.
+        #+END_proof
+
+        Let \(l\) and \(c\) be upper bounds on process step time and critical section time, respectively.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        In Peterson2P, the time from when a particular process \(i\) enters \(T\) until it enters \(C\) is
+        most \(c+O(l)\).
+        #+END_theorem
+*** An \texorpdfstring{\(n\)}{n}-Process Algorithm
+        For \(n\) processes, we can use the idea of the /Peterson2P/ algorithm iteratively, in a series of
+        \(n-1\) competitions at levels \(1,2,\dots,n-1\). At each successive competition, the algorithm
+        ensures that there is at least one *loser*. Thus, all \(n\) processes may compete in the level 1
+        competition, but at most \(n-1\) processes can win.
+
+        #+ATTR_LATEX: :options {}
+        #+BEGIN_Block
+        \noindent *Shared variables*:\\
+        \noindent for every \(k\in\{1,\dots,n-1\}\):
+        \indent\(turn(k)\in\{1,\dots,k\}\), initially arbitrary
+        \noindent for every \(i\), \(1\le i\le n\):
+        \indent\(flag(i)\in\{0,\dots,n-1\}\), initially 0
+
+        \noindent *Process \(i\)*:\\
+        \begin{algorithm}[H]
+        \caption{}
+        \KwRem
+        \(try_i\)\;
+        \For{\(k\in\{1,\dots,n-1\}\)}{
+                \(flag(i):=k\)\;
+                \(turn(k):=i\)\\
+                wait for \([\forall j\neq i:flag(j)<k]\) or \([turn(k)\neq i]\)\;
+        }
+        \KwCrit
+        \(exit_i\)\;
+        \(flag(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
+        #+END_Block
+
+        Ambiguities:
+        * one of the conditions in the waitfor statement involves the flag variables for all the other processes.
+        * we need to specify some conditions on the order in which process i checks the various \(flag\) variables and the \(turn(k)\) variable,
+
+        #+ATTR_LATEX: :options {}
+        #+BEGIN_Block
+        \noindent *Shared variables*:\\
+        \noindent for every \(k\in\{1,\dots,n-1\}\):
+        \indent\(turn(k)\in\{1,\dots,k\}\), initially arbitrary
+        \noindent for every \(i\), \(1\le i\le n\):
+        \indent\(flag(i)\in\{0,\dots,n-1\}\), initially 0
+
+        \noindent *Actions of \(i\)*:\\
+        \begin{tabular}{ll}
+        Input:&Internal:\\
+        \qw\(try_i\)&\qw\(\setflag_i\)\\
+        \qw\(exit_i\)&\qw\(\setturn_i\)\\
+        Output:&\qw\(\checkflag(j)_i\), \(1\le j\le n\), \(j\neq i\)\\
+        \qw\(crit_i\)&\qw\(\checkturn_i\)\\
+        \qw\(rem_i\)&\qw\(reset_i\)
+        \end{tabular}
+
+        \noindent *States of \(i\)*:\\
+        \(pc\in\{rem,\setflag,\setturn,\checkflag,\checkturn,\leavetry,crit,reset,\leaveexit\}\), initially
+        \(rem\)\\
+        \(level\in\{1,\dots,n-1\}\), initially 1\\
+        \(S\), a set of process indices, initially \(\emptyset\)
+
+        \noindent *Transitions of \(i\)*:\\
+        \begin{center}\begin{tikzpicture}[scale=0.6,transform shape,
+                every node/.style={rectangle,draw,rounded corners,drop shadow,fill=blue!5},
+                arr/.style = {-{Stealth[length=1mm, width=1mm]},shorten >=1pt,rounded corners=10pt},]
+        \node (try)
+        {$\begin{aligned}
+        &try_i\\
+        &\Effect\\
+        &\qw\qw pc:=\setflag
+         \end{aligned}$};
+        \node[below=of try] (setflag)
+        {$\begin{aligned}
+        &\setflag_i\\
+        &\Precondition\\
+        &\qw\qw pc=\setflag\\
+        &\Effect\\
+        &\qw\qw flag(i):=level\\
+        &\qw\qw pc:=\setturn
+         \end{aligned}$};
+        \node[below=of setflag] (setturn)
+        {$\begin{aligned}
+        &\setturn_i\\
+        &\Precondition\\
+        &\qw\qw pc=\setturn\\
+        &\Effect\\
+        &\qw\qw turn(level):=i\\
+        &\qw\qw S:=\{i\}\\
+        &\qw\qw pc:=\checkflag
+         \end{aligned}$};
+        \node[below=of setturn] (checkflag)
+        {$\begin{aligned}
+        &\checkflag_i\\
+        &\Precondition\\
+        &\qw\qw pc=\checkflag\\
+        &\qw\qw j\notin S\\
+        &\Effect\\
+        &\qw\qw \text{if }flag(j)<level\text{ then}\\
+        &\qw\qw\qw S:=S\cup\{j\}\\
+        &\qw\qw\qw \text{if }\abs{S}=n\text{ then}\\
+        &\qw\qw\qw\qw S:=\emptyset\\
+        &\qw\qw\qw\qw \text{if }level<n-1\text{ then}\\
+        &\qw\qw\qw\qw\qw level:=level+1\\
+        &\qw\qw\qw\qw\qw pc:=\setflag\\
+        &\qw\qw\qw\qw \text{else}\\
+        &\qw\qw\qw\qw\qw pc:=\leavetry\\
+        &\qw\qw\text{else}\\
+        &\qw\qw\qw S:=\emptyset\\
+        &\qw\qw\qw pc:=\checkturn
+         \end{aligned}$};
+        \node[right=of checkflag] (checkturn)
+        {$\begin{aligned}
+        &\checkturn_i\\
+        &\Precondition\\
+        &\qw\qw pc=\checkturn\\
+        &\Effect\\
+        &\qw\qw\text{if }turn(level)\neq i\text{ then}\\
+        &\qw\qw\qw\text{if }level<n-1\text{ then}\\
+        &\qw\qw\qw\qw level:=level+1\\
+        &\qw\qw\qw\qw pc:=\setflag\\
+        &\qw\qw\qw\text{else}\\
+        &\qw\qw\qw\qw pc:=\leavetry\\
+        &\qw\qw\text{else}\\
+        &\qw\qw\qw S:=\{i\}\\
+        &\qw\qw\qw pc:=\checkflag
+         \end{aligned}$};
+        \node[below=of checkflag] (crit)
+        {$\begin{aligned}
+        &crit_i\\
+        &\Precondition\\
+        &\qw\qw pc=\leavetry\\
+        &\Effect\\
+        &\qw\qw pc:=crit
+         \end{aligned}$};
+        \draw[->,arr]
+        (try) edge (setflag)
+        (setflag) edge (setturn)
+        (setturn) edge (checkflag)
+        (checkflag) edge (checkturn) edge (crit);
+        \node[right=9cm of try] (exit)
+        {$\begin{aligned}
+        &exit_i\\
+        &\Effect\\
+        &\qw\qw pc=reset
+         \end{aligned}$};
+        \node[below=of exit] (reset)
+        {$\begin{aligned}
+        &reset_i\\
+        &\Precondition\\
+        &\qw\qw pc=reset\\
+        &\Effect\\
+        &\qw\qw flag(i):=0\\
+        &\qw\qw level:=1\\
+        &\qw\qw pc:=\leaveexit
+         \end{aligned}$};
+        \node[below=of reset] (rem)
+        {$\begin{aligned}
+        &rem_i\\
+        &\Precondition\\
+        &\qw\qw pc=\leaveexit\\
+        &\Effect\\
+        &\qw\qw pc:=rem
+         \end{aligned}$};
+        \draw[->,arr] (exit) edge (reset) (reset) edge (rem);
+        \draw[->,arr]
+        (checkturn) |- (crit);
+        \draw[->,arr] (checkturn) |- (setflag);
+        \draw[->,arr] (checkturn) -- (checkflag);
+        \draw[->,arr] (checkflag.west) -| ++(-15mm,10mm) |- (setflag);
+        %\draw[->,arr] (checkflag) -|- (setflag);
+        \end{tikzpicture}\end{center}
+        #+END_Block
+
+        In any system state of /PetersonNP/, we say that a process \(i\) is a *winner* at level \(k\) provided
+        that either \(level_i>k\) or else \(level_i=k\) and \(pc_i\in\{\leavetry,crit,reset\}\). (The latter
+        condition only arise for \(k=n-1\).) We also say that process \(i\) is a *competitor* at level \(k\),
+        provided that it is either a winner at level \(k\) or else \(level_i=k\) and
+        \(pc_i\in\{\checkflag,\checkturn\}\).
+
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        PetersonNP satisfies mutual exclusion.
+        #+END_lemma
+
+        #+BEGIN_proof
+        #+BEGIN_assertion
+        [[label:10.5.3]]
+        In any reachable system state of PetersonNP, the following are true:
+        1. If process \(i\) is a competitor at level \(k\), if \(pc_i=\checkflag\), and if any process
+           \(j\neq i\) in \(S_i\) is a competitor at level \(k\), then \(turn(k)\neq i\)
+        2. If process \(i\) is a winner at level \(k\), and if any other process is a competitor at level
+           \(k\), then \(turn(k)\neq i\).
+        #+END_assertion
+
+        \begin{proof}
+        \begin{enumerate}
+        \item If \(j\) is a winner, \(j\notin S\). So \(level_j=k\) and \(pc_j\in\{\checkflag,\checkturn\}\). But \(j\in S\) implies
+        that \(i\) first set \(S\) to \(S\cup\{j\}\) and then \(j\) set its flag. So \(turn(k)\neq i\).
+        \item Suppose \(turn(k)=i\), then we have \(\setflag_j\to\setturn_j\to\setturn_i\). But then as \(turn(k)=i\), \(i\) won't become a winner.
+        \end{enumerate}
+        \end{proof}
+        #+BEGIN_assertion
+        [[label:10.5.4]]
+        In any reachable system state of PetersonNP, if there is a competitor at level \(k\), then the value
+        of \(turn(k)\) is the index of some competitor at level \(k\).
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.5.5]]
+        In any reachable system state of PetersonNP, and for any \(k\), \(1\le k\le n-1\), there are at most
+        \(n-k\) winners at level \(k\).
+        #+END_assertion
+
+        Induction on the value of \(k\).\\
+        /Basis/: \(k=1\). If all \(n\) processes are winners at level 1. Then Assertion ref:10.5.3 implies a
+        contradiction.
+
+        /Inductive step/: We assume the statement for \(k\), \(1\le k\le n-2\), and show it for \(k+1\). Suppose
+        for the sake of contradiction that the statement is false for \(k+1\), that is, that there are
+        strictly more than \(n-(k+1)\) winners at level \(k+1\); let \(W\) be the set of such winners. Every
+        winner at level \(k+1\) is also a winner at level \(k\), and by IH, the number of winners at level
+        \(k\) is at most \(n-k\). It follows that \(W\) is also the set of winners at level \(k\), and that
+        \(\abs{W}=n-k\ge 2\).
+
         #+END_proof
 
 * Q&A
