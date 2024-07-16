@@ -1,0 +1,259 @@
+#+title: Online, Asynchronous Schema Change in F1
+
+#+AUTHOR: Google
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/schema_change_f1.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        We introduce a protocol for schema evolution in a globally distributed database management system with
+        shared data, stateless servers, and no global membership. Our protocol is
+        * /asynchronous/: it allows different servers in the database system to transition to a new schema at
+          different times
+        * /online/: all servers can access and update all data during a schema change.
+
+        We provide a formal model for determining the correctness of schema changes under these conditions,
+        and we demonstrate that many common schema changes can cause anomalies and database corruption. We
+        avoid these problems by replacing corruption-causing schema changes with a sequence of schema changes
+        that is guaranteed to avoid corrupting the database so long as all servers are no more than one schema
+        version behind at any time.
+
+
+        F1 is built on top of Spanner. Features:
+        * *Massively distributed*
+        * *Relational schema*
+        * *Shared data storage*: All F1 servers in all datacenters have access to all data stored in Spanner.
+        * *Stateless servers*
+        * *No global membership*
+
+
+        #+ATTR_LATEX: :width .88\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/27.png]]
+
+        Because each server has shared access to all data, servers using different schema versions may corrupt
+        the database. Consider a schema change from schema \(S_1\) to schema \(S_2\) that adds index \(I\) on
+        table \(R\). Assume two different servers, \(M_1\) and \(M_2\) , execute the following sequence of
+        operations:
+        1. Server \(M_2\), using schema \(S_2\), inserts a new row \(r\) to table \(R\). Because \(S_2\)
+           contains index \(I\), server \(M_2\) also adds a new index entry corresponding to \(r\) to the
+           key-value store.
+        2. Server \(M_1\), using schema \(S_1\), deletes \(r\). Because \(S_1\) does not contain \(I\),
+           \(M_1\) removes \(r\) from the key-value store but fails to remvoe the corresponding index entry in
+           \(I\).
+* Background
+** Key-value Store
+        F1 assumes the key-value store supports three operations: \(put\), \(del\) and \(get\). Additionally,
+        F1's _optimistic_ concurrency control adds two more requirements on the key-value store:
+        1. *Commit timestamps*: Every key–value pair has a last-modified timestamp which is updated atomically by the key–value store.
+        2. *Atomic test-and-set support*: Multiple get and put operations can be executed atomically.
+** Relational Schema
+        An F1 *schema* is a set of table definitions that enable F1 to interpret the database located in the
+        key–value store. Each table definition has
+        * a list of columns (along with their types)
+        * a list of secondary indexes
+        * a list of integrity constraints (foreign key or index uniqueness constraints)
+        * a list of optimistic locks.
+
+        *Optimistic locks* are required columns that cannot be read directly by client transactions; A subset of
+        columns in a table forms the primary key of the table.
+
+        Column values can be either primitive types or complex types (specified in F1 as protocol buffers).
+        Primary key values are restricted to only primitive types.
+
+        We call a column *required* if its value must be present in every row. All primary-key columns are
+        implicitly required, while non-key columns may be either required or optional.
+** Row Representation
+        Each key logically includes the name of the table, the primary key values of the containing row, and
+        the name of the column whose value is stored in the pair. Although this appears to needlessly repeat
+        all primary key values in the key for each column value, in practice, F1’s physical storage format
+        eliminates this redundancy. We denote the key for the value of column \(C\) in row r as \(k_r(C)\).
+
+        In addition to the column values, there is also a reserved key–value pair with the special column
+        \(exists\). This key–value pair indicates the existence of row \(r\) in the table, and it has no
+        associated value, which we denote as \(\la key,null\ra\).
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/28.png]]
+
+        F1 also supports *secondary indexes*. A secondary index in F1 covers a non-empty subset of columns on a
+        table and is itself represented by a set of key–value pairs in the key–value store. Each row in the
+        indexed table has an associated index key–value pair. The key for this pair is formed by concatenating
+        the table name, the index name, the row’s indexed column values, and the row’s primary key values. We
+        denote the index key for row \(r\) in index \(I\) as \(k_r(I)\), and as in the case of the special
+        exists column, there is no associated value.
+** Relational Operations
+        * \(insert(R, vk_r, vc_r)\) inserts row \(r\) to table \(R\) with primary key values \(vk_r\) and
+          non-key column values \(vc_r\). Insert fails if a row with the same primary key values already
+          exists in \(R\).
+        * \(delete(R, vk_r)\) deletes row \(r\) with primary key values \(vk_r\) from table \(R\).
+        * \(update(R, vk_r , vc_r)\) updates row \(r\) with primary key values \(vk_r\) in table \(R\) by
+          replacing the values of a subset of non-key columns with those in \(vc_r\) . \(update\) cannot
+          modify values of primary keys. Such updates are modeled by a \(delete\) followed by an \(insert\).
+        * \(query(\vec{R}, \vec{C}, P)\)returns a projection \(\vec{C}\) of rows from tables in \(\vec{R}\)
+          that satisfy predicate \(P\).
+
+        We use the notation \(write(R, vk_r, vc_r)\) to mean any of \(insert\), \(delete\), or \(update\) when
+        we wish to model the fact that some data has changed, but we do not care about the specific type of
+        operation that changed it.
+
+        These relational operations are translated into changes to the key–value store based on the schema. We
+        subscript all operations with their related schema, such as \(delete_S(R, vk_r)\).
+
+        Whenever we need to distinguish the transaction that issued a particular operation, we superscript the
+        operation with the transaction identifier. We introduce a shorthand notation \(query(R, C, vk_r)\) for
+        a query reading a single value of column \(C\) in row \(r\) with primary key \(vk_r\) in table \(R\).
+** Concurrency Control
+        F1’s concurrency control is relevant to schema evolution because F1's schema contains an additional
+        element on each table: *optimistic locks*.
+
+        Each column in the table is associated with exactly one optimistic lock. Each row has its own instance
+        of each of the optimistic locks defined in the schema, and these instances control concurrent access
+        to that row’s column values by multiple transactions.
+
+        When clients read column values as part of a transaction, they accumulate last-modified timestamps
+        from the locks covering those columns; at commit time, these timestamps are submitted to the server
+        and validated to ensure that they have not changed. If validation succeeds, the last-modified
+        timestamps of all locks associated with columns modified by the transaction are updated to the current
+        timestamp. This form of concurrency control can be shown to be conflict serializable
+* Schema Changes
+        All servers in an F1 instance share a set of key–value pairs, called a *database representation*, that
+        are located in a key–value store. To interpret these key–value pairs as rows, every F1 server
+        maintains a copy of its instance’s schema in its memory, and it uses this schema to translate
+        relational operators into the operations supported by the key–value store. Accordingly, when a client
+        submits an operation, the schema used for that operation is determined by the schema currently in the
+        memory of the F1 server the client is connected to.
+
+        The canonical copy of the schema is stored within the database representation as a special key–value
+        pair known to all F1 servers in the instance. When the canonical copy of the schema is replaced with a
+        new version, it begins a *schema change*, which is a process that propagates the new schema to all
+        servers in an F1 instance.
+
+        The fundamental cause of this corruption is that the change made to the schema is, in some sense, too
+        abrupt. Servers on the old schema have no knowledge of the index, while servers on the new schema use
+        it for all operations as if it were fully maintained. Additionally, although we used adding an index
+        as an example, this problem occurs for all fundamental schema change operations in our system.
+
+        To simplify reasoning about the correctness of our implementation, we restrict servers in an F1
+        instance from using more than two distinct schema versions. In particular, our protocol expects that
+        all servers use either the most recent schema version or a schema that is at most one version old.
+** Schema Elements and States
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *delete-only table*, *column*, or *index* cannot have their key-value pairs read by user transactions and
+        1. if \(E\) is a table or a column, it can be modified only by \(delete\) operations
+        2. if \(E\) is an index, it is modified only by \(delete\) and \(update\) operations. Moreover,
+           \(update\) operations can delete key-value pairs corresponding to updated index keys, but they
+           cannot create any new ones.
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *write-only column* or *index* can have their key-value pairs modified by \(insert\), \(delete\), and
+        \(update\) operations, but none of their pairs can be read by user transactions.
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *write-only constraint* is applied for all new \(insert\), \(delete\), and \(update\) operations, but
+        it is not guaranteed to hold over all existing data.
+        #+END_definition
+** Database Consistency
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A database representation \(d\) is *consistent w.r.t. schema \(S\)* iff
+        1. *No column values exist without containing  row and table*. For every column key-value pair
+           \(\la k_r(C),v_r(C)\ra\in d\), there exists \(\la k_r(exists),null\ra\in d\) and there exists table
+           \(R\in S\) containing column \(C\).
+        2. *All rows have all public required column values*. For every required public column \(C\) in table
+           \(R\in S\), if there exists \(\la k_r(exists),null\ra\in d\), then there exists \(\la
+           k_r(C),v_r(C)\ra\in d\).
+        3. *No index entries exist without a corresponding index in the schema*. For every index key-value pair
+           \(\la k_r(I),null\ra\in d\) there exists table \(R\in S\) containing index \(I\).
+        4. *All public indexes are complete*. If there exists a public index \(I\) on \(R\in S\), then there
+           exists an index key-value pair \(\la k_r(I),null\ra\in d\) for every row \(r\in R\).
+        5. *All index entries point to valid rows*. Conversely for every index key-value pair
+           \(\la k_r(I),null\ra\in d\), there exists a column key-value pair \(\la k_r(C), v_r(C)\ra\in d\)
+           for every column \(C\) covered by index \(I\).
+        6. *All public constraints are honored*. No key-value pair exists in \(d\) that violates a public
+           constraint listed in \(S\), and all key-value pairs that must be present according to public
+           constraints in \(S\) in \(d\).
+        7. *No unknown values*. There are no key-value pairs in database representation \(d\) except those
+           postulated in 1 and 3 of this definition.
+        #+END_definition
+
+        We use \(d\vDash S\) to denote that database representation \(d\) is consistent w.r.t. schema \(S\).
+
+        The consistency of a database representation d with respect to schema S can be violated in two ways:
+        1. Database representation \(d\) contains key–value pairs it should not according to schema \(S\). We
+           call such a violation an *orphan data anomaly*. Specifically, database representation \(d\) has
+           orphan data with respect to \(S\) if it violates Clauses 1, 3, 5, or 7.
+        2. Database representation \(d\) is missing a key–value pair it should contain according to schema
+           \(S\) or it contains a key–value pair that violates a public constraint in schema \(S\). We say a
+           violation of this sort is an *integrity anomaly*. Specifically, database representation \(d\) has
+           integrity anomalies if it violates Clauses 2, 4, or 6.
+
+
+        Let \(op_S\) be any of \(delete\), \(update\), \(insert\), or \(query\) executing under schema \(S\).
+        Every correctly implemented operation \(op_S\) preserves the consistency of any database
+        representation \(d\) it is applied to with respect to the schema \(S\) it uses. However, it is not
+        guaranteed to preserve consistency with respect to any other schema.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A schema change from schema \(S_1\) to schema \(S_2\) is *consistency preserving* iff, for any database
+        representation \(d\) consistent w.r.t. both \(S_1\) and \(S_2\), it is true that
+        1. any operation \(op_{S_1}\) preserves the consistency of \(d\) with respect to schema \(S_2\)
+        2. any operation \(op_{S_2}\) preserves the consistency of \(d\) with respect to schema \(S_1\)
+
+        #+END_definition
+** Adding and Removing Schema Elements
+        We group tables, columns (including optimistic locks), and indexes together as *structural schema
+        elements*
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Any schema change from schema \(S_1\) to schema \(S_2\) that either adds or drops a public structural
+        elements \(E\) is not consistency preserving.
+        #+END_proposition
+
+        #+BEGIN_proof
+        Consider a schema change from schema \(S_1\) to schema \(S_2\) that adds structural element \(E\) and
+        a database representation \(d\vDash S_1,S_2\).
+        * \(E\) is a table. Suppose we apply operation \(insert_{S_2}(E,vk_r,vc_r)\) to database
+          representation \(d\), creating database representation \(d'\). \(d'\not\vDash S_1\) because it adds
+          key-value pairs which are orphan data w.r.t. schema \(S_1\).
+        * \(E\) is a column in table \(R\). Orphan.
+        * \(E\) is an index on table \(R\). Suppose we apply operation \(insert_{S_2}(R,vk_r,vc_r)\) to \(d\),
+          creating database representation \(d'\)  s.t. row \(r\) contains all columns indexed by \(E\). Then
+          \(d'\not\vDash S_1\) and \(d'\not\vDash S_2\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        A schema change from schema \(S_1\) to schema \(S_2\) is consistency preserving iff it avoids orphan
+        data and integrity anomalies with respect to both \(S_1\) and \(S_2\).
+        #+END_proposition
+*** Optional structural elements
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Consider a schema change from \(S_1\) to \(S_2\) that adds a delete-only structural element \(E\),
+        with any database representation \(d\) s.t. \(d\vDash S_1\). Then \(d\vDash S_2\), and no operation
+        \(op_{S_1}\) or \(op_{S_2}\) on \(E\) in \(d\) can cause orphan data or integrity anomalies w.r.t.
+        \(S_1\) or \(S_2\).
+        #+END_proposition
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib
