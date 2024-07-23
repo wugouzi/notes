@@ -65,7 +65,7 @@
         Primary key values are restricted to only primitive types.
 
         We call a column *required* if its value must be present in every row. All primary-key columns are
-        implicitly required, while non-key columns may be either required or optional.
+        implicitly required, while non-key columns may be either required or *optional*.
 ** Row Representation
         Each key logically includes the name of the table, the primary key values of the containing row, and
         the name of the column whose value is stored in the pair. Although this appears to needlessly repeat
@@ -143,6 +143,17 @@
         instance from using more than two distinct schema versions. In particular, our protocol expects that
         all servers use either the most recent schema version or a schema that is at most one version old.
 ** Schema Elements and States
+        An F1 schema has tables, columns, indexes, constraints, and optimistic locks. We describe these
+        collectively as *schema elements*, and each element in the schema has a state associated with it. There
+        are two states which we consider to be non-intermediate: *absent* and *public*.
+
+        As one might expect, if an element is not present in the schema, it is absent. If an element is
+        present in the schema, and it can be affected by or applied to all operations, it is public.
+        Accordingly, these are the two states that are requested by users when elements are added to or
+        removed from the schema.
+        
+        However, F1 also has the notion of two internal, intermediate states: *delete-only* and *write-only*.
+
         #+ATTR_LATEX: :options []
         #+BEGIN_definition
         A *delete-only table*, *column*, or *index* cannot have their key-value pairs read by user transactions and
@@ -238,7 +249,18 @@
         #+BEGIN_proposition
         A schema change from schema \(S_1\) to schema \(S_2\) is consistency preserving iff it avoids orphan
         data and integrity anomalies with respect to both \(S_1\) and \(S_2\).
+
+        Assume that \(E\) is an index. Operations using \(S_2\) do not add any new key–value pairs relative to
+        operations using \(S_1\); they only delete key–value pairs belonging to \(E\), should they exist.
+        Since neither schema allows the insertion of any key–value pairs corresponding to \(E\), any pair of
+        operations using \(S_1\) and \(S_2\) trivially avoids orphan data anomalies.
+
+        Similarly, no integrity anomalies can occur because neither \(S_1\) nor \(S_2\) impose any new
+        requirements or constraints on key–value pairs in the database, as \(E\) is optional.
+
+        The reasoning is identical if \(E\) is a table or column.
         #+END_proposition
+
 *** Optional structural elements
         #+ATTR_LATEX: :options []
         #+BEGIN_proposition
@@ -247,6 +269,63 @@
         \(op_{S_1}\) or \(op_{S_2}\) on \(E\) in \(d\) can cause orphan data or integrity anomalies w.r.t.
         \(S_1\) or \(S_2\).
         #+END_proposition
+
+        #+BEGIN_proof
+        Because \(d\vDash S_1\) and \(E\) is absent in \(S_1\), there are no key-value pairs corresponding to
+        \(E\) in \(d\). Elements \(E\) is not public in \(S_2\) and hence no such pairs are required in order
+        to establish that \(d\vDash S_2\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Consider a schema change from schema \(S_1\) to schema \(S_2\) that promotes an optional structural
+        elements \(E\) from delete-only to public, with any database representation \(d\) s.t.
+        \(d\vDash S_1\). Then \(d\vDash S_2\), and no operation \(op_{S_1}\) or \(op_{S_2}\) on \(E\) in \(d\)
+        can result in orphan data or integrity anomalies w.r.t. \(S_1\) or \(S_2\).
+        #+END_proposition
+
+        #+BEGIN_proof
+        Because \(d\vDash E_1\) and \(E\) is delete-only in \(S_1\) , there may or may not be key–value pairs
+        corresponding to \(E\) in \(d\); however, since \(E\) is optional, the presence of such pairs is
+        allowed—but not required—in \(S_2\) , and so \(d\vDash S_2\).
+
+        Operations using schema \(S_2\) will delete the key–value pairs corresponding to structural element \(E\) if
+        present, because \(E\) is public.
+
+        Integrity anomalies cannot occur since element E is optional.
+        #+END_proof
+
+        Accordingly, if a structural element is optional, it can be safely added to or dropped from the schema
+        with only a single intermediate schema and the following state transitions, (the order is reversed for drops):
+        \begin{equation*}
+        \text{absent}\to\text{delete only}\to\text{public}
+        \end{equation*}
+        However, aside from simply following the above state transitions in reverse, drops have an additional
+        step: they must delete the key–value pairs associated with the removed structural element. When the
+        only schema in use has the element in the delete-only state, a *database reorganization process* must
+        remove the element’s key–value pairs from the element’s key–value pairs from the database
+        representation.
+*** Required structural elements
+        (in the case of drops, the order of states is reversed, and the database reorganization takes place
+        before the transition to absent):
+        \begin{equation*}
+        \text{absent}\to\text{delete only}\to\text{write only}\xrightarrow{\text{db reorg}}\text{public}
+        \end{equation*}
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Consider a schema change from schema \(S_1\) to \(S_2\) that promotes an index or required column
+        \(E\) from delete-only to write-only, with any database representation \(d\) s.t. \(d\vDash S_1\).
+        Then \(d\vDash S_2\) and no operation \(op_{S_1}\) or \(op_{S_2}\) on \(E\) in \(d\) can result in
+        orphan data or integrity anomalies w.r.t \(S_1\) or \(S_2\).
+        #+END_proposition
+
+        #+BEGIN_proof
+        Orphans does not come from operations on \(E\).
+
+        What if \(\la k_r(E),null\ra\) is deleted, which violates 4?
+        #+END_proof
+
 
 * Problems
 

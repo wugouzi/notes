@@ -1550,12 +1550,251 @@
         Then within time \(2l\), process \(i\) performs \(\setturn_i\), setting \(turn(k+1):=i\). Let \(\pi\)
         denote this \(\setturn_i\) event. We consider two cases.
 
-        FIrst, if \(turn(k+1)\) gets set to some value other than \(i\) within time \(T(k+1)+c+(2n+2)l\) after
+        First, if \(turn(k+1)\) gets set to some value other than \(i\) within time \(T(k+1)+c+(2n+2)l\)
+        (previous winner needs such time to enter \(C\)) after
         \(\pi\), then \(i\) wins at level \(k+1\) within an additional time \(nl\). Then within additional
         time \(T(k+1)\), \(i\) enters \(C\). In this case, the total time from \(\pi\) until \(i\)'s entrance
         to \(C\) is at most \(2T(k+1)+c+(3n+2)l\).
+
+        On the other hand, assume that \(turn(k+1)\) does not get set to any value other than \(i\) within
+        time \(T(k+1)+c+(2n+2)l\) after \(\pi\). Then no process can set its \(flag\) to \(k+1\) within time
+        \(T(k+1)+c+(2n+1)l\) after \(\pi\). Let \(I\) be the set of processes \(j\neq i\) for which
+        \(flag(j)\ge k+1\) when \(\pi\) occurs. Then each process in \(I\) wins at level \(k+1\) within time
+        at most \(nl\) after \(\pi\) since it finds \(turn(k+1)=i\), then enters \(C\) within an additional
+        time \(T(k+1)\), then leaves \(C\) within additional time \(c\) and performs \(reset\) within
+        additional time \(l\). That is, within time \(nl+T(k+1)+c+l=T(k+1)+c+(n+1)l\) after \(\pi\), all
+        processes in \(I\) set their \(flags\) to 0.
+
+        For an additional time \(nl\) after that, no process sets its \(flag\) to \(k+1\). That is sufficient
+        time for proces \(i\) to detect that all the \(flag\) variables are less than \(k+1\) and so to win at
+        level \(k+1\). That is, in this case, process \(i\) wins at level \(k+1\) within time
+        \(T(k+1)+c+(2n+1)l\) after \(\pi\). Within another \(T(k+1)\), \(i\) enters \(C\).
+
+        Thus
+        \begin{align*}
+        T(k)&\le 2T(k+1)+c+(3n+4)l,0\le k\le n-2\\
+        T(n-1)&\le l
+        \end{align*}
+        #+END_proof
+*** Tournament Algorithm
+        Assume \(n\), the number of progresses, is a power of 2. Each process engages in a series of
+        \(\log n\) competitions in order to obtain the resource.
+
+        For \(0\le i\le n-1\) and \(1\le k\le\log n\), define
+        * \(comp(i,k)\), the *level \(k\) competition* of process \(i\), is the string consisting of the
+          high-order \(\log n-k\) bits of the binary representation of \(i\).
+        * \(role(i,k)\), the *role* of process \(i\) in the level \(k\) competition of process \(i\), is the
+          \(\log n-k+1\)st bit of the binary representation of \(i\). In terms of the tournament tree,
+          \(role(i,k)\) indicates whether \(i\)'s leaf is a descendant of the left of right child of the node
+          for competition \(comp(i,k)\).
+        * \(opponents(i,k)\), the *opponents* of process \(i\) in the level \(k\) competition of process \(i\),
+          is the set of process indices with the same high-order \(\log n-k\) bits as \(i\) and the opposite
+          \((\log n-k+1)\)st bit. In terms of the tournament tree, the processes in \(opponents(i,k)\) are
+          those whose leaves are descendants of the opposite child of node \(comp(i,k)\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Figure ref:fig:10.9 shows the tournament tree for \(n=8\). \(comp(5,2)=1\), \(role(5,2)=0\) and \(opponents(5,2)=\{6,7\}\).
+        #+END_examplle
+
+        \begin{figure}[H]
+        \label{fig:10.9}
+        \begin{center}\begin{forest}
+        for tree={align=center},
+        before drawing tree={
+                tikz+={\coordinate (a) at (current bounding box.east);},
+                for nodewalk={fake=r, L, ancestors}{
+                        tikz+/.process={Ow+Pw}{level}{int(3-#1)}{\node [anchor=base west] at (.base -| a) {Level #1};}
+                }
+        }
+        [\(\lambda\),
+                [0
+                        [00
+                                [{0\\(000)}]
+                                [{1\\(001)}]]
+                        [01
+                                [{2\\(010)}]
+                                [{3\\ (011)}]]]
+                [1
+                        [10
+                                [{4\\ (100)}]
+                                [{5\\ (101)}]]
+                        [11
+                                [{6\\ (110)}]
+                                [{7\\ (111)}]]]]
+        \end{forest}\end{center}
+        \caption{Names of competitions in the \textit{Tournament} algorithm}
+        \end{figure}
+
+        We call the algorithm the *Tournament algorithm*.
+
+        #+ATTR_LATEX: :options {\textit{Tournament} algorithm}
+        #+BEGIN_Block
+        \noindent *Shared variables*:\\
+        \noindent for every binary string \(x\) of length at most \(\log n-1\):
+        \indent \(turn(x)\in\{0,1\}\), initially arbitrary, writable and readable by exactly those processes
+        \(i\) for which \(x\) is a prefix of the binary representation of \(i\).
+
+        \noindent for every \(i\), \(0\le i\le n-1\):
+        \indent \(flag(i)\in\{0,\dots,\log n\}\), initially 0, writable by \(i\) and readable by all \(j\neq
+        i\).
+
+        \noindent *Process \(i\)*:\\
+        \begin{algorithm}[H]
+        \KwRem
+        \(try_i\)\;
+        \For{\(k=1,\dots,\log n\)}{
+                \(flag(i):=k\)\;
+                \(turn(comp(i,k)):=role(i,k)\)\;
+                wait for \([\forall j\in opponents(i,k):flag(j)<k]\) or \([turn(comp(i,k))\neq role(i,k)]\)\;
+        }
+        \(crit_i\)\;
+        \KwCrit
+        \(exit_i\)\;
+        \(flag(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
+        #+END_Block
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The Tournament algorithm satisfies mutual exclusion
+        #+END_lemma
+
+        #+BEGIN_proof
+        #+BEGIN_assertion
+        [[label:10.5.6]]
+        In any reachable system state of the Tournament algorithm, and for any \(k\), \(1\le k\le\log n\), at
+        most one process from any subtree rooted at level \(k\) is a winner at level \(k\).
+        #+END_assertion
+
+        #+BEGIN_assertion
+        [[label:10.5.7]]
+        If process \(i\) is a winner at level \(k\) and if any level-\(k\) opponent of \(i\) is a competitor
+        at level \(k\), then \(turn(comp(i,k))\neq role(i,k)\).
+        #+END_assertion
+
+        Similar to ref:10.5.3
+
         #+END_proof
 
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        In the Tournament algorithm, the time from when a particular process \(i\) enters \(T\) until it
+        enters \(C\) is at most \((n-1)c+O(n^2l)\).
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        The Tournament algorithm solves the mutual exclusion problem and is lockout-free.
+        #+END_theorem
+** An Algorithm Using Single-Writer Shared Registers
+        #+ATTR_LATEX: :options {\textit{BurnsME} algorithm}
+        #+BEGIN_Block
+        \noindent *Shared variables*:\\
+        \noindent for every \(i\), \(1\le i\le n\):\\
+        \indent \(flag(i)\in\{0,1\}\), initially 0, writable by \(i\) and readable by all \(j\neq i\)
+
+        \noindent *Process \(i\)*:\\
+        \begin{algorithm}[H]
+        \KwRem
+        \(try_i\)\;
+        \nlset{L}\label{LLL}\(flag(i):=0\)\;
+        \For{\(1\le j\le i-1\)}{
+                \uIf{\(flag(j)=1\)}{\KwGoTo \ref{LLL}}
+        }
+        \(flag(i):=1\)\;
+        \For{\(1\le j\le i-1\)}{
+                \uIf{\(flag(j)=1\)}{\KwGoTo \ref{LLL}}
+        }
+        \nlset{M}\label{MMM}
+        \For{\(i+1\le j\le n\)}{
+                \uIf{\(flag(i)=1\)}{\KwGoTo \ref{MMM}}
+        }
+        \(crit_i\)\;
+        \KwCrit
+        \(exit_i\)\;
+        \(flag(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
+        #+END_Block
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The /BurnsME/ algorithm satisfies mutual exclusion.
+        #+END_lemma
+
+        #+BEGIN_proof
+        If process \(i\) and \(j\) are simultaneously in \(C\), then assume that \(i\) sets its \(flag\) to 1
+        first. 
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        /BurnsME/ guarantees progress.
+        #+END_lemma
+
+        #+BEGIN_proof
+        For the trying region, assume that \(\alpha\) is a low-level-fair execution that reaches a point where
+        there is at least one process in \(T\) and no process in \(C\), and that after this point, no process
+        ever enters \(C\). W.L.O.G., we can assume that every process is in \(T\) or \(R\) and that no process
+        changes region, in \(\alpha\). Let the *contenders* be the processes in \(T\).
+
+        Now we partition the contenders into two sets: those that ever reach label \(M\) and those that never
+        do. Call the first set \(P\) and the second set \(Q\). There must be some point in \(\alpha\) by which
+        all the processes in \(P\) have already reached label \(M\); note that they never thereafter drop
+        back to any point in the code prior to label \(M\). Let \(\alpha_1\) be a suffix of \(\alpha\) in
+        which all processes in \(P\) are in the final for loop, after label \(M\).
+
+        We claim that there is at least one process in \(P\). Specifically, the process with the smallest
+        index among all the contenders is not blocked from reaching label \(M\).
+
+        Let \(i\) be the largest index of a process in \(P\). We claim that eventually in \(\alpha_1\), any
+        process \(j\in Q\) s.t. \(j>i\) has \(flag(j)\) set permanently to 0. So let \(\alpha_2\) be a suffix
+        of \(\alpha_1\) in which all processes in \(Q\) with indices \(>i\) always have their \(flags\) equal
+        to 0.
+
+        Now in \(\alpha_2\), there is nothing to stop process \(i\) from reaching \(C\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        /BurnsME/ solves the mutual exclusion problem.
+        #+END_theorem
+** The Bakery Algorithm
+        The /Bakery/ algorithm only uses single-writer/multi-reader shared registers. In fact, it also works
+        using a weaker form of register known as a *safe register*, in which the registers are allowed to
+        provide arbitrary responses to reads that are performed concurrently with writes.
+
+        The Bakery algorithm guarantees lockout-freedom and a good time bound. It guarantees bounded bypass
+        and also a related condition - it is "FIFO after a wait-free doorway" (to be defined below). An
+        unattractive property of the Bakery algorithm is that it uses unbounded size registers.
+
+        #+ATTR_LATEX: :options {\textit{Bakery} algorithm}
+        #+BEGIN_Block
+        \noindent *Shared variables*:\\
+        \noindent for every \(i\), \(1\le i\le n\):\\
+        \indent \(choosing(i)\in\{0,1\}\), initially 0, writable by \(i\) and readable by all \(j\neq i\)\\
+        \indent \(number(i)\in\N\), initially 0, writable by \(i\) and readable by all \(j\neq i\)
+
+        \noindent *Process \(i\)*:
+        \begin{algorithm}[H]
+        \KwRem
+        \(try_i\)\;
+        \(choosing(i):=1\)\;
+        \(number(i):=1+\max_{j\neq i}number(j)\)\;
+        \(choosing(i):=0\)\;
+        \For{j\neq i}{
+                wait for \(choosing(j)=0\)\;
+                wait for \(number(j)=0\) or \((number(i),i)<(number(j),j)\)\;
+        }
+        \(crit_i\)\;
+        \KwCrit
+        \(exit_i\)\;
+        \(number(i):=0\)\;
+        \(rem_i\)\;
+        \end{algorithm}
+        #+END_Block
 
 * Q&A
         1. [[P1]]. Need think.

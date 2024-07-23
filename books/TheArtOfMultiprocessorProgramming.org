@@ -7,6 +7,8 @@
 #+LATEX_HEADER: \DeclareMathOperator{\victim}{\texttt{victim}}
 #+LATEX_HEADER: \DeclareMathOperator{\tlevel}{\texttt{level}}
 #+LATEX_HEADER: \DeclareMathOperator{\tlabel}{\texttt{label}}
+#+LATEX_HEADER: \DeclareMathOperator{\enq}{\textsf{enq}}
+#+LATEX_HEADER: \DeclareMathOperator{\deq}{\textsf{deq}}
 #+LATEX_HEADER: \makeindex
 #+STARTUP: shrink
 
@@ -333,3 +335,87 @@ class Bakery implements Lock {
         #+BEGIN_proof
 
         #+END_proof
+* Concurrent objects
+** Sequential consistency
+        Method calls take time. A *method call* is the interval that starts with an *invocation* event and
+        continues until the corresponding *response* event, if any. Method calls by concurrent threads may
+        overlap, while method calls by a single thread are always sequential. We say a method call is *pending*
+        if its invocation event has occurred, but its response event has not.
+
+        For historical reasons, the object version of a read–write memory location is called a *register*.
+
+        #+BEGIN_principle
+        [[label:3.3.1]]
+        Method calls should appear to happen in a one-at-a-time, sequential order.
+        #+END_principle
+
+        The order in which a single thread issues method calls is called its *program order*.
+
+        #+BEGIN_principle
+        [[label:3.3.2]]
+        Method calls should appear to take effect in program order.
+        #+END_principle
+
+        Together, Principles ref:3.3.1 and ref:3.3.2 define *sequential consistency*.
+
+        When one operation completes before another begins, we say that the first operation precedes the
+        second in the *real-time order*.
+
+        For any pending method call in a sequentially consistent concurrent execution, there is some
+        sequentially consistent response, that is, a response to the invocation that could be given
+        immediately without violating sequential consistency. We say that a correctness condition with this
+        property is *nonblocking*.
+
+        A correctness property \(\calp\) is *compositional* if, whenever each object in the system satisfies
+        \(\calp\), the system as a whole satisfies \(\calp\).
+
+        Sequential consistency is not compositional.
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../images/ArtOfMulti/3.png]]
+
+        Assume that there is such an execution. We use \(\la p.\enq(x)\;A\ra\to\la p.\deq(x)\;B\ra\) means
+        that any sequential execution must order \(A\)'s enqueue of \(x\) at \(p\) before \(B\)'s dequeue of
+        \(x\) at \(p\). Because \(p\) is FIFO,
+        \begin{equation*}
+        \la p.\enq(y)\;B\ra\to\la p.\enq(x)\;A\ra
+        \end{equation*}
+        Similarly,
+        \begin{equation*}
+        \la q.\enq(x)\;A\ra\to\la q.\enq(y)\;B\ra
+        \end{equation*}
+        Both program order implies that
+        \begin{equation*}
+        \la p.\enq(x)\;A\ra\to\la q.\enq(x)\;A\ra \quad\text{ and }\quad\la q.\enq(y)\;B\ra\to\la p.\enq(y)\;B\ra
+        \end{equation*}
+** Linearizability
+        #+BEGIN_principle
+        Each method call should appear to take effect instantaneously at some moment between its invocation
+        and response.
+        #+END_principle
+
+        This principle states that the real-time order of method calls must be preserved. We call this
+        correctness property *linearizability*. Every linearizable execution is sequentially consistent, but not
+        vice versa.
+
+        The usual way to show that a concurrent object implementation is linearizable is to identify for each
+        method a *linearization point*, an instant when the method takes effect. We say that a method is
+        *linearized* at its linearization point.
+
+        Like sequential consistency, linearizability is nonblocking: There is a linearizable response to any
+        pending call of a total method.
+
+        Threads that communicate only through a single shared object (e.g., the memory of a shared-memory
+        multiprocessor) cannot distinguish between sequential consistency and linearizability.
+        For this reason, the difference between sequential consistency and linearizability is sometimes called
+        *external consistency*.
+** Quiescent consistency
+        For some systems, implementors may be willing to trade consistency for performance. That is, we may
+        relax the consistency condition to allow cheaper, faster, and/or more efficient implementations. One
+        way to relax consistency is to enforce ordering only when an object is *quiescent*, that is, when it has
+        no pending method calls.
+
+        #+BEGIN_principle
+        Method calls separated by a period of quiescence should appear to take effect in real-time order.
+        #+END_principle
