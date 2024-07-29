@@ -2007,13 +2007,42 @@
         either 1 or 2 will eventually reach \(C\).
 
         It remains to show how to maneuver processes 1 and 2 to cover the two shared variables while appearing
-        to process 3 to still be in \(R\).
+        to process 3 to still be in \(R\). \wu{What we have is the three lemmas only}.
 
         First, we construct execution \(\alpha_1\) by running process 1 alone from \(s\) until it first covers
         a shared variable. Then we extend \(\alpha_1\) to \(\alpha_2\) by continuing to run process 1 alone
         until it enters \(C\), then \(E\), then \(R\), then \(T\) once again, and again covers some shared
         variable. We extend \(\alpha_2\) to \(\alpha_3\) in the same way. Let the final states of
         \(\alpha_1\), \(\alpha_2\) and \(\alpha_3\) be \(s_1\), \(s_2\) and \(s_3\), respectively.
+
+        Since there are only two shared variables, in two of the three states \(s_1\), \(s_2\) and \(s_3\),
+        process 1 must cover the /same variable/. Suppose that in \(s_2\) and \(s_3\), process 1 covers variable
+        \(x\).
+
+        Now consider what happens if we run process 2 alone, starting from state \(s_2\). Process 2 can enter
+        \(C\) because \(s_2\) is indistinguishable to process 2 from the last preceding state in \(\alpha\) in
+        which process 1 is in \(R\). Moreover, we claim that along the way process 2 must write the other
+        shared variable \(y\) (\wu{2 could still writes \(x\)}). For otherwise, process 2 could reach \(C\), then process 1 could take one step,
+        overwriting whatever process 2 wrote to variable \(x\) and thus eliminating all traces of 2, and then
+        process 1 could continue and violate mutual exclusion.
+
+        Now we construct a counterexample \(\alpha\):
+        #+ATTR_LATEX: :width .88\textwidth :float nil
+        #+NAME: 10.12
+        #+CAPTION: Construction of \(\alpha\)
+        [[../images/DistributedAlgorithms/9.png]]
+
+        Execution \(\alpha\) begins with \(\alpha_2\), thus bringing process 1 to a point where it covers
+        \(x\).  It then continues by letting process 2 run until the first point where it covers \(y\). (In
+        this situation we have so far, process 2 might have written \(x\) since it last left \(R\), which
+        could be detectable by process 3.)
+
+        From the point where process 2 covers \(y\), we resume process 1. It can first write \(x\), thereby
+        eliminating all traces of process 2. Then process 1 can continue to run and reach a point that looks
+        to it like the point after \(\alpha_3\), where it again covers \(x\). Let \(s'\) be the final state of
+        \(\alpha\).
+
+        Let \(s''\) be the last idle state occurring in \(\alpha_3\). \(s''\sim_3 s_3\sim_3 s'\).
         #+END_proof
 
 
