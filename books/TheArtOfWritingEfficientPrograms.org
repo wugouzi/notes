@@ -1,0 +1,68 @@
+#+title: The Art Of Writing Efficient Programs
+
+#+AUTHOR: Fedor G. Pikus
+#+EXPORT_FILE_NAME: ../latex/TheArtOfWritingEfficientPrograms/TheArtOfWritingEfficientPrograms.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+
+* Performance Fundamentals
+
+* Performance Measurements
+
+        #+begin_src shell
+g++ -std=c++17 -g -O3 -mavx2 -Wall -pedantic compare.C example.C -o example -lprofiler && ./example
+
+CPUPROFILE=prof.data ./example
+
+pprof --text ./example prof.data
+        #+end_src
+** Performance benchmarking
+*** C++ chrono timers
+        #+begin_src c++
+#include <chrono>
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using std::chrono::system_clock;
+...
+auto t0 = system_clock::now();
+... do some work ...
+auto t1 = system_clock::now();
+auto delta_t = duration_cast<milliseconds>(t1 – t0);
+cout << "Time: " << delta_t.count() << endl;
+        #+end_src
+        We should point out that the C++ chrono clocks measure real time (often called wall-clock time).
+        Usually, this is what you want to measure. However, a more detailed analysis often requires measuring
+        the CPU time, which is the time that is passing only when the CPU is working and stands still when the
+        CPU is idle.
+*** High-resolution timers
+        To measure the CPU time, we have to use OS-specific system calls; on Linux and other POSIX-compliant
+        systems, we can use the ~clock_gettime()~ call to access the hardware high-resolution timers:
+
+        #+begin_src c++
+timespec t0, t1;
+clockid_t clock_id = …; // Specific clock
+clock_gettime(clock_id, &t0);
+... do some work ...
+clock_gettime(clock_id, &t1);
+double delta_t = t1.tv_sec – t0.tv_sec +
+    1e-9*(t1.tv_nsec – t0.tv_nsec);
+        #+end_src
+
+        The function returns the current time in its second argument; ~tv_sec~ is the number of seconds since
+        some point in the past, and ~tv_nsec~ is the number of nanoseconds since the last whole second.
+
+        There are several hardware timers we can use in the previous code, one of which is selected by the
+        value of the ~clock_id~ variable. One of these timers is the same system or real-time clock we have used
+        already. Its ID is ~CLOCK_REALTIME~. The other two timers of interest to us are the two CPU timers:
+        ~CLOCK_PROCESS_CPUTIME_ID~ is a timer that measures the CPU time used by the current program, and
+        ~CLOCK_THREAD_CPUTIME_ID~ is a similar timer, but it measures only the time used by the calling thread.
+** Performance profiling
+        Most modern profilers use the hardware event counters that are present on all modern CPUs. These are
+        special hardware registers that can be used to track certain hardware events. An example of a hardware
+        event is executing an instruction. You can see how this can be useful for profiling: the processor
+        will do the work of counting instructions for us without any additional instrumentation or any
+        overhead. All we need to do is to read the values of the counter registers.
+*** The perf profiler
+*** Detailed profiling with perf

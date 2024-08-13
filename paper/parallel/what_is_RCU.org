@@ -1,0 +1,179 @@
+#+title: What Is RCU
+#+AUTHOR: Paul McKenney & Jonathan Walpole
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/parallel/what_is_RCU.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/parallel/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        RCU supports concurrency between a single updater and multiple readers.
+
+        [[https://docs.google.com/document/d/1X0lThx8OK0ZgLMqVoXiR4ZrGURHrXK6NyLRbeXe3Xac/edit#heading=h.gidbhbrm8o5x][ALL IN ONE]]
+* Publish-Subscribe Mechanism
+        Consider
+        #+begin_src c++
+struct foo {
+  int a;
+  int b;
+  int c;
+};
+struct foo *gp = NULL;
+
+/* . . . */
+
+p = kmalloc(sizeof(*p), GFP_KERNEL);
+p->a = 1;
+p->b = 2;
+p->c = 3;
+gp = p;
+        #+end_src
+
+        Unfortunately, there is nothing forcing the compiler and CPU to execute the last four assignment
+        statements in order. We therefore encapsulate them into a primitive ~rcu_assign_pointer()~ that has
+        publication semantics. The last four lines would then be as follows:
+        #+begin_src c++
+p->a = 1;
+p->b = 2;
+p->c = 3;
+rcu_assign_pointer(gp, p);
+        #+end_src
+
+        The ~rcu_assign_pointer()~ would *publish* the new structure, forcing both the compiler and the CPU to
+        execute the assignment to ~gp~ after the assignments to the fields referenced by ~p~.
+
+        However, it is not sufficient to only enforce ordering at the updater, as the reader must enforce
+        proper ordering as well. Consider for example the following code fragment:
+        #+begin_src c++
+p = gp;
+if (p != NULL) {
+  do_something_with(p->a, p->b, p->c);
+}
+        #+end_src
+
+        Although this code fragment might well seem immune to misordering, unfortunately, the DEC Alpha CPU
+        and value-speculation compiler optimizations can, believe it or not, cause the values of ~p->a~,
+        ~p->b~, and ~p->c~ to be fetched before the value of ~p~! This is perhaps easiest to see in the case of
+        value-speculation compiler optimizations, where the compiler guesses the value of ~p~, fetches ~p->a~,
+        ~p->b~, and ~p->c~, then fetches the actual value of ~p~ in order to check whether its guess was correct.
+        This sort of optimization is quite aggressive, perhaps insanely so, but does actually occur in the
+        context of profile-driven optimization.
+
+        The ~rcu_dereference()~ primitive uses whatever memory-barrier instructions and compiler directives are
+        required for this purpose:
+        #+begin_src c++
+rcu_read_lock();
+p = rcu_dereference(gp);
+if (p != NULL) {
+  do_something_with(p->a, p->b, p->c);
+}
+rcu_read_unlock();
+        #+end_src
+
+        The ~rcu_dereference()~ primitive can thus be thought of as *subscribing* to a given value of the
+        specified pointer, guaranteeing that subsequent dereference operations will see any initialization
+        that occurred before the corresponding publish (~rcu_assign_pointer()~) operation. The [[https://stackoverflow.com/questions/57988667/what-does-rcu-read-lock-actually-do-linux-kernel][rcu_read_lock()]]
+        and ~rcu_read_unlock()~ calls are absolutely required: they define the extent of the RCU read-side
+        critical section. However, they never spin or block, nor do they prevent the ~list_add_rcu()~ from
+        executing concurrently. In fact, in non-~CONFIG_PREEMPT~ kernels, they generate absolutely no code.
+
+        Although ~rcu_assign_pointer()~ and ~rcu_dereference()~ can in theory be used to construct any conceivable
+        RCU-protected data structure, in practice it is often better to use higher-level constructs.
+        Therefore, the ~rcu_assign_pointer()~ and ~rcu_dereference()~ primitives have been embedded in special RCU
+        variants of Linux's list-manipulation API. Linux has two variants of doubly linked list, the circular
+        struct ~list_head~ and the linear struct ~hlist_head~ /struct ~hlist_node~ pair. The former is laid out as
+        follows, where the green boxes represent the list header and the blue boxes represent the elements in
+        the list.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/29.jpg]]
+
+        Adapting the pointer-publish example for the linked list gives the following:
+        #+begin_src c++
+struct foo {
+  struct list_head list;
+  int a;
+  int b;
+  int c;
+};
+LIST_HEAD(head);
+
+/* . . . */
+
+p = kmalloc(sizeof(*p), GFP_KERNEL);
+p->a = 1;
+p->b = 2;
+p->c = 3;
+list_add_rcu(&p->list, &head);
+        #+end_src
+
+        The last line must be protected by some synchronization mechanism (most commonly some sort of lock) to
+        prevent multiple ~list_add()~ instances from executing concurrently. However, such synchronization does
+        not prevent this ~list_add()~ from executing concurrently with RCU readers.
+
+        Subscribing to an RCU-protected list is straightforward:
+
+        #+begin_src c++
+rcu_read_lock();
+list_for_each_entry_rcu(p, head, list) {
+  do_something_with(p->a, p->b, p->c);
+}
+rcu_read_unlock();
+        #+end_src
+
+        The ~list_add_rcu()~ primitive publishes an entry into the specified list, guaranteeing that the
+        corresponding ~list_for_each_entry_rcu()~ invocation will properly subscribe to this same entry.
+
+        Linux's other doubly linked list, the hlist, is a linear list, which means that it needs only one
+        pointer for the header rather than the two required for the circular list. Thus, use of hlist can
+        halve the memory consumption for the hash-bucket arrays of large hash tables.
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/30.png]]
+
+        #+begin_src c++
+struct foo {
+  struct hlist_node *list;
+  int a;
+  int b;
+  int c;
+};
+HLIST_HEAD(head);
+
+/* . . . */
+
+p = kmalloc(sizeof(*p), GFP_KERNEL);
+p->a = 1;
+p->b = 2;
+p->c = 3;
+hlist_add_head_rcu(&p->list, &head);
+        #+end_src
+
+        #+begin_src c++
+rcu_read_lock();
+hlist_for_each_entry_rcu(p, q, head, list) {
+  do_something_with(p->a, p->b, p->c);
+}
+rcu_read_unlock();
+        #+end_src
+
+
+
+* Wait For Pre-Existing RCU Readers to Complete
+        An RCU read-side critical section starts with an ~rcu_read_lock()~ primitive, and ends with a
+        corresponding ~rcu_read_unlock()~ primitive. RCU read-side critical sections can be nested, and may
+        contain pretty much any code, as long as that code does not explicitly block or sleep.
+
+
+* Maintain Multiple Versions of Recently Updated Objects
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -2007,7 +2007,7 @@
         either 1 or 2 will eventually reach \(C\).
 
         It remains to show how to maneuver processes 1 and 2 to cover the two shared variables while appearing
-        to process 3 to still be in \(R\). \wu{What we have is the three lemmas only}.
+        to process 3 to still be in \(R\) (\wu{What we have is the three lemmas only}).
 
         First, we construct execution \(\alpha_1\) by running process 1 alone from \(s\) until it first covers
         a shared variable. Then we extend \(\alpha_1\) to \(\alpha_2\) by continuing to run process 1 alone
@@ -2045,7 +2045,50 @@
         Let \(s''\) be the last idle state occurring in \(\alpha_3\). \(s''\sim_3 s_3\sim_3 s'\).
         #+END_proof
 
+        *The general case*.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Suppose \(A\) solves the mutual exclusion problem for \(n\ge 2\) processes, using only read/write
+        variables. Suppose that \(s\) is a reachable system state in which process \(i\) is in the remainder
+        region. Suppose that process \(i\) reaches \(C\) in an execution fragment starting from \(s\) that
+        involves steps of \(i\) only. Then, along the way, \(i\) must write some shared variable that is not
+        covered by any other process in \(s\).
+        #+END_lemma
 
+        #+BEGIN_proof
+        The proof is similar to that of Lemma ref:10.31. The main difference is that now we must ensure that
+        the execution fragment involving the other processes begins with a single step of each process that
+        covers a shared variable, thus overwriting that variable. This allows the other processes to eliminate
+        all traces of \(i\)'s computation.
+        #+END_proof
+
+        For any \(k\), \(1\le k\le n\), we say that one system state is *\(k\)-reachable* from another if it is
+        reachable using steps of processes \(1,\dots,k\) only.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Suppose \(A\) solves the mutual exclusion problem for \(n\ge 2\) processes, using only read/write
+        shared variables. Assume that there are exactly \(n-1\) shared variables. Let \(s\) be any reachable
+        idle system state. Suppose \(1\le k\le n-1\). Then there are two system states, \(s'\) and \(s''\),
+        each \(k\)-reachable from \(s\), satisfying the following properties:
+        1. \(k\) distinct variables are covered by processes \(1,\dots,k\) in \(s'\)
+        2. \(s''\) is an idle state
+        3. \(s'\sim_is''\) for all \(i\), \(k+1\le i\le n\)
+        #+END_lemma
+
+        #+BEGIN_proof
+        Induction on \(k\).
+
+        /Basis/: \(k=1\). We run process 1 alone from \(s\) until it first covers a shared variable. Defining
+        \(s'\) to be the resulting state and \(s''=s\) gives the needed properties.
+
+        /Inductive step/: Suppose the lemma holds for \(k\), where \(1\le k\le n-2\); we prove it for \(k+1\).
+        Using IH, we obtain a state \(t_1\) that is \(k\)-reachable from \(s\) and in which processes
+        \(1,\dots,k\) cover \(k\) distinct variables; however, \(t_1\) is indistinguishable to processes
+        \(k+1,\dots,n\) from some idle state that is also \(k\)-reachable from \(s\). Next, we let each of
+        processes \(1,\dots,k\) take one step from \(t_1\), thereby writing the variable that it covers. Then
+        we let all of \(1,\dots,k\) proceed to \(R\), resulting in a new reachable idle state \(u_1\).
+        #+END_proof
 * Q&A
         1. [[P1]]. Need think.
         2. [[P2]]
