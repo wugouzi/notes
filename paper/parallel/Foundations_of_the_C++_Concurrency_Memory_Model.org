@@ -1,0 +1,68 @@
+#+title: Foundations Of The C++ Concurrency Memory Model
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/parallel/foundation_of_c++_concurrency_memory_model.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/parallel/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+
+
+* The C++ Model Without Low-Level Atomics
+        Memory operations are viewed as operating on abstract *memory locations*. Each scalar value occupies a
+        separate memory location, except that contiguous sequences of bit-fields inside the same innermost
+        struct or class declaration are viewed as a single location.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *memory action* consists of:
+        1. The type of action; i.e., lock, unlock, atomic load, atomic store, atomic read-modify-write, load,
+           or store. All but the last two are customarily referred to as *synchronization operations*, since
+           they are used to communicate between threads. The last two are referred to as *data operations*.
+        2. A label identifying the corresponding program point.
+        3. The values read and written.
+
+        Bit-field updates can be modeled as a load of the sequence of contiguous bit-fields, followed by a
+        store to the entire sequence.
+
+        A *thread execution* is a set of memory actions, together with a partial order corresponding to the
+        sequenced-before ordering.
+
+        A *sequentially consistent* execution of a program is a set of thread executions, together with a total
+        order \(<_T\) on all the memory actions, which satisfies the constraints:
+        1. Each thread execution is internally consistent, in that it corresponds to a correct sequential
+           execution of that thread, given the values read from memory, and respects the ordering of operations implied by the sequenced-before relation.
+        2. T is consistent with the sequenced-before orders; i.e., if \(a\) is sequenced before \(b\) then \(a<_Tb\).
+        3. Each load, lock, and read-modify-write operation reads the value from the last preceding write to
+           the same location according to \(<_T\). The last operation on a given lock preceding an unlock must
+           be a lock operation performed by the same thread.
+
+        Two memory operations *conflict* if they access the same memory location, and at least one of them is a
+        store, atomic store, or atomic read-modify-write operation. In a sequentially consistent execution,
+        two memory operations from different threads form a *type 1 data race* if they conflict, at least one of
+        them is a data operation, and they are adjacent in \(<_T\) (i.e., they may be executed concurrently).
+
+        We can now specify the C++ memory model simply as:
+        * If a program (on a given input) has a sequentially consistent execution with a (type 1) data race, then its behavior is undefined.
+        * Otherwise, the program behaves (on the same input) according to one if its sequentially consistent executions.
+        #+END_definition
+
+
+* Making Trylock Efficient
+        For the remainder of this discussion, the reader may assume that a ~trylock()~ allowing spurious
+        failures is included. A successful ~trylock()~ is treated as lock(). An unsuccessful ~trylock()~ is
+        treated by the memory model as a no-op.
+
+* The Cost of Sequentially Consistent Atomics
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

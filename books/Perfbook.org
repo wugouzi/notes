@@ -15,6 +15,185 @@
 #+LATEX_HEADER:   fontsize=\footnotesize,
 #+LATEX_HEADER:   frame=single,
 #+LATEX_HEADER:   linenos}
+* Tools of the Trade
+** POSIX Multiprocessing
+** Alternatives to POSIX Operations
+** Accessing Shared Variables
+        #+CAPTION: Living Dangerously Early 1990s Style
+        #+NAME: l4.14
+        #+BEGIN_SRC c
+ptr = global_ptr;
+if (ptr != NULL && ptr < high_address)
+    do_low(ptr);
+        #+END_SRC
+
+        #+CAPTION: C Compilers Can Invent Loads
+        #+NAME: l4.15
+        #+BEGIN_SRC c
+if (global_ptr != NULL &&
+    global_ptr < high_address)
+    do_low(global_ptr);
+        #+END_SRC
+*** Shared-Variable Shenanigans
+        Given code that does plain loads and stores,the compiler is within its rights to assume that the
+        affected variables are neither accessed nor modified by any other thread. This assumption allows the
+        compiler to carry out a large number of transformations, including load tearing, store tearing, load
+        fusing, store fusing, code reordering, invented loads, invented stores, store-to-load transformations,
+        and dead- code elimination.
+
+        * *Load tearing* occurs when the compiler uses multiple load instructions for a single access.
+        * *Store tearing* occurs when the compiler uses multiple store instructions for a single access.
+        * *Load fusing* occurs when the compiler uses the result of a prior load from a given variable instead
+          of repeating the load.
+          #+CAPTION: Inviting Load Fusing
+          #+NAME: l4.16
+          #+BEGIN_SRC c
+while (!need_to_stop)
+    do_something_quickly();
+          #+END_SRC
+          #+CAPTION: C Compilers Can Fuse Loads
+          #+NAME: l4.17
+          #+BEGIN_SRC c
+if (!need_to_stop)
+    for (;;) {
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+        do_something_quickly();
+    }
+          #+END_SRC
+        * *Store fusing* can occur when the compiler notices a pair of successive stores to a given variable
+          with no intervening loads from that variable.
+          #+CAPTION: C Compilers Can Fuse Stores
+          #+NAME: l4.19
+          #+BEGIN_SRC c
+void shut_it_down(void)
+{
+    status = SHUTTING_DOWN; /* BUGGY!!! */
+    start_shutdown();
+    while (!other_task_ready) /* BUGGY!!! */
+        continue;
+    finish_shutdown();
+    status = SHUT_DOWN; /* BUGGY!!! */
+    do_something_else();
+}
+
+void work_until_shut_down(void)
+{
+    while (status != SHUTTING_DOWN) /* BUGGY!!! */
+        do_more_work();
+    other_task_ready = 1; /* BUGGY!!! */
+}
+          #+END_SRC
+        * *Code reordering*. It might seem futile to prevent the compiler from changing the order of accesses in
+          cases where the underlying hardware is free to reorder them. However, modern machines have /exact
+          exceptions/ and /exact interrupts/, meaning that any interrupt or exception will appear to have
+          happened at a specific place in the instruction stream. This means that the handler will see the
+          effect of all prior instructions, but won't see the effect of any subsequent instructions.
+        * *Invented loads* were illustrated by the code in Listings ref:l4.14 and ref:l4.15, in which the compiler
+          optimized away a temporary variable, thus loading from a shared variable more often than intended.
+          * *Invented stores*: For example, a compiler emitting code for ~work_until_shut_down()~ in Listing
+            ref:l4.19 might notice that ~other_task_ready~ is not accessed by ~do_more_work()~, and stored to on
+            line 16. If ~do_more_work()~ was a complex inline function, it might be necessary to do a register
+            spill, in which case one attractive place to use for temporary storage is ~other_task_ready~. After
+            all, there are no accesses to it, so what is the harm?
+          #+CAPTION: Inviting an Invented Store
+          #+NAME: l4.20
+          #+BEGIN_SRC c
+if (condition)
+    a = 1;
+else
+    do_a_bunch_of_stuff(&a);
+          #+END_SRC
+          #+CAPTION: Compiler Invents an Invited Store
+          #+NAME: l4.21
+          #+BEGIN_SRC c
+a = 1;
+if (!condition) {
+    a = 0;
+    do_a_bunch_of_stuff(&a);
+}
+          #+END_SRC
+          * *Store-to-load transformations* can occur when the compiler notices that a plain store might not
+            actually change the value in memory.
+            #+CAPTION: Inviting a Store-to-Load Conversion
+            #+NAME: l4.22
+            #+BEGIN_SRC c
+r1 = p;
+if (unlikely(r1))
+    do_something_with(r1);
+barrier();
+p = NULL;
+            #+END_SRC
+            #+CAPTION: Compiler Converts a Store to a Load
+            #+NAME: l4.23
+            #+BEGIN_SRC c
+r1 = p;
+if (unlikely(r1))
+    do_something_with(r1);
+barrier();
+if (p != NULL)
+    p = NULL;
+            #+END_SRC
+          * *Dead-code elimination*
+*** A Volatile Solution
+        To summarize, the ~volatile~ keyword can prevent load tearing and store tearing in cases where the loads
+        and stores are machine-sized and properly aligned. It can also prevent load fusing, store fusing,
+        invented loads, and invented stores. However, although it does prevent the compiler from reordering
+        volatile accesses with each other, it does nothing to prevent the CPU from reordering these accesses.
+        Furthermore, it does nothing to prevent either compiler or CPU from reordering non-~volatile~ accesses
+        with each other or with ~volatile~ accesses. Preventing these types of reordering requires the techniques described in the next section.
+*** Assembling the Rest of a Solution
+        #+begin_src c
+#define barrier() __asm__ __volatile__ ("" : : : "memory")
+        #+end_src
+        In the barrier() macro, the ~__asm__~ introduces the asm directive, the ~__volatile__~ prevents the
+        compiler from optimizing the asm away, the empty string specifies that no actual instructions are to
+        be emitted, and the final ~"memory"~ tells the compiler that this do-nothing asm can arbitrarily change
+        memory. In response, the compiler will avoid moving any memory references across the barrier() macro.
+        This means that the real-time- destroying loop unrolling shown in Listing ref:l4.17 can be prevented
+        by adding ~barrier()~ calls as shown on lines 2 and 4 of Listing 4.28.
+        #+LATEX: \wu{
+        ~barrier()~ is for compiler. For hardware, we need ~smp_mb~
+        #+LATEX: }
+        #+CAPTION: Preventing C Compilers From Fusing Loads
+        #+NAME: l4.28
+        #+BEGIN_SRC c
+while (!need_to_stop) {
+    barrier();
+    do_something_quickly();
+    barrier();
+}
+        #+END_SRC
+        These two lines of code prevent the compiler from pushing the load from ~need_to_stop~ into or past
+        ~do_something_quickly()~ from either direction.
+
+        However, this does nothing to prevent the CPU from reordering the references.
+        #+begin_src c
+// arch-arm/arch-arm.h
+#define smp_mb()  __asm__ __volatile__("dmb" : : : "memory")
+
+// arch-x86/arch-x86.h
+#define smp_mb() __asm__ __volatile__("mfence" : : : "memory")
+
+// arch-ppc64/arch-ppc64.h
+#define smp_mb()  __asm__ __volatile__("sync" : : : "memory")
+
+// arch-arm64/arch-arm64.h
+#define smp_mb()  __asm__ __volatile__("dmb ish" : : : "memory")
+        #+end_src
 * Deferred Processing
 ** Running Example
         The value looked up and returned will also be a simple integer, so that the data structure is as shown
@@ -349,7 +528,7 @@ static inline void hp_clear(hazard_pointer *hp)
         value of the original pointer has not changed, then the hazard pointer protects the pointed-to object,
         and in that case, line 12 returns a pointer to that object, which also indicates success to the
         caller. Otherwise, if the pointer changed between the two ~READ_ONCE()~ invocations, line 13 indicates
-        failure.
+        failure. (\wu{the second read ensures that \texttt{p} is not changed between the read and write})
 
         The ~hp_clear()~ function is even more straightforward, with an ~smp_mb()~ to force full ordering between
         the caller’s uses of the object protected by the hazard pointer and the setting of the hazard pointer
@@ -441,24 +620,238 @@ void hazptr_free_later(hazptr_head_t *n)
         if lines 37 and 38 determine that there is a hazard pointer protecting this object, lines 39–41 place
         it back onto rlist. Otherwise, line 43 frees the object.
 
-        The Pre-BSD routing example can use hazard pointers
-as shown in Listing 9.6 for data structures and route_
-lookup(), and in Listing 9.7 for route_add() and
-route_del() (route_hazptr.c). As with reference
-counting, the hazard-pointers implementation is quite sim-
-ilar to the sequential algorithm shown in Listing 9.1 on
-page 130, so only differences will be discussed.
-Starting with Listing 9.6, line 2 shows the ->hh field
-used to queue objects pending hazard-pointer free, line 6
-shows the ->re_freed field used to detect use-after-free
-bugs, and line 21 invokes hp_try_record() to attempt
-to acquire a hazard pointer. If the return value is NULL,
-line 23 returns a not-found indication to the caller. If the
-call to hp_try_record() raced with deletion, line 25
-branches back to line 18’s retry to re-traverse the list
-from the beginning. The do–while loop falls through
-when the desired element is located, but if this element
-has already been freed, line 29 terminates the program.
+        The Pre-BSD routing example can use hazard pointers as shown in Listing ref:l9.6 for data structures
+        and ~route_lookup()~, and in Listing 9.7 for ~route_add()~ and ~route_del()~ (~route_hazptr.c~). As with
+        reference counting, the hazard-pointers implementation is quite similar to the sequential algorithm
+        shown in Listing ref:l9.1, so only differences will be discussed.
+        #+NAME: l9.6
+        #+CAPTION: Hazard-Pointer Pre-BSD Routing Table Lookup
+        #+begin_src c
+struct route_entry {
+    struct hazptr_head hh;
+    struct route_entry *re_next;
+    unsigned long addr;
+    unsigned long iface;
+    int re_freed;
+};
+struct route_entry route_list;
+DEFINE_SPINLOCK(routelock);
+hazard_pointer __thread *my_hazptr;
+
+unsigned long route_lookup(unsigned long addr)
+{
+    int offset = 0;
+    struct route_entry *rep;
+    struct route_entry **repp;
+
+retry:
+    repp = &route_list.re_next;
+    do {
+        rep = hp_try_record(repp, &my_hazptr[offset]);
+        if (!rep)
+            return ULONG_MAX;
+        if ((uintptr_t)rep == HAZPTR_POISON)
+            goto retry;
+        repp = &rep->re_next;
+    } while (rep->addr != addr);
+    if (READ_ONCE(rep->re_freed))
+        abort();
+    return rep->iface;
+}
+        #+end_src
+
+        Starting with Listing ref:l9.6, line 2 shows the ~->hh~ field used to queue objects pending
+        hazard-pointer free, line 6 shows the ~->re_freed~ field used to detect use-after-free bugs, and line 21
+        invokes ~hp_try_record()~ to attempt to acquire a hazard pointer. If the return value is ~NULL~, line 23
+        returns a not-found indication to the caller. If the call to ~hp_try_record()~ raced with deletion, line
+        25 branches back to line 18’s retry to re-traverse the list from the beginning. The do–while loop
+        falls through when the desired element is located, but if this element has already been freed, line 29
+        terminates the program. Otherwise, the element’s ~->iface~ field is returned to the caller.
+
+        Note that line 21 invokes ~hp_try_record()~ rather than the easier-to-use ~hp_record()~, restarting the
+        full search upon ~hp_try_record()~ failure. And such restarting is absolutely required for correctness.
+        To see this, consider a hazard-pointer-protected linked list containing elements A, B, and C that is
+        subjected to the following sequence of events:
+        1. Thread 0 stores a hazard pointer to element B (having presumably traversed to element B from element A).
+        2. Thread 1 removes element B from the list, which sets the pointer from element B to element C to the
+           special ~HAZPTR_POISON~ value in order to mark the deletion. Because Thread 0 has a hazard pointer to
+           element B, it cannot yet be freed.
+        3. Thread 1 removes element C from the list. Because there are no hazard pointers referencing element
+           C, it is immediately freed.
+        4. Thread 0 attempts to acquire a hazard pointer to now-removed element B’s successor, but
+           ~hp_try_record()~ returns the ~HAZPTR_POISON~ value, forcing the caller to restart its traversal from
+           the beginning of the list.
+
+        Therefore, hazard-pointer readers must typically restart the full traversal in the face of a
+        concurrent deletion.
+
+        These hazard-pointer restrictions result in great benefits to readers, courtesy of the fact that the
+        hazard pointers are stored local to each CPU or thread, which in turn allows traversals to be carried
+        out without any writes to the data structures being traversed.
+
+        #+NAME: l9.7
+        #+CAPTION: Hazard-Pointer Pre-BSD Routing Table Add/Delete
+        #+begin_src c
+int route_add(unsigned long addr, unsigned long interface)
+{
+    struct route_entry *rep;
+
+    rep = malloc(sizeof(*rep));
+    if (!rep)
+        return -ENOMEM;
+    rep->addr = addr;
+    rep->iface = interface;
+    rep->re_freed = 0;
+    spin_lock(&routelock);
+    rep->re_next = route_list.re_next;
+    route_list.re_next = rep;
+    spin_unlock(&routelock);
+    return 0;
+}
+
+
+int route_del(unsigned long addr)
+{
+    struct route_entry *rep;
+    struct route_entry **repp;
+
+    spin_lock(&routelock);
+    repp = &route_list.re_next;
+    for (;;) {
+        rep = *repp;
+        if (rep == NULL)
+            break;
+        if (rep->addr == addr) {
+            ,*repp = rep->re_next;
+            rep->re_next = (struct route_entry *)HAZPTR_POISON;
+            spin_unlock(&routelock);
+            hazptr_free_later(&rep->hh);
+            return 0;
+        }
+        repp = &rep->re_next;
+    }
+    spin_unlock(&routelock);
+    return -ENOENT;
+}
+        #+end_src
+
+        #+ATTR_LATEX: :width .88\textwidth :float nil
+        #+NAME: 9.3
+        #+CAPTION: Pre-BSD Routing Table Protected by Hazard Pointers
+        [[../images/perfbook/56.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        * Figure ref:9.3 shows no sign of hyperthread-induced flattening at 224 threads. Why is that?
+
+          Modern microprocessors are complicated beasts, so signif- icant skepticism is appropriate for any
+          simple answer. That aside, the most likely reason is the full memory barriers required by
+          hazard-pointers readers. Any delays resulting from those memory barriers would make time available
+          to the other hardware thread sharing the core, resulting in greater scalability at the expense of
+          per-hardware-thread performance.
+        * [[cite:&10.1145/2483852.2483867]] shows that hazard pointers have near-ideal performance. Whatever
+          happened in Figure ref:9.3?
+        #+END_remark
+** Sequence Locks
+        The key component of sequence locking is the sequence number, which has an even value in the absence
+        of updaters and an odd value if there is an update in progress. Readers can then snapshot the value
+        before and after each access. If either snapshot has an odd value, or if the two snapshots differ,
+        there has been a concurrent update, and the reader must discard the results of the access and then
+        retry it. Readers therefore use the ~read_seqbegin()~ and ~read_seqretry()~ functions shown in Listing ref:l9.8
+        when accessing data protected by a sequence lock. Writers must increment the value before and after
+        each update, and only one writer is permitted at a given time. Writers therefore use the
+        ~write_seqlock()~ and ~write_sequnlock()~ functions shown in Listing ref:l9.9 when updating data protected
+        by a sequence lock.
+
+        #+NAME: l9.8
+        #+CAPTION: Sequence-Locking Reader
+        #+begin_src c
+do {
+    seq = read_seqbegin(&test_seqlock);
+    /* read-side access. */
+} while (read_seqretry(&test_seqlock, seq));
+        #+end_src
+
+        #+NAME: l9.9
+        #+CAPTION: Sequence-Locking Writer
+        #+begin_src c
+write_seqlock(&test_seqlock);
+/* Update */
+write_sequnlock(&test_seqlock);
+        #+end_src
+
+        #+NAME: l9.10
+        #+CAPTION: Sequence-Locking Implementation
+        #+begin_src c
+typedef struct {
+    unsigned long seq;
+    spinlock_t lock;
+} seqlock_t;
+
+static inline void seqlock_init(seqlock_t *slp)
+{
+    slp->seq = 0;
+    spin_lock_init(&slp->lock);
+}
+
+static inline unsigned long read_seqbegin(seqlock_t *slp)
+{
+    unsigned long s;
+
+    s = READ_ONCE(slp->seq);
+    smp_mb();
+    return s & ~0x1UL;
+}
+
+static inline int read_seqretry(seqlock_t *slp,
+                                unsigned long oldseq)
+{
+    unsigned long s;
+
+    smp_mb();
+    s = READ_ONCE(slp->seq);
+    return s != oldseq;
+}
+
+
+static inline void write_seqlock(seqlock_t *slp)
+{
+    spin_lock(&slp->lock);
+    ++slp->seq;
+    smp_mb();
+}
+static inline void write_sequnlock(seqlock_t *slp)
+{
+    smp_mb();
+    ++slp->seq;
+    spin_unlock(&slp->lock);
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Why not have ~read_seqbegin()~ in ref:l9.10 check for the low-order bit being set, and retry internally,
+        rather than allowing a doomed read to start?
+
+        That would be a legitimate implementation. However, if the workload is read-mostly, it would likely
+        increase the overhead of the common-case successful read, which could be counter-productive. However,
+        given a sufficiently large fraction of updates and sufficiently high-overhead readers, having the
+        check internal to ~read_seqbegin()~ might be preferable
+        #+END_remark
+
+        Line 17 orders this snapshot before the caller's critical section. Line 26 orders the caller's prior
+        critical section before line 27's fetch.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        * Why is the ~smp_mb()~ on line 26 of Listing ref:l9.10 needed?
+
+          If it was omitted, both the compiler and the CPU would be within their rights to move the critical
+          section Preceding the call to ~read_seqretry()~ down below this function. This would prevent the
+          sequence lock from protecting the critical section. The ~smp_mb()~ primitive prevents such reordering.
+        * Can’t weaker memory barriers be used in the code in Listing ref:l9.10?
+
+
+        #+END_remark
 * Appendices :ignore:
 #+LATEX: \appendix
 ** Why Memory Barriers
