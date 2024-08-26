@@ -259,6 +259,7 @@ int route_del(unsigned long addr)
 
         Listing ref:l9.1 (~route_seq.c~) shows a simple single-threaded implementation corresponding to Figure ref:9.1.
 ** Reference Counting
+        <<c9.2>>
         #+NAME: l9.2
         #+CAPTION: Reference-Counted Pre-BSD Routing Table Lookup (BUGGY)
         #+begin_src c
@@ -425,6 +426,7 @@ int route_del(unsigned long addr)
         3. Thread A continues execution of ~route_lookup()~. Its rep pointer is non-~NULL~, but line 35 sees that
            its ~->re_freed~ field is non-zero, so line 36 invokes ~abort()~
 ** Hazard Pointers
+        <<c9.3>>
         One way of avoiding problems with concurrent reference counting is to implement the reference counters
         inside out, that is, rather than incrementing an integer stored in the data element, instead store a
         pointer to that data element in per-CPU (or per-thread) lists. Each element of these lists is called a
@@ -753,6 +755,7 @@ int route_del(unsigned long addr)
           happened in Figure ref:9.3?
         #+END_remark
 ** Sequence Locks
+        <<c9.4>>
         The key component of sequence locking is the sequence number, which has an even value in the absence
         of updaters and an odd value if there is an update in progress. Readers can then snapshot the value
         before and after each access. If either snapshot has an odd value, or if the two snapshots differ,
@@ -849,9 +852,337 @@ static inline void write_sequnlock(seqlock_t *slp)
           section Preceding the call to ~read_seqretry()~ down below this function. This would prevent the
           sequence lock from protecting the critical section. The ~smp_mb()~ primitive prevents such reordering.
         * Can’t weaker memory barriers be used in the code in Listing ref:l9.10?
+        * Why isn’t seq on line 2 of Listing ref:l9.10 unsigned rather than ~unsigned long~? After all, if
+          ~unsigned~ is good enough for the Linux kernel, shouldn’t it be good enough for everyone?
 
-
+          Overflow issue, 32 bit can be easily overflowed
         #+END_remark
+
+        #+CAPTION: Sequence-Locked Pre-BSD Routing Table Lookup (BUGGY)
+        #+NAME: l9.11
+        #+BEGIN_SRC c
+struct route_entry {
+    struct route_entry *re_next;
+    unsigned long addr;
+    unsigned long iface;
+    int re_freed;
+};
+
+struct route_entry route_list;
+DEFINE_SEQ_LOCK(sl);
+
+unsigned long route_lookup(unsigned long addr)
+{
+    struct route_entry *rep;
+    struct route_entry **repp;
+    unsigned long ret;
+    unsigned long s;
+
+retry:
+    s = read_seqbegin(&sl);
+    repp = &route_list.re_next;
+    do {
+        rep = READ_ONCE(*repp);
+        if (rep == NULL) {
+            if (read_seqretry(&sl, s))
+                goto retry;
+            return ULONG_MAX;
+        }
+        repp = &rep->re_next;
+    } while (rep->addr != addr);
+    if (READ_ONCE(rep->re_freed))
+        abort();
+    ret = rep->iface;
+    if (read_seqretry(&sl, s))
+        goto retry;
+    return ret;
+}
+        #+END_SRC
+
+        It suffers use-after-free failures. The problem is that the reader might encounter a segmentation
+        violation due to accessing an already-freed structure before ~read_seqretry()~ has a chance to warn of
+        the concurrent update.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Can this bug be fixed? In other words, can you use sequence locks as the only synchronization
+        mechanism protecting a linked list supporting concurrent addition, deletion, and lookup?
+
+        One trivial way of accomplishing this is to surround all accesses, including the read-only accesses,
+        with ~write_ seqlock()~ and ~write_sequnlock()~. Of course, this solution also prohibits all read-side
+        parallelism, resulting in massive lock contention, and furthermore could just as easily be implemented using
+        simple locking.
+
+        If you do come up with a solution that uses ~read_ seqbegin()~ and ~read_seqretry()~ to protect read-side
+        accesses, make sure that you correctly handle the following sequence of events:
+        1. CPU 0 is traversing the linked list, and picks up a pointer to list element A.
+        2. CPU 1 removes element A from the list and frees it.
+        3. CPU 2 allocates an unrelated data structure, and gets the memory formerly occupied by element A. In
+           this unrelated data structure, the memory previously used for element A’s ->next pointer is now
+           occupied by a floating-point number.
+        4. CPU 0 picks up what used to be element A’s -> next pointer, gets random bits, and therefore gets a
+           segmentation fault.
+
+        One way to protect against this sort of problem requires use of “type-safe memory”. Roughly similar
+        solutions are possible using the hazard pointers. But in either case, you would be using some other
+        synchronization mechanism in addition to sequence locks!
+        #+END_remark
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Pre-BSD Routing Table Protected by Sequence Locking
+        [[../images/perfbook/5.png]]
+** Read-Copy Update (RCU)
+        <<c9.5>>
+        All of the mechanisms discussed in the preceding sections used one of a number of approaches to defer
+        specific actions until they may be carried out safely. The reference counters discussed in Section ref:c9.2
+        use explicit counters to defer actions that could disturb readers, which results in read-side
+        contention and thus poor scalability. The hazard pointers covered by Section ref:c9.3 uses implicit
+        counters in the guise of per-thread lists of pointer. This avoids read-side contention, but requires
+        readers to do stores and conditional branches, as well as either full memory barriers in read-side
+        primitives or real-time-unfriendly inter-processor interrupts in update-side primitives. The sequence
+        lock presented in Section ref:c9.4 also avoids read-side contention, but does not protect pointer
+        traversals and, like hazard pointers, requires either full memory barriers in read-side primitives, or
+        inter-processor interrupts in update-side primitives.
+*** Introduction to RCU
+        To minimize implementability concerns, we focus on a minimal data structure, which consists of a
+        single global pointer that is either ~NULL~ or references a single structure.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 9.6
+        #+CAPTION: Insertion With Concurrent Readers
+        [[../images/perfbook/6.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 9.7
+        #+CAPTION: Insertion With Concurrent Readers
+        [[../images/perfbook/7.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        * Why does Figure ref:9.7 use ~smp_store_release()~ given that it is storing a ~NULL~ pointer? Wouldn’t
+          ~WRITE_ONCE()~ work just as well in this case, given that there is no structure initialization to
+          order against the store of the ~NULL~ pointer?
+
+          Yes, it would.
+
+          Because a ~NULL~ pointer is being assigned, there is nothing to order against, so there is no need for
+          ~smp_store_ release()~. In contrast, when assigning a non-~NULL~ pointer, it is necessary to use
+          ~smp_store_release()~ in order to ensure that initialization of the pointed-to structure is carried
+          out before assignment of the pointer.
+
+          In short, ~WRITE_ONCE()~ would work, and would save a little bit of CPU time on some architectures.
+          However, as we will see, software-engineering concerns will motivate use of a special
+          ~rcu_assign_pointer()~ that is quite similar to ~smp_store_release()~.
+        * Readers running concurrently with each other and with the procedure outlined in Figure ref:9.7 can
+          disagree on the value of ~gptr~. Isn’t that just a wee bit problematic???
+
+          Not necessarily.
+
+          As hinted at in Sections 3.2.3 and 3.3, speed-of-light delays mean that a computer’s data is always
+          stale com- pared to whatever external reality that data is intended to model.
+
+          Real-world algorithms therefore absolutely must tolerate inconsistancies between external reality
+          and the in-computer data reflecting that reality. Many of those algorithms are also able to tolerate
+          some degree of inconsistency within the in-computer data. Section 10.3.4 discusses this point in
+          more detail.
+
+          Please note that this need to tolerate inconsistent and stale data is not limited to RCU. It also
+          applies to reference counting, hazard pointers, sequence locks, and even to some locking use cases.
+          For example, if you compute some quantity while holding a lock, but use that quantity after
+          releasing that lock, you might well be using stale data. After all, the data that quantity is based
+          on might change arbitrarily as soon as the lock is released.
+
+          So yes, RCU readers can see stale and inconsistent data, but no, this is not necessarily
+          problematic. And, when needed, there are RCU usage patterns that avoid both staleness and
+          inconsistency
+        #+END_remark
+
+        But how can we tell when all of the pre-existing readers have in fact completed?
+**** Core RCU API
+        The ~rcu_read_lock()~ and ~rcu_read_unlock()~ functions delimit RCU read-side critical sections. These may
+        be nested, so that one ~rcu_read_lock()~ – ~rcu_read_unlock()~ pair can be enclosed within another. In
+        this case, the nested set of RCU read-side critical sections act as one large critical section
+        covering the full extent of the nested set.
+
+        The third read-side API member, ~rcu_dereference()~, fetches an RCU-protected pointer.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        What is an RCU-protected pointer?
+
+        A pointer to RCU-protected data. RCU-protected data is in turn a block of dynamically allocated memory
+        whose freeing will be *deferred* such that an RCU grace period will elapse between the time that there
+        were no longer any RCU-reader-accessible pointers to that block and the time that that block is freed.
+        This ensures that no RCU readers will have access to that block at the time that it is freed.
+
+        RCU-protected pointers must be handled carefully. For example, any reader that intends to dereference
+        an RCU-protected pointer must use ~rcu_dereference()~ (or stronger) to load that pointer. In addition,
+        any updater must use ~rcu_assign_pointer()~ (or stronger) to store to that pointer.
+        #+END_remark
+
+        The ~synchronize_rcu()~ function implements the “wait for readers” operation from Figure ref:9.7. The
+        ~call_rcu()~ function is the asynchronous counterpart of ~synchronize_rcu()~ by invoking the specified
+        function after all pre-existing RCU readers have completed. Finally, the ~rcu_assign_pointer()~ macro is
+        used to update an RCU-protected pointer.
+
+        #+CAPTION: Core RCU API
+        |----------+----------------------+------------------------------------------------------|
+        |          | Primitive            | Purpose                                              |
+        |----------+----------------------+------------------------------------------------------|
+        | Readers  | ~rcu_read_lock()~      | Start an RCU read-side critical section.             |
+        |          | ~rcu_read_unlock()~    | End an RCU read-side critical section.               |
+        |          | ~rcu_dereference()~    | Safely load an RCU-protected pointer.                |
+        |----------+----------------------+------------------------------------------------------|
+        | Updaters | ~synchronize_rcu()~    | Wait for all pre-existing RCU read-side critical     |
+        |          |                      | sections to complete.                                |
+        |          | ~call_rcu()~           | Invoke the specified function after all pre-existing |
+        |          |                      | RCU read-side critical sections complete.            |
+        |          | ~rcu_assign_pointer()~ | Safely update an RCU-protected pointer.              |
+        |----------+----------------------+------------------------------------------------------|
+*** Waiting for Readers
+        It is tempting to base the reader-waiting functionality of ~synchronize_rcu()~ and ~call_rcu()~ on a
+        reference counter updated by ~rcu_read_lock()~ and ~rcu_read_unlock()~, but Figure 5.1 in Chapter 5 shows
+        that concurrent reference counting results in extreme overhead.
+
+        A second approach observes that memory synchronization is expensive, and therefore uses registers
+        instead, namely each CPU’s or thread’s program counter (PC), thus imposing no overhead on readers, at
+        least in the absence of concurrent updates. The updater polls each relevant PC, and if that PC is not
+        within read-side code, then the corresponding CPU or thread is within a quiescent state, in turn
+        signaling the completion of any reader that might have access to the newly removed data element. Once
+        all CPU’s or thread’s PCs have been observed to be outside of any reader, the grace period has
+        completed. Please note that this approach poses some serious challenges, including memory ordering,
+        functions that are sometimes invoked from readers, and ever-exciting code-motion optimizations.
+        Nevertheless, this approach is said to be used in production
+
+        The sixth approach is stopping one CPU or thread at a time. Furthermore, numerous applications already
+        have states (termed *quiescent states*) that can be reached only after all pre-existing readers are done.
+        Once all CPUs and/or threads have passed through a quiescent state, the system is said to have
+        completed a *grace period*, at which point all readers in existence at the start of that grace period
+        are guaranteed to have completed. As a result, it is also guaranteed to be safe to free any removed
+        data items that were removed prior to the start of that grace period.
+
+        Within a non-preemptive operating-system kernel, for context switch to be a valid quiescent state,
+        readers must be prohibited from blocking while referencing a given instance data structure obtained
+        via the gptr pointer shown in Figures ref:9.6 and ref:9.7.
+
+        Again, this same constraint is imposed on reader threads dereferencing ~gptr~: Such threads are not
+        allowed to block until after they are done using the pointed-to data item.
+
+        <<P1>>
+
+        This approach is termed *quiescent-state-based reclamation* (QSBR). A QSBR schematic is shown in Figure
+        9.8, with time advancing from the top of the figure to the bottom.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 9.8
+        #+CAPTION: QSBR: Waiting for Pre-Existing Readers
+        [[../images/perfbook/8.png]]
+      The cyan-colored boxes depict RCU read-side critical sections, each of which begins with ~rcu_read_lock()~
+      and ends with ~rcu_read_unlock()~. CPU 1 does the ~WRITE_ONCE()~ that removes the current data item
+      (presumably having previously read the pointer value and availed itself of appropriate synchronization),
+      then waits for readers. This wait operation results in an immediate context switch, which is a quiescent
+      state (denoted by the pink circle), which in turn means that all prior reads on CPU 1 have completed.
+      Next, CPU 2 does a context switch, so that all readers on CPUs 1 and 2 are now known to have completed.
+      Finally, CPU 3 does a context switch. At this point, all readers throughout the entire system are known
+      to have completed, so the grace period ends, permitting ~synchronize_rcu()~ to return to its caller, in
+      turn permitting CPU 1 to free the old data item.
+**** Toy Implementation
+        Toy non-preemptive Linux-kernel implementation:
+        #+begin_src c
+void synchronize_rcu(void)
+{
+    int cpu;
+
+    for_each_online_cpu(cpu)
+        sched_setaffinity(current->pid, cpumask_of(cpu));
+}
+        #+end_src
+        The ~for_each_online_cpu()~ primitive iterates over all CPUs, and the ~sched_setaffinity()~ function
+        causes the current thread to execute on the specified CPU, which forces the destination CPU to execute
+        a context switch.
+
+        #+CAPTION: Insertion and Deletion With Concurrent Readers
+        #+NAME: l9.13
+        #+BEGIN_SRC c
+struct route *gptr;
+
+int access_route(int (*f)(struct route *rp))
+{
+    int ret = -1;
+    struct route *rp;
+
+    rcu_read_lock();
+    rp = rcu_dereference(gptr);
+    if (rp)
+        ret = f(rp);
+    rcu_read_unlock();
+    return ret;
+}
+
+struct route *ins_route(struct route *rp)
+{
+    struct route *old_rp;
+
+    spin_lock(&route_lock);
+    old_rp = gptr;
+    rcu_assign_pointer(gptr, rp);
+    spin_unlock(&route_lock);
+    return old_rp;
+}
+
+int del_route(void)
+{
+    struct route *old_rp;
+
+    spin_lock(&route_lock);
+    old_rp = gptr;
+    RCU_INIT_POINTER(gptr, NULL);
+    spin_unlock(&route_lock);
+    synchronize_rcu();
+    free(old_rp);
+    return !!old_rp;
+}
+        #+END_SRC
+
+        Listing ref:l9.13 shows how reading, insertion and deletion can be implemented.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        * What is the point of ~rcu_read_lock()~ and ~rcu_read_unlock()~ in Listing ref:l9.13? Why not just let
+          the quiescent states speak for themselves?
+
+          Recall that readers are not permitted to pass through a quiescent state. For example, within the
+          Linux kernel, RCU readers are not permitted to execute a context switch. Use of ~rcu_read_lock()~ and
+          ~rcu_read_unlock()~ enables debug checks for improperly placed quiescent states, making it easy to
+          find bugs that would otherwise be difficult to find, intermittent, and quite destructive.
+        * What is the point of ~rcu_dereference()~, ~rcu_assign_pointer()~ and ~RCU_INIT_POINTER()~ in Listing
+          ref:l9.13? Why not just use ~READ_ONCE()~, ~smp_store_release()~, and ~WRITE_ONCE()~, respectively?
+
+          The RCU-specific APIs do have similar semantics to the suggested replacements, but also enable
+          static-analysis debugging checks that complain if an RCU-specific API is invoked on a non-RCU
+          pointer and vice versa.
+        #+END_remark
+**** RCU Properties
+        A key RCU property is that reads need not wait for updates.
+*** RCU Fundamentals
+**** Publish-Subscribe Mechanism
+        Publication is carried out by ~rcu_assign_pointer()~, met by the C11 store-release operation.
+
+        Note that if concurrent updates are required, some sort of synchronization mechanism will be required
+        to mediate among multiple concurrent ~rcu_assign_pointer()~ calls on the same pointer.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Wouldn’t use of data ownership for RCU updaters mean that the updates could use exactly the same
+        sequence of instructions as would the corresponding single-threaded code?
+
+        Sometimes, for example, on TSO systems such as x86 or the IBM mainframe where a store-release
+        operation emits a single store instruction. However, weakly ordered systems must also emit a memory
+        barrier or perhaps a store-release instruction. In addition, removing data requires quite a bit of
+        additional work because it is necessary to wait for pre-existing readers before freeing the removed
+        data.
+        #+END_remark
+
+        Subscription is carried out by ~rcu_dereference()~, which orders the subscription operation’s load from
+        the pointer is before the dereference.
 * Appendices :ignore:
 #+LATEX: \appendix
 ** Why Memory Barriers
@@ -903,3 +1234,5 @@ static inline void write_sequnlock(seqlock_t *slp)
 **** MESI States
     MESI stands for "modified", "exclusive", "shared", and "invalid", the four states a given cache
     line can take on using this protocol.
+* Problems
+        1. [[P1]]: don't quite understand the words about non-preemptive kernel

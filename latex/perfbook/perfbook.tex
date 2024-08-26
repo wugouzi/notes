@@ -1,4 +1,4 @@
-% Created 2024-08-19 Mon 20:21
+% Created 2024-08-22 Thu 14:01
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{hyperref}
@@ -43,13 +43,13 @@ linenos}
 \tableofcontents
 
 \section{Tools of the Trade}
-\label{sec:org044927f}
+\label{sec:org3bfd19b}
 \subsection{POSIX Multiprocessing}
-\label{sec:org88b8fd0}
+\label{sec:org24bb7d1}
 \subsection{Alternatives to POSIX Operations}
-\label{sec:org4a6be65}
+\label{sec:org72ed6ef}
 \subsection{Accessing Shared Variables}
-\label{sec:org436d6c4}
+\label{sec:org89e5972}
 \begin{listing}[htbp]
 \begin{minted}[]{c}
 ptr = global_ptr;
@@ -68,7 +68,7 @@ if (global_ptr != NULL &&
 \caption{\label{l4.15}C Compilers Can Invent Loads}
 \end{listing}
 \subsubsection{Shared-Variable Shenanigans}
-\label{sec:org4e4d4fa}
+\label{sec:orgb1549c2}
 Given code that does plain loads and stores,the compiler is within its rights to assume that the
 affected variables are neither accessed nor modified by any other thread. This assumption allows the
 compiler to carry out a large number of transformations, including load tearing, store tearing, load
@@ -196,7 +196,7 @@ if (p != NULL)
 \end{itemize}
 \end{itemize}
 \subsubsection{A Volatile Solution}
-\label{sec:org9874020}
+\label{sec:orga5bce17}
 To summarize, the \texttt{volatile} keyword can prevent load tearing and store tearing in cases where the loads
 and stores are machine-sized and properly aligned. It can also prevent load fusing, store fusing,
 invented loads, and invented stores. However, although it does prevent the compiler from reordering
@@ -204,7 +204,7 @@ volatile accesses with each other, it does nothing to prevent the CPU from reord
 Furthermore, it does nothing to prevent either compiler or CPU from reordering non-\texttt{volatile} accesses
 with each other or with \texttt{volatile} accesses. Preventing these types of reordering requires the techniques described in the next section.
 \subsubsection{Assembling the Rest of a Solution}
-\label{sec:orgd3413f7}
+\label{sec:org41560d4}
 \begin{minted}[]{c}
 #define barrier() __asm__ __volatile__ ("" : : : "memory")
 \end{minted}
@@ -214,6 +214,9 @@ be emitted, and the final \texttt{"memory"} tells the compiler that this do-noth
 memory. In response, the compiler will avoid moving any memory references across the barrier() macro.
 This means that the real-time- destroying loop unrolling shown in Listing \ref{l4.17} can be prevented
 by adding \texttt{barrier()} calls as shown on lines 2 and 4 of Listing 4.28.
+\wu{
+\texttt{barrier()} is for compiler. For hardware, we need \texttt{smp\_mb}
+}
 \begin{listing}[htbp]
 \begin{minted}[]{c}
 while (!need_to_stop) {
@@ -226,10 +229,25 @@ while (!need_to_stop) {
 \end{listing}
 These two lines of code prevent the compiler from pushing the load from \texttt{need\_to\_stop} into or past
 \texttt{do\_something\_quickly()} from either direction.
+
+However, this does nothing to prevent the CPU from reordering the references.
+\begin{minted}[]{c}
+// arch-arm/arch-arm.h
+#define smp_mb()  __asm__ __volatile__("dmb" : : : "memory")
+
+// arch-x86/arch-x86.h
+#define smp_mb() __asm__ __volatile__("mfence" : : : "memory")
+
+// arch-ppc64/arch-ppc64.h
+#define smp_mb()  __asm__ __volatile__("sync" : : : "memory")
+
+// arch-arm64/arch-arm64.h
+#define smp_mb()  __asm__ __volatile__("dmb ish" : : : "memory")
+\end{minted}
 \section{Deferred Processing}
-\label{sec:orgf95fa00}
+\label{sec:org1b8666b}
 \subsection{Running Example}
-\label{sec:org2841363}
+\label{sec:orga08b56c}
 The value looked up and returned will also be a simple integer, so that the data structure is as shown
 in Figure \ref{9.1}, which directs packets with address 42 to interface 1, address 56 to interface 3,
 and address 17 to interface 7.
@@ -294,7 +312,8 @@ int route_del(unsigned long addr)
 
 Listing \ref{l9.1} (\texttt{route\_seq.c}) shows a simple single-threaded implementation corresponding to Figure \ref{9.1}.
 \subsection{Reference Counting}
-\label{sec:orgd6f7984}
+\label{sec:org2421229}
+\label{c9.2}
 \begin{listing}[htbp]
 \begin{minted}[]{c}
 struct route_entry {
@@ -462,7 +481,8 @@ invokes \texttt{re\_free()} to set the \texttt{->re\_freed} field and to free th
 its \texttt{->re\_freed} field is non-zero, so line 36 invokes \texttt{abort()}
 \end{enumerate}
 \subsection{Hazard Pointers}
-\label{sec:org0e13213}
+\label{sec:orgeb3ee58}
+\label{c9.3}
 One way of avoiding problems with concurrent reference counting is to implement the reference counters
 inside out, that is, rather than incrementing an integer stored in the data element, instead store a
 pointer to that data element in per-CPU (or per-thread) lists. Each element of these lists is called a
@@ -797,7 +817,8 @@ happened in Figure \ref{9.3}?
 \end{itemize}
 \end{remark}
 \subsection{Sequence Locks}
-\label{sec:orgbc237c4}
+\label{sec:org7468933}
+\label{c9.4}
 The key component of sequence locking is the sequence number, which has an even value in the absence
 of updaters and an odd value if there is an update in progress. Readers can then snapshot the value
 before and after each access. If either snapshot has an odd value, or if the two snapshots differ,
@@ -885,13 +906,173 @@ increase the overhead of the common-case successful read, which could be counter
 given a sufficiently large fraction of updates and sufficiently high-overhead readers, having the
 check internal to \texttt{read\_seqbegin()} might be preferable
 \end{remark}
+
+Line 17 orders this snapshot before the caller's critical section. Line 26 orders the caller's prior
+critical section before line 27's fetch.
+\begin{remark}[]
+\begin{itemize}
+\item Why is the \texttt{smp\_mb()} on line 26 of Listing \ref{l9.10} needed?
+
+If it was omitted, both the compiler and the CPU would be within their rights to move the critical
+section Preceding the call to \texttt{read\_seqretry()} down below this function. This would prevent the
+sequence lock from protecting the critical section. The \texttt{smp\_mb()} primitive prevents such reordering.
+\item Can’t weaker memory barriers be used in the code in Listing \ref{l9.10}?
+\item Why isn’t seq on line 2 of Listing \ref{l9.10} unsigned rather than \texttt{unsigned long}? After all, if
+\texttt{unsigned} is good enough for the Linux kernel, shouldn’t it be good enough for everyone?
+
+Overflow issue, 32 bit can be easily overflowed
+\end{itemize}
+\end{remark}
+
+\begin{listing}[htbp]
+\begin{minted}[]{c}
+struct route_entry {
+    struct route_entry *re_next;
+    unsigned long addr;
+    unsigned long iface;
+    int re_freed;
+};
+
+struct route_entry route_list;
+DEFINE_SEQ_LOCK(sl);
+
+unsigned long route_lookup(unsigned long addr)
+{
+    struct route_entry *rep;
+    struct route_entry **repp;
+    unsigned long ret;
+    unsigned long s;
+
+retry:
+    s = read_seqbegin(&sl);
+    repp = &route_list.re_next;
+    do {
+        rep = READ_ONCE(*repp);
+        if (rep == NULL) {
+            if (read_seqretry(&sl, s))
+                goto retry;
+            return ULONG_MAX;
+        }
+        repp = &rep->re_next;
+    } while (rep->addr != addr);
+    if (READ_ONCE(rep->re_freed))
+        abort();
+    ret = rep->iface;
+    if (read_seqretry(&sl, s))
+        goto retry;
+    return ret;
+}
+\end{minted}
+\caption{\label{l9.11}Sequence-Locked Pre-BSD Routing Table Lookup (BUGGY)}
+\end{listing}
+
+It suffers use-after-free failures. The problem is that the reader might encounter a segmentation
+violation due to accessing an already-freed structure before \texttt{read\_seqretry()} has a chance to warn of
+the concurrent update.
+
+\begin{remark}[]
+Can this bug be fixed? In other words, can you use sequence locks as the only synchronization
+mechanism protecting a linked list supporting concurrent addition, deletion, and lookup?
+
+One trivial way of accomplishing this is to surround all accesses, including the read-only accesses,
+with \texttt{write\_ seqlock()} and \texttt{write\_sequnlock()}. Of course, this solution also prohibits all read-side
+parallelism, resulting in massive lock contention, and furthermore could just as easily be implemented using
+simple locking.
+
+If you do come up with a solution that uses \texttt{read\_ seqbegin()} and \texttt{read\_seqretry()} to protect read-side
+accesses, make sure that you correctly handle the following sequence of events:
+\begin{enumerate}
+\item CPU 0 is traversing the linked list, and picks up a pointer to list element A.
+\item CPU 1 removes element A from the list and frees it.
+\item CPU 2 allocates an unrelated data structure, and gets the memory formerly occupied by element A. In
+this unrelated data structure, the memory previously used for element A’s ->next pointer is now
+occupied by a floating-point number.
+\item CPU 0 picks up what used to be element A’s -> next pointer, gets random bits, and therefore gets a
+segmentation fault.
+\end{enumerate}
+
+One way to protect against this sort of problem requires use of “type-safe memory”. Roughly similar
+solutions are possible using the hazard pointers. But in either case, you would be using some other
+synchronization mechanism in addition to sequence locks!
+\end{remark}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/perfbook/5.png}
+\captionof{figure}{\label{}Pre-BSD Routing Table Protected by Sequence Locking}
+\end{center}
+\subsection{Read-Copy Update (RCU)}
+\label{sec:org6b5648c}
+\label{c9.5}
+All of the mechanisms discussed in the preceding sections used one of a number of approaches to defer
+specific actions until they may be carried out safely. The reference counters discussed in Section \ref{c9.2}
+use explicit counters to defer actions that could disturb readers, which results in read-side
+contention and thus poor scalability. The hazard pointers covered by Section \ref{c9.3} uses implicit
+counters in the guise of per-thread lists of pointer. This avoids read-side contention, but requires
+readers to do stores and conditional branches, as well as either full memory barriers in read-side
+primitives or real-time-unfriendly inter-processor interrupts in update-side primitives. The sequence
+lock presented in Section \ref{c9.4} also avoids read-side contention, but does not protect pointer
+traversals and, like hazard pointers, requires either full memory barriers in read-side primitives, or
+inter-processor interrupts in update-side primitives.
+\subsubsection{Introduction to RCU}
+\label{sec:org5f4a78d}
+To minimize implementability concerns, we focus on a minimal data structure, which consists of a
+single global pointer that is either \texttt{NULL} or references a single structure.
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/perfbook/6.png}
+\captionof{figure}{\label{9.6}Insertion With Concurrent Readers}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/perfbook/7.png}
+\captionof{figure}{\label{9.7}Insertion With Concurrent Readers}
+\end{center}
+
+\begin{remark}[]
+\begin{itemize}
+\item Why does Figure \ref{9.7} use \texttt{smp\_store\_release()} given that it is storing a \texttt{NULL} pointer? Wouldn’t
+\texttt{WRITE\_ONCE()} work just as well in this case, given that there is no structure initialization to
+order against the store of the \texttt{NULL} pointer?
+
+Yes, it would.
+
+Because a \texttt{NULL} pointer is being assigned, there is nothing to order against, so there is no need for
+\texttt{smp\_store\_ release()}. In contrast, when assigning a non-\texttt{NULL} pointer, it is necessary to use
+\texttt{smp\_store\_release()} in order to ensure that initialization of the pointed-to structure is carried
+out before assignment of the pointer.
+
+In short, \texttt{WRITE\_ONCE()} would work, and would save a little bit of CPU time on some architectures.
+However, as we will see, software-engineering concerns will motivate use of a special
+\texttt{rcu\_assign\_pointer()} that is quite similar to \texttt{smp\_store\_release()}.
+\item Readers running concurrently with each other and with the procedure outlined in Figure \ref{9.7} can
+disagree on the value of \texttt{gptr}. Isn’t that just a wee bit problematic???
+
+Not necessarily.
+
+As hinted at in Sections 3.2.3 and 3.3, speed-of-light delays mean that a computer’s data is always stale com- pared to whatever external reality that data is intended to model.
+
+Real-world algorithms therefore absolutely must tolerate inconsistancies between external reality
+and the in-computer data reflecting that reality. Many of those algorithms are also able to tolerate
+some degree of inconsistency within the in-computer data. Section 10.3.4 discusses this point in
+more detail.
+
+Please note that this need to tolerate inconsistent and stale data is not limited to RCU. It also
+applies to reference counting, hazard pointers, sequence locks, and even to some locking use cases.
+For example, if you compute some quantity while holding a lock, but use that quantity after
+releasing that lock, you might well be using stale data. After all, the data that quantity is based
+on might change arbitrarily as soon as the lock is released.
+
+So yes, RCU readers can see stale and inconsistent data, but no, this is not necessarily
+problematic. And, when needed, there are RCU usage patterns that avoid both staleness and
+inconsistency
+\end{itemize}
+\end{remark}
 \section{Appendices\hfill{}\textsc{ignore}}
-\label{sec:org1830971}
+\label{sec:org109ef1f}
 \appendix
 \subsection{Why Memory Barriers}
-\label{sec:org4c393e9}
+\label{sec:orgd9e569f}
 \subsubsection{Cache Structure}
-\label{sec:org54976bb}
+\label{sec:org210a0d8}
 \begin{center}
 \includegraphics[width=.7\textwidth]{../images/perfbook/1.png}
 \captionof{figure}{\label{}Modern Computer System Cache Structure}
@@ -936,10 +1117,10 @@ With all this fetching, invalidating, and writing, it is easy to imagine data be
 (perhaps worse) different CPUs having conflicting values for the same data item in their
 respective caches.
 \subsubsection{Cache-Coherence Protocols}
-\label{sec:org89f351f}
+\label{sec:orgf9912ce}
 \begin{enumerate}
 \item MESI States
-\label{sec:orgccab1b7}
+\label{sec:org6f3faef}
 MESI stands for ``modified'', ``exclusive'', ``shared'', and ``invalid'', the four states a given cache
 line can take on using this protocol.
 \end{enumerate}
