@@ -194,6 +194,50 @@ while (!need_to_stop) {
 // arch-arm64/arch-arm64.h
 #define smp_mb()  __asm__ __volatile__("dmb ish" : : : "memory")
         #+end_src
+* Partitioning and Synchronization Design
+** Partitioning Exercises
+*** Dining Philosophers Problem
+*** Double-Ended Queue
+**** Double-Ended Queue Validation
+**** Left- and Right-Hand Locks
+        Far better consider other designs as locks' domain must overlap when there are fewer than four
+        elements on the list.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.5
+        #+CAPTION: Double-Ended Queue With Left- and Right-Hand Locks
+        [[../images/perfbook/13.png]]
+**** Compound Double-Ended Queue
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.6
+        #+CAPTION: Compound Double-Ended Queue
+        [[../images/perfbook/14.png]]
+        Two separate double-ended queues are run in tandem, each protected by its own lock. This means that
+        elements must occasionally be shuttled from one of the double-ended queues to the other, in which case
+        both locks must be held.
+
+        A simple lock hierarchy may be used to avoid deadlock, for example, always acquiring the left-hand
+        lock before acquiring the right-hand lock.
+
+        The main complication arises when dequeuing from an empty queue, in which case it is necessary to:
+        1. If holding the right-hand lock, release it and acquire the left-hand lock.
+        2. Acquire the right-hand lock.
+        3. Rebalance the elements across the two queues.
+        4. Remove the required element if there is one.
+        5. Release both locks.
+**** Hashed Double-Ended Queue
+        We assign one lock to guard the left-hand index, one to guard the right-hand index, and one lock for
+        each hash chain.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.7
+        #+CAPTION: Hashed Double-Ended Queue
+        [[../images/perfbook/15.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.8
+        #+CAPTION: Hashed Double-Ended Queue After Insertions
+        [[../images/perfbook/16.png]]
+
 * Deferred Processing
 ** Running Example
         The value looked up and returned will also be a simple integer, so that the data structure is as shown
@@ -1183,6 +1227,82 @@ int del_route(void)
 
         Subscription is carried out by ~rcu_dereference()~, which orders the subscription operation’s load from
         the pointer is before the dereference.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        But suppose that updaters are adding and removing multiple data items from a linked list while a
+        reader is iterating over that same list. Specifically, suppose that a list initially contains elements
+        A, B, and C, and that an updater removes element A and then adds a new element D at the end of the
+        list. The reader might well see {A, B, C, D}, when that sequence of elements never actually ever
+        existed! In what alternate universe would that qualify as “not disrupting concurrent readers”???
+
+        In the universe where an iterating reader is only required to traverse elements that were present
+        throughout the full duration of the iteration. In the example, that would be elements B and C. Because
+        elements A and D were each present for only part of the iteration, the reader is permitted to iterate
+        over them, but not obliged to. Note that this supports the common case where the reader is simply
+        looking up a single item, and does not know or care about the presence or absence of other items.  If
+        stronger consistency is required, then higher-cost synchronization mechanisms are required, for
+        example, sequence locking or reader-writer locking. But if stronger consistency is not required (and
+        it very often is not), then why pay the higher cost?
+        #+END_remark
+**** Wait For Pre-Existing RCU Readers
+        The relationship between an RCU read-side critical section and a later RCU grace period is an if-then
+        relationship, as illustrated by Figure ref:9.11. If any portion of a given critical section precedes
+        the beginning of a given grace period, then RCU guarantees that all of that critical section will
+        precede the end of that grace period.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.11
+        #+CAPTION: RCU Reader and Later Grace Period
+        [[../images/perfbook/9.png]]
+
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        What other final values of ~r1~ and ~r2~ are possible in Figure ref:9.11?
+
+        If ~r1==0~ then ~r2==0~.
+
+        And ~r1==1&&r2==0~ and ~r1==1&&r2==1~ are both possible.
+        #+END_remark
+
+        The relationship between an RCU read-side critical section and an earlier RCU grace period is also an
+        if-then relationship, as illustrated by Figure ref:9.12. If any portion of a given critical section
+        follows the end of a given grace period, then RCU guarantees that all of that critical section will
+        follow the beginning of that grace period. If ~r2==1~, then ~r1==1~.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.12
+        #+CAPTION: RCU Reader and Earlier Grace Period
+        [[../images/perfbook/10.png]]
+
+        Finally, as shown in Figure ref:9.13, an RCU read-side critical section can be completely overlapped by an
+        RCU grace period. In this case, ~r1~'s final value is 1 and ~r2~'s final value is 0.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.13
+        #+CAPTION: RCU Reader Within Grace Period
+        [[../images/perfbook/11.png]]
+        However, it cannot be the case that ~r1~'s final value is 0 and ~r2~'s final value is 1. This would mean
+        that an RCU read-side critical section had completely overlapped a grace period, which is forbidden.
+
+        RCU’s wait-for-readers guarantee therefore has two parts:
+        1. If any part of a given RCU read-side critical section precedes the beginning of a given grace
+           period, then the entirety of that critical section precedes the end of that grace period.
+        2. If any part of a given RCU read-side critical section follows the end of a given grace period, then
+           the entirety of that critical section follows the beginning of that grace period.
+
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        What would happen if ~P0()~'s accesses in Figures ref:9.11 -ref:9.13 were stores?
+
+        The exact same ordering rules would apply
+        #+END_remark
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.14
+        #+CAPTION: Summary of RCU Grace-Period Ordering Guarantees
+        [[../images/perfbook/12.png]]
+**** Maintain Multiple Versions of Recently Updated Objects
+
 * Appendices :ignore:
 #+LATEX: \appendix
 ** Why Memory Barriers
