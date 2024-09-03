@@ -225,6 +225,10 @@ while (!need_to_stop) {
         4. Remove the required element if there is one.
         5. Release both locks.
 **** Hashed Double-Ended Queue
+        A series of elements left-enqueued into an otherwise-idle queue would be assigned decreasing numbers
+        (−1, −2, −3, . . .), while a series of elements right-enqueued into an otherwise-idle queue would be
+        assigned increasing numbers (2, 3, 4, . . .).
+
         We assign one lock to guard the left-hand index, one to guard the right-hand index, and one lock for
         each hash chain.
 
@@ -238,6 +242,279 @@ while (!need_to_stop) {
         #+CAPTION: Hashed Double-Ended Queue After Insertions
         [[../images/perfbook/16.png]]
 
+
+        #+CAPTION: Lock-Based Parallel Double-Ended Queue Data Structure
+        #+NAME: l6.1
+        #+BEGIN_SRC c
+struct pdeq {
+    spinlock_t llock;
+    int lidx;
+    spinlock_t rlock;
+    int ridx;
+    struct deq bkt[PDEQ_N_BKTS];
+};
+        #+END_SRC
+
+        #+CAPTION: Lock-Based Parallel Double-Ended Queue Implementation
+        #+NAME: l6.2
+        #+BEGIN_SRC c
+struct cds_list_head *pdeq_pop_l(struct pdeq *d)
+{
+    struct cds_list_head *e;
+    int i;
+
+    spin_lock(&d->llock);
+    i = moveright(d->lidx);
+    e = deq_pop_l(&d->bkt[i]);
+    if (e != NULL)
+        d->lidx = i;
+    spin_unlock(&d->llock);
+    return e;
+}
+
+struct cds_list_head *pdeq_pop_r(struct pdeq *d)
+{
+    struct cds_list_head *e;
+    int i;
+
+    spin_lock(&d->rlock);
+    i = moveleft(d->ridx);
+    e = deq_pop_r(&d->bkt[i]);
+    if (e != NULL)
+        d->ridx = i;
+    spin_unlock(&d->rlock);
+    return e;
+}
+
+
+void pdeq_push_l(struct cds_list_head *e, struct pdeq *d)
+{
+    int i;
+
+    spin_lock(&d->llock);
+    i = d->lidx;
+    deq_push_l(e, &d->bkt[i]);
+    d->lidx = moveleft(d->lidx);
+    spin_unlock(&d->llock);
+}
+
+
+void pdeq_push_r(struct cds_list_head *e, struct pdeq *d)
+{
+    int i;
+
+    spin_lock(&d->rlock);
+    i = d->ridx;
+    deq_push_r(e, &d->bkt[i]);
+    d->ridx = moveright(d->ridx);
+    spin_unlock(&d->rlock);
+}
+        #+END_SRC
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Is the hashed double-ended queue a good solution? Why or why not?
+
+
+        #+END_remark
+**** Compound Double-Ended Queue Revisited
+        This section revisits the compound double-ended queue, using a trivial rebalancing scheme that moves
+        all the elements from the non-empty queue to the now-empty queue.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Move all the elements to the queue that became empty? In what possible universe is this brain-dead
+        solution in any way optimal???
+
+        It is optimal in the case where data flow switches direction only rarely. It would of course be an
+        extremely poor choice if the double-ended queue was being emptied from both ends concurrently. This of
+        course raises another question, namely, in what possible universe emptying from both ends concurrently
+        would be a reasonable thing to do. Work-stealing queues are one possible answer to this question
+        #+END_remark
+
+        #+CAPTION: Compound Parallel Double-Edged Queue Implementation
+        #+NAME: l6.3
+        #+BEGIN_SRC c
+struct cds_list_head *pdeq_pop_l(struct pdeq *d)
+{
+    struct cds_list_head *e;
+
+    spin_lock(&d->llock);
+    e = deq_pop_l(&d->ldeq);
+    if (e == NULL) {
+        spin_lock(&d->rlock);
+        e = deq_pop_l(&d->rdeq);
+        cds_list_splice(&d->rdeq.chain, &d->ldeq.chain);
+        CDS_INIT_LIST_HEAD(&d->rdeq.chain);
+        spin_unlock(&d->rlock);
+    }
+    spin_unlock(&d->llock);
+    return e;
+}
+
+struct cds_list_head *pdeq_pop_r(struct pdeq *d)
+{
+    struct cds_list_head *e;
+
+    spin_lock(&d->rlock);
+    e = deq_pop_r(&d->rdeq);
+    if (e == NULL) {
+        spin_unlock(&d->rlock);
+        spin_lock(&d->llock);
+        spin_lock(&d->rlock);
+        e = deq_pop_r(&d->rdeq);
+        if (e == NULL) {
+            e = deq_pop_r(&d->ldeq);
+            cds_list_splice(&d->ldeq.chain, &d->rdeq.chain);
+            CDS_INIT_LIST_HEAD(&d->ldeq.chain);
+        }
+        spin_unlock(&d->llock);
+    }
+    spin_unlock(&d->rlock);
+    return e;
+}
+
+void pdeq_push_l(struct cds_list_head *e, struct pdeq *d)
+{
+    spin_lock(&d->llock);
+    deq_push_l(e, &d->ldeq);
+    spin_unlock(&d->llock);
+}
+
+void pdeq_push_r(struct cds_list_head *e, struct pdeq *d)
+{
+    spin_lock(&d->rlock);
+    deq_push_r(e, &d->rdeq);
+    spin_unlock(&d->rlock);
+}
+        #+END_SRC
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Why can’t the compound parallel double-ended queue implementation be symmetric?
+
+        The need to avoid deadlock by imposing a lock hierarchy forces the asymmetry, just as it does in the
+        fork-numbering solution to the Dining Philosophers Problem
+        #+END_remark
+
+        #+begin_src shell
+Empty deque: L: (nil), R: (nil)
+Enqueue L, pop L: 3 2 1 0
+Enqueue L, pop R: 3 2 1 0
+Enqueue R, pop L: 3 2 1 0
+Enqueue R, pop R: 3 2 1 0
+Concurrently push L, pop R
+1 2 3 4 5 6 7 8 9 10 -1 -2 -3 -4 -5 -6 -7 -8 -9 -10 OK
+Concurrently push R, pop L
+1 2 3 4 5 6 7 8 9 10 -1 -2 -3 -4 -5 -6 -7 -8 -9 -10 OK
+Concurrently push L
+-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 1 2 3 4 5 6 7 8 9 10 OK
+Concurrently push R
+-1 -2 -3 -4 -5 -6 -7 -8 -9 -10 1 2 3 4 5 6 7 8 9 10 OK
+Concurrent melee between a pair of pushes and of pops
+1 4 -1 10 -2 9 -3 8 -4 7 -5 6 -6 5 -7 3 -8 2 -9 -10 OK
+Push 1000000 elements sequentially through a cds_list_head
+starttime=67672624995246, endtime=67672625015040, delta=19794 us
+Push 1000000 elements through a pdeq
+starttime=67672625022032, endtime=67672625051370, delta=29338 us
+Push 1000000 elements through a pdeq
+starttime=67672625058026, endtime=67672625084086, delta=26060 us
+Push 1000000 elements through a pdeq
+starttime=67672625091036, endtime=67672625117458, delta=26422 us
+Push 1000000 elements through a pdeq
+starttime=67672625124025, endtime=67672625150522, delta=26497 us
+Push 1000000 elements through a pdeq
+starttime=67672625157031, endtime=67672625183410, delta=26379 us
+Push 1000000 elements through a pdeq
+starttime=67672625190027, endtime=67672625216391, delta=26364 us
+Push 1000000 elements through a pdeq
+starttime=67672625223029, endtime=67672625249100, delta=26071 us
+Push 1000000 elements through a pdeq
+starttime=67672625256030, endtime=67672625282491, delta=26461 us
+Push 1000000 elements through a pdeq
+starttime=67672625289033, endtime=67672625315097, delta=26064 us
+Push 1000000 elements through a pdeq
+starttime=67672625322024, endtime=67672625348150, delta=26126 us
+        #+end_src
+
+        Furthermore, these strict FIFO queues are strictly FIFO only with respect to linearization points
+        that are not visible to the caller, in fact, in these examples, the linearization points are buried in
+        the lock-based critical sections. These queues are not strictly FIFO with respect to (say) the times
+        at which the individual operations started. This indicates that the strict FIFO property is not all
+        that valuable in concurrent programs, and in fact, Kirsch et al. present less-strict queues that
+        provide improved performance and scalability .
+*** Partitioning Example Discussion
+** Design Criteria
+        * *Speedup*
+        * *Contention*
+        * *Work-to-Synchronization Ratio*
+        * *Read-to-Write Ratio*
+        * *Complexity*
+** Synchronization Granularity
+*** Locking Granularity and Performance
+        The approach is to use a crude queueing model for the efficiency of synchronization mechanism that
+        operate on a single shared global variable, based on an M/M/1 queue. M/M/1 queuing models are based on
+        an exponentially distributed "inter-arrival rate" \(\lambda\)  and an exponentially distributed
+        "service rate" \(\mu\).
+
+        The inter-arrival rate \(\lambda\) can be thought of as the average number of synchronization
+        operations per second that the system would process if the synchronization were free, in other words,
+        \(\lambda\) is an inverse measure of the overhead of each non-synchronization unit of work. For
+        example, if each unit of work was a transaction, and if each transaction took one millisecond to
+        process, excluding synchronization overhead, then \(\lambda\) would be 1,000 transactions per second.
+
+        The service rate \(\mu\) is defined similarly, but for the average number of synchronization
+        operations per second that the system would process if the overhead of each transaction was zero, and
+        ignoring the fact that CPUs must wait on each other to complete their synchronization operations, in
+        other words, \(\mu\) can be roughly thought of as the synchronization overhead in absence of
+        contention. For example, suppose that each transaction’s synchronization operation involves an atomic
+        increment instruction, and that a computer system is able to do a private-variable atomic increment
+        every 5 nanoseconds on each CPU. The value of \(\mu\) is therefore about
+        200,000,000 atomic increments per second.
+
+        \begin{equation*}
+        \lambda=n\lambda_0
+        \end{equation*}
+        Here \(n\) is the number of CPUs and \(\lambda_0\) is the transaction-processing capability of a
+        single CPU.
+
+        Because the CPUs have to "wait in line" behind each other to get their chance to increment the single
+        shared variable, we can use the M/M/1 queueing-model expression for the expected total waiting time:
+        \begin{equation*}
+        T=\frac{1}{\mu-\lambda}=\frac{1}{\mu-n\lambda_0}
+        \end{equation*}
+
+        Now the efficiency is
+        \begin{equation*}
+        e=\frac{1/\lambda_0}{T+1/\lambda_0}=\frac{\frac{\mu}{\lambda_0}-n}{\frac{\mu}{\lambda_0}-(n-1)}
+        \end{equation*}
+        But the value of \(\mu/\lambda_0\) is just the ratio of the time required to process the transaction
+        to that of the synchronization overhead. If we call this ratio \(f\), we have
+        \begin{equation*}
+        e=\frac{f-n}{f-(n-1)}
+        \end{equation*}
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.16
+        #+CAPTION: Synchronization Efficiency
+        [[../images/perfbook/17.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.17
+        #+CAPTION: Matrix Multiply Efficiency
+        [[../images/perfbook/18.png]]
+
+        ~matmul.c~
+** Parallel Fastpath
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.18
+        #+CAPTION: Parallel-Fastpath Design Patterns
+        [[../images/perfbook/19.png]]
+*** Resource Allocator Caches
+        jemalloc/tcmalloc/etc..
+**** Parallel Resource Allocation Problem
+        The basic problem facing a parallel memory allocator is the tension between the need to provide
+        extremely fast memory allocation and freeing in the common case and the need to efficiently distribute
+        memory in face of unfavorable allocation and freeing patterns.
 * Deferred Processing
 ** Running Example
         The value looked up and returned will also be a simple integer, so that the data structure is as shown
