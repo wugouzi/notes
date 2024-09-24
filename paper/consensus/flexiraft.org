@@ -1,0 +1,99 @@
+#+title: FlexiRaft: Flexible Quorums with Raft
+
+#+AUTHOR: Ritwik Yadav & Anirban Rahut
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/consensus/flexiraft.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/consensus/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        FlexiRaft is a direct result of these changes and some of its most important contributions are as
+        follows.
+        * Data commit quorums were made configurable. The addition of flexible quorums enabled developers to
+          make the necessary tradeoffs between latency, throughput and fault tolerance
+        * Support for dynamic quorums was added wherein both the data commit and leader election quorums get
+          reconfigured after every successful election.
+        * Tail commit latencies became independent of the number of replicas in the cluster
+
+
+* Common Concepts & Definitions
+
+** MySQL binlog server
+
+** Replica set
+        A MySQL replica set is a collection of all the replicas (including the primary) and their
+        corresponding binlog servers
+
+** Group
+        Members of the replica set are grouped together into multiple disjoint sets based on physical
+        proximity. Each disjoint set forms a group and physical proximity can be defined as belonging to the
+        same region, same datacenter or sharing the same main switchboard (MSB) within a datacenter, etc.
+** Data commit quorum
+        The data commit quorum is a minimal set of servers in the replica set (including both MySQL and binlog
+        servers) that must acknowledge a transaction before it can be committed.
+** Leader election quorum
+        The leader election quorum is a minimal set of servers in the replica set (including both MySQL and
+        binlog servers) that must accept a candidate server as a leader for it to *safely* assert leadership
+        over the entire replica set.
+** Pessimistic quorum
+        A pessimistic leader election quorum consists of a majority of servers from *every* constituent group of
+        a replica set. A majority in all constituent groups guarantees intersection with every valid leader
+        election or data commit quorum. This is because every valid quorum is defined in terms of majorities
+        in a subset of constituent groups.
+* Consensus Algorithms
+** MySQL Semisynchronous Replication
+        Prior to Raft, our MySQL deployment utilized the semisynchronous replication protocol.
+
+        There is a MySQL database server in each regions, labeled as \(R0\), \(R1\) and \(R2\).  Each MySQL
+        server is accompanied by two binlog servers in the same region to provide local redundancy for the
+        most recent write operations on the database. Binlog servers labeled BLS \(R0.1\) and \(R0.2\)
+        acknowledge transactions from MySQL server \(R0\), and so on. MySQL servers have the state machine as
+        well as the write ahead log whereas the binlog servers only have the write ahead log. Only the primary
+        replica accepts writes to the database.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: Sample replica set with members in three geographical regions
+        [[../../images/papers/31.png]]
+
+        The semisynchronous unit consists of the primary1 replica and its two binlog servers. For a
+        transaction to get committed, one of the binlog servers out of BLS \(R0.1\) and \(R0.2\) would need to
+        acknowledge it to \(R0\). The rest of the replicas (\(R1\) and \(R2\)) would asynchronously apply
+        updates to the database.
+
+        It is to be noted that binlog servers BLS \(R1.1\) and \(R1.2\) get updates from \(R1\) and not from
+        \(R0\) directly. Similarly, binlog servers BLS \(R2.1\) and \(R2.2\) only get updates from \(R2\) (not
+        \(R0\)).
+
+        If the primary (\(R0\)) failed, a different replica would take its place and use the failed primary’s
+        binlog servers (BLS \(R0.1\) & \(R0.2\)) to apply any committed operations that it couldn’t replicate
+        before the failure. The leader election process was externally orchestrated by monitoring processes
+        on database hosts. The separation of logic for committing data and electing a new leader was error
+        prone and difficult to maintain.
+** MySQL Group Replication (Paxos variant)
+** Raft
+* Flexible Quorums
+        Two shortcomings of replacing the semisynchronous setup with the original Raft algorithm are
+        immediately obvious.
+        1. it would increase the cross region network utilization as the leader (primary replica) would
+           directly send updates to all other members of the replica set.
+        2. a majority of the replica set participants would need to agree before committing any write
+           operations to the database.
+
+
+        We offer flexibility to end users when selecting data commit quorums since it determines the latency,
+        throughput and fault tolerance observed by their application.
+
+        Valid leader election quorums are automatically computed from the chosen data commit quorums.
+
+        For state machine safety, *every data commit quorum needs to intersect with every leader election quorum*.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -1,0 +1,93 @@
+#+title: Timestamp as a Service, not an Oracle
+
+#+AUTHOR: Polardb
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/distributed_systems/timestamp_as_a_service.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/distributed_systems/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        This paper presents Timestamp as a Service (TaaS), a distributed algorithm that computes logical
+        timestamps from a consensusless cluster of clocks.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: Bipartite architectue of TaaS
+        [[../../images/papers/32.png]]
+* State of the Art
+** Clocks in distributed systems
+        1. Scalar logical clocks
+        2. Vector logical clocks
+        3. Hybrid logical clocks
+        4. Synchronized clocks
+** Availability of timestamp oracles
+        Goals:
+        1. We want to eliminate the bottleneck, and provide a leaderless timestamping service that is resistant to single-point failures.
+        2. We aim for optimal performance and rigorous completeness, while keeping the service continuously
+           available.
+* Algorithm
+** Assuming all the servers are up
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *session* is a series of client interaction for computing a timestamp. FOr a session named \(\sigma\),
+        we say it *begins* at time \(Q_\sigma\) and ends at time \(A_\sigma\) (as in Query&Answer)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A timestamping service is *correct* if it is session-complete: For all pairs of sessions \(\sigma\) and
+        \(\tau\), if the end of \(\sigma\) precedes the beginning of \(\tau\), written as
+        \(A_\sigma\prec Q_\tau\), then the result timestamp computed by session \(\sigma\) is less than that
+        of session \(\tau\):
+        \begin{equation*}
+        \forall \sigma\forall \tau(A_\sigma\prec Q_\tau\Rightarrow\text{ result of }\sigma<\text{ result of }\tau)
+        \end{equation*}
+        #+END_definition
+
+        Each server implements a logical clock by Lamport:
+        #+begin_src c
+TS c;
+TS tick(TS t) {
+    c = c oplus t;
+    return c;
+}
+        #+end_src
+
+        When ticked by timestamp \(t\), the server clock advances from c to \(c\oplus t\) s.t.
+        \begin{equation*}
+        c\oplus t>c \quad\text{ and }\quad c\oplus t>t
+        \end{equation*}
+
+        We assume that timestamps from a total order \(\le\), and define an operation called \(M\)-th
+        smallest: Let \(\Sigma\) be a set with cardinality \(\abs{\Sigma}\), then the \(M\)-th smallest
+        element in \(\Sigma\) (written as \(M@\Sigma\)) is no less than \(M\) elements of \(\Sigma\), and no
+        greater than \(\abs{M}-M+1\) elements of \(\Sigma\):
+        \begin{align*}
+        \abs{\{x\in\Sigma\mid x\le M@\Sigma\}}&\ge M\\
+        \abs{\{x\in\Sigma\mid M@\Sigma\le x\}}&\ge\abs{\Sigma}-M+1
+        \end{align*}
+        We also define a bottom timestamp, written as \(\bot\), that is no greater than any timestamp:
+        \begin{equation*}
+        \forall t,\bot\le t
+        \end{equation*}
+
+        A client begins a session by broadcasting \(\bot\) to all servers. It then waits for all the servers
+        to respond. Let \(\Sigma\) be the set of responses from all the servers, then the client concludes
+        with \(M@\Sigma\), where \(M\) is some parameter shared by all clients.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        For all pairs of session \(\sigma\) and \(\tau\), if \(\sigma\) end
+        #+END_theorem
+
+
+**
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

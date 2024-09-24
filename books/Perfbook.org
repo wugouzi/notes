@@ -515,6 +515,271 @@ starttime=67672625322024, endtime=67672625348150, delta=26126 us
         The basic problem facing a parallel memory allocator is the tension between the need to provide
         extremely fast memory allocation and freeing in the common case and the need to efficiently distribute
         memory in face of unfavorable allocation and freeing patterns.
+**** Parallel Fastpath for Resource Allocation
+        To prevent any given CPU from monopolizing the memory blocks, we place a limit on the number of blocks
+        that can be in each CPU’s cache. In a two-CPU system, the flow of memory blocks will be as shown in
+        Figure ref:6.19: When a given CPU is trying to free a block when its pool is full, it sends blocks to the
+        global pool, and, similarly, when that CPU is trying to allocate a block when its pool is empty, it
+        retrieves blocks from the global pool.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.19
+        #+CAPTION: Allocator Cache Schematic
+        [[../images/perfbook/20.png]]
+
+**** Data Structures
+        Toy implementation:
+        #+CAPTION: Allocator-Cache Data Structures
+        #+NAME: l6.9
+        #+BEGIN_SRC c
+#define TARGET_POOL_SIZE 3
+#define GLOBAL_POOL_SIZE 40
+
+struct globalmempool {
+    spinlock_t mutex;
+    int cur;
+    struct memblock *pool[GLOBAL_POOL_SIZE];
+} globalmem;
+
+struct perthreadmempool {
+    int cur;
+    struct memblock *pool[2 * TARGET_POOL_SIZE];
+};
+
+DEFINE_PER_THREAD(struct perthreadmempool, perthreadmem);
+        #+END_SRC
+
+**** Allocation Function
+        #+CAPTION: Allocator-Cache Allocator Function
+        #+NAME: l6.10
+        #+BEGIN_SRC c
+struct memblock *memblock_alloc(void)
+{
+    int i;
+    struct memblock *p;
+    struct perthreadmempool *pcpp;
+
+    pcpp = &__get_thread_var(perthreadmem);
+    if (pcpp->cur < 0) {
+        spin_lock(&globalmem.mutex);
+        for (i = 0; i < TARGET_POOL_SIZE &&
+                 globalmem.cur >= 0; i++) {
+            pcpp->pool[i] = globalmem.pool[globalmem.cur];
+            globalmem.pool[globalmem.cur--] = NULL;
+        }
+        pcpp->cur = i - 1;
+        spin_unlock(&globalmem.mutex);
+    }
+    if (pcpp->cur >= 0) {
+        p = pcpp->pool[pcpp->cur];
+        pcpp->pool[pcpp->cur--] = NULL;
+        return p;
+    }
+    return NULL;
+}
+        #+END_SRC
+**** Free Function
+        #+CAPTION: Allocator-Cache Free Function
+        #+NAME: l6.11
+        #+BEGIN_SRC c
+void memblock_free(struct memblock *p)
+{
+    int i;
+    struct perthreadmempool *pcpp;
+
+    pcpp = &__get_thread_var(perthreadmem);
+    if (pcpp->cur >= 2 * TARGET_POOL_SIZE - 1) {
+        spin_lock(&globalmem.mutex);
+        for (i = pcpp->cur; i >= TARGET_POOL_SIZE; i--) {
+            globalmem.pool[++globalmem.cur] = pcpp->pool[i];
+            pcpp->pool[i] = NULL;
+        }
+        pcpp->cur = i;
+        spin_unlock(&globalmem.mutex);
+    }
+    pcpp->pool[++pcpp->cur] = p;
+}
+        #+END_SRC
+**** Performance
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6.21
+        #+CAPTION: Allocator Cache Performance
+        [[../images/perfbook/21.png]]
+
+        Rough performance results16 are shown in Figure ref:6.21, running on a dual-core Intel x86 running at
+        1 GHz (4300 bogomips per CPU) with at most six blocks allowed in each CPU’s cache. In this
+        micro-benchmark, each thread repeatedly allocates a group of blocks and then frees all the blocks in
+        that group, with the number of blocks in the group being the “allocation run length” displayed on the
+        x-axis. The y-axis shows the number of successful allocation/free pairs per microsecond—failed
+        allocations are not counted. The “X”s are from a two-thread run, while the “+”s are from a
+        single-threaded run.
+**** Validation
+**** Real-World Design
+        1. offer a fixed set of sizes, spaced so as to balance external and internal fragmentation,
+        2. production-quality systems must be able to repurpose memory, meaning that they must be able to
+           coalesce blocks into larger structures, such as pages. This coalescing will also need to be
+           protected by a lock, which again could be replicated on a per-size basis.
+        3. coalesced memory must be returned to the underlying memory system, and pages of memory must also be
+           allocated from the underlying memory system.
+** Beyond Partitioning
+*** Work-Queue Parallel Maze Solver
+        #+CAPTION: SEQ Pseudocode
+        #+NAME: l6.12
+        #+BEGIN_SRC c
+int maze_solve(maze *mp, cell sc, cell ec)
+{
+    cell c = sc;
+    cell n;
+    int vi = 0;
+
+    maze_try_visit_cell(mp, c, c, &n, 1);
+    for (;;) {
+        while (!maze_find_any_next_cell(mp, c, &n)) {
+            if (++vi >= mp->vi)
+                return 0;
+            c = mp->visited[vi].c;
+        }
+        do {
+            if (n == ec) {
+                return 1;
+            }
+            c = n;
+        } while (maze_find_any_next_cell(mp, c, &n));
+        c = mp->visited[vi].c;
+    }
+}
+        #+END_SRC
+
+        #+CAPTION: SEQ Helper Pseudocode
+        #+NAME: l6.13
+        #+BEGIN_SRC c
+int maze_try_visit_cell(struct maze *mp, cell c, cell t,
+                        cell *n, int d)
+{
+    if (!maze_cells_connected(mp, c, t) ||
+        (*celladdr(mp, t) & VISITED))
+        return 0;
+    *n = t;
+    mp->visited[mp->vi] = t;
+    mp->vi++;
+    *celladdr(mp, t) |= VISITED | d;
+    return 1;
+}
+
+int maze_find_any_next_cell(struct maze *mp, cell c,
+                            cell *n)
+{
+    int d = (*celladdr(mp, c) & DISTANCE) + 1;
+
+    if (maze_try_visit_cell(mp, c, prevcol(c), n, d))
+        return 1;
+    if (maze_try_visit_cell(mp, c, nextcol(c), n, d))
+        return 1;
+    if (maze_try_visit_cell(mp, c, prevrow(c), n, d))
+        return 1;
+    if (maze_try_visit_cell(mp, c, nextrow(c), n, d))
+        return 1;
+    return 0;
+}
+        #+END_SRC
+*** Alternative Parallel Maze Solver
+        #+CAPTION: Partitioned Parallel Solver Pseudocode
+        #+NAME: l6.14
+        #+BEGIN_SRC c
+int maze_solve_child(maze *mp, cell *visited, cell sc)
+{
+    cell c;
+    cell n;
+    int vi = 0;
+
+    myvisited = visited; myvi = &vi;
+    c = visited[vi];
+    do {
+        while (!maze_find_any_next_cell(mp, c, &n)) {
+            if (visited[++vi].row < 0)
+                return 0;
+            if (READ_ONCE(mp->done))
+                return 1;
+            c = visited[vi];
+        }
+        do {
+            if (READ_ONCE(mp->done))
+                return 1;
+            c = n;
+        } while (maze_find_any_next_cell(mp, c, &n));
+        c = visited[vi];
+    } while (!READ_ONCE(mp->done));
+    return 1;
+}
+        #+END_SRC
+
+        #+CAPTION: Partitioned Parallel Helper Pseudocode
+        #+NAME: l6.15
+        #+BEGIN_SRC c
+int maze_try_visit_cell(struct maze *mp, int c, int t,
+                        int *n, int d)
+{
+    cell_t t;
+    cell_t *tp;
+    int vi;
+
+    if (!maze_cells_connected(mp, c, t))
+        return 0;
+    tp = celladdr(mp, t);
+    do {
+        t = READ_ONCE(*tp);
+        if (t & VISITED) {
+            if ((t & TID) != mytid)
+                mp->done = 1;
+            return 0;
+        }
+    } while (!CAS(tp, t, t | VISITED | myid | d));
+    ,*n = t;
+    vi = (*myvi)++;
+    myvisited[vi] = t;
+    return 1;
+}
+        #+END_SRC
+* Locking
+** Staying Alive
+
+** Locking Implementation Issues
+        #+CAPTION: Sample Lock Based on Atomic Exchange
+        #+NAME: l7.9
+        #+BEGIN_SRC c
+typedef int xchglock_t;
+#define DEFINE_XCHG_LOCK(n) xchglock_t n = 0
+
+void xchg_lock(xchglock_t *xp)
+{
+    while (xchg(xp, 1) == 1) {
+        while (READ_ONCE(*xp) == 1)
+            continue;
+    }
+}
+
+void xchg_unlock(xchglock_t *xp)
+{
+    (void)xchg(xp, 0);
+}
+        #+END_SRC
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        Why bother with the inner loop on lines 7–8 of Listing ref:l7.9? Why not simply repeatedly do the
+        atomic exchange operation on line 6?
+
+        Suppose that the lock is held and that several threads are attempting to acquire the lock. In this
+        situation, if these threads all loop on the atomic exchange operation, they will ping-pong the cache
+        line containing the lock among themselves, imposing load on the interconnect. In contrast, if these
+        threads are spinning in the inner loop on lines 7–8, they will each spin within their own caches,
+        placing negligible load on the interconnect
+        #+END_remark
+
+** Other Exclusive-Locking Implementations
+
+** Lock-Based Existence Guarentees
+
 * Deferred Processing
 ** Running Example
         The value looked up and returned will also be a simple integer, so that the data structure is as shown
@@ -1579,6 +1844,190 @@ int del_route(void)
         #+CAPTION: Summary of RCU Grace-Period Ordering Guarantees
         [[../images/perfbook/12.png]]
 **** Maintain Multiple Versions of Recently Updated Objects
+        This section discusses how RCU accommodates synchronization-free readers by maintaining multiple
+        versions of data.
+
+        Figure ref:9.7 shwoed a simple variant of spatial synchronization, in which different readers running
+        concurrently with ~del_route()~ (see Listing ref:l9.13) might see the old route structure or an empty
+        list, but either way get a valid result.
+
+
+        However, maintaining multiple weakly consistent versions can provide some surprises as in Figure
+        ref:9.15, in which a reader is traversing a linked list that is concurrently updated.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.15
+        #+CAPTION: Multiple RCU Data-Structure Versions
+        [[../images/perfbook/22.png]]
+        The reader sees a version that never actually existed.
+**** Summary of RCU Fundamentals
+        1. A publish-subscribe mechanism for adding new data featuring ~rcu_assign_pointer()~ for update-side
+           publication and ~rcu_dereference()~ for read-side subscription,
+        2. A way of waiting for pre-existing RCU readers to finish based on readers being delimited by
+           ~rcu_read_lock()~ and ~rcu_read_unlock()~ on the one hand and updaters waiting via ~synchronize_rcu()~ or
+           ~call_rcu()~ on the other, and
+        3. A discipline of maintaining multiple versions to permit change without harming or unduly delaying concurrent RCU readers.
+
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        How can RCU updaters possibly delay RCU readers, given that neither ~rcu_read_lock()~ nor
+        ~rcu_read_unlock()~ spin or block?
+
+        The modifications undertaken by a given RCU updater will cause the corresponding CPU to invalidate
+        cache lines containing the data, forcing the CPUs running concurrent RCU readers to incur expensive
+        cache misses.
+        #+END_remark
+*** RCU Linux-Kernel API
+        #+CAPTION: RCU Wait-to-Finish APIs
+        #+NAME: t9.2
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        |                        | *RCU*: Original                       | *SRCU*: Sleeping readers       | *Tasks RCU*: Free tracing  | *Tasks RCU Rude*: Free idle-task   | *Tasks RCU Trace*: Protect sleepable |
+        |                        |                                     |                              | trampolines              | tracing trampolines              | BPF programs                       |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Initialization and     |                                     | ~DEFINE_SRCU()~                |                          |                                  |                                    |
+        | Cleanup                |                                     | ~DEFINE_STATIC_SRCU()~         |                          |                                  |                                    |
+        |                        |                                     | ~init_srcu_struct()~           |                          |                                  |                                    |
+        |                        |                                     | ~cleanup_srcu_struct()~        |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Readside               | ~rcu_read_lock()~ !                   | ~srcu_read_lock()~             | Voluntary context switch | Voluntary context switch and     | ~rcu_read_lock_trace()~              |
+        | criticial-section      | ~rcu_read_unlock()~ !                 | ~srcu_read_unlock()~           |                          | preempt-enable regions of code   | ~rcu_read_unlock_trace()~            |
+        | markers                | ~rcu_read_lock_bh()~                  |                              |                          |                                  |                                    |
+        |                        | ~rcu_read_unlock_bh()~                |                              |                          |                                  |                                    |
+        |                        | ~rcu_read_lock_sched()~               |                              |                          |                                  |                                    |
+        |                        | ~rcu_read_unlock_sched()~             |                              |                          |                                  |                                    |
+        |                        | (Plus anything disabing bottom      |                              |                          |                                  |                                    |
+        |                        | havles, preemption, or interrupts.) |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Update-side primitives | ~synchronize_rcu()~                   | ~synchronize_srcu()~           | ~synchronize_rcu_tasks()~  | ~synchronization_rcu_tasks_rude()~ | ~synchronize_rcu_tasks_trace()~      |
+        | (synchronous)          | ~synchronize_net()~                   | ~synchronize_scru_expedited()~ |                          |                                  |                                    |
+        |                        | ~synchronize_rcu_expedited()~         |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Update-side primitives | ~call_rcu()~                          | ~call_srcu()~                  |                          |                                  |                                    |
+        | (asynchronous/         |                                     |                              |                          |                                  |                                    |
+        | callback)              |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Update-side primitives |                                     |                              |                          |                                  |                                    |
+        | (wait for callbacks)   |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Update-side primitives |                                     |                              |                          |                                  |                                    |
+        | (initiate/wait)        |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Update-side primitives |                                     |                              |                          |                                  |                                    |
+        | (free memory)          |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Type-safe memory       |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Read side constraints  |                                     |                              |                          |                                  |                                    |
+        |                        |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Read side overhead     |                                     |                              |                          |                                  |                                    |
+        |                        |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Asynchronous           |                                     |                              |                          |                                  |                                    |
+        | update-side overhead   |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Grace-period latency   |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+        | Expedited              |                                     |                              |                          |                                  |                                    |
+        | grace-period latency   |                                     |                              |                          |                                  |                                    |
+        |------------------------+-------------------------------------+------------------------------+--------------------------+----------------------------------+------------------------------------|
+
+*** RCU Usage
+
+**** RCU for Pre-BSD Routing
+        Listings ref:l9.14 and ref:l9.15 show code for an RCU-protected Pre-BSD routing table (~route_rcu.c~).
+
+        #+CAPTION: RCU Pre-BSD Routing Table Lookup
+        #+NAME: l9.14
+        #+BEGIN_SRC c
+struct route_entry {
+    struct rcu_head rh;
+    struct cds_list_head re_next;
+    unsigned long addr;
+    unsigned long iface;
+    int re_freed;
+};
+CDS_LIST_HEAD(route_list);
+DEFINE_SPINLOCK(routelock);
+
+unsigned long route_lookup(unsigned long addr)
+{
+    struct route_entry *rep;
+    unsigned long ret;
+
+    rcu_read_lock();
+    cds_list_for_each_entry_rcu(rep, &route_list, re_next) {
+        if (rep->addr == addr) {
+            ret = rep->iface;
+            if (READ_ONCE(rep->re_freed))
+                abort();
+            rcu_read_unlock();
+            return ret;
+        }
+    }
+    rcu_read_unlock();
+    return ULONG_MAX;
+}
+        #+END_SRC
+
+        #+CAPTION: RCU Pre-BSD Routing Table Add/Delete
+        #+NAME: l9.15
+        #+BEGIN_SRC c
+int route_add(unsigned long addr, unsigned long interface)
+{
+    struct route_entry *rep;
+
+    rep = malloc(sizeof(*rep));
+    if (!rep)
+        return -ENOMEM;
+    rep->addr = addr;
+    rep->iface = interface;
+    rep->re_freed = 0;
+    spin_lock(&routelock);
+    cds_list_add_rcu(&rep->re_next, &route_list);
+    spin_unlock(&routelock);
+    return 0;
+}
+
+static void route_cb(struct rcu_head *rhp)
+{
+    struct route_entry *rep;
+
+    rep = container_of(rhp, struct route_entry, rh);
+    WRITE_ONCE(rep->re_freed, 1);
+    free(rep);
+}
+
+int route_del(unsigned long addr)
+{
+    struct route_entry *rep;
+
+    spin_lock(&routelock);
+    cds_list_for_each_entry(rep, &route_list, re_next) {
+        if (rep->addr == addr) {
+            cds_list_del_rcu(&rep->re_next);
+            spin_unlock(&routelock);
+            call_rcu(&rep->rh, route_cb);
+            return 0;
+        }
+    }
+    spin_unlock(&routelock);
+    return -ENOENT;
+}
+        #+END_SRC
+
+        In Listing ref:l9.14, line 2 adds the ~->rh~ field used by RCU reclamation, line 6 adds the ~->re_freed~
+        use-after-free-check field, lines 16, 22, and 26 add RCU read-side protection, and lines 20 and 21 add
+        the use-after-free check.
+
+        In Listing ref:l9.15, lines 11, 13, 30, 34, and 39 add update-side locking, lines 12 and 33 add RCU
+        update-side protection, line 35 causes ~route_cb()~ to be invoked after a grace period elapses, and
+        lines 17–24 define ~route_cb()~. This is minimal added code for a working concurrent implementation.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 9.23
+        #+CAPTION: Relationships Between RCU Use Cases
+        [[../images/perfbook/23.png]]
 
 * Appendices :ignore:
 #+LATEX: \appendix
