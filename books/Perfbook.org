@@ -1934,6 +1934,11 @@ int del_route(void)
 
 *** RCU Usage
 
+        #+Attr_LATEX: :width .8\textwidth :float nil
+        #+NAME: 9.23
+        #+CAPTION: Relationships Between RCU Use Cases
+        [[../images/perfbook/23.png]]
+
 **** RCU for Pre-BSD Routing
         Listings ref:l9.14 and ref:l9.15 show code for an RCU-protected Pre-BSD routing table (~route_rcu.c~).
 
@@ -2024,11 +2029,59 @@ int route_del(unsigned long addr)
         update-side protection, line 35 causes ~route_cb()~ to be invoked after a grace period elapses, and
         lines 17–24 define ~route_cb()~. This is minimal added code for a working concurrent implementation.
 
-        #+ATTR_LATEX: :width .8\textwidth :float nil
-        #+NAME: 9.23
-        #+CAPTION: Relationships Between RCU Use Cases
-        [[../images/perfbook/23.png]]
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.21
+        #+CAPTION: Pre-BSD Routing Table Protected by RCU
+        [[../images/perfbook/24.png]]
 
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 9.22
+        #+CAPTION: Pre-BSD Routing Table Protected by RCU QSBR
+        [[../images/perfbook/25.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        1. How can RCU QSBR possibly be better than ideal? Just what rubbish definition of ideal would fail to
+           be the best of all possible results???
+
+           It is well worth noting that RCU QSBR’s performance advantage appears only in the
+           one-hardware-thread-per-core regime
+
+           The RCU variant of the ~route_lookup()~ search loop actually has one more x86 instruction than does
+           the sequential version, namely the ~lea~ in the sequence ~cmp~, ~je~, ~mov~, ~cmp~, ~lea~, and ~jne~. This
+           extra instruction is due to the ~rcu_head~ structure at the beginning of the RCU variant’s
+           ~route_entry~ structure, so that, unlike the sequential variant, the RCU variant’s ~->re_next.next~
+           pointer has a non-zero offset
+
+           This raises the question as to what would happen if the rcu_head structure were to be moved so that
+           RCU’s ~->re_next.next~ pointer also had zero offset, just the same as the sequential variant. And the
+           answer, as can be seen in Figure E.5, is that this causes RCU QSBR’s performance to decrease to
+           where it is still very nearly ideal, but no longer super-ideal.
+
+           #+ATTR_LATEX: :width .7\textwidth :float nil
+           #+NAME: E.5
+           #+CAPTION: Pre-BSD Routing Table Protected by RCU QSBR With Non-Initial ~rcu_head~
+           [[../images/perfbook/26.png]]
+
+        2. Given RCU QSBR’s read-side performance, why bother with any other flavor of userspace RCU?
+
+           Because RCU QSBR places constraints on the overall application that might not be tolerable, for
+           example, requiring that each and every thread in the application regularly pass through a quiescent
+           state. Among other things, this means that RCU QSBR is not helpful to library writers, who might be
+           better served by other flavors of userspace RCU
+        #+END_remark
+
+**** Wait for Pre-Existing Things for Finish
+        One of RCU’s great strength is that it allows you to wait for each of thousands of different things to
+        finish without having to explicitly track each and every one of them, and without incurring the
+        performance degradation, scalability limitations, complex deadlock scenarios, and memory- leak hazards
+        that are inherent in schemes that use explicit tracking.
+
+        In this section, we will show how ~synchronize_sched()~'s read-side counterparts (which include anything
+that disables preemption, along with hardware operations
+and primitives that disable interrupts) permit you to in-
+teraction with non-maskable interrupt (NMI) handlers,
+which is quite difficult using locking.
 * Appendices :ignore:
 #+LATEX: \appendix
 ** Why Memory Barriers

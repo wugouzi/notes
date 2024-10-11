@@ -1,0 +1,213 @@
+% Created 2024-10-11 Fri 15:34
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/data_structure/}}
+\usepackage{amsmath}
+\definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+\usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+\setminted{breaklines,
+mathescape,
+bgcolor=mintedbg,
+fontsize=\footnotesize,
+frame=single,
+linenos}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{SuRF: Practical Range Query Filtering with Fast Succinct Tries}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={SuRF: Practical Range Query Filtering with Fast Succinct Tries},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)}, 
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:orgfb2d25f}
+This paper presents the \textbf{Succinct Range Filter} (SuRF), a fast and compact filter that provides
+exact-match filtering, range filtering, and approximate range counts. Like Bloom filters, SuRF
+guarantees one-sided errors for point and range membership tests. SuRF can trade between false
+positive rate and memory consumption, and this trade-off is tunable for point and range queries
+semi-independently. SuRF is built upon a new space-efficient (succinct) data structure called the
+\textbf{Fast Succinct Trie} (FST). It performs comparably to or better than state-of-the-art uncompressed index
+structures (B+tree, ART) for both integer and string workloads. FST consumes only 10 bits per trie
+node, which is close to the information-theoretic lower bound.
+
+The key insight in SuRF is to transform the FST into an approximate (range) membership filter by
+removing levels of the trie and replacing them with some number of suffix bits. The number of such
+bits (either from the key itself or from a hash of the key—as we discuss later in the paper) trades
+space for decreased false positives.
+\section{Fast Succinct Tries}
+\label{sec:orgdc6fb15}
+FST’s design is based on the observation that the upper levels of a trie comprise few nodes but incur
+many accesses. The lower levels comprise the majority of nodes, but are relatively ``colder''.
+
+We therefore encode the upper levels using a fast bitmap-based encoding scheme (\textbf{LOUDS-Dense}) in which
+a child node search requires only one array lookup, choosing performance over space. We encode the
+lower levels using the space-efficient \textbf{LOUDS-Sparse} scheme, so that the overall size of the encoded
+trie is bounded.
+\subsection{Background}
+\label{sec:org9761512}
+A tree representation is “succinct” if the space taken by the representation is close to the
+information-theoretic lower bound (suppose the information-theoretic lower bound is \(L\) bits.
+``close'' means \(L+O(1)\), \(L+o(L)\) or \(L+O(L)\)), which is the minimum number of bits needed to distinguish any
+object in a class.
+
+A class of size \(n\) requires at least \(\log_2n\) bits to encode each object. A trie of degree \(k\)
+is a rooted tree where each node can have at most \(k\) children with unique labels selected from set
+\(\{0,1,\dots,k-1\}\). Since there are \(\binom{kn+1}{n}/kn+1\) \(n\)-node tries of degree \(k\), the
+information-theoretic lower bound is approximately \(n(k\log_2k-(k-1)\log_2(k-1))\) bits.
+
+An ordinal tree is a rooted tree where each node can have an arbitrary number of children in order.
+Jacobson introduced Level-Ordered Unary Degree Sequence (\textbf{LOUDS}) to encode an ordinal tree.
+\begin{center}
+\includegraphics[width=.7\textwidth]{../../images/papers/33.png}
+\captionof{figure}{\label{}An example of ordinal tree encoded using LOUDS}
+\end{center}
+
+Navigating a tree encoded with LOUDS uses the rank \& select primitives. Given a bit vector,
+\(rank_1(i)\) counts the number of 1's up to position \(i\) (\(rank_0(i)\) counts 0's) while
+\(select_1(i)\) returns the position of the \(i\)-th 1. Modern rank \& select implementations achieve
+constant time by using look-up tables (LUTs) to store a sampling of precomputed results.
+\begin{itemize}
+\item Position of the \(i\)-th node = \(select_0(i)+1\).
+\item Position of the \(k\)-th child of the node started at \(p\) = \(select_0(rank_1(p+k))+1\).
+\item Position of the parent of the node started at \(p\) = \(select_1(rank_0(p))\).
+\end{itemize}
+\subsection{LOUDS-Dense}
+\label{sec:org892a8ff}
+LOUDS-Dense encodes each trie node using three bitmaps of size 256 (because the node fanout is 256)
+and a byte-sequence for the values as shwon in the top half of Figure \ref{2}.
+\begin{center}
+\includegraphics[width=.7\textwidth]{../../images/papers/34.png}
+\label{2}
+\end{center}
+
+The first bitmap (\textbf{D-Labels}) records the branching labels for each node. Specifically, the \(i\)-th bit
+in the bitmap, where \(0\le i\le 255\), indicates whether the node has a branch with label \(i\).
+
+The second bitmap (\textbf{D-HasChild}) indicates whether a branch points to a sub-trie or terminates.
+
+The third bitmap (\textbf{D-IsPrefixKey}) include only one bit per node. The bit indicates whether the prefix
+that leads to the node is also a valid key.
+
+The final byte-sequence (\textbf{D-Values}) stores the fixed-length values (e.g., pointers) mapped by the keys.
+The values are concatenated in level order.
+
+\wu{
+One LOUDS-Dense has only one bitmap of each type.
+}
+
+To get a taste:
+\begin{minted}[]{cpp}
+bool LoudsDense::lookupKey(const std::string &key,
+                           position_t &out_node_num) const {
+  position_t node_num = 0;
+  position_t pos = 0;
+  for (level_t level = 0; level < height_; level++) {
+    pos = (node_num * kNodeFanout);
+    if (level >= key.length()) { // if run out of searchKey bytes
+      if (prefixkey_indicator_bits_->readBit(
+              node_num)) // if the prefix is also a key
+        return suffixes_->checkEquality(getSuffixPos(pos, true), key,
+                                        level + 1);
+      else
+        return false;
+    }
+    pos += (label_t)key[level];
+
+    // child_indicator_bitmaps_->prefetch(pos);
+
+    if (!label_bitmaps_->readBit(pos)) // if key byte does not exist
+      return false;
+
+    if (!child_indicator_bitmaps_->readBit(pos)) // if trie branch terminates
+      return suffixes_->checkEquality(getSuffixPos(pos, false), key, level + 1);
+
+    node_num = getChildNodeNum(pos);
+  }
+  // search will continue in LoudsSparse
+  out_node_num = node_num;
+  return true;
+}
+\end{minted}
+
+Tree navigation uses array lookups and rank \& select operations. We denote \(rank_1/select_1\) over
+bit sequence \(bs\) on position \(pos\) to be \(rank_1/select_1(bs,pos)\). Let \(pos\) be the current
+bit position in \(D\)-Labels.To traverse down the trie, given \(pos\) where \(\texttt{D-HasChild}[pos]=1\),
+\begin{itemize}
+\item \(\texttt{D-ChildNodePos}(pos)=256\times rank_1(\texttt{D-HasChild},pos)\) computes the bit position of the first
+child node.
+\item \(\texttt{D-ParentNodePos}(pos)=256\times select_1(\texttt{D-HasChild}, \floor{pos/256})\) computes
+the bit position of the parent node.
+\item \(\texttt{D-ValuePos}(pos)=rank_1(\texttt{D-Labels},pos)-rank_1(\texttt{D-HasChild},pos)+rank_1(\texttt{D-IsPrefixKey},\floor{pos/256})-1\)
+gives the lookup position. \wu{just to find the location of the pointer}.
+\end{itemize}
+\subsection{LOUDS-Sparse}
+\label{sec:org7020807}
+LOUDS-Sparse encodes a trie node using four byte or bit-sequences. The encoded nodes are then
+concatenated in level-order.
+
+The first byte-sequence, \textbf{S-Labels}, records all the branching labels for each trie node. We denote
+the case where the prefix leading to a node is also a value key using the special byte \texttt{0xFF} at the
+beginning of the node.
+
+The second bit sequence \textbf{S-HasChild} includes one bit for each byte in \textbf{S-Labels} to indicate whether a
+child branch continues or terminates.
+
+The third bit-sequence \textbf{S-LOUDS} also includes one bit for each byte in \textbf{S-Labels} denoting node
+boundaries: if a label  is the first in a node, its \textbf{S-LOUDS} bit is set.
+
+The final byte-sequence \textbf{S-Values} is the same as D-Values.
+\begin{itemize}
+\item to move down, \(\texttt{S-ChildNodePos}(pos)=select_1(\texttt{S-LOUDS},rank_1(\texttt{S-HasChild},pos)+1)\)
+\item to move up,
+\(\texttt{S-ParentNodePos}(pos)=select_1(\texttt{S-HasChild},rank_1(\texttt{S-LOUDS},pos)-1)\)
+\item to access a value, \(\texttt{S-ValuePos}(pos)=pos-rank_1(\texttt{S-HasChild},pos)-1\)
+\end{itemize}
+\subsection{LOUDS-DS and Operations}
+\label{sec:org0749835}
+We maintain a size ratio \(R\) between LOUDS-Sparse and LOUDS-Dense to determine the dividing point
+among levels. Suppose the trie has \(H\) levels. Let \(\texttt{LOUDS-Dense-Size}(l)\),
+\(0 \le l \le H\) denote the size of LOUDS-Dense-encoded levels up to \(l\) (non-inclusive). Let
+\(\texttt{LOUDS-Sparse-Size}(l)\), represent the size of LOUDS-Sparse encoded levels from \(l\)
+(inclusive) to \(H\). The \textbf{cutoff} level is defined as the largest \(l\) such that .
+\begin{equation*}
+\texttt{LOUDS-Dense-Size}(l ) × R ≤ \texttt{LOUDS-Sparse-Size}(l).
+\end{equation*}
+Reducing \(R\) leads to more levels, favoring performance over space. We use \(R=64\) as the default.
+
+LOUDS-DS supports three basic operations efficiently:
+\begin{itemize}
+\item \(\texttt{ExactKeySearch}(key)\): Return the value of \(key\) if \(key\) exists (or \texttt{NULL} otherwise).
+\item \(\texttt{LowerBound}(key)\): Return an iterator pointing to the key-value pair \((k,v)\) where
+\(k\) is the smallest in lexicographic order satisfying \(k\ge key\).
+\item \(\texttt{MoveToNext}(iter)\): Move the iterator to the next key-value.
+\end{itemize}
+\section{Problems}
+\label{sec:orga63aa68}
+
+
+\section{References}
+\label{sec:org9f9e17a}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../../../references}
+\end{document}
