@@ -251,6 +251,51 @@ bool LoudsDense::lookupKey(const std::string &key,
         leaf height.
 
 ** SuRF with Hashed Key Suffixes
+        SuRF with hashed key suffixes (SuRF-Hash) adds a few hash bits per key to SuRF-Base to reduce its FPR.
+
+        For each key \(K\), SuRF-Hash stores the \(n\) (\(n\) is fixed) least-significant bits of \(H(K)\) in
+        FST's value array. When a key \(K'\) lookup reaches a leaf node, SuRF-Hash extracts the \(n\)
+        least-significant bits of \(H(K')\) and performs an equality check against the stored hash bits
+        associated with the leaf node.
+
+** SuRF with Real Key Suffixes
+        Instead of hash bits, SuRF with real key suffixes (SuRF-Real) stores the \(n\) key bits immediately following the stored prefix of a key.
+
+** SuRF with Mixed Key Suffixes
+
+
+** Operations
+        ~build(keyList)~: Construct the filter given a list of keys
+
+        ~result = lookup(k)~: Perform a point query on \(k\).
+
+        ~iter, fp_flag = moveToNext(k)~: return an iterator pointing to the smallest key that is \(\ge k\).
+
+        ~count, low_fp_flag, high_fp_flag = count(lowKey, highKey)~: Return the number of keys contained in
+        ~[lowKey, highKey]~.
+
+* FST & SuRF Microbenchmarks
+** FST Evaluation
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 5
+        #+CAPTION: FST vs. Pointer-based Indexes
+        [[../../images/papers/41.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 6
+        #+CAPTION: FST vs. Other Succinct Tries
+        [[../../images/papers/40.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 7
+        #+CAPTION: FST Performance Breakdown
+        [[../../images/papers/39.png]]
+** SuRF Evaluation
+* Example Application: RocksDB
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/42.png]]
 
 * Problems
 
