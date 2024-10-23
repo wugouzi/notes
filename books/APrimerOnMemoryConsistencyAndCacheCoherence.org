@@ -1,0 +1,72 @@
+#+title: A Primer on Memory Consistency and Cache Coherence
+
+#+AUTHOR:
+#+EXPORT_FILE_NAME: ../latex/APrimerOnMemoryConsistencyAndCacheCoherence/APrimerOnMemoryConsistencyAndCacheCoherence.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+* Introduction to Consistency and Coherence
+* Coherence Basics
+        In this primer, we consider systems with multiple processor cores that share memory. That is, all
+        cores can perform loads and stores to all (physical) addresses. The baseline system model includes a
+        single multicore processor chip and oﬀ-chip main memory, as illustrated in Figure ref:2.1
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: 2.1
+        #+CAPTION: Baseline system model used throughout this primer
+        [[../images/papers/45.png]]
+
+        LLC is *last-level cache* that is shared by all cores. Throughout this primer, when we use the term
+        "cache", we are referring to a core’s private data cache and no  the LLC.
+
+        This baseline system model omits many features that are common but that are not required for purposes
+        of most of this primer. These features include instruction caches, multiple-level caches, caches
+        shared among multiple cores, virtually addressed caches, TLBs, and coherent direct memory access
+        (DMA).
+
+        To prevent incoherence, the system must implement a *cache coherence protocol* that makes the store from
+        Core 1 visible to Core 2.
+
+        We classify coherence protocols into two categories based on whether there is a clean separation of
+        coherence from the consistency model or whether they are indivisible.
+
+        *Consistency-agnostic coherence*. A write is made visible to all other cores before returning.
+        *Consistency-directed coherence*. Writes are propagated asynchronously.
+
+        We define coherence through the *single-writer-mutiple-reader* (*SWMR*) invariant. For any given memory
+        location, at any given moment in time, there is either a single core that may write it (and that may
+        also read it) or some number of cores that may read it.
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: 2.3
+        #+CAPTION: Dividing a given memory location's lifetime into epochs
+        [[../images/Misc/1.png]]
+
+        In addition to the SWMR invariant, coherence requires that the value of a given memory location is
+        propagated correctly.
+
+        Thus, the deﬁnition of coherence must augment the SWMR invariant with a *data value invariant* that
+        pertains to how values are propagated from one epoch to the next. This invariant states that the value
+        of a memory location at the start of an epoch is the same as the value of the memory location at the
+        end of its last read-write epoch.
+
+        A core can perform loads and stores at various granularities, often ranging from 1–64 bytes. In
+        theory, coherence could be performed at the ﬁnest load/store granularity. However, in practice
+        coherence is usually maintained at the granularity of cache blocks. That is, the hardware enforces
+        coherence on a cache block by cache block basis. In practice, the SWMR invariant is likely to be that,
+        for any block of memory, there is either a single writer or some number of readers.
+* Memory Consistency: Motivation and Sequential Consistency
+        #+ATTR_LATEX: :options [How a Core Might Reorder Memory Access]
+        #+BEGIN_remark
+        *Store-store reordering*: Two stores may be reordered if a core has a non-FIFO write buﬀer that lets
+        stores depart in a diﬀerent order than the order in which they entered. This might occur if the ﬁrst
+        store misses in the cache while the second hits or if the second store can coalesce with an earlier
+        store.
+
+        *Load-Load reordering*: Modern dynamically scheduled cores may execute instructions out of program
+        order.
+
+        *Load-store and store-load reordering*: Note that store-load reorderings may also arise due to local
+        bypassing in the commonly implemented FIFO write buﬀer, even with a core that executes all instructions in program order.
+        #+END_remark

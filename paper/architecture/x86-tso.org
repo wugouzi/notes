@@ -1,0 +1,288 @@
+#+title: X86 Tso
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/architecture/x86-tso.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/architecture/}}
+#+LATEX_HEADER: \DeclareMathOperator{\MOV}{\texttt{MOV}}
+#+LATEX_HEADER: \DeclareMathOperator{\EBX}{\texttt{EBX}}
+#+LATEX_HEADER: \DeclareMathOperator{\EAX}{\texttt{EAX}}
+#+LATEX_HEADER: \DeclareMathOperator{\ECX}{\texttt{ECX}}
+#+LATEX_HEADER: \DeclareMathOperator{\EDX}{\texttt{EDX}}
+#+LATEX_HEADER: \DeclareMathOperator{\Proc}{\textsf{Proc}}
+#+LATEX_HEADER: \DeclareMathOperator{\MFENCE}{\textsf{MFENCE}}
+#+LATEX_HEADER: \DeclareMathOperator{\INC}{\texttt{INC}}
+#+LATEX_HEADER: \DeclareMathOperator{\LOCK}{\texttt{LOCK}}
+#+LATEX_HEADER: \DeclareMathOperator{\XCHG}{\texttt{XCHG}}
+#+LATEX_HEADER: \DeclareMathOperator{\acquire}{\textsf{acquire}}
+#+LATEX_HEADER: \DeclareMathOperator{\release}{\textsf{release}}
+#+LATEX_HEADER: \DeclareMathOperator{\CMP}{\texttt{CMP}}
+#+LATEX_HEADER: \DeclareMathOperator{\JMP}{\texttt{JMP}}
+#+LATEX_HEADER: \DeclareMathOperator{\JNS}{\texttt{JNS}}
+#+LATEX_HEADER: \DeclareMathOperator{\JLE}{\texttt{JLE}}
+#+LATEX_HEADER: \DeclareMathOperator{\spin}{\textsf{spin}}
+#+LATEX_HEADER: \DeclareMathOperator{\DEC}{\texttt{DEC}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+
+        #+NAME: SB
+        #+CAPTION: SB
+        |          | \(\Proc 0\)                 | \(\Proc 2\)                            |
+        |----------+-----------------------------+----------------------------------------|
+        |          | \(\MOV\;[x]\leftarrow 1\)   | \(\MOV\;[y]\leftarrow 1\)              |
+        |          | \(\MOV\;\EAX\leftarrow[y]\) | \(\MOV\;\EBX\leftarrow[x]\)            |
+        |----------+-----------------------------+----------------------------------------|
+        | Allowed Final State: | \(\EAX=0\)                  | \(\EBX=0\) |
+
+
+* Architecture Specifications
+
+
+* IWP/AMD3.14/x86-CC
+        These are essentially causal-consistency models, and they allow different processors to see writes to
+        independent locations in different orders, as in the IRIW litmus test below
+        #+NAME: IRIW
+        #+CAPTION: IRIW
+        |                       | \(\Proc 0\)               | \(\Proc 1\)               | \(\Proc 2\)                 | \(\Proc 3\)                 |
+        |-----------------------+---------------------------+---------------------------+-----------------------------+-----------------------------|
+        |                       | \(\MOV\;[x]\leftarrow 1\) | \(\MOV\;[y]\leftarrow 1\) | \(\MOV\;\EAX\leftarrow[x]\) | \(\MOV\;\ECX\leftarrow[y]\) |
+        |                       |                           |                           | \(\MOV\;\EBX\leftarrow[y]\) | \(\MOV\;\EDX\leftarrow[x]\) |
+        |-----------------------+---------------------------+---------------------------+-----------------------------+-----------------------------|
+        | Forbidden Final State |                           |                           | \(\EAX=1\)                  | \(\ECX=0\)                  |
+        |                       |                           |                           | \(\EBX=0\)                  | \(\EDX=0\)                  |
+
+* Our X86-TSO Programmer's Model
+        We have designed a TSO-like model for x86, called x86-TSO. It is defined mathematically in two styles:
+        an abstract machine with explicit store buffers, and an axiomatic model that defines valid executions
+        in terms of memory orders; they are formalised in HOL4 and are proved equivalent.
+
+** The Abstract Machine
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: x86-TSO block diagram
+        [[../../images/papers/44.png]]
+        In this programmer’s model there is no need to consider physical processors explicitly; it is hardware
+        threads that correspond to the \(\Proc N\) columns in the tests we give.
+
+        The state of the storage subsystem comprises a shared memory that maps addresses to values, a global
+        lock to indicate when a particular hardware thread has exclusive access to memory, and one store
+        buffer per hardware thread.
+
+        * The store buffers are FIFO and a reading thread must read its most recent buffered write, if there
+          is one, to that address; otherwise reads are satisfied from shared memory.
+        * An \(\MFENCE\) instruction flushes the store buffer of that thread.
+        * To execute a LOCK’d instruction, a thread must first obtain the global lock. At the end of the
+          instruction, it flushes its store buffer and relinquishes the lock. While the lock is held by one
+          thread, no other thread can read.
+        * A buffered write from a thread can propagate to the shared memory at any time except when some other
+          thread holds the lock.
+
+
+        More precisely, the possible interactions between the threads and the storage subsystem are described
+        by the following *events*:
+        * \(\sfW_p[a]=v\), for a write of value \(v\) to address \(a\) by thread \(p\)
+        * \(\sfR_p[a]=v\), for a read of \(v\) from \(a\) by thread \(p\)
+        * \(\sfF_p\), for an \(\MFENCE\) memory barrier by thread \(p\)
+        * \(\sfL_p\), at the start of a LOCK'd instruction by thread \(p\)
+        * \(\sfU_p\), at the end of a LOCK'd instruction by thread \(p\)
+        * \(\tau_p\), for an internal action of the storage subsystem, propagating a write from \(p\)'s store
+          buffer to the shared memory.
+
+        For example, suppose a particular hardware thread \(p\) has come to the instruction \(\INC\;[56]\)
+        (which adds 1 to the value at the address 56), and \(p\)'s store buffer contains a single write to 56,
+        of value 0. In one execution we might see read and write events, \(\sfR_p[56]=0\) and
+        \(\sfW_p[56]=1\), followed by two \(\tau_p\) events as the two writes propagate to shared memory,
+        where it could be overwritten by another thread. Executions of \(\LOCK;\INC\;[56]\) would be similar
+        but bracketed by \(\sfL_p\) and \(\sfU_p\) events.
+
+        The behaviour of the storage subsystem is specified by the following rules, where we define a hardware
+        thread to be *blocked* if the storage subsystem lock is taken by another hardware thread, i.e., while
+        another hardware thread is executing a LOCK'd instruction。
+        1. \(\sfR_p[a]=v\): \(p\) can read \(v\) from memory at address \(a\) if \(p\) is not blocked, there
+           are no writes to \(a\) in \(p\)'s store buffer, and the memory does contain \(v\) at \(a\)
+        2. \(\sfR_p[a]=v\): \(p\) can read \(v\) from its store buffer for address \(a\) if \(p\) is not
+           blocked and has \(v\) as the newest write to \(a\) in its buffer
+        3. \(\sfW_p[a]=v\): \(p\) can write \(v\) to its store buffer for address \(a\) at any time
+        4. \(\tau_p\): if \(p\) is not blocked, it can silently dequeue the oldest write from its store buffer
+           and place the value in memory at the given address, without coordinating with any hardware thread
+        5. \(\sfF_p\): if \(p\)'s store buffer is empty, it can execute an \(\MFENCE\) (note that if a
+           hardware thread encounters an \(\MFENCE\) instruction when its store buffer is not empty, it can
+           take one or more \(\tau_p\)  steps to empty the buffer and proceed, and similarly 7 below)
+        6. \(\sfL_p\): if the lock is not held, it can begin a LOCK'd instruction
+        7. \(\sfU_p\): if \(p\) holds the lock, and its store buffer is empty, it can end a LOCK'd instruction
+
+
+        Additionally, we tentatively impose a progress condition, that each memory write is eventually
+        propagated from the relevant store buffer to the shared memory. This is not stated in the
+        documentation and is hard to test. We are assured that it holds at least for AMD processors.
+
+** Litmus Tests
+        #+ATTR_LATEX: :options [Stores are not reordered with other stores]
+        #+BEGIN_examplle
+       |           | \(\Proc 0\)               | \(\Proc 1\)                 |
+       |-----------+---------------------------+-----------------------------|
+       |           | \(\MOV\;[x]\leftarrow 1\) | \(\MOV\;\EAX\leftarrow[y]\) |
+       |           | \(\MOV\;[y]\leftarrow 1\) | \(\MOV\;\EBX\leftarrow[x]\) |
+       |-----------+---------------------------+-----------------------------|
+       | Forbidden | \(\EAX=1\)                |                             |
+       |           | \(\EBX=0\)                |                             |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Stores are not reordered with older loads]
+        #+BEGIN_examplle
+        |           | \(\Proc 0\)                 | \(\Proc 1\)                 |
+        |-----------+-----------------------------+-----------------------------|
+        |           | \(\MOV\;\EAX\leftarrow[x]\) | \(\MOV\;\EBX\leftarrow[y]\) |
+        |           | \(\MOV\;[y]\leftarrow 1\)   | \(\MOV\;[x]\leftarrow 1\)   |
+        |-----------+-----------------------------+-----------------------------|
+        | Forbidden | \(\EAX=1\)                  | \(\EBX=1\)                  |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Loads may be reordered with older stores]
+        #+BEGIN_examplle
+        |         | \(\Proc 0\)                 | \(\Proc 2\)                 |
+        |---------+-----------------------------+-----------------------------|
+        |         | \(\MOV\;[x]\leftarrow 1\)   | \(\MOV\;[y]\leftarrow 1\)   |
+        |         | \(\MOV\;\EAX\leftarrow[y]\) | \(\MOV\;\EBX\leftarrow[x]\) |
+        |---------+-----------------------------+-----------------------------|
+        | Allowed | \(\EAX=0\)                  | \(\EBX=0\)                  |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Loads are not reordered with older stores to the same location]
+        #+BEGIN_examplle
+        |          | \(\Proc 0\)                 |
+        |----------+-----------------------------|
+        |          | \(\MOV\;[x]\leftarrow 1\)   |
+        |          | \(\MOV\;\EAX\leftarrow[x]\) |
+        |----------+-----------------------------|
+        | Required | \(\EAX=1\)                    |
+        x86-TSO requires the specified result because reads must check the local store buffer
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Inter-processor forwarding is allowed]
+        #+BEGIN_examplle
+
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Stores are transitively visible]
+        #+BEGIN_examplle
+        |           | \(\Proc 0\)               | \(\Proc 1\)                 | \(\Proc 2\)                 |
+        |-----------+---------------------------+-----------------------------+-----------------------------|
+        |           | \(\MOV\;[x]\leftarrow 1\) | \(\MOV\;\EAX\leftarrow[x]\) | \(\MOV\;\EBX\leftarrow[y]\) |
+        |           |                           | \(\MOV\;[y]\leftarrow 1\)   | \(\MOV\;\ECX\leftarrow[x]\) |
+        |-----------+---------------------------+-----------------------------+-----------------------------|
+        | Forbidden |                           | \(\EAX=1\)                  | \(\EBX=1\)                  |
+        |           |                           |                             | \(\ECX=0\)                    |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Stores are seen in a consistent order by other processors]
+        #+BEGIN_examplle
+        |           | \(\Proc 0\)               | \(\Proc 1\)               | \(\Proc 2\)                 | \(\Proc 3\)                 |
+        |-----------+---------------------------+---------------------------+-----------------------------+-----------------------------|
+        |           | \(\MOV\;[x]\leftarrow 1\) | \(\MOV\;[y]\leftarrow 1\) | \(\MOV\;\EAX\leftarrow[x]\) | \(\MOV\;\ECX\leftarrow[y]\) |
+        |           |                           |                           | \(\MOV\;\EBX\leftarrow[y]\) | \(\MOV\;\EDX\leftarrow[x]\) |
+        |-----------+---------------------------+---------------------------+-----------------------------+-----------------------------|
+        | Forbidden |                           |                           | \(\EAX=1\)                  | \(\ECX=0\)                  |
+        |           |                           |                           | \(\EBX=0\)                  | \(\EDX=0\)                  |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Locked instructions have a total order]
+        #+BEGIN_examplle
+
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Loads are not reorderd with locks]
+        #+BEGIN_examplle
+        |           | \(\Proc 0\)                  | \(\Proc 1\)                  |
+        |-----------+------------------------------+------------------------------|
+        |           | \(\XCHG\;[x]\leftarrow\EAX\) | \(\XCHG\;[y]\leftarrow\ECX\) |
+        |           | \(\MOV\;\EBX\leftarrow[y]\)  | \(\MOV\;\EDX\leftarrow[x]\)  |
+        |-----------+------------------------------+------------------------------|
+        | Initial   | \(\EAX=1\)                   | \(\ECX=1\)                   |
+        |-----------+------------------------------+------------------------------|
+        | Forbidden | \(\EBX=0\)                   | \(\EDX=0\)                     |
+        #+END_examplle
+
+        #+ATTR_LATEX: :options [Stores are not reordered with locks]
+        #+BEGIN_examplle
+        |           | \(\Proc 0\)                  | \(\Proc 1\)                 |
+        |-----------+------------------------------+-----------------------------|
+        |           | \(\XCHG\;[x]\leftarrow\EAX\) | \(\MOV\;\EBX\leftarrow[y]\) |
+        |           | \(\MOV\;[y]\leftarrow 1\)    | \(\MOV\;\ECX\leftarrow[x]\) |
+        |-----------+------------------------------+-----------------------------|
+        | Initial   | \(\EAX=1\)                   |                             |
+        |-----------+------------------------------+-----------------------------|
+        | Forbidden |                              | \(\ECX=0\)                  |
+        |           |                              | \(\EBX=1\)                  |
+        #+END_examplle
+
+** Empirical Testing
+
+* A Linux X96 Spinlock Implementation
+        The implementation comprises code to \(\acquire\) and \(\release\) a spinlock. It is assumed that
+        these are properly bracketed around critical sections and that spinlocks are not mutated by any other
+        code.
+        | \(\acquire\)       | \(\LOCK;\DEC\) | \([\EAX]\)             | LOCK'd decrement of \([\EAX]\)     |
+        |                    | \(\JNS\)       | \(\textsf{enter}\)     | branch if \([\EAX]\) was \(\ge 1\) |
+        | \(\spin\)          | \(\CMP\)       | \([\EAX],0\)           | test \([\EAX]\)                    |
+        |                    | \(\JLE\)       | \(\spin\)              | branch if \([\EAX]\) was \(\le 0\) |
+        |                    | \(\JMP\)       | \(\acquire\)           | try again                          |
+        | \(\textsf{enter}\) |                |                        | the critical section starts here   |
+        |--------------------+----------------+------------------------+------------------------------------|
+        | \(\release\)       | \(\MOV\)       | \([\EAX]\leftarrow 1\) |                                    |
+
+        The optimisation in question made the releasing MOV instruction not LOCK’d.
+
+        Consider a spinklock at address \(x\) and let \(y\) be another shared memory address. Suppose that
+        several threads want to access \(y\), and that they use spinlocks to ensure mutual exclusion.
+        Initially, no one has the lock and \([x]=1\). The first thread \(t\) to try to acquire the lock
+        atomically decrements \(x\) by 1 (using a \(\LOCK\) prefix); it then jumps into the critical section.
+        Because a store buffer flush is part of LOCK'd instructions, \([x]\) will be 0 in shared memory after
+        the decrement.
+
+        Now if another thread attempts to acquire the lock, it will not jump into the critical section after
+        performing the atomic decrement, since \(x\) was not 1. It will thus enter the \(\spin\) loop. In this
+        loop, the waiting thread continually reads the value of \(x\) until it gets a positive result.
+
+        Returning to the original thread \(t\), it can read and write \(y\) inside of its critical sectoin
+        while the others are spinning. These writes are initially placed in \(t\)'s store buffer, and some may
+        be propagated to shared memory. However, it does not matter how many (if any) are written to main
+        memory, because (by assumption) no other thread is attempting to read (or write) y. When \(t\) is
+        ready to exit the critical section, it releases the lock by writing the value 1 to \(x\); this write
+        is put in \(t\)’s store buffer. It can now continue after the critical section (in the text below, we
+        assume it does not try to re-acquire the lock).
+
+        If the releasing \(\MOV\) had the \(\LOCK\) prefix then all of the buffered writes to \(y\) would be
+        sent to main memory, as would the write of 1 to \(x\). Another thread could then acquire the spinlock.
+
+        However, since it does not, the other threads continue to spin until the write setting \(x\) to 1 is
+        removed from \(t\)'s write buffer and sent to shared memory at some point in the future. Because
+        \(t\)'s write buffer is emptied in FIFO order, any writes to \(y\) from within \(t\)'s critical
+        section must have been propagated to shared memory before the write to \(x\). Thus, the next thread to
+        enter a critical section will not be able to see \(y\) in an inconsistent state.
+
+* Data-race Freedom
+        To make a relaxed-memory architecture usable for large-scale programming, it is highly desirable
+        (perhaps essential) to identify programming idioms which ensure that one can reason in terms of a
+        traditional interleaving model of concurrency, showing that any relaxed-memory execution is equivalent
+        to one that is possible above a sequentially consistent memory model. One common idiom with this
+        property is *data-race freedom*. Informally, a program has a data race if multiple threads can access
+        the same location (where at least one is writing to the location) without a synchronisation operation
+        separating the accesses. Programs where every shared access is in a critical section are one common
+        example of data race free programs.
+
+        For x86-TSO, we define two events on different threads to be *competing* if they access the same
+        address, one is a write, and the other is a read (for aligned x86 accesses, it is not necessary to
+        consider write/write pairs as competing).
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

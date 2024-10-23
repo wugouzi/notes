@@ -292,10 +292,64 @@ bool LoudsDense::lookupKey(const std::string &key,
         [[../../images/papers/39.png]]
 ** SuRF Evaluation
 * Example Application: RocksDB
+        We modified RocksDB's point (~Get~) and range (~Seek~, ~Next~) query implementations to use SuRF.
+
+        For ~Seek(lk, hk)~, if ~hk~ (high key) is not specified, we call it an *Open Seek*. Otherwise, we call it a
+        *Closed Seek*. To implement ~Seek(lk, hk)~, RocksDB first collects the candidate SSTables from all levels
+        by searching for lk (low key) in the block indexes.
+
+        Absent SuRFs, RocksDB examines each candidate SSTable and fetches the block containing the smallest
+        key that is \(\ge hk\). RocksDB then compares the candidate keys and finds the global
+        smallest key \(K\ge hk\). For an Open Seek, the query succeeds and returns the iterators (at least one
+        per level). For a Closed Seek, however, RocksDB performs an extra check against the hk: if
+        \(K\le hk\), the query succeeds; otherwise the query returns an invalid iterator.
+
+        #+ATTR_LATEX: :width .43\textwidth :float nil
+        #+NAME: 11
+        #+CAPTION: Execution paths for Get, Seek, and Count in RocksDB
+        [[../../images/papers/43.png]]
+
+
+        With SuRFs, however, instead of fetching the actual blocks, RocksDB can obtain the candidate key for each SSTable by per-
+forming a moveToNext(lk) query on its SuRF to avoid the one I/O
+per SSTable. If the query succeeds (i.e., Open Seek or K ≤ hk),
+RocksDB fetches exactly one block from the selected SSTable that
+contains the global minimum K. If the query fails (i.e., K > hk), no
+I/O is involved. Because SuRF’s moveToNext query returns only a
+key prefix Kp , three additional checks are required to guarantee
+correctness. First, if the moveToNext query sets the false positive
+flag, RocksDB must fetch the complete key K from the SSTable
+block to determine whether K ≥ lk. If not set, RocksDB fetches the
+next key after K. Second, if Kp is a prefix of hk, the complete key
+K is also needed to verify K ≤ hk. If not, the current SSTable is
+skipped. Third, multiple key prefixes could tie for the smallest. In
+this case, RocksDB must fetch their corresponding complete keys
+from the SSTable blocks to find the globally smallest. Despite the
+three potential additional checks, using SuRF in RocksDB reduces
+the average I/Os per Seek(lk, hk) query, as shown in Section 6.
+
+* System Evaluation
+        Setup:
+        * simulated 2K sensors to record events.
+        * The key for each event is a 128-bit value comprised of a 64-bit timestamp followed by a 64-bit
+          sensor ID. The associated value in the record is 1 KB long.
+        * The occurrence of each event detected by each sensor follows a Poisson distribution with an expected frequency of one every 0.2 seconds.
+        * Each sensor operates for 10K seconds and records ∼50K events.
+        * The total size of the raw records is approximately 100 GB.
+        * Bloom filters use 14 bits per key. The equivalent-sized SuRF-Hash and SuRF-Real include a 4-bit suffix per key.
+
+
+        Workload:
+        * Point Query: Given a timestamp and a sensor ID, return the record if there is an event.
+        * Open-Seek Query: Given a starting timestamp, return an iterator pointing to the earliest event after that time.
+        * Closed-Seek Query: Given a time range, determine whether any events happened during that time
+          period. If yes, return an iterator pointing to the earliest event in the range.
+
         #+ATTR_LATEX: :width .9\textwidth :float nil
         #+NAME:
         #+CAPTION:
         [[../../images/papers/42.png]]
+
 
 * Problems
 
