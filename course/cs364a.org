@@ -1,0 +1,217 @@
+#+title: Lecture Notes on Algorithmic Game Theory
+#+AUTHOR:
+#+EXPORT_FILE_NAME: ../latex/cs364a/cs364a.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+
+* Introduction and Examples
+** Braess's Paradox
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: Braess's Paradox
+        [[../images/Misc/2.png]]
+        There is a suburb \(s\), a train station \(t\), and a fixed number of drivers who wish to commute from
+        \(s\) to \(t\). For the moment, assume two non-interfering routes from \(s\) to \(t\), each comprising
+        one long wide road (with travel time one hour, no matter how much traﬃc uses it) and one short narrow
+        road (with travel time in hours equal to the fraction of traﬃc using it) as shown in Figure [[ref:1]](a).
+        The combined travel time in hours of the two edges on one of these routes is \(1 + x\), where \(x\) is
+        the fraction of the traﬃc that uses the route. The routes are therefore identical, and traﬃc should
+        split evenly between them. In this case, all drivers arrive at their destination 90 minutes after
+        their departure from \(s\).
+
+        Now, suppose we install a teleportation device allowing drivers to travel instantly from \(v\) to
+        \(w\). The new network is shown in Figure [[ref:1]](b), with the teleporter represented by edge \((v,w)\)
+        with constant cost \(c(x)=0\), how will the drivers react?
+
+        Braess’s Paradox thus shows that the intuitively helpful action of adding a new zero-cost link can negatively impact all of the traﬃc!
+* Mechanism Design basics
+        The first key assumption is that each bidder \(i\) has a valuation \(v_i\) — its maximum
+        willingness-to-pay for the item being sold.
+
+        Our bidder utility model, called the *quasilinear utility model*x, is as follows. If a bidder loses an
+        auction, its utility is 0. If the bidder wins at a price p, then its utility is \(v_i-p\).
+
+        *Sealed-bid auctions*:
+        1. Each bidder \(i\) privately communicates a bid \(b_i\) to the auctioner
+        2. The auctioneer decides who get the good
+        3. The auctioneer decides on a selling price.
+
+        A much more reasonable choice is to ask the winning bidder to pay its bid. This is called a
+        *first-price auction*, and such auction are common in practice.
+
+        A *second-price* or *Vickrey* auction is a sealed-bid auction in which the highest bidder wins and pays a
+        price equal to the second-highest bid.
+
+        #+BEGIN_claim
+        [[label:4.1]]
+        In a second-price auction, every bidder has a dominant strategy: set its bid \(b_i\) equal to its
+        private valuation \(v_i\).
+        #+END_claim
+
+        #+BEGIN_proof
+        [[label:4.2]]
+        Fix an arbitrary player \(i\), its valuation \(v_i\), and the bids \(\bb_{-i}\) of the other players.
+        We need to show that bidder \(i\)'s utility is maximized by setting \(b_i=v_i\).
+
+        Let \(B=\max_{j\neq i}b_j\) denote the highest bid by some other bid. If \(v_i<B\), the highest
+        utility that bidder \(i\) can get is 0. If \(v_i\ge B\), the highest utility the bidder \(i\) can get
+        is \(v_i-B\), and it achieves this by didding truthfully.
+        #+END_proof
+
+        #+BEGIN_claim
+        In a second-price auction, every truthtelling bidder is guaranteed non-negative utility
+        #+END_claim
+
+        #+ATTR_LATEX: :options [Vickrey]
+        #+BEGIN_theorem
+        The Vickrey auction is *awesome*. Meaning it enjoys three properties:
+        1. *Strong incentitive guarantees*: It is *dominant-strategy incentive-compatible* (*DSIC*), i.e., Claims
+           [[ref:4.1]] and [[ref:4.2]] hold
+        2. *Strong performance guarantees*: If bidders report truthfully, then the auction maximizes the *social
+           surplus*
+           \begin{equation*}
+           \sum_{i=1}^nv_ix_i
+           \end{equation*}
+           where \(x_i\) is 1 if \(i\) wins and 0 if \(i\) loses
+        3. *Computational efficiency*: The auction can be implemented in polynomial time.
+        #+END_theorem
+
+        The surplus-maximization property states something rather amazing: even though the bidder valuations
+        were a priori unknown to the auctioneer, the auction nevertheless successfully identifies the bidder
+        with the highest valuation!
+** Case Study: Sponsored Search Auctions
+        The goods for sale are the k “slots” for sponsored links on a search results page. The bidders are the
+        advertisers who have a standing bid on the keyword that was searched on.
+
+        We quantify the difference between different slots using *click-through-rates* (CTRs). The CTR
+        \(\alpha_j\) of a slot \(j\) represents the probability that the end user clicks on this slot.
+        Ordering the slots from top to bottom, we make the reasonable assumption that
+        \(\alpha_1\ge \alpha_2\ge\dots\ge\alpha_k\). For simplicity, we also make the unreasonable assumption
+        that the CTR of a slot is independent of its occupant. The exercises show how to extend the following
+        results to the more general and realistic model in which each advertiser \(i\) has a “quality score”
+        \(\beta_i\) (the higher the better) and the CTR of advertiser \(i\) in slot \(j\) is the product
+        \(\beta_i\alpha_j\).
+
+        What’s hard about mechanism design problems is that we have to jointly design two things: the choice
+        of who wins what, and the choice of who pays what. We can tackle this two-prong design problem one
+        step at a time.
+        1. Assume, without justification, that bidders bid truthfully. Then, how should we assign bidders to slots so that the above properties (2) and (3) hold?
+        2. Given our answer to Step 1, how should we set selling prices so that the above property (1) holds?
+* Myerson's Lemma
+        A good level of abstraction at which to state Myerson’s Lemma is *single-parameter environments*. Such
+        an environment has some number \(n\) of bidders. Each bidder \(i\) has a private valuation \(v_i\) ,
+        its value “per unit of stuff” that it gets. Finally, there is a *feasible set* \(X\). Each element of
+        \(X\) is an \(n\)-vector \((x_1,\dots,x_n)\), where xi denotes the “amount of stuff” given to bidder
+        \(i\). For example:
+        * In a single-item auction, \(X\) is the 0-1 vectors that have at most one 1.
+        * With \(k\) identical goods and the constraints each customer gets at most one, the feasible set is
+          the 0-1 vectors satisfying \(\sum_{i=1}^nx_i\le k\)
+
+        A sealed-bid auction has three steps:
+        1. Collect bids \(\bb=(b_1,\dots,b_n)\)
+        2. *Allocation rule*: choose a feasible allocation \(\bx(\bb)\in X\subseteq\calr^n\) as a function of
+           the bids
+        3. *Payment rule*: choose payments \(\bp(\bb)\in\calr^n\) as a function of the bids
+
+        Bidder \(i\) will have utility
+        \begin{equation*}
+        u_i(\bb)=v_i\cdot x_i(\bb)-p_i(\bb)
+        \end{equation*}
+
+        We will focus on payment rules that satisfy
+        \begin{equation*}
+        p_i(\bb)\in[0,b_i\cdot x_i(\bb)]
+        \end{equation*}
+        for every \(i\) and \(\bb\). The constraint that \(p_i(\bb)\ge 0\) is equivalent to prohibiting the
+        seller from paying the bidders. The constraint that \(p_i(\bb)\le b_i\cdot x_i(\bb)\) ensures that a
+        truthtelling bidder receives nonnegative utility.
+
+        #+ATTR_LATEX: :options [Implementable Allocation Rule]
+        #+BEGIN_definition
+        An allocation rule \(\bx\) for a single-parameter environment is *implementable* if there is a payment
+        rule \(\bp\) s.t. the seal-bid auction \((\bx,\bp)\) is DSIC
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Monotone Allocation Rule]
+        #+BEGIN_definition
+        An allocation rule \(\bx\) for a single-parameter environment is *monotone* if for every bidder \(i\)
+        and bids \(\bb_{-i}\) by the other bidders, the allocation \(x_i(z,\bb_{-i})\) to \(i\) is
+        nondecreasing in its bid \(z\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Myerson's Lemma]
+        #+BEGIN_theorem
+        Fix a single-parameter environment.
+        1. An allocation rule \(\bx\) is implementable iff it is monotone
+        2. If \(\bx\) is monotone, then there is a unique payment rule s.t. the sealed-bid mechanim
+           \((\bx,\bp)\) is DSIC (assuming the normalization that \(b_i=0\) implies \(p_i(\bb)=0\))
+        3. The payment rule in (2) is given by an explicit formula
+        #+END_theorem
+
+        #+BEGIN_proof
+        Let \(x(z)\) and \(p(z)\) be  \(x_i(z,\bb_{-i})\) and \(p_i(z,\bb_{-i})\)
+
+        Suppose \((\bx,\bp)\) is DSIC, and consider any \(0\le y<z\). Because bidder \(i\) might have private
+        valuation \(z\) and can submit the false bid \(y\) if it wants, DSIC demands that
+        \begin{equation*}
+        z\cdot x(z)-p(z)\ge z\cdot x(y)-p(y)
+        \end{equation*}
+        Similarly, since bidder \(j\) might have the private valuation \(y\) and could submit the false bid
+        \(z\), \((\bx,\bp)\) must satisfy
+        \begin{equation*}
+        y\cdot x(y)-p(y)\ge y\cdot x(z)-p(z)
+        \end{equation*}
+        Therefore we have
+        \begin{equation*}
+        z\cdot[x(y)-x(z)]\le p(y)-p(z)\le y\cdot[x(y)-x(z)]\tag{$\star$}
+        \end{equation*}
+
+        Thus we may assume that \(\bx\) is monotone.
+        In \((\star)\), fix \(z\) and let \(y\) tends to \(z\) from above. We focus primarily on the case
+        where \(x\) is piecewise constant. This implies the following constraints on \(p\), for every \(z\):
+        \begin{equation*}
+        \text{jump in $p$ at $z$}=z\cdot\text{jump in $x$ at $z$}
+        \end{equation*}
+        Thus, assuming the normalization \(p(0)=0\), we've derived the following /payment formula/, for every
+        bidder \(i\), bids \(\bb_{-i}\) by other bidders, and bids \(b_i\) by \(i\):
+        \begin{equation}
+        \label{Myerson}
+        p_i(b_i,\bb_{-i})=\sum_{j=1}^lz_j\cdot\text{jump in }x_i(\cdot,\bb_{-i})\text{ at }z_j,
+        \end{equation}
+        where \(z_1,\dots,z_l\) are the breakpoints of the allocation function \(x_i(\cdot,\bb_{-i})\) in the
+        range \([0,b_i]\)
+
+        A similar argument applies when \(x\) is a monotone function that is not necessarily piecewise
+        constant. For instance, suppose that \(x\) is differential. Dividing the payment difference sandwich
+        \((\star)\) by \(y-z\) and taking the limit as \(y\downarrow z\) yields the constraint
+        \begin{equation*}
+        p'(z)=z\cdot x'(z)
+        \end{equation*}
+        and assuming \(p(0)=0\), the payment formula
+        \begin{equation*}
+        p_i(b_i,\bb_{-i})=\int_0^{b_i}z\cdot\frac{d}{dz}x_i(z,\bb_{-i})dz
+        \end{equation*}
+        for every bidder \(i\), bid \(b_i\), and bids \(\bb_{-i}\) by the others
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION:
+        [[../images/Misc/3.png]]
+
+
+        #+END_proof
+
+** Applying the Payment Formula: Sponsored Search Solved
+        Consider a single-item auction with the allocation rule that allocates the good to the highest bidder.
+        Fixing \(i\) and \(\bb_{-i}\), the function \(x_i(\cdot,\bb_{-i})\) is 0 up to \(B=\max_{j\neq b_j}\)
+        and 1 thereafter. Thus Myerson's Lemma regenerates the Vickrey auction as a  special case.
+
+        Back to sponsored search auctions. Applying Myerson's Lemma, we can derive a unique payment rule
+        \(\bp\) s.t. \((\bx,\bp)\) is DSIC. Consider a bid profile \(\bb\), we can re-index the bidders so
+        that \(b_1\ge b_2\ge\dots\ge b_n\). Then, Myerson's payment formula specializes to
+        \begin{equation*}
+        p_i(\bb)=\sum_{j=i}^kb_{j+1}(\alpha_j-\alpha_{j+1})
+        \end{equation*}
+        for the \(i\)th highest bidder.
