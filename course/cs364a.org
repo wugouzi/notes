@@ -215,3 +215,226 @@
         p_i(\bb)=\sum_{j=i}^kb_{j+1}(\alpha_j-\alpha_{j+1})
         \end{equation*}
         for the \(i\)th highest bidder.
+
+* Algorithmic Mechanism Design
+** Knapsack Auctions
+        In a knapsack auction, each bidder \(i\) has a publicly known *size* \(w_i\) (e.g., the duration of a TV
+        ad) and a private valuation. The seller has a capacity \(W\). The feasible set \(X\) is defined as the
+        0-1 \(n\)-vectors \((x_1,\dots,x_n)\) s.t. \(\sum_{i=1}^nw_ix_i\le W\).
+
+        Let’s try to design an awesome auction using our two-step design paradigm. Recall that we first assume
+        without justification that bids equal values and then decide on our allocation rule. Then we pay the
+        piper and devise a payment rule that extends the allocation rule to a DSIC mechanism.
+
+        Allocation rule:
+        \begin{equation*}
+        \bx(\bb)=\arg\max_X\sum_{i=1}^nb_ix_i
+        \end{equation*}
+
+        Myerson's Lemma guarantees the existence of a payment rule \(\bp\) s.t. the mechanism \((\bx,\bp)\) is
+        DSIC. Fix a bidder \(i\) and bids \(\bb_{-i}\) by the other bidders. Since the allocation rule is
+        monotone and 0-1, the allocation curve \(x_i(\cdot,\bb_{-i})\) is simple: it is 0 until some
+        breakpoint \(z\).
+
+        Thus, if \(i\) bids less than \(z\), it loses and pays 0. If \(i\) bids more than \(z\), it pays
+        \(z\cdot(1-0)=z\) .
+
+        As Knapsack problem is NP-hard, there is no polynomial-time implementation of the allocation rule.
+        Thus there is no awesome knapsack auction (assuming \(P\neq NP\)) motivates relaxing at least one of
+        the awesome goals.
+** Algorithmic Mechanism Design
+        The dominant paradigm in algorithmic mechanism design is to relax the second constraint (optimal
+        surplus) as little as possible, subject to the first (DSIC) and third (polynomial-time) constraints.
+        For single-parameter environments, Myerson’s Lemma implies that the following goal is equivalent:
+        design a polynomial-time and monotone allocation rule that comes as close as possible to maximizing
+        the social surplus.
+
+        There are a number of heuristics for the knapsack problem that have good worst-case performance
+        guarantees. For example, consider the following allocation rule \(\bx^G\), which given bids \(\bb\)
+        chooses a feasible set - a set \(S\) of winners with total size \(\sum_{i\in S}w_i\) at most the
+        capacity \(W\). We assume, without loss of generality, that \(w_i\le W\) for every \(i\)
+        1. Sort and re-index the bidders so that
+           \begin{equation*}
+           \frac{b_1}{w_1}\ge\frac{b_2}{w_2}\ge\dots\ge\frac{b_n}{w_n}
+           \end{equation*}
+        2. Pick winners in this order until one doesn't fit, and then halt
+        3. Return either the step-2 solution, or the highest bidder, whichever create more surplus.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Assuming truthful bids, the surplus of the greedy allocation rule is at least 50% of the
+        maximum-possible surplus.
+        #+END_theorem
+
+        #+BEGIN_proof
+        Consider truthful bids \(v_1,\dots,v_n\), known sizes \(w_1,\dots,w_n\), and a capacity \(W\). Suppose
+        we relax the problem so that a bidder can be chosen /fractionally/, with its value pro-rated
+        accordingly. For example, if 70% of a bidder with value 10 is chosen, then it contributes 7 to the
+        surplus.
+
+        Suppose in the optimal fractional solution, the first \(k\) bidders in the sorted order win and the
+        \((k+1)\)th bidder fractionally wins. The surplus achieved by steps (1) and (2) in the greedy
+        allocation rule is exactly the total value of the first \(k\) bidders. The surplus achieved in step
+        (3) in the greedy allocation rule is at least the total value of the \((k + 1)\)th bidder. The better
+        of these two solutions is at least half of the surplus of the optimal fractional solution, which is at
+        least the surplus of an optimal (non-fractional) solution to the original problem.
+        #+END_proof
+
+        The greedy allocation rule is even better under additional assumptions. For example, if
+        \(w_i\le\alpha W\) for every bidder \(i\), with \(\alpha\in(0,0.5]\), then the approximation guarantee
+        improves to \(1-\alpha\), even if the third step of the algorithm is omitted.
+
+        For greedy allocation rule, we still have monotonicity.
+
+        Natural allocation rules are not always monotone. For example, for every \(\epsilon>0\), there is a
+        \((1-\epsilon)\)-approximation algorithm for the Knapsack problem that runs in time polynomial in the
+        input and \(\frac{1}{\epsilon}\) - a  “fully polynomial-time approximation scheme (FPTAS)”. The rule
+        induced by the standard implementation of this algorithm is not monotone, although it can be tweaked
+        to restore monotonicity without degrading the approximation guarantee (see the Problems for details).
+        This is characteristic of work in algorithmic mechanism design: consider an NP hard optimization
+        problem, check if the state-of-the-art approximation algorithm directly leads to a DSIC mechanism and,
+        if not, tweak it or design a new approximation algorithm that does, hopefully without degrading the
+        approximation guarantee.
+** The Revelation Principle
+        Can non-DSIC mechanisms accomplish things that DSIC mechanisms cannot? Let's tease apart two separate
+        assumptions that are conflated in our DSIC definition:
+        1. Every participant in the mechanism has a dominant strategy, no matter what its private valuation is.
+        2. This dominant strategy is *direct revalation*, where the participant truthfully reports all of its
+           private information to the mechanism.
+
+        There are mechanisms that satisfy (1) but not (2). To give a silly example, imagine a single-item
+        auction in which the seller, given bids \(\bb\), runs a Vickrey auction on the bids \(2\bb\). Every
+        bidder’s dominant strategy is then to bid half its value.
+
+        Suppose we relax condition (1). The drawback is that we then need stronger assumptions to predict the
+        behavior of participants and the mechanism’s outcome.
+
+
+        The Revelation Principle states that, given requirement (1) in Section 3.1, there is no need to relax requirement (2): it comes “for free.”
+        #+ATTR_LATEX: :options [Revelation Principle]
+        #+BEGIN_theorem
+        For every mechanism \(M\) in which every participant has a dominant strategy, there is an equivalent
+        direct-revelation DSIC mechanism \(M'\).
+        #+END_theorem
+
+        #+BEGIN_proof
+        By assumption, for every participant \(i\) and private information \(v_i\) that \(i\) might have,
+        \(i\) has a dominant strategy \(s_i(v_i)\) in the given mechanism \(M\).
+
+        Construct the following mechanism \(M'\), to which participants delegate the responsibility of playing
+        the appropriate dominant strategy. Precisely, (direct-revelation) mechanism \(M'\) accepts sealed bids
+        \(b_1,\dots,b_n\) from the players. It submits the bids \(s_1(b_1),\dots,s_n(b_n)\) to the mechanism
+        \(M\), and chooses the same outcome that \(M\) does.
+
+        Mechanism \(M'\) is DSIC: If a participant \(i\) has private information \(v_i\), then submitting a
+        bid other than \(v_i\) can only result in \(M'\) playing a strategy other than \(s_i(v_i)\) in \(M\),
+        which can only decrease \(i\)'s utility.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION: Proof of the Revelation Principle. Construction of the direct-revelation mechanism \(M'\), given a mechanism \(M\) with dominant strategies
+        [[../images/Misc/4.png]]
+
+        #+END_proof
+* Revenue-Maximizing Auctions
+        Use Beyasian analysis here. Our model:
+        * A single-parameter environment
+        * The private valuation \(v_i\) of participant \(i\) is assumed to be drawn from a distribution
+          \(F_i\) with density function \(f_i\) with support contained in \([0,v_{\max}]\) (Recall \(F_i(z)\)
+          denotes the probability that a random variable drawn from \(F_i\) has value at most \(z\)). We
+          assume that the distributions \(F_1,\dots,F_n\) are independent
+        * The distributions \(F_1,\dots,F_n\) are known in advance to the mechanism designer. The realizations
+          \(v_1,\dots,v_n\) of bidders' valuation are private.
+        In a Bayesian environment, the optimal action among, all DSIC auctions, has the highest expected
+        revenue, where the expectation is w.r.t. the given distribution \(F_1\times\dots F_n\) over valuation
+        profiles \(\bv\).
+
+        The expected revenue of a posted price \(r\) is
+        \begin{equation*}
+        r\cdot(1-F(r))
+        \end{equation*}
+        #+LATEX: \wu{
+        Note that \(F(r)\) is the probability when player bids less than \(r\). Then \(1-F(r)\) is the
+        probability of selling out.
+        #+LATEX: }
+        Given a distribution \(F\), the optimal posted price is called the *monopoly price* of the distribution
+        \(F\). Since DSIC mechanisms are posted prices, posting the monopoly price is the revenue-maximizing
+        auction.
+
+        Consider a single-item auction with two bidders with valuations drawn i.i.d. from the uniform
+        distribution on \([0, 1]\). We could of course run the Vickrey auction; its revenue is the expected
+        value of the smaller bid, which is \(\frac{1}{3}\)
+        #+LATEX: \wu{
+        Let \(Y\) be the second-highest bid. Then
+        \begin{equation*}
+        F_Y(y)=P(x_1\le y\wedge x_2\le y)=y^2
+        \end{equation*}
+        Therefore
+        \begin{equation*}
+        f_Y(y)=\frac{d}{dy}F_Y(y)=2y
+        \end{equation*}
+        Hence
+        \begin{equation*}
+        E[Y]=\int_0^1y\cdot f_Y(y)dy=\int_0^12y^2dy=\frac{2}{3}
+        \end{equation*}
+
+        Another way: Maximizing \(r\cdot(1-F(r))^2=r(1-r)^2=r^3-2r^2+r\). Then \(r=\frac{1}{3}\)
+        #+LATEX: }
+
+        We could also supplement the Vickrey auction with a *reserve price*. In a Vickrey auction with reserve
+        \(r\), the allocation rule awards the item to the highest bidder, unless all bids are less than \(r\).
+        The corresponding payment rule charges the winner the second-highest bid or \(r\), whichever is larger.
+
+        Our goal is to characterize the optimal DSIC auction for every single-parameter environment and
+        distributions \(F_1,\dots,F_n\).
+
+        *Step 0*. By the Revelation Principle, every DSIC auction is equivalent to a direct-revelation DSIC
+        mechanism \((\bx,\bp)\). We can therefore only direct-revelation mechanisms from here on. We
+        correspondingly assume truthful bids (\(\bb=\bv\)) for the rest of chapter
+
+        The expected revenue of an auction \((\bx,\bp)\) is
+        \begin{equation*}
+        \bE_{\bv}\left[ \sum_{i=1}^n\bp(\bv) \right]
+        \end{equation*}
+
+        where the expectation is w.r.t. the distribution \(F_1\times\dots\times F_n\) over bidders' valuations.
+        In this section, we derive a /second/ formula for the expected revenue of an auction.
+
+        Recall Myerson's payment formula
+        \begin{equation*}
+        p_i(b_i,\bb_{-i})=\int_0^{b_i}z\cdot x_i'(z,\bb_{-i})dz
+        \end{equation*}
+
+        *Step 1*: Fix \(i\) and \(\bv_{-i}\). By Myerson's payment formula,
+        \begin{align*}
+        \bE_{v_i\sim F_i}[p_i(\bv)]&=\int_0^{v_{\max}}p_i(\bv)f_i(v_i)dv_i=
+        \int_0^{v_{\max}}\left[\int_0^{v_i}z\cdot x_i'(z,\bb_{-i})dz \right]f_i(v_i)dv_i\\
+        &=\int_0^{v_{\max}}\left[ \int_z^{v_{\max}}f_i(v_i)dv_i \right]z\cdot x_i'(z,\bb_{-i})dz\\
+        &=\int_0^{v_{\max}}\underbrace{(1-F_i(z))\cdot z}_{f}\cdot \underbrace{x_i'(z,\bb_{-i})}_{g'}dz\\
+        &=\underbrace{(1-F_i(z))\cdot z\cdot x_i(z,\bv_{-i})|_0^{v_{\max}}}_{=0-0}-\int_0^{v_{\max}}x_i(z,\bv_{-i})\cdot(1-F_i(z)-zf_i(z))dz\\
+        &=\int_0^{v_{\max}}\underbrace{\left(z-\frac{1-F_i(z)}{f_i(z)} \right)}_{:=\varphi_i(z)}x_i(z,\bv_{-i})f_i(z)dz
+        \end{align*}
+
+        The *virtual valuation* \(\varphi_i(v_i)\) of bidder \(i\) with valuation \(v_i\) drawn from \(F_i\) is
+        \begin{equation*}
+        \varphi_i(v_i)=v_i-\frac{1-F_i(v_i)}{f_i(v_i)}
+        \end{equation*}
+
+        Therefore
+        \begin{equation*}
+        \bE_{v_i\sim F_i}[p_i(\bv)]=\bE_{v_i\sim F_i}[\varphi_i(v_i)\cdot x_i(\bv)]
+        \end{equation*}
+
+        Then
+        \begin{equation*}
+        \bE_{\bv}[p_i(\bv)]=\bE_{\bv}[\varphi_i(v_i)\cdot x_i(\bv)]\\
+        \end{equation*}
+        and
+        \begin{equation*}
+        \bE_{\bv}\left[ \sum_{i=1}^np_i(\bv) \right]=\sum_{i=1}^n\bE_{\bv}[p_i(\bv)]=
+        \sum_{i=1}^n\bE_{\bv}[\varphi_i(v_i)\cdot x_i(\bv)]=\bE_{\bv}
+        \left[ \sum_{i=1}^n\varphi_i(v_i)\cdot x_i(\bv) \right]
+        \end{equation*}
+
+        Thus,
+        EXPECTED REVENUE = EXPECTED VIRTUAL WELFARE
