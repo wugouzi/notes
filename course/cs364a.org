@@ -30,7 +30,7 @@
         The first key assumption is that each bidder \(i\) has a valuation \(v_i\) — its maximum
         willingness-to-pay for the item being sold.
 
-        Our bidder utility model, called the *quasilinear utility model*x, is as follows. If a bidder loses an
+        Our bidder utility model, called the *quasilinear utility model*, is as follows. If a bidder loses an
         auction, its utility is 0. If the bidder wins at a price p, then its utility is \(v_i-p\).
 
         *Sealed-bid auctions*:
@@ -337,6 +337,7 @@
 
         #+END_proof
 * Revenue-Maximizing Auctions
+** The Challenge of Revenue Maximization
         Use Beyasian analysis here. Our model:
         * A single-parameter environment
         * The private valuation \(v_i\) of participant \(i\) is assumed to be drawn from a distribution
@@ -383,12 +384,15 @@
 
         We could also supplement the Vickrey auction with a *reserve price*. In a Vickrey auction with reserve
         \(r\), the allocation rule awards the item to the highest bidder, unless all bids are less than \(r\).
-        The corresponding payment rule charges the winner the second-highest bid or \(r\), whichever is larger.
+        The corresponding payment rule charges the winner the second-highest bid or \(r\), whichever is
+        larger.
+
+** Expected Revenue Equals Expected Virtual Welfare
 
         Our goal is to characterize the optimal DSIC auction for every single-parameter environment and
         distributions \(F_1,\dots,F_n\).
 
-        *Step 0*. By the Revelation Principle, every DSIC auction is equivalent to a direct-revelation DSIC
+        By the Revelation Principle, every DSIC auction is equivalent to a direct-revelation DSIC
         mechanism \((\bx,\bp)\). We can therefore only direct-revelation mechanisms from here on. We
         correspondingly assume truthful bids (\(\bb=\bv\)) for the rest of chapter
 
@@ -437,4 +441,178 @@
         \end{equation*}
 
         Thus,
-        EXPECTED REVENUE = EXPECTED VIRTUAL WELFARE
+        \begin{equation}
+        \label{welfare}
+        \text{EXPECTED REVENUE} =\text{EXPECTED VIRTUAL WELFARE}
+        \end{equation}
+
+** Bayesian Optimal Auctions
+        Equation [[eqref:welfare]] says that even though we only care about payments, we can focus on an
+        optimization problem that concerns only the mechanism’s allocation rule.
+
+*** Maximizing Expected Virtual Welfare
+        Let's assume:
+        1. A single-item auction
+        2. bidders are i.i.d.
+
+        We maximize [[eqref:welfare]] pointwise: for each input \(\bv\), we choose \(\bx(\bv)\) to maximize the
+        virtual welfare \(\sum_{i=1}^n\varphi_i(v_i)x_i(\bv)\) obtained on the input \(\bv\) subject to
+        feasibility of \((x_1,\dots,x_n)\in X\). We call this the *virtual welfare-maximizing allocation rule*
+
+        In a single-item auction, where the feasibility constraint is \(\sum_{i=1}^nx_i(\bv)\le 1\) for each
+        \(\bv\), the virtual welfare-maximizing rule just awards the item to the bidder with the highest
+        virtual valuation. Recall that virtual valuations can be negative (e.g., \(\varphi_i(v_i)=2v_i-1\)
+        when \(v_i\)is uniform between 0 and 1), and if every bidder has a negative virtual valuation then the
+        virtual welfare is maximized by not awarding the item to anyone.
+
+        Choosing \(\bx(\bv)\) separately for each \(\bv\) to maximize \(\sum_{i=1}^n\varphi_i(v_i)x_i(\bv)\)
+        defines an allocation rule that maximizes the expected virtual welfare eqref:welfare over all
+        allocation rules. The question is: /is this virtual welfare-maximizing rule monotone/?
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A distribution \(F\) is *regular* if the corresponding virtual valuation function
+        \(v-\frac{1-F(v)}{f(v)}\) is strictly increasing.
+        #+END_definition
+
+        Assume now that the valuation distribution is regular. The virtual-welfare maximizing allocation rule,
+        which allocates to the bidder with highest nonnegative virtual valuation (if any), is monotone and
+        yields the optimal auction. This allocation rule is thus equivalent to the Vickrey auction with a
+        reserve price of \(\varphi^{-1}(0)\). Thus, for i.i.d. bidders and a regular valuation distribution,
+        eBay (with a suitable opening bid) is the optimal auction format!
+
+        More generally, consider an arbitrary single-parameter environment and valuation distributions
+        \(F_1,\dots,F_n\). The virtual welfare-maximizing allocation rule is now defined as that  which, for
+        each input v, chooses the feasible allocation that maximizes the virtual welfare
+        \(\sum_{i=1}^n\varphi_i(v_i)x_i(\bv)\).  If every distribution \(F_i\) is regular, then this allocation rule is monotone.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        If each \(F_i\) is regular, then each \(x_i(\cdot,\bv_{-j})\) is monotone.
+        #+END_proposition
+
+
+* Simple Near-Optimal Auctions
+        For every DSIC auction \((\bx,\bp)\) for a single-parameter environment with valuation distributions
+        \(F_1,\dots,F_n\), the expected revenue equals the expected virtual welfare:
+        \begin{equation*}
+        \bE_{\bv}\left[\sum_{i=1}^np_i(\bv)\right]=\bE_{\bv}\left[\sum_{i=1}^n\varphi_i(v_i)\cdot x_i(\bv)\right]
+        \end{equation*}
+        Define the virtual welfare-maximizing allocation rule as the one that sets
+        \begin{equation*}
+        \bx(\bv):=\argmax_{X}\sum_{i=1}^n\varphi_i(v_i)x_i(\bv)a
+        \end{equation*}
+        for each input \(\bv\). If every \(F_i\) is regular, then the virtual welfare-maximizing allocation
+        rule is monotone and, after we define suitable payments, maximizes expected revenue over all DSIC
+        auctions. This characterization of optimal auctions can be extended to irregular distributions
+
+** The Prophet Inequality
+        Consider the following game, which has \(n\) stages. In stage \(i\), you are offered a nonnegative
+        prize \(\pi_i\), drawn from a distribution \(G_i\). You are told the distributions \(G_1,\dots,G_n\)
+        in advance, and these distributions are independent. You are told the realization \(\pi_i\) only at
+        stage \(i\). After seeing \(\pi_i\), you can either accept the rpize and end the game, or discard the
+        prize and proceed to the next stage.
+
+        #+ATTR_LATEX: :options [Prophet Inequality]
+        #+BEGIN_theorem
+        For every sequence \(G_1,\dots,G_n\) of independent distributions, there is strategy that guarantees
+        expected reward \(\frac{1}{2}\bE_\pi[\max_i\pi_i]\). In fact, there is such a *threshold strategy*
+        \(t\), which accepts prize \(i\) iff \(\pi_i\ge t\)
+        #+END_theorem
+
+        #+BEGIN_proof
+        Let \(z^+\) denote \(\max\{z,0\}\). Consider a threshold strategy with threshold \(t\). Let \(q(t)\)
+        denote the probability that the threshold strategy accepts no prize at all. As \(t\) increases, the
+        risk \(q(t)\) increases but the average value of an accepted prize goes up.
+
+        If exactly one prize \(i\) satisfies \(\pi_i\ge t\), then we should get "extra credit" of \(\pi_i-t\).
+        If at least two prizes exceed the threshold, say \(i\) and \(j\), then our "extra credit" is either
+        \(v_i-t\) or \(v_j-t\) depending on which of \(i,j\) belongs to the earlier stage. Let's be lazy and
+        punt on this complication: when two or more prizes exceed the threshold, we'll only credit the
+        baseline \(t\) to the strategy's payoff.
+
+        Formally, we have the following lower bound:
+        \begin{align*}
+        &\bE[\text{payoff of $t$-threshold strategy}]\\
+        &\ge(1-q(t))\cdot t+\sum_{i=1}^n\bE[\pi_i-t\mid\pi_i\ge t,\pi_j<t\forall j\neq i]\Pr[\pi_i\ge t]\cdot\Pr[\pi_j<t\forall j\neq i]\\
+        &=(1-q(t))\cdot t+\sum_{i=1}^n\underbrace{\bE[\pi_i-t\mid\pi_i\ge t]\Pr[\pi_i\ge t]}_{=\bE[(\pi_i-t)^+]}\cdot
+        \underbrace{\Pr[\pi_j<t\forall j\neq i]}_{\ge q(t)}\\
+        &\ge(1-q(t))\cdot t+q(t)\sum_{i=1}^n\bE[(\pi_i-t)^+]
+        \end{align*}
+
+        But
+        \begin{align*}
+        \bE[\max_i\pi_i]&=\bE[t+\max_i(\pi_i-t)]\\
+        &\le t+\bE[\max_i(\pi_i-t)^+]\\
+        &\le t+\sum_{i=1}^n\bE[(\pi_i-t)^+]
+        \end{align*}
+        Therefore we can set \(q(t)=0.5\) and complete the proof.
+        #+END_proof
+** Simple Single-Item Auctions
+        Now we return to our motivating example of a single-item auction with \(n\) bidders with valuations
+        drawn from regular distribution \(F_1,\dots,F_n\). We use the Prophet Inequality to design a
+        relatively simple, near-optimal auction.
+
+        The key idea is to regard the virtual valuation \(\varphi_i(v_i)^+\) of a bidder, if nonnegative, as
+        the \(i\)th prize. Note that the expected revenue of the optimal auction is
+        \(\bE_{\bv}[\sum_i\varphi_i(v_i)x_i(\bv)]=\bE_{\bv}[\max_i\varphi_i(v_i)^+]\).
+
+        Now we consider any allocation rule that has the following form:
+        1. Choose \(t\) s.t. \(\Pr[\max_i\varphi_i(v_i)^+\ge t]=0.5\)
+        2. Give the item to a bidder \(i\) with \(\varphi_i(v_i)\ge t\), if any, breaking ties among multiple
+           candidate winners arbitrarily.
+
+        The strong form of the Prophet Inequality immediately implies that every auction with an allocation
+        rule of the above type satisfies
+        \begin{equation*}
+        \bE_{\bv}\left[\sum_{i=1}^n\varphi_i(v_i)^+x_i\bv\right]\ge\frac{1}{2}
+        \bE_{\bv}\left[\max_i\varphi_i(v_i)^+\right]
+        \end{equation*}
+
+        For example, here is a specific such allocation rule:
+        1. Set a reserve price \(r_i=\varphi_i^{-1}(t)\) for each bidder \(i\), with \(t\) defined as above
+        2. Give the item to the highest bidder that meets its reserve
+** Prior-Independent Auctions and the Bulow-Klemperer Theorem
+        This section explores a different critique of the optimal auction approach developed last lecture: the
+        valuation distributions \(F_1,\dots,F_n\) were assumed to be known to the seller \(i\)  advance.
+
+        #+ATTR_LATEX: :options [Bulow-Klemperer]
+        #+BEGIN_theorem
+        Let \(F\) be a regular distribution and \(n\) a positive integer. Then
+        \begin{equation*}
+        \bE_{v_1,\dots,v_{n+1}\sim F}[\text{Rev}(\text{VA})(n+1\text{ bidders})]\ge\bE_{v_1,\dots,v_n\sim F}[\text{Rev}(\text{OPT}_F)(n\text{ bidders})]
+        \end{equation*}
+        where \(\text{VA}\) and \(\text{OPT}_F\) denote the Vickrey auction and the optimal auction for \(F\), respectively
+        #+END_theorem
+
+        #+BEGIN_proof
+        Define a fictitious auction \(\cala\) to facilitate the comparison. This auction operates in the
+        environment with \(n+1\) bidders, as follows:
+        1. Simulate the optimal auction \(\text{OPT}_F\) on the first \(n\) bidders \(1,2,\dots,n\)
+        2. If the item was not awarded in step 1, then give the item to bidder \(n+1\) for free
+        We defined \(\cala\) to possess two properties useful for the analysis. First, its expected revenue
+        (with \(n+1\) bidders) is exactly that of \(\text{OPT}_F\) (with \(n\) bidders). Second, \(\cala\)
+        always allocates the item.
+
+        We can finish the proof by arguing that, for i.i.d. regular bidder valuations, the Vickrey auction
+        maximizes expected revenue over all auctions that are guaranteed to allocate the item. By the
+        equivalence of expected revenue and expected virtual welfare, the optimal auction that always
+        allocates the item awards the item to the bidder with the highest virtual valuation (even if this is
+        negative). The Vickrey auction awards the item to the bidder with the highest valuation. Since
+        bidders’ valuations are i.i.d. draws from a regular distribution, all bidders share the same
+        increasing virtual valuation function \(\varphi\). Thus the bidder with the highest virtual valuation
+        is always the bidder with the highest valuation. We conclude that the Vickrey auction (with \(n+1\)
+        bidders) has expected revenue at least that of every auction that always allocates the item, including
+        \(\cala\), and therefore its expected revenue is at least that of \(\text{OPT}_F\) (with \(n\)
+        bidders).
+
+        First we argue that optimal auction that always sells the item is the Vickrey auction.
+
+        \begin{align*}
+        \bE_{v_1,\dots,v_{n+1}\sim F}[\text{Rev}(\text{VA})(n+1\text{ bidders})]&=
+        \text{optimal single-item auction for $n+1$ bidders that always sells the item}\\
+        &\ge \cala \\
+        &\ge\bE_{v_1,\dots,v_n\sim F}[\text{Rev}(\text{OPT}_F)(n\text{ bidders})]
+        \end{align*}
+        #+END_proof
+** Case Study: Reserve Prices in Yahoo! Keyword Auctions
