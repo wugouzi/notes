@@ -1,0 +1,212 @@
+#+title: Unnesting Arbitrary Queries
+
+#+AUTHOR: Thomas Neumann & Alfons Kemper
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/unnesting_arbitrary_queries.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Preliminaries
+        *(inner) join*:r
+        \begin{equation*}
+        T_1\bowtie_p T_2:=\sigma_p(T_1\times T_2)
+        \end{equation*}
+        *dependent join*:
+        \begin{equation*}
+        T_1\lfbowtie T_2:=\{t_1\circ t_2\mid t_1\in T_1\wedge t_2\in T_2(t_1)\wedge p(t_1\circ t_2)\}
+        \end{equation*}
+        Here the right hand side is evaluated for every tuple of the left hand side. We denote the attributes
+        produced by an expression \(T\) by \(\cala(T)\), and free variables occurring in an expression \(T\)
+        by \(\calf(T)\). To evaluate dependent join, \(\calf(T_2)\subseteq \cala(T_1)\) must hold.
+
+        We use *natural join* in the join predicate to simplify the notation. We assume that all relations
+        occuring in a query will have unique attribute names, even if they reference the same physical table,
+        thus \(A\bowtie B\equiv A\times B\). However, if we explicitly reference the same relation name twice,
+        and call for the natural join, then the attribute columns with the same name are compared, and the
+        duplicate columns are projected out. Consider, for example:
+        \begin{equation*}
+        (A\bowtie C)\bowtie_{p\wedge\text{natural join }C}(B\bowtie C)
+        \end{equation*}
+
+        Here, the top-most join checks both the predicate \(p\) and compares the columns of \(C\) that come
+        from both sides.
+
+        * *semi join*:
+          \begin{equation*}
+          T_1\ltimes T_2:=\{t_1\mid t_1\in T_1\wedge \exists t_2\in T_2:p(t_1\circ t_2)\}
+          \end{equation*}
+        * *anti semi join*:
+          \begin{equation*}
+          T_1\rhd_pT_2:=\{t_1\mid t_1\in T_1\wedge\not\exists t_2\in T_2:p(t_1\circ t_2)\}
+          \end{equation*}
+        * *left outer join*:
+          \begin{equation*}
+          T_1\leftouterjoin_pT_2:=(T_1\bowtie_pT_2)\cup\{t_1\circ_{a\in\cala(T_2)}(a:null)\mid
+          t_1\in(T_1\rhd_pT_2)\}
+          \end{equation*}
+        * *full outer join*:
+          \begin{equation*}
+          T_1\fullouterjoin_p T_2:=(T_1\leftouterjoin_p T_2)\cup\{t_2\circ_{a\in\cala(T_1)}(a:null)\mid t_2\in(T_2\rhd_pT_1)\}
+          \end{equation*}
+
+        We define the dependent joins accordingly as \(\lftimes\), \(\rhd'\), \(\leftouterjoin'\), \(\fullouterjoin'\)
+
+        *group by*:
+        \begin{equation*}
+        \Gamma_{A;a:f}(e):=\{x\circ(a:f(y))\mid x\in\prod_A(e)\wedge y=\{z\mid z\in e\wedge\forall a\in A:x.a=z.a\}\}
+        \end{equation*}
+        If groups its input \(e\) by \(A\) and evaluates one aggregation function.
+
+        *map*:
+        \begin{equation*}
+        \chi_{a:f}:=\{x\circ(a:f(x))\mid x\in e\}
+        \end{equation*}
+
+        We define the attribute comparison operator \(=_A\) as
+        \begin{equation*}
+        t_1=_At_2:=\forall_{a\in A}:t_1.a=t_2.a
+        \end{equation*}
+        It compares NULL values as equal
+
+* Unnesting
+        The algebraic representation of a query with correlated subqueries results in a dependent join
+
+** Simple Unnesting
+        Consider
+        #+begin_src sql
+select ...
+from lineitem l1 ...
+where exists (select *
+              from lineitem l2
+              where l2.l_orderkey = l1.l_orderkey)
+...
+        #+end_src
+        This is translated into an algebra expression of the form
+        \begin{equation*}
+        l_1\lftimes(\sigma_{l_1.okey=l_2.okey}(l_2))
+        \end{equation*}
+        which is equivalent to
+        \begin{equation*}
+        l_1\ltimes_{l_1.okey=l_2.okey}(l_2)
+        \end{equation*}
+
+
+** General Unnesting
+        First, we translate the dependent join into a “nicer” dependent join (i.e., one that is easier to
+        manipulate), and second, we will push the new dependent join down into the query until we can
+        transform it into a regular join.
+        \begin{equation*}
+        T_1\lfbowtie_pT_2\equiv T_1\bowtie_{p\wedge T_1=_{\cala(D)}D}(D\lfbowtie T_2)
+        \end{equation*}
+        where
+        \begin{equation*}
+        D:=\prod_{\calf(T_2)\cap\cala(T_1)}(T_1)
+        \end{equation*}
+
+        In the original expression, we had to evaluate \(T_2\) for every tuple of \(T_1\). In the second
+        expression, we first compute the domain \(D\) of all variables bindings, evaluate \(T_2\) only once
+        for every distinct variable binding, and then use a regular join to match the results to the original
+        \(T_1\) value. If there are a lot of duplicates, this already greatly reduces the number of
+        invocations of \(T_2\).
+
+        Consider the query for determining the best exam for every student.
+        \begin{gather*}
+        \sigma_{e.grade=m}((\text{student }s\bowtie_{s.id=e.id}\text{exams }e))\lfbowtie\\
+        (\Gamma_{\emptyset;m:min(e2.grade)})(\sigma_{s.id=e2.sid}\text{exams }e2)
+        \end{gather*}
+
+        The equivalence rule allows to restrict the computation of the best grades to each student
+        \begin{gather*}
+        \dots\prod_{d.id:s.id}((\text{students }s\bowtie_{s.id=e.sid}\text{exams }e)\lfbowtie\\
+        (\Gamma_{\emptyset;m:min(e2.grade)}(\sigma_{d.id=e2.sid}\text{exams }e2)))
+        \end{gather*}
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/53.png]]
+
+        Knowing that \(D\) contains no duplicates helps in moving the dependent join further down into the
+        query. In the following, we will assume that any relation named \(D\) is duplicate free, and in the
+        following equivalences we only consider dependent joins where the left hand side is a set.
+
+        The untimate goal of our dependent join push-down is to reach a state where the right hand side no
+        longer dependents on the left hand side, i.e.,
+        \begin{equation*}
+        D\lfbowtie T\equiv D\bowtie T\text{ if }\calf(T)\cap\cala(D)=\emptyset
+        \end{equation*}
+
+        For selections, a push-down is very simple:
+        \begin{equation*}
+        D\lfbowtie_{\sigma_p}(T_2)\equiv\sigma_p(D\lfbowtie T_2)
+        \end{equation*}
+        We first push the dependent join down as far as possible, until it can either be eliminated completely
+        due to substitution, or until it can be transformed into a regular join. Once all dependent joins have
+        been eliminated we can use the regular techniques like selection push-down and join reordering to
+        re-optimize the transformed query.
+
+        \begin{equation*}
+        D\lfbowtie(T_1\bowtie_pT_2)=
+        \begin{cases}
+        (D\lfbowtie T_1)\bowtie_pT_2&\calf(T_2)\cap\cala(D)=\emptyset\\
+        T_1\bowtie_p(D\lfbowtie T_2)&\calf(T_1)\cap\cala(D)=\emptyset\\
+        (D\lfbowtie T_1)\bowtie_{p\wedge\text{natural join }D}(D\lfbowtie T_2)&\text{otherwise}
+        \end{cases}
+        \end{equation*}
+        If we pushed the dependent join to both sides we have to augment the join predicate s.t. both sides
+        are matched on the \(D\) values.
+
+        For /outer joins/ we always have to replicate the dependent join if the inner side depends on it, as
+        otherwise we cannot keep track of unmatched tuples from the outer side.
+        \begin{align*}
+        &D\lfbowtie(T_1\scriptstyle\leftouterjoin_pT_2)\equiv
+        \begin{cases}
+        (D\lfbowtie T_1)\scriptstyle\leftouterjoin_pT_2&\calf(T_2)\cap\cala(D)=\emptyset\\
+        (D\lfbowtie T_1)\scriptstyle\leftouterjoin_{p\wedge\text{natural join }D}(D\lfbowtie T_2)&\text{otherwise}\\
+        \end{cases}\\
+        &D\lfbowtie(T_1\scriptstyle\fullouterjoin_pT_2)\equiv(D\lfbowtie T_1)\scriptstyle\fullouterjoin_{p\wedge\text{natural join }D}(D\lfbowtie T_2)
+        \end{align*}
+
+        Similar for /semi join/ and /anti join/:
+        \begin{align*}
+        &D\lfbowtie(T_1\ltimes_pT_2)\equiv
+        \begin{cases}
+        (D\lfbowtie T_1)\ltimes_pT_2&\calf(T_2)\cap\cala(D)=\emptyset\\
+        (D\lfbowtie T_1)\ltimes_{p\wedge\text{natural join }D}(D\lfbowtie T_2)&\text{otherwise}
+        \end{cases}\\
+        &D\lfbowtie(T_1\rhd_pT_2)\equiv
+        \begin{cases}
+        (D\lfbowtie T_1)\rhd_pT_2&\calf(T_2)\cap\cala(D)=\emptyset\\
+        (D\lfbowtie T_1)\rhd_{p\wedge\text{natural join }D}(D\lfbowtie T_2)&\text{otherwise}
+        \end{cases}
+        \end{align*}
+        /group by/
+        \begin{equation*}
+        D\lfbowtie(\Gamma_{A;a:f}(T))\equiv\Gamma_{A\cup\cala(D);a:f}(D\lfbowtie T)
+        \end{equation*}
+        /projection/
+        \begin{equation*}
+        D\lfbowtie(\Pi_A(T))\equiv\Pi_{A\cup\cala(D)}(D\lfbowtie T)
+        \end{equation*}
+        /set operation/
+        \begin{align*}
+        &D\lfbowtie(T_1\cup T_2)\equiv(D\lfbowtie T_1)\cup(D\lfbowtie T_2)\\
+        &D\lfbowtie(T_1\cap T_2)\equiv(D\lfbowtie T_1)\cap(D\lfbowtie T_2)\\
+        &D\lfbowtie(T_1\setminus T_2)\equiv(D\lfbowtie T_1)\setminus(D\lfbowtie T_2)
+        \end{align*}
+
+
+
+
+
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

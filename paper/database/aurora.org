@@ -1,0 +1,359 @@
+#+title: Amazon Aurora
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/aurora.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+        Based on [[cite:&verbitski2017amazon]] and [[cite:&verbitski2018amazon]]
+* Introduction
+        Contributions:
+        1. How to reason about durability at cloud scale and how to design quorum systems that are resilient
+           to correlated failures
+        2. How to leverage smart storage by offloading the lower quarter of a traditional database to this tier
+        3. How to eliminate multi-phase synchronization, crash recovery and checkpointing in distributed
+           storage
+
+
+        We limit our discussion to single-writer databases with read replicas. The approach described below is
+        extensible to multi-writer databases by ordering writes a database nodes, storage nodes, and using a
+        journal to order operations that span multiple database instances and multiple storage nodes.
+* Durability at scale
+** Replication and Correlated Failures
+        In AWS, the largest unit of failure a system may need to tolerate is an *Availability Zone* (AZ). An AZ
+        is a subset of a Region that is connected to other AZs through low-latency networking links, but is
+        isolated for most faults, including power, networking, software deployments, flooding, and other
+        phenomena.
+
+        Goal: Tolerate 1AZ + 1 error fails
+
+        Use a quorum model with 6 voters, a write quorum of 4/6 and a read quorum of 3/6
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Why are 6 copies necessary
+        [[../../images/papers/51.png]]
+
+        Formally, a quorum system that employs \(V\) copies must obey two rules. First, the read set, \(V_r\),
+        and the write set, \(V_w\), must overlap on at least one copy. This ensures a data item is not read
+        and written by two transactions concurrently and the read quorum contains at least one site with the
+        newest version of the data item. Second, the write set must overlap with prior write sets, which can
+        be done by ensuring that \(V_w>V/2\). This ensures two write operations from two transactions cannot
+        occur concurrently on the same data item.
+
+        quorum vs paxos?
+** Segmented Storage
+        To provide sufficient durability in this model, one must ensure the probability of a double fault on
+        uncorrelated failures (Mean Time to Failure – MTTF) is sufficiently low over the time it takes to
+        repair one of these failures (Mean Time to Repair – MTTR).
+
+        Reduce the probability of MTTF is hard, so we focus on MTTR.
+
+        We do so by partitioning the database volume into small fixed size segments, currently 10GB in size.
+        These are each replicated 6 ways into *Protection Groups* (PGs) so that each PG consists of six 10GB
+        segments, organized across three AZs, with two segments in each AZ. A *storage volume* is a concatenated
+        set of PGs, physically implemented using a large fleet of storage nodes that are provisioned as
+        virtual hosts with attached SSDs using Amazon Elastic Compute Cloud (EC2).
+
+        Segments are now our unit of independent background noise failure and repair. We monitor and
+        automatically repair faults as part of our service. A 10GB segment can be repaired in 10 seconds on a
+        10Gbps network link. We would need to see two such failures in the same 10 second window plus a
+        failure of an AZ not containing either of these two independent failures to lose quorum.
+** Operational Advantages of Resilience
+        For example, heat management is straightforward. We can mark one of the segments on a hot disk or node
+        as bad, and the  will be quickly repaired by migration to some other colder node in the fleet. OS and
+        security patching is a brief unavailability event for that storage node as it is being patched. Even
+        software upgrades to our storage fleet are managed this way.
+
+        Same as blade.
+* The Log is the Database
+** The Burden of Amplified Writes
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/46.png]]
+** Offloading Redo Processing to Storage
+        In Aurora, the only writes that cross the network are redo log records. We continually materialize
+        database pages in the background to avoid regenerating them from scratch on demand every time.
+        And only pages with a long chain of modifications need to be rematerialized.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/47.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/48.png]]
+
+        In Aurora, durable redo record application happens at the storage tier, continuously, asynchronously,
+        and distributed across the fleet. Any read request for a data page may require some redo records to be
+        applied if the page is not current. As a result, the process of crash recovery is spread across all
+        normal foreground processing. Nothing is required at database startup.
+** Storage Service Design Points
+        A core design tenet for our storage service is to minimize the latency of the foreground write
+        request. We move the majority of storage processing to the background.
+
+        For example, it isn’t necessary to run garbage collection (GC) of old page versions when the storage
+        node is busy processing foreground write requests unless the disk is approaching capacity.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/49.png]]
+
+        1. receive log record and add to an in-memory queue
+        2. persist record on disk and acknowledge
+        3. organize records and identify gaps in the log since some batches may be lost
+        4. gossip with peers to fill in gaps
+        5. coalesce log records into new data pages,
+        6. periodically stage log and new pages to S3
+        7. periodically garbage collect old versions
+        8. periodically validate CRC codes on pages.
+
+        Only 1 and 2 are in the foreground path potentially impacting latency.
+* The Log Marches Forward
+        In this section, we describe how the log is generated from the database engine so that the durable
+        state, the runtime state, and the replica state are always consistent. In particular, we will describe
+        how consistency is implemented efficiently without an expensive 2PC protocol.
+** Asynchronous Processing
+        At a high level, we maintain points of consistency and durability, and continually advance these
+        points as we receive acknowledgements for outstanding storage requests.
+
+        The database may have multiple outstanding isolated transactions, which can complete (reach a finished
+        and durable state) in  different order than initiated. Supposing the database crashes or reboots, the
+        determination of whether to roll back is separate for each of these individual transactions.
+
+        Upon restart, before the database is allowed to access the storage volume, the storage service does
+        its own recovery. The storage service determines the highest LSN for which it can guarantee
+        availability of all prior log records (this is known as the VCL or Volume Complete LSN).
+        \wu{Note that each segment may contain holes, so VCL means for each of the log in the Volumn before
+        VCL, there are at least four segment contains the log}
+
+        Define PGCL to be highest complete LSN in PG and consider following example where PG1 only stores odd
+        LSN and PG2 only stores even LSN:
+
+
+        During storage recovery, every log record with an LSN larger than the VCL must be truncated. The database
+        can, however, further constrain a subset of points that are allowable for truncation by tagging log
+        records and identifying them as CPLs or Consistency Point LSNs. We therefore define VDL or the Volume
+        Durable LSN as the highest CPL that is smaller than or equal to VCL and truncate all log records with
+        LSN greater than the VDL. For example, even if we have the complete data up to LSN 1007, the database
+        may have declared that only 900, 1000, and 1100 are CPLs, in which case, we must truncate at 1000. We
+        are /complete/ to 1007, but only /durable/ to 1000.
+
+        In practice, the database and storage interact as follows:
+        1. Each database-level transaction is broken up into multiple mini-transactions (MTRs) that are
+           ordered and must be performed atomically.
+        2. Each mini-transaction is composed of multiple contiguous log records (as many as needed).
+        3. The final log record in a mini-transaction is a CPL.
+
+** Normal Operation
+*** Writes
+        Changes to data blocks modify the image in the Aurora buffer cache and add the corresponding redo
+        record to a log buffer. These are periodically flushed to a storage driver to be made durable. Inside
+        the driver, they are shuffled to individual write buffers for each storage node storing segments for
+        the data volume. The driver asynchronously issues writes, receives acknowledgments, and establishes consistency points.
+
+        Each log record stores
+        1. the LSN of the preceding log record in the volume
+
+           The full log chain is not needed by an individual storage node but provides a fallback path to
+           regenerate storage volume metadata in case of a disastrous loss of metadata state.
+        2. the previous LSN for the segment
+
+           The segment chain is used by each storage node to identify records that it has not received and
+           fill in these holes by gossiping with other storage nodes.
+        3. the previous LSN for the block being modified.
+
+
+        In Aurora, there are many segments partitioning the redo log and the opportunity to boxcar are lower
+        than with a single unsegmented redo log. Aurora handles this by submitting the asynchronous network
+        operation when it receives the first redo log record in the boxcar but continuing to fill the buffer
+        until the network operation executes.
+
+        In the normal/forward path, as the database receives acknowledgements to establish the write quorum
+        for each batch of log records, it advances the current VDL.
+
+        The database allocates a unique ordered LSN for each log record subject to a constraint that no LSN is
+        allocated with a value that is greater than the sum of the current VDL and a constant called the LSN
+        Allocation Limit (LAL) (currently set to 10 million).
+
+        Each segment of each PG only sees a subset of log records in the volume that affect the pages residing
+        on that segment. Each log record contains a backlink that identifies the previous log record for that
+        PG. These backlinks can be used to track the point of completeness of the log records that have
+        reached each segment to establish a *Segment Complete LSN* (SCL) that identifies the greatest LSN below
+        which all log records of the PG have been received.
+*** Storage Consistency Points and Commits
+        To make individual writes durable:
+        * *Segment Complete LSN* (*SCL*) is the inclusive upper bound on log records continuously linked through
+          the segment chain without gaps.
+        * *Protection Group Complete LSN* (*PGCL*) represents the point at which the protection group has made all
+          writes durable.
+
+        SCL is sent by the storage node as part of acknowledging a write. Once the database instance observes
+        SCL advance at four of six members of the protection group, it is able to locally advance the PGCL.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/50.png]]
+        PGCL1 is 103, PGCL2 is 104 and VCL is 104.
+
+        To make the entire log chain complete:
+        The database instance also locally advances a *Volume Complete LSN* (*VCL*) once there are no pending
+        writes preventing PGCL from advancing for one of its protection groups.
+
+        A commit is acknowledged by the database to its caller once it is able to affirm that all data
+        modified by the transaction has been durably recorded. A simple way to do so is to ensure that the commit redo record for the transaction, or *System Commit Number*
+        (*SCN*), is below VCL.
+
+        Aurora must wait to acknowledge commits until it is able to advance VCL beyond the requesting SCN.
+        Typically, this would require stalling the worker thread acting upon the user request. When a commit
+        is received, the worker thread writes the commit record, puts the transaction on a commit queue, and
+        returns to a common task queue to find the next request to be pro- cessed. When a driver thread
+        advances VCL, it wakes up a dedicated commit thread that scans the commit queue for SCNs below the new
+        VCL and sends acknowledgements to the clients waiting for commit.
+
+        Transaction commits are completed asynchronously.
+*** Reads
+
+        Aurora ensures that a page in the buffer cache is alwas of the latest version. The guarantee is
+        implemented by evicting a page from the cache only if its “page LSN” (identifying the log record
+        associated with the latest change to the page) is greater than or equal to the VDL. This protocol
+        ensures taht:
+        1. all changes in the page have been hardened in the log
+        2. on a cache miss, it is sufficient to request a version of the page as of the current VDL to get its
+           latest durable version.
+
+        The database does not need to establish consensus using a read quorum under normal circumstances. When
+        reading a page from disk, the database establishes a read-point, representing the VDL at the time the
+        request was issued. The database can then select a storage node that is complete with respect to the
+        read point, knowing that it will therefore receive an up to date version. A page that is returned by
+        the storage node must be consistent with the expected semantics of a mini-transaction (MTR) in the
+        database. Since the database directly manages feeding log records to storage nodes and tracking
+        progress (i.e., the SCL of each segment), it normally knows which segment is capable of satisfying a
+        read (the segments whose SCL is greater than read-point) and thus can issue a read request directly
+        to a segment that has sufficient data.
+
+        Given that the database is aware of all outstanding reads, it can compute at any time the Minimum Read
+        Point LSN on a per-PG basis. If there are read replicas the writer gossips with them to establish the per-PG Minimum Read Point LSN across all nodes.
+        This value is called the *Protection Group Min Read Point LSN* (*PGMRPL*) and represents the “low water
+        mark” below which all the log records of the PG are unnecessary. In other words, a storage node
+        segment is guaranteed that there will be no read page requests with a read-point that is lower than
+        the PGMRPL. Each storage node is aware of the PGMRPL from the database and can, therefore, advance the
+        materialized pages on disk by coalescing the older log records and then safely garbage collecting them.
+**** Avoiding quorum reads
+        Aurora uses read views to support snapshot isolation using Multi-Version Concurrency Control (MVCC). A
+        read view establishes a logical point in time before which a SQL statement must see all changes and
+        after which it may not see any changes other than its own. Aurora MySQL does this by establishing the
+        most recent SCN and a list of transactions active as of that LSN. Data blocks seen by a read request
+        must be at or after the read view LSN and back out any transactions either active as of that LSN or
+        started after that LSN.
+
+        Aurora does not do quorum reads. Through its bookkeeping of writes and consistency points, the
+        database instance knows which segments have the last durable version of a data block and can request
+        it directly from any of those segments.
+
+        Avoiding the amplification of read quorums does make Aurora subject to latency when storage nodes are
+        down or jitter when they are busy. We manage this by tracking response time from storage nodes for
+        read requests. The database instance will usually issue a request to the segment with the lowest
+        measured latency, but occasionally also query one of the others in parallel to ensure up to date read
+        latency response times. If a request is taking longer than expected, will issue a read to another
+        storage node and accept whichever one returns first. In an active system, this can be done without
+        request timeouts by inspecting the list of outstanding requests when performing other I/Os.
+**** Scaling reads using read replicas
+        In Aurora, a single writer and up to 15 read replicas can all mount a single shared storage volume.
+        The log stream generated by the writer and sent to the storage nodes is also sent to all read
+        replicas.
+
+        In the reader, the database consumes this log stream by considering each log record in turn. If the
+        log record refers to a page in the reader's buffer cache, it uses the log applicator to apply the
+        specified redo operation to the page in the cache. Otherwise it simply discards the log record.
+
+        The replica obeys 2 rules:
+        1. the only log records that will be applied are those whose LSN is less than or equal to the VDL
+        2. the log records that are part of a single mini-transaction are applied atomically in the replica's
+           cache to ensure that the replica sees a consistent view of all databases objects.
+**** Structural consistency in Aurora replicas
+        A single writer has local state for all writes and can easily coordinate snapshot isolation,
+        consistency points for storage, transaction ordering, and structural atomicity. It is more complex for
+        replicas.
+
+        Aurora uses three invariants to manage replicas.
+        1. Replica read views must lag durability consistency points at the writer instance.
+
+           This ensures that the writer and reader need not coordinate cache eviction
+        2. Structural changes to the database, for example B-Tree splits and merges, must be made visible to
+           the replica atomically. This ensures consistency during block traversals.
+        3. Third, read views on replicas must be anchorable to equivalent points in time on the writer
+           instance. This ensures that snapshot isolation is preserved across the system.
+
+        Each database transaction in Aurora MySQL is a sequence of ordered *mini-transactions* (*MTRs*) that are
+        performed atomically. Each MTR is composed of changes to one or more data blocks, represented as a
+        batch of sequenced redo log records to provide consistency of structural changes, such as those
+        involving B-Tree splits. The database instance acquires latches for each data block, allocates a batch
+        of contiguously ordered LSNs, generates the log records, issues a write, shards then into write
+        buffers for each protection group associated with the blocks, and writes them to the various storage
+        nodes for the segments in the protection group. We use an additional consistency point, the *Volume
+        Durable LSN* (*VDL*), to represent the last LSN below VCL representing an MTR completion.
+
+        Replicas do not have the benefit of the latching used at the writer instance to prevent read requests
+        from seeing non-atomic structural updates. To create equivalent ordering, we ensure that log records
+        are only shipped from the writer instance in MTR chunks. At the replica, they must be applied in LSN
+        order, applied only if above the VDL in the writer as seen in the replica, and applied atomically in
+        MTR chunks to the subset of blocks in the cache. Read requests are made relative to VDL points to
+        avoid seeing structurally inconsistent data.
+**** Snapshot isolation and read view anchors in aurora replicas
+        Once we have ensured that cached replica state is structurally consistent, allowing traversal of
+        physical data structures, we must also ensure it is also logically consistent using snapshot
+        isolation.
+
+        The redo log seen by a read replica does not carry the state needed to establish SCL, PGCL, VCL, or
+        VDL consistency points. Nor is the read replica in the communication path between the writer and
+        storage nodes to establish this state on its own. The writer instance sends VDL update control records
+        as part of its replication stream. Although the active transaction list can be reconstructed at the
+        replica using redo records and VDL advancement, for efficiency reasons we ship commit notifications
+        and maintain transaction commit history. Read views at the replica are built based on these VDL points
+        and transaction commit history.
+
+
+** Recovery
+        The Aurora database instance must be able to construct PGCLs and VCL from local SCL state at storage
+        nodes.
+
+        When opening a database volume, either for crash recovery or for a normal startup, the database
+        instance must be able to reach at least a read quorum for each protection group comprising the volume.
+        The database instance can then locally re-compute PGCLs and VCL for the database by finding read
+        quorum consistency points across SCLs.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/52.png]]
+
+        If Aurora is unable to establish write quorum for one of its protection groups, it initiates repair
+        from the available read quorum to rebuild the failed segments. Once the volume is available for reads
+        and writes, Aurora increments an epoch in its storage metadata service and records this volume epoch
+        in a write quorum of each protection group comprising the volume.
+
+        The volume epoch is provided as part of every read or write request to a storage node. Storage nodes
+        will not accept requests at stale volume epochs. This boxes out old instances with previously open
+        connections from accessing the storage volume after crash recovery has occurred.
+* Failures and Quorums Membership
+* Lessons Learned
+** Multi-tenancy and database consolidation
+* Problems
+
+
+* References
+        [[https://fuzhe1989.github.io/2021/01/18/amazon-aurora/][nice blog]]
+
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

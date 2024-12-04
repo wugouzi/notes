@@ -1,0 +1,298 @@
+#+title: DBSP: Automatic Incremental View Maintenance for Rich Query Languages
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/dbsp.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+LATEX_HEADER: \usetikzlibrary{shapes, arrows.meta, positioning, decorations.pathreplacing, matrix}
+#+LATEX_HEADER: \tikzstyle{block}=[draw,fill=white,rectangle]
+#+LATEX_HEADER: \tikzstyle{every node}=[font=\small]
+#+LATEX_HEADER: \DeclareMathOperator{\fix}{\text{fix}}
+#+LATEX_HEADER: \DeclareMathOperator{\zm}{z^{-1}}
+
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        The IVM problem can be stated as follows: given a database \(DB\) and a view \(V\) described by a
+        query \(Q\) that is a function of the database, i.e., \(V=Q(DB)\), maintain the contents of \(V\) in
+        response to changes of the database. We want an algorithm to evaluate \(Q\) over the *changes*
+        \(\Delta DB\) applied to \(DB\), since often \(\abs{\Delta DB}\ll\abs{DB}\)
+
+
+
+* Stream Computations
+
+** Stream and stream operators
+        We set \(\B\) to be the set of Booleans
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given a set \(A\), a *stream* of values from \(A\), or an \(A\)-stream, is a function \(\N\to A\). We
+        denote \(\cals_A:=\{s\mid s:\N\to A\}\) the set of \A()-streams.
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A *stream operator* with \(n\) inputs is a function \(T:\cals_{A_0}\times\dots\times\cals_{A_{n-1}}\to\cals_B\)
+        #+END_definition
+
+        Stream operator *composition* is shown as chained circuits. The composition of a binary operator
+        \(T:\cals_A\times\cals_B\to\cals_A\) with the unary operator \(S:\cals_A\to\cals_B\) into the
+        computation \(\lambda s.T(T(s, S(s)), S(s)):\cals_A\to\cals_A\) is
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/54.png]]
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given a (scalar) function \(f:A\to B\),we define a stream operator \(\uparrow f:\cals_A\to\cals_B\) by
+        *lifting* the function \(f\) pointwise in time: \((\uparrow f)(s):=f\circ s\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Lifting distributes over function composition:
+        \begin{equation*}
+        \uparrow(f\circ g)=(\uparrow f)\circ(\uparrow g)
+        \end{equation*}
+        #+END_proposition
+
+        We say that two DBSP programs are *equivalent* if they comput the same input-output function on
+        str3eams. We use \(\cong\) here.
+        \begin{equation*}
+        \begin{tikzpicture}[baseline={([yshift=-.5ex]current bounding box.center)},auto,>=latex]
+        \node[] (input) {$s$};
+        \node[block, right of=input] (g) {$\lift{g}$};
+        \node[block, right of=g] (f) {$\lift{f}$};
+        \node[right of=f] (output) {$o$};
+        \draw[->] (input) -- (g);
+        \draw[->] (g) -- (f);
+        \draw[->] (f) -- (output);
+        \end{tikzpicture}
+        \quad\cong\quad
+        \begin{tikzpicture}[baseline={([yshift=-.5ex]current bounding box.center)},auto,>=latex]
+        \node[] (input) {$s$};
+        \node[block, right of=input, node distance=1.5cm] (fg) {$\lift{(f \circ g)}$};
+        \node[right of=fg, node distance=1.5cm] (output) {$o$};
+        \draw[->] (input) -- (fg);
+        \draw[->] (fg) -- (output);
+        \end{tikzpicture}
+        \end{equation*}
+** Streams over abelian groups
+        For the rest of technical development we require the set of values \(A\) of a stream \(\cala_A\) to
+        form a commutative group \((A,+,0_A,-)\).
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        The *delay operator* produces an output stream by delaying its input by one step:
+        \(z^{-1}_A:\cals_A\to\cals_A\):
+        \begin{equation*}
+        z_A^{-1}(s)[t]:=
+        \begin{cases}
+        0_A&t=0\\
+        s[t-1]&t\ge 1
+        \end{cases}
+        \end{equation*}
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A stream operator \(S:\cals_A\to\cals_B\) is *time-invariant* (TI) if \(S(z_A^{-1}(s))=z_B^{-1}(S(s))\)
+        for all \(s\in\cals_A\)
+        \begin{equation*}
+        \begin{tikzpicture}[baseline={([yshift=-.5ex]current bounding box.center)},auto,>=latex]
+          \node[] (input) {$s$};
+          \node[block, right of=input] (S) {$S$};
+          \node[block, right of=S] (z) {$\zm$};
+          \node[right of=z] (output) {$o$};
+          \draw[->] (input) -- (S);
+          \draw[->] (S) -- (z);
+          \draw[->] (z) -- (output);
+        \end{tikzpicture}
+        \quad\cong\quad
+        \begin{tikzpicture}[baseline={([yshift=-.5ex]current bounding box.center)},auto,>=latex]
+          \node[] (input) {$s$};
+          \node[block, right of=input] (z) {$\zm$};
+          \node[block, right of=z] (S) {$S$};
+          \node[right of=S] (output) {$o$};
+          \draw[->] (input) -- (z);
+          \draw[->] (z) -- (S);
+          \draw[->] (S) -- (output);
+        \end{tikzpicture}
+        \end{equation*}
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A stream operator \(S:\cals_A\to\cals_B\) is *causal* when for all \(s,s'\in\cals_A\), and all times
+        \(t\) we have
+        \begin{equation*}
+        (\forall i\le t.s[i]=s'[i])\Rightarrow S(s)[t]=S(s')[t]
+        \end{equation*}
+        #+END_definition
+
+        Operators produced by lifting are causal, and \(z^{-1}\) is causal. All DBSP operators are causal. The
+        composition of causal operators of any number of inputs is causal.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        *Cutting* the stream \(s\in\cals_A\) at time \(t\in\N\) produces a stream
+        \begin{equation*}
+        (s|_{\le t})[i]:=
+        \begin{cases}
+        s[i]&i\le t\\
+        0_A&i>t
+        \end{cases}
+        \end{equation*}
+        #+END_definition
+
+        Cut is commutative and idempotent but not time-invariant.
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        For a binary stream operator \(T\), TFAE:
+        1. \(T\) is causal
+        2. \(\forall s_1,s_2,t\) we have \(T(s_1,s_2)|_{\le t}=T(s_1|_{\le t},s_2|_{\le t})|_{\le t}\)
+        #+END_lemma
+
+        #+BEGIN_proof
+        \((1)\Rightarrow(2)\): For any \(i\le t\), we have \(s_1[i]=s_1|_{\le t}[i]\). Therefore
+        \(T(s_1,s_2)[t]=T(s_1|_{\le t},s_2|_{\le t})[t]\).
+
+        \((2)\Rightarrow(1)\): Fix \(t\). If for all \(i\le t\) we have \(s_1[i]=s_1'[i]\) and
+        \(s_2[i]=s_2'[i]\).
+        \begin{align*}
+        T(s_1',s_2')[t]&=T(s_1',s_2')|_{\le t}[t]\\
+        &=T(s_1'|_{\le t},s_2'|_{\le t})|_{\le t}[t]\\
+        &=T(s_1|_{\le t},s_2|_{\le t})|_{\le t}[t]\\
+        &=T(s_1,s_2)[t]
+        \end{align*}
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A stream \(s\) is *zero almost-everywhere* if there exists a time \(t_0\in\N\) s.t. \(s|_{\le t_0}=s\)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A stream operator \(F:\cals_A\to\cals_B\) is *strict* if \(\forall s,s'\in A\), \(\forall t\in\N\) we
+        have
+        \begin{equation*}
+        (\forall i<t.s[i]=s'[i])\Rightarrow F(s)[t]=F(s')[t]
+        \end{equation*}
+        #+END_definition
+
+
+        In particular, \(F(s)[0]=0_B\) is the same for all \(s\in\cals_A\).
+        #+LATEX: \wu{
+        For any stream \(s,s'\in\cals_A\), \(F(s)[0]=F(s')[0]\).
+        #+LATEX: }
+        Strict operators are causal. Lifted operators in general are not strict. \(z^{-1}\) is strict.
+        <<1>>
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        *Strictly cutting* the stream \(s\in\cals_A\) at time \(t\in\N\) produces the stream
+        \begin{equation*}
+        (s|_{<t})[i]:=
+        \begin{cases}
+        s[i]&i<t\\
+        0_A&i\ge t
+        \end{cases}
+        \end{equation*}
+        #+END_definition
+
+        An operator \(F:\cals_A\to\cals_B\) is strict iff for any \(s\) and \(t\) we have
+        \begin{equation*}
+        F(s)|_{\le t}=F(s|_{<t})|_{\le t}
+        \end{equation*}
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        For a strict \(F:\cals_A\to\cals_B\) the equation \(\alpha=F(\alpha)\) has a unique solution
+        \(\alpha\in\cals_A\), denoted by \(\fix\alpha.F(\alpha)\)
+        #+END_proposition
+
+        #+BEGIN_proof
+        \begin{align*}
+        \alpha[0]&=F(\alpha)[0]=F(_{\cals_A})[0]\\
+        \alpha[t+1]&=F(\alpha)[t+1]=F(\alpha|_{\le t})[t+1]
+        \end{align*}
+        #+END_proof
+
+        Consider a circuit:
+        #+BEGIN_center
+        \begin{tikzpicture}[>=latex]
+            \node[] (input) {$s$};
+            \node[block, right of=input] (f) {$T$};
+            \node[right of=f, node distance=1.2cm] (output) {$\alpha$};
+            \node[block, below of=f, node distance=.6cm] (z) {$F$};
+            \draw[->] (input) -- (f);
+            \draw[->] (f) -- node (mid) {} (output);
+            \draw[->] (mid.center) |-  (z);
+            \draw[->] (z.west) -- ++(-.4,0) |- ([yshift=1mm]f.south west);
+        \end{tikzpicture}
+        #+END_center
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        If \(F:\cals_B\to\cals_B\) is strict and \(T:\cals_A\times\cals_B\to\cals_B\) is causal, the operator
+        \(Q(s)=\fix\alpha.T(s,F(\alpha))\) is well-defined and causal. If, moreover, \(F\) and \(T\) are TI
+        then so is \(Q\)
+        #+END_lemma
+** Integration and differentiation
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        The structure \(\cals_A,+,0,-\), obtained by lifting the \(+\) and unary \(-\) operations of \(A\), is
+        an abelian group. 0 is the stream with all values \(0_A\).
+        #+END_proposition
+
+        Stream addition and negation are causal, TI operators.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given abelian groups \(A\) and \(B\) we call a stream operator \(S:\cals_A\to\cals_B\) *linear*  if it
+        is a group homomorphism, that is, \(S(a+b)=S(a)+S(b)\) (and therefore \(S(0)=0\) and \(S(-a)=-S(a)\))
+        #+END_definition
+
+        Given a linear function \(f:A\to B\), the stream operator \(\uparrow f\) is linear and TI(LTI).
+        \(z^{-1}\) is also LTI.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A function of two arguments \(f:A\times B\to C\) with \(A,B,C\) groups, is *bilinear* if it is linear
+        separately in each argument: \(\forall a,b,c,d\):
+        \begin{gather*}
+        f(a+b,c)=f(a,c)+f(b,c)\\
+        f(a,c+d)=f(a,c)+f(c,d)
+        \end{gather*}
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Let \(S\) be a unary, causal, LTI operator. The operator \(Q(s)=\fix\alpha.S(s+z^{-1}(\alpha))\) is
+        well-defined and LTI:
+        \begin{center}
+        \begin{tikzpicture}[auto,>=latex,node distance=1cm]
+            \node[] (input) {$s$};
+            \node[block, shape=circle, right of=input, inner sep=0pt,node distance=2cm] (plus) {$+$};
+            \node[right of=plus] (output) {$\D(s)$};
+            \draw[->] (input) -- node (i) {} (plus);
+            \node[block, below of=i, node distance=.8cm] (z) {$\zm$};
+            \node[block, shape=circle, right of=z, inner sep=0pt] (minus) {$\minus$};
+            \draw[->] (plus) -- (output);
+            \draw[->] (i) -- (z);
+            \draw[->] (z) -- (minus);
+            \draw[->] (minus) -- (plus);
+        \end{tikzpicture}
+        \end{center}
+        #+END_proposition
+
+
+
+* Problems
+[[1]], [[2]]
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

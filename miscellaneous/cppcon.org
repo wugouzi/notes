@@ -4,6 +4,56 @@
 #+LATEX_HEADER: \graphicspath{{../../books/}}
 #+LATEX_HEADER: \makeindex
 
+* 2024
+** C++ Relocation - How to Achieve Blazing Fast Save and Restore and More!
+        https://www.youtube.com/watch?v=LnGrrfBMotA
+        #+begin_src c++
+// Row-wise representation
+struct Item {
+  int id;
+  double price;
+  Specials *specials;
+  Category *category;
+  bool is_homemade; // performance-hostile, memory layout inefficient
+};
+
+// Column-wise representation
+template <std::size_t N>
+struct State {
+  std::array<int, N> ids;
+  std::array<double, N> prices;
+  EfficientMap<std::size_t, Specials> specials;
+  std::array<Category_handle, N> categories;
+  EfficientSet<std::size_t> homemade;
+};
+        #+end_src
+
+        Handles
+        #+begin_src c++
+auto state = State<N>;
+
+class ItemHandle {
+  std::size index;
+  public:
+  int id() { return state.ids[index]; }
+  double price() { return state.prices[index]; }
+  Specials *specials() { return state.specials[id()]; }
+  Category_handle category() { return state.categories[id()]; }
+  bool &is_homemade() { return state.homemade.contains(id()); }
+};
+        #+end_src
+
+        But libraries, user code will be in the "normal" way.
+        * Manually
+        * automating: Code generators, preprocessing
+
+        Why?
+        * Computing with homogeneous data can extract full performance from the execution resources
+        * No allocations
+        * Dis-incentives to communicate via state changes
+
+
+
 * 2023
 ** A Long Journey of Changing std::sort Implementation at Scale
         Gcc now use ~introsort~ for ~sort~.
