@@ -3,6 +3,14 @@
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+EXPORT_FILE_NAME: ../../latex/papers/database/spanner.tex
 #+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
 
@@ -205,6 +213,89 @@ CREATE TABLE Albums {
         poll interval is currently 30 seconds, and the current applied drift rate is set at 200
         microseconds/second, which together account for the sawtooth bounds from 0 to 6 ms. The remaining 1 ms
         comes from the communication delay to the time masters.
+* Concurrency Control
+** Timestamp Management
+        |------------------------------------------+---------------------+------------------------------------|
+        | Operation                                | Concurrency Control | Replica Required                   |
+        |------------------------------------------+---------------------+------------------------------------|
+        | Read-Write Transaction                   | pessimistic         | leader                             |
+        | Read-Only Transaction                    | lock-free           | leader for timestamp, any for read |
+        | Snapshot Read, client-provided timestamp | lock-free           | any                                |
+        | Snapshot Read, client-provided bound     | lock-free           | any                                |
+        |------------------------------------------+---------------------+------------------------------------|
+
+        A read-only transaction must be predeclared as not having any writes.
+*** Paxos Leader Leases
+        Spanner’s Paxos implementation uses *timed leases* to make leadership long-lived (10 seconds by
+        default). A potential leader sends requests for timed lease votes; upon receiving a quorum of lease
+        votes the leader knows it has a lease. A replica extends its lease vote implicitly on a successful
+        write, and the leader requests lease-vote extensions if they are near expiration. Define a leader’s
+        *lease interval* as starting when it discovers it has a quorum of lease votes, and as ending when it no
+        longer has a quorum of lease votes (because some have expired). Spanner depends on the following
+        *disjointness invariant*:
+        #+BEGIN_center
+        For each Paxos group, each Paxos leader’s lease interval is disjoint from
+        every other leader’s.
+        #+END_center
+
+        The Spanner implementation permits a Paxos leader to abdicate by releasing its slaves from their lease
+        votes. To preserve the disjointness invariant, Spanner constrains when abdication is permissible.
+        Define \(s_{max}\) to be the maximum timestamp used by a leader. Subsequent sections will describe
+        when smax is advanced. Before abdicating, a leader must wait until \(TT.after(s_{max})\) is true.
+*** Assining Timestamps to RW Transactions
+        Transactional reads and writes use two-phase locking. As a result, they can be assigned timestamps at
+        any time when all locks have been acquired, but before any locks have been released. For a given
+        transaction, Spanner assigns it the timestamp that Paxos assigns to the Paxos write that represents
+        the transaction commit.
+
+        Spanner depends on the following *monotonicity invariant*:
+        #+BEGIN_center
+        Within each Paxos group, Spanner assigns timestamps to Paxos writes in monotonically increasing order,
+        even across leaders
+        #+END_center
+        This invariant is enforced across leaders by making use of the disjointness invariant: a leader must
+        only assign timestamps within the interval of its leader lease. Note that whenever a timestamp \(s\) is
+        assigned, \(s_{max}\) is advanced to \(s\) to preserve disjointness.
+
+        Spanner also enforces the following *external consistency invariant*:
+        #+BEGIN_center
+        If the start of a transaction \(T_2\) occurs after the commit of a transaction \(T_1\) , then the
+        commit timestamp of \(T_2\) must be greater than the commit timestamp of \(T_1\).
+        #+END_center
+        Define the start and commit events for a transaction \(T_1\) by \(e_i^{start}\) and \(e_i^{commit}\);
+        and the commit timestamp of a transaction \(T_i\) by \(s_i\). The invariant becomes
+        \begin{equation*}
+        t_{abs}(e^{commit}_1)<t_{abs}(e_2^{start})\Rightarrow s_1<s_2
+        \end{equation*}
+
+        The protocol for executing transactions and assigning timestamps obeys /two/ rules, which together
+        guarantee this invariant, as shown below. Define the arrival event of the commit request at the
+        coordinator leader for a write \(T_i\) to be \(e_i^{server}\).
+
+        * *Start*: The coordinator leader for a write \(T_i\) assigns a commit timestamp \(s_i\) no less than the
+          value of \(TT.now().latest\), computed after \(e_i^{server}\)
+        * *Commit Wait*: The coordinator leader ensures that clients cannot see any data committed by \(T_i\)
+          until \(TT.after(s_i)\) is true. Commit wait ensures that \(s_i\) is less than the absolute commit
+          time of \(T_i\), or \(s_i<t_{abs}(e_i^{commit})\). Now we get
+          \begin{align*}
+          s_1&<t_{abs}(e_1^{commit})\tag{commit wait}\\
+          t_{abs}(e_1^{commit})&<t_{abs}(e_2^{start})\tag{assumption}\\
+          t_{abs}(e_2^{start})&\le t_{abs}(e_2^{server})\tag{causality}\\
+          t_{abs}(e_2^{server})&\le s_2\tag{start}\\
+          s_1&<s_2
+          \end{align*}
+
+*** Serving Reads at a Timestamp
+        The monotonicity invariant allows Spanner to correctly determine whether a replica's state is
+        sufficiently up-to-date to satisfy a read.
+
+        Every replica tracks a value called *safe time* \(t_{safe}\) which is the maximum timestamp at which a
+        replica is up-to-date. A replica can satisfy a read at a timestamp \(t\) if \(t\le t_{safe}\).
+
+        Define \(t_{safe}=\min(t_{safe}^{Paxos},t_{safe}^{TM})\), where each Paxos state machine has a safe
+        time \(t_{safe}^{Paxos}\) and each transaction manager has a safe time \(t_{safe}^{TM}\).
+
+
 * Problems
         1. [[1]]: Why?
 * References
