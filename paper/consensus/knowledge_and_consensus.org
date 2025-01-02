@@ -1,0 +1,219 @@
+#+title: Knowledge and Consensus in a Distributed Environment
+#+AUTHOR: Joseph Y. Halpern & Yoram Moses
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/consensus/knowledge_and_consensus.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/consensus/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* The muddy children puzzle
+        Imagine \(n\) children playing together. The mother of these children has told them that if they get
+        dirty there will be severe consequences. So, of course, each child wants to keep clean, but each would
+        love to see the others get dirty. Now it happens during their play that some of the children, say
+        \(k\) of them, get mud on their foreheads. Each can see the mud on others but not on his own forehead.
+        So, of course, no one says a thing. Along comes the father, who says, “At least one of you has mud on
+        your head,” thus expressing a fact known to each of them before he spoke (if \(k\) > 1). The father
+        then asks the following question, over and over: “Can any of you prove you have mud on your head?”
+        Assuming that all the children are perceptive, intelligent, truthful, and that they answer
+        simultaneously, what will happen?
+
+        There is a “proof” that the first \(k-1\) times he asks the question, they will all say “no” but then
+        the \(k\)th time the dirty children will answer “yes.” The “proof” is by induction on \(k\). For
+        \(k=1\) the result is obvious: the dirty child sees that no one else is muddy, so he must be the muddy
+        one. Let us do \(k=2\). So there are just two dirty children, \(a\) and \(b\). Each answers “no” the first
+        time, because of the mud on the other. But, when \(b\) says “no,” \(a\) realizes that he must be
+        muddy, for otherwise \(b\) would have known the mud was on his head and answered “yes” the first time.
+        Thus \(a\) answers “yes” the second time. But \(b\) goes through the same reasoning.
+
+* A hierarchy of states of knowledge
+        We require that only true things be known, or formally:
+        \begin{equation*}
+        K_i\varphi\to\varphi
+        \end{equation*}
+        i.e., if an agent \(i\) knows \(\varphi\), then \(\varphi\) is true. This property, which is
+        occasionally referred to as the *knowledge axiom*, is the main property that philosophers customarily
+        use to distinguish knowledge from belief.
+
+        * \(D_G\varphi\)  (the group \(G\) has *distributed knowledge* of \(\varphi\)): we say that knowledge of
+          \(\varphi\) is distributed in \(G\) if someone who knew everything that each member of \(G\) knows
+          would know \(\varphi\). For instance, if one member of \(G\) knows \(\psi\) and another knows that
+          \(\psi\to\varphi\), the group may be said to have distributed knowledge of \(\varphi\).
+        * \(S_G\varphi\) (someone in \(G\) knows \(\varphi\)): formally,
+          \begin{equation*}
+          S_G\varphi\equiv\bigvee_{i\in G}K_i\varphi
+          \end{equation*}
+        * \(E_G\varphi\) (everyone in \(G\) knows \(\varphi\)):
+          \begin{equation*}
+          E_G\varphi\equiv\bigwedge_{i\in G}K_i\varphi
+          \end{equation*}
+        * \(E_G^k\varphi\) (\(\varphi\) is *\(E^k\)-knowledge* in \(G\)): \(E_G^k\varphi\) is defined by
+          \begin{align*}
+          E_G^1\varphi=E_G\varphi\\
+          E_G^{k+1}\varphi=E_GE_G^k\varphi,\text{ for }k\ge 1
+          \end{align*}
+          \(\varphi\) is said to be \(E^k\)-knowledge in \(G\) if "everyone in \(G\) knows that everyone in
+          \(G\) knows that ... that everyone in \(G\) knows that \(\varphi\) is true" holds, where the phrase
+          "everyone in \(G\) knows that" appears in the sentence \(k\) times
+        * \(C_G\varphi\) (\(\varphi\) is *common knowledge* in \(G\)): \(\varphi\) is \(E_G^k\)-knowledge for
+          all \(k\ge 1\)
+
+        \begin{equation*}
+        C\varphi\to\dots\to E^{k+1}\varphi\to\dots\to E\varphi\to S\varphi\to D\varphi\to\varphi
+        \end{equation*}
+
+        However, depending on the circumstances, these notions might not be distinct. For example, consider a
+        model of parallel computation in which a collection of \(n\) processors share a common memory. If
+        their knowledge is based on the contents of the common memory, then we arrive at a situation in which
+        \begin{equation*}
+        C\varphi\equiv E^k\varphi\equiv E\varphi\equiv S\varphi\equiv D\varphi
+        \end{equation*}
+
+        Returning to the muddy children puzzle, let us consider the state of the children’s knowledge of
+        \(\bm\): “At least one forehead is muddy”. Before the father speaks, \(E^{k-1}\bm\) holds, and
+        \(E^k\bm\) doesn’t. To see this, consider the case \(k=2\) and suppose that Alice and Bob are the only
+        muddy children. Clearly everyone sees at least one muddy child, so \(E\bm\) holds. But the only muddy
+        child that Alice sees is Bob, and, not knowing whether she is muddy, Alice considers it possible that
+        Bob is the only muddy child. Alice therefore considers it possible that Bob sees no muddy child. Thus,
+        although both Alice and Bob know \(\bm\) (i.e., \(E\bm\) holds), Alice does not know that Bob knows
+        \(\bm\), and hence \(E^2\bm\) does not hold. A similar argument works for the general case.
+
+        Thus, the role of the father’s statement was to improve the children’s state of knowledge of \(\bm\)
+        from \(E^{k-1}\bm\) to \(E^k\bm\). In fact, the children have common knowledge of \(\bm\) after the
+        father announces that \(\bm\) holds.
+
+        The vast majority of the communication in a distributed system can also be viewed as the act of
+        improving the state of knowledge (in the sense of “climbing up a hierarchy”) of certain facts. This is
+        an elaboration of the view of communication in a network as the act of “sharing knowledge”. Taking
+        this view, two notions come to mind. One is *fact discovery* – the act of changing the state of
+        knowledge of a fact \(\varphi\) from being distributed knowledge to levels of explicit knowledge
+        (usually \(S\)-, \(E\)-, or \(C\)-knowledge), and the other is *fact publication* – the act of changing
+        the state of knowledge of a fact that is not common knowledge to common knowledge.
+
+        An example of fact discovery is the detection of global properties of a system, such as deadlock. The
+        system initially has distributed knowledge of the deadlock, and the detection algorithm improves this
+        state to \(S\)-knowledge . An example of fact publication is the introduction of a new communication
+        convention in a computer network. Here the initiator(s) of the convention wish to make the new
+        convention common knowledge.
+
+* The coordinated attack problem
+        Two divisions of an army are camped on two hilltops overlooking a common valley. In the valley awaits
+        the enemy. It is clear that if both divisions attack the enemy simultaneously they will win the
+        battle, whereas if only one division attacks it will be defeated. The divisions do not initially have
+        plans for launching an attack on the enemy, and the commanding general of the first division wishes to
+        coordinate a simultaneous attack (at some time the next day). Neither general will decide to attack
+        unless he is sure that the other will attack with him. The generals can only communicate by means of a
+        messenger. Normally, it takes the messenger one hour to get from one encampment to the other. However,
+        it is possible that he will get lost in the dark or, worse yet, be captured by the enemy. Fortunately,
+        on this particular night, everything goes smoothly. How long will it take them to coordinate an
+        attack?
+
+        We now show that despite the fact that everything goes smoothly, no agreement can be reached and no
+        general can decide to attack.
+
+        Suppose General \(A\) sends a message to General \(B\) saying “Let’s attack at dawn”, and the
+        messenger delivers it an hour later. General \(A\) does not immediately know whether the messenger
+        succeeded in delivering the message. And because \(B\) would not attack at dawn if the messenger is
+        captured and fails to deliver the message, \(A\) will not attack unless he knows that the message was
+        successfully delivered. Consequently, \(B\) sends the messenger back to \(A\) with an acknowledgement.
+        Suppose the messenger delivers the acknowledgement to \(A\) an hour later. Since \(B\) knows that
+        \(A\) will not attack without knowing that \(B\) received the original message, he knows that \(A\)
+        will not attack unless the acknowledgement is successfully delivered. Thus, \(B\) will not attack
+        unless he knows that the acknowledgement has been successfully delivered. However, for B to know that
+        the acknowledgement has been successfully delivered, \(A\) must send the messenger back with an
+        acknowledgement to the acknowledgement . . . . Similar arguments can be used to show that no fixed
+        finite number of acknowledgements, acknowledgements to acknowledgements, etc. suffices for the
+        generals to attack. Note that in the discussion above the generals are essentially running a handshake
+        protocol. The above discussion shows that for no \(k\) does a \(k\)-round handshake protocol guarantee
+        that the generals be able to coordinate an attack.
+
+* A general model of a distributed system
+        We view a distributed system as a finite collection \(\{p_1,\dots,p_n\}\) of two or more processors
+        that are connected by a communication network. We assume an external source of “real time” that in
+        general is not directly observable by the processors. The processors are state machines that possibly
+        have *clocks*, where a clock is a monotone nondecreasing function of real time. If a processor has a
+        clock, then we assume that its clock reading is part of its state.
+
+        A *run* \(r\) of a distributed system is a description of an execution of the system, from time 0 until
+        the end of the execution. A *point* is a pair \((r,t)\) consisting of a run \(r\) and a time \(t\ge 0\).
+        We characterize the run \(r\) by associating with each point \((r,t)\) every processor \(p_i\)'s
+        *local history* at \((r,t)\), denoted \(h(p_i,r,t)\). Roughly speaking, \(h(p_i,r,t)\) consists of the
+        sequence of events that \(p_i\) has observed up to time \(t\) in run \(r\). We now formalize this
+        notion.
+
+        We assume that processor \(p_i\) "wakes up" or joins the system in run \(r\) at some time
+        \(t_{init}(p_i,r)\ge 0\). The processor's local state when it wakes up is called its *initial state*.
+        The *initial configuration* of a run consists of the initial state and the wake up time for each
+        processor. In system with clocks, the *clock time function* \(\tau\) describes processors' clock
+        readings; \(\tau(p_i,r,t)\) is the reading of \(p_i\)'s clock at the point \((r,t)\). Thus,
+        \(\tau(p_i,r,t)\) is undefined for \(t<t_{init}(p_i,r)\) and is a monotonic nondecreasing function of
+        \(t\) for \(t\ge t_{init}(p_i,r)\).  (If there are no clocks in the system, we say for simplicity that
+        all runs have the same clock readings) We take \(h(p_i,r,t)\) to be empty if \(t<t_{init}(p_i,r)\).
+        For \(t\ge t_{init}(p_i,r)\), the history \(h(p_i,r,t)\) consists of \(p_i\)'s initial state and the
+        sequence of messages \(p_i\) has sent and received up to, but not including, those sent or received at
+        time \(t\) (in the order they were sent/received). We assume that this sequence of messages is finite.
+        If \(p_i\) has a clock, the messages are also marked with the time at which they were sent or
+        received, and the history includes the range of values that the clock has read up to and including
+        time \(t\). If we consider randomized protocols, then \(h(p_i,r,t)\) also includes \(p_i\)'s random
+        coin tosses.
+
+        Corresponding to every distributed system, given an appropriate set of assumptions about the
+        properties of the system and its possible interaction with its environment, there is a natural set \(R\)
+        of all possible runs of the system. We identify a distributed system with such a set \(R\) of its possible
+        runs. For ease of exposition, we sometimes slightly abuse the language and talk about a point
+        \((r,t)\) as being a *point* of \(R\) when \(r\in R\). A run \(r'\) is said to *extend* a point \((r,t)\)
+        if \(h(p_i,r,t')=h(p_i,r',t')\) for all \(t'\le t\) and all processors \(p_i\). Observe that \(r'\)
+        extends \((r,t)\) iff \(r\) extends \((r',t)\).
+
+        We shall often be interested in the set of runs generated by running a particular *protocol*, under some
+        assumptions on the communication medium.
+
+* Ascribing knowledge to processors
+        We assume the existence of an underlying logical language of formulas for representing *ground* facts
+        about the system. A ground fact is a fact about the state of the system that does not explicitly
+        involve processors’ knowledge. For example, “the value of register \(x\) is 0”.
+
+        We extend the original language of ground formulas to a language that is closed under operators for
+        knowledge, distributed knowledge, everyone knows, and common knowledge and under Boolean connectives.
+
+        We now describe one of the most natural ways of ascribing knowledge to processors in a distributed
+        system, which we call *view-based* knowledge interpretations. At every point each processor is assigned
+        a *view*; we say that two points are *indistinguishable* to the processor if it has the same view in both.
+        A processor is then said to *know* a fact at a given point exactly if the fact holds at all of the
+        points that the processor cannot distinguish from the given one.
+
+        A *view function* \(v\) for a system \(R\) assigns to every processor at any given point of \(R\) a view
+        from some set \(\Sigma\) of *views*; i.e., \(v(p_i,r,t)\in\Sigma\) for each processor \(p_i\) and point
+        \((r,t)\) of \(R\). We require that
+        \begin{equation*}
+        h(p_i,r,t)=h(p_i,r',t')\Rightarrow v(p_i,r,t)=v(p_i,r',t')
+        \end{equation*}
+
+        A *view-based knowledge interpretation* \(\cali\) is a triple \((R,\pi,v)\), consisting of a set of runs
+        \(R\), an assignment \(\pi\) which associates with every point in \(R\) a truth assignment to the
+        ground facts, and a view function \(v\) for \(R\). A triple \((\cali,r,t)\), where \(\cali\) is a
+        knowledge interpretation and \((r,t)\) is a point of \(R\), is called a *knowledge point*. Formulas are
+        said to be true or false of knowledge points. Let \(\cali=(R,\pi,v)\). We can now define the truth of
+        a formula \(\varphi\) at a knowledge point \((\cali,r,t)\), denoted \((\cali,r,t)\vDash\varphi\) (and
+        also  occasionally read “\(\varphi\) *holds at* \((\cali,r,t)\)”, or just “\(\varphi\) holds at
+        \((r,t)\)”, if the interpretation \(\cali\) is clear from context), by induction on the structure of
+        formulas:
+        1. If \(P\) is a ground formula then \((\cali,r,t)\vDash P\) iff \(\pi(r,t)(P)=true\)
+        2. \((\cali,r,t)\vDash\psi\) iff \((\cali,r,t)\not\vDash\psi\)
+        3. \((\cali,r,t)\vDash\psi_1\wedge\psi_2\) iff \((\cali,r,t)\vDash\psi_1\) and \((\cali,r,t)\vDash\psi_2\)
+        4. \((\cali,r,t)\vDash K_i\psi\) iff \((\cali,r',t')\vDash\psi\) for all \((r',t')\in R\) satisfying
+           \(v(p_i,r,t)=v(p_i,r',t')\)
+        5. \((\cali,r,t)\vDash E_G\psi\) iff \((\cali,r,t)\vDash K_i\psi\) for all \(p_i\in G\)
+        6. \((\cali,r,t)\vDash C_G\psi\) iff \((\cali,r,t)\vDash E_G^k\psi\) for all \(k>0\)
+
+
+
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -1,0 +1,104 @@
+#+title: Morsel-Driven Parallism: A NUMA-Aware Query Evaluation Framework for the Many-Core Age
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/morsel-driven_parallism.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION: Idea of morsel-driven parallism: \(R\bowtie_AS\bowtie_BT\)
+        [[../../images/papers/63.png]]
+
+        Parallism is achieved by processing each pipeline on different cores in parallel, as indicated by the
+        two (upper/red and lower/blue) pipelines in the figure. The core idea is a *scheduling* mechanism (the
+        “dispatcher”) that allows flexible parallel execution of an operator pipeline, that can change the
+        parallelism degree even during query execution.
+
+        A query is divided into *segments*, and each executing segment takes a morsel (e.g, 100,000) of input
+        tuples and executes these, materializing results in the next pipeline breaker.
+
+        The morsel framework enables NUMA local processing as indicated by the color coding in the figure: A
+        thread operates on NUMA-local input and writes its result into a NUMA-local storage area. Our
+        dispatcher runs a fixed, machine-dependent number of threads, such that even if new queries arrive
+        there is no resource over-subscription, and these threads are pinned to the cores, such that no
+        unexpected loss of NUMA locality can occur due to the OS moving a thread to a different core.
+* Morsel-Driven Execution
+        We consider
+        \begin{equation*}
+        \sigma_{\dots}(R)\bowtie_A\sigma_{\dots}(S)\bowtie_B\sigma_{\dots}(T)
+        \end{equation*}
+        Assuming that \(R\) is the largest table (after filtering) the optimizer would choose \(R\) as probe
+        input and build hash tables of the other two \(S\) and \(T\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/64.png]]
+
+        The plan consists of the three pipelines:
+        1. Scanning, filtering and building the hash table \(HT(T)\) of base relation \(T\),
+        2. Scanning, filtering and building the hash table \(HT(S)\) of argument \(S\),
+        3. Scanning, filtering R and probing the hash table \(HT(S)\) of \(S\) and probing the hash table
+           \(HT(T)\) of \(T\) and storing the result tuples.
+
+
+        Each pipeline segment, including all operators, is compiled into one code fragment.
+
+        The morsel-driven execution of the algebraic plan is controlled by a so called ~QEPobject~ which
+        transfers executable pipelines to a dispatcher – cf. Section 3. It is the ~QEPobject~'s responsibility
+        to observe data dependencies.
+
+        In our example query, the third (probe) pipeline can only be executed after the two hash tables have
+        been built, i.e., after the first two pipelines have been fully executed. For each pipeline the
+        ~QEPobject~ allocates the temporary storage areas into which the parallel threads executing the pipeline
+        write their results. After completion of the entire pipeline the temporary storage areas are logically
+        re-fragmented into equally sized morsels; this way the succeeding pipelines start with new
+        homogeneously sized morsels instead of retaining morsel boundaries across pipelines which could easily
+        result in skewed morsel sizes.
+
+        In order to write NUMA-locally and to avoid synchronization while writing intermediate results the
+        ~QEPobject~ allocates a storage area for each such thread/core for each executable pipeline.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION:
+        [[../../images/papers/65.png]]
+        The *parallel* processing of the pipeline for filtering \(T\) and building the hash table \(HT(T)\) is
+        shown in Figure [[ref:3]].
+
+        Once the thread has finished processing the assigned morsel it can either be delegated (dispatched) to
+        a different task or it obtains another morsel as its next task.
+
+        The logical algebraic pipeline of (1) scanning/filtering the input \(T\) and (2) building the hash
+        table is actually broken up into two physical processing pipelines marked as phases on the left-hand
+        side of the figure.
+
+        In the first phase the filtered tuples are inserted into NUMA-local storage areas, i.e., for each core
+        there is a separate storage area in order to avoid synchronization. To preserve NUMA-locality in
+        further processing stages, the storage area of a particular core is locally allocated on the same
+        socket.
+        #+LATEX: \wu{
+        What if the data is skewed?
+        #+LATEX: }
+
+        After all base table morsels have been scanned and filtered, in the second phase these storage areas
+        are scanned – again by threads located on the corresponding cores – and pointers are inserted into the
+        hash table.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/66.png]]
+* Dispatcher: Scheduling Parallel Pipeline Tasks
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -1,0 +1,266 @@
+#+title: Simple, Efficient, and Robust Hash Tables for Join Processing
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/hash_tables_for_join_processing.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+#+STARTUP: shrink
+* Introduction
+        Observations:
+        1. Joins are asymmetric, with small build and large probe sides
+        2. Joins are selective, with many probes not finding a match in the hash table
+        3. Join must be scalable, as inputs can be large, and CPU cores are plentiful,
+        4. Joins can have duplicates, many tuples sharing few keys
+
+        Our hash table combines the techniques of build side partitioning, adjacency array layout, pipelined
+        probes, Bloom filters, and software write-combine buffers to achieve high performance on a wide range
+        of queries.
+* Design Criteria
+        *Joins are selective*. Many probe-side tuples will not find matches
+
+        | Hash Table      | Performant | Parallel | Skew   | Impl.  |
+        |                 | Probe      | Build    | Robust | Effort |
+        |-----------------+------------+----------+--------+--------|
+        | Open Addressing | ~          | N        | N      | ~      |
+        | Radix-Join      | N          | Y        | N      | N      |
+        | Chaining        | Y          | Y        | ~      | Y      |
+        | 3D Chaining     | Y          | N        | Y      | N      |
+        | Unchained       | Y          | Y        | Y      | ~      |
+* Approach
+** Layout
+        Open addressing schemes store all tuples in a single contiguous array, which is efficient for probing
+        with non-selective predicates and no duplicate keys. When the join is selective, open addressing
+        schemes cannot efficiently filter out non-matching tuples. When there are tuples with duplicate keys,
+        these tuples collide with other keys leading to high build and probe costs.
+
+        In contrast, chaining hash tables build a *directory* that is separate from the tuples. The directory
+        entries point to the tuples that share the same hash prefix, which are then chained in linked lists,
+        reducing collisions due to duplicates.
+
+        However, the linked list traversal is costly, especially for long chains. To address these issues, we
+        propose the *unchained* hash table layout that combines the benefits of both open addressing and
+        chaining.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/62.png]]
+
+        Tuples are stored in a contiguous buffer ordered by their hash prefixes. The directory consists of
+        entries representing ranges of tuples sharing hash prefixes. Each entry contains a tiny Bloom filter
+        and a pointer to the range. When probing, the hash prefix is used to index into the directory, suffix
+        is used to check the Bloom filter, and the pointer is followed to the range of matching tuples.
+
+        Since joins are typically selective, only a fraction of the tuples on the probe side are passed on. It
+        is, therefore, crucial to eliminate tuples without a join partner efficiently and early on. We embed a
+        register-blocked Bloom filter in every slot in the directory to probabilistically discard tuples that
+        definitively do not have a join partner.
+
+        For efficient access, we store the pointer in the upper bits and the filter in the lower bits. The
+        Bloom filters are checked before accessing the tuple storage and can also be pushed into other
+        operators as semi-join reducers
+
+** Efficient Probes
+        #+begin_src c++
+u64 shift; // Used to reduce a hash to a directory slot
+u64 directory [1 << (64 - shift)];
+void lookup(K key, u64 hash) {
+  u64 slot = hash >> shift;         // shr
+  u64 entry = directory[slot];      // mov
+  if (!couldContain((u16)entry,hash)) return;
+  produceMatches(key, slot, entry);
+}
+
+void produceMatches(K key, u64 slot, u64 entry) {
+  T* start = directory[slot - 1] >> 16;
+  T* end = entry >> 16;
+  for (T* cur = start; cur != end; ++ cur )
+    if (cur->key == key)
+      produce(cur);
+}
+
+u16 tags [1 << 11]; // Precalculated 4 bit Bloom filter tags
+bool couldContain(u16 entry, u64 hash) {
+  u16 slot = ((u32)hash) >> (32 - 11);   // shr
+  u16 tag = tags[slot];                  // mov
+  return !(tag & ~entry);                // andn
+}
+        #+end_src
+
+        Due to join selectivity, the hottest path during join processing is filtering out the tuples that do
+        not find a join partner. For filtering, we use a per-slot register blocked Bloom filters with 16 bits.
+        To achieve a low false positive rate, we set 4 bits for each tuple in the slot, which allows us to
+        discard probe tuples where any of the corresponding bits in the filter are not set.
+
+        Our implementation uses an optimization to calculate and subsequently test all four bits of the tag at
+        once. In a naïve implementation, calculating this tag requires over a dozen instructions to calculate
+        the positions of the bits. To avoid these in the hot path, we instead use a precomputed lookup table
+        that stores the \(\binom{16}{4}=1820\) distinct bit patterns and load them in a single instruction.
+        Note that we pad this lookup table to \(2^{11}=2048\) entries with uniformly random sampled tags to be
+        able to calculate an index with a single shift instruction. To test if all are set in the Bloom
+        filter, we bitwise complement the filter and bitwise and it with the computed tag.
+
+        Using the precomputed lookup table has several desirable properties compared to computing tags on the
+        fly:
+        1. the precomputed tags only require 4 KB of memory, at most consuming 1 TLB entry. Thus, loading a
+           tag is almost as cheap as computing a single bit tag on the fly
+        2. the 4 bit tag has a significantly lower false positive rate.
+
+
+        Overhead for filter is low for low selectivity:
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/67.png]]
+
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/68.png]]
+        For our hash table load factor of 65%, 4 bits per tuple with 1820 tags is optimal with false positive
+        rate 1/169. The padded lookup table with 2048 tags has a slightly higher false positive rate of 1/168.
+
+        To get few collisions in the directory slots, we need a well-distributed hash function. We use a large
+        amount of the bits from the 64-bit hash values, since slot selection uses the upper bits and the Bloom
+        filter tags the lower bits. For efficient calculation of these hashes, we use CRC instructions which
+        are well supported and have good properties for hash tables.
+        #+begin_src c++
+u64 hash32 (u32 key, u32 seed) {
+  u64 k = 0x8648DBDB;            // Mixing constant
+  u32 crc = crc32(seed, key);    // crc32
+  return crc * ((k << 32) + 1);  // imul
+}
+u64 hash64 (u64 key, u32 seed1, u32 seed2) {
+  u64 k = 0 x2545F4914F6CDD1D;   // Mixing constant
+  u32 crc1 = crc32(seed1 , key); // crc32
+  u32 crc2 = crc32(seed2 , key); // crc32
+  u64 upper = crc2 << 32;        // shl
+  u64 combined = crc1 | upper;   // or
+  return combined * k;           // imul
+}
+        #+end_src
+
+        For 32-bit inputs, we use a single crc32 instruction and a multiplication with a mixing constant. For
+        64-bit inputs, we require two crc32 instructions as the individual CRC digests are only 32-bits. The
+        resulting specialized hash functions allow efficient filtering of tuples in the hash table, and only
+        need about 10 instructions between loading the value from its base table to a Bloom filter check.
+
+        Afterwards, we can produce all matches by iterating over the collision list. In chaining hash tables,
+        this requires traversing a linked list with expensive dependent loads of the next pointers. In
+        contrast, our unchained table determines the range of collisions from a neighboring slot in the
+        directory, allowing efficient iteration over the collision list.
+
+** Parallel Build
+*** Parallel Collection
+        The tuple collection is often bottlenecked by the memory allocator as many individual tuples need to
+        be allocated and materialized concurrently. To avoid this bottleneck, we use a slab allocator that
+        allocates memory in large chunks and then hands out memory from these chunks to individual tuples.
+
+        #+begin_src c++
+GlobalAllocator &level1;
+BumpAlloc level2 , level3[numPartitions];
+size_t counts[numPartitions];
+void consume(T tuple) {
+  u64 part = tuple.hash >> (64 - log2(numPartitions));
+  if (level3[part].freeSpace() < sizeof(tuple)) {
+    if (level2.freeSpace() < sizeof(BumpAlloc))
+      level2.addSpace(level1.allocate<LargeChunk>());
+  }
+
+  level3[part].addSpace(level2.allocate<SmallChunk>());
+  *level3[part]->allocate<T>() = tuple;
+  counts[part] += 1;
+}
+        #+end_src
+        The first level allocates memory in chunks for each thread, the second level allocates smaller chunks
+        per partitions, and the third layer allocates individual tuples from the small chunks.
+*** Tuple Counting
+        We need to construct the directory and copy the tuples over to the final compact tuple storage.
+
+        To copy tuples over to their final location, we need to first determine the ranges in which tuples
+        that share the same hash prefix will be stored. This is done by counting the number of tuples per
+        directory entry. The counts in the directory are then post-processed with an exclusive prefix sum to
+        determine the ranges in which tuples will be stored. The ranges are then used to copy tuples to their
+        corresponding location in the final storage.
+*** Copies
+        After the counting, each directory entry contains the start of the range of tuples that share the same
+        hash prefix.
+
+        #+begin_src c++
+T partitionTuples [][];
+T *tupleStorage;
+void postProcessBuild(u64 partition, u64 prevCount) {
+  for (T tuple : partitionTuples[partition]) {
+    u64 slot = tuple.hash >> shift;
+    directory[slot] += sizeof(T) << 16;
+    directory[slot] |= computeTag(tuple.hash);
+  }
+  // prevCount is the total tuple count of previous partitions
+  u64 cur = tupleStorage + prevCount ;
+  u64 k = 64 - shift ;
+  u64 start = (partition << k) / numPartitions ;
+  u64 end = ((partition + 1) << k) / numPartitions ;
+  for (u64 i = start; i < end; ++ i) {
+    u64 val = directory[i] >> 16;
+    directory[i] = (cur << 16) | ((u16) directory [i]);
+    cur += val;
+  }
+  for (T tuple : partitionTuples[partition]) {
+    u64 slot = tuple.hash >> shift;
+    T *target = directory[slot] >> 16;
+    *target = tuple;
+    directory[slot] += sizeof(T) << 16;
+  }
+}
+        #+end_src
+** Handling Large Tuple Sizes
+        Copying the tuples remains relatively cheap as long as the tuples are small enough to fit into a cache
+        line. Note that all tuples with size not greater than twice the CPU’s vector width can be copied with
+        just two load and two store instructions. This can be accomplished by using the largest vector width
+        not larger than the tuple’s size and then using one load/store pair for the start of the tuple and one
+        load/store pair for the end. For example, if our tuple is 24 bytes, and the CPU’s vector width is 16
+        bytes, our first load/store pair copies the bytes 0–15 and the second pair copies the bytes 8–23.
+
+        If tuples are very large, we need an alternative approach for build efficiency. In this case, we chain
+        the tuples in a linked list instead of copying them to contiguous storage. This makes the build
+        process somewhat more efficient, as we do not need to copy the tuples. However, we have to update
+        linked list pointers within tuples, which, due to memory write amplification, result in entire cache
+        lines containing the pointers being written back to memory. Still, for tuples larger than one cache
+        line, linking can be worth it.
+
+        If tuples are very large, we chain the tuples in a linked list instead of copying them to contiguous
+        storage.
+        However, we have to update linked list pointers within tuples, which, due to memory write
+        amplification, result in entire cache lines containing the pointers being written back to memory.
+        Still, for tuples larger than one cache line, linking can be worth it.
+
+        #+begin_src c++
+void linkTuple (T& tuple) {
+  u64 slot = tuple.hash >> (64 - k);
+  u64 prevEntry;
+  xchg(directory[slot], prevEntry);
+  tuple.next = prevEntry >> 16;
+  u16 tag = computeTag(tuple . hash);
+  directory[slot] |= ((u16)prevEntry) | tag;
+}
+        #+end_src
+** Large Memory Allocation
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

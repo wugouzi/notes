@@ -208,8 +208,8 @@ CREATE TABLE Albums {
         derived from conservatively applied worst-case local clock drift. \(\epsilon\) also depends on
         time-master uncertainty and communication delay to the time masters.
 
-        In our production environment, \(\lambda\) is typically a sawtooth function of time, varying from
-        about 1 to 7 ms over each poll interval. \(\lambda\) is therefore 4 ms most of the time. The daemon’s
+        In our production environment, \(\epsilon\) is typically a sawtooth function of time, varying from
+        about 1 to 7 ms over each poll interval. \(\bar{\epsilon}\) is therefore 4 ms most of the time. The daemon’s
         poll interval is currently 30 seconds, and the current applied drift rate is set at 200
         microseconds/second, which together account for the sawtooth bounds from 0 to 6 ms. The remaining 1 ms
         comes from the communication delay to the time masters.
@@ -243,6 +243,7 @@ CREATE TABLE Albums {
         Define \(s_{max}\) to be the maximum timestamp used by a leader. Subsequent sections will describe
         when smax is advanced. Before abdicating, a leader must wait until \(TT.after(s_{max})\) is true.
 *** Assining Timestamps to RW Transactions
+        [[label:4.1.2]]
         Transactional reads and writes use two-phase locking. As a result, they can be assigned timestamps at
         any time when all locks have been acquired, but before any locks have been released. For a given
         transaction, Spanner assigns it the timestamp that Paxos assigns to the Paxos write that represents
@@ -286,6 +287,7 @@ CREATE TABLE Albums {
           \end{align*}
 
 *** Serving Reads at a Timestamp
+        [[label:4.1.3]]
         The monotonicity invariant allows Spanner to correctly determine whether a replica's state is
         sufficiently up-to-date to satisfy a read.
 
@@ -295,9 +297,151 @@ CREATE TABLE Albums {
         Define \(t_{safe}=\min(t_{safe}^{Paxos},t_{safe}^{TM})\), where each Paxos state machine has a safe
         time \(t_{safe}^{Paxos}\) and each transaction manager has a safe time \(t_{safe}^{TM}\).
 
+        \(t_{safe}^{Paxos}\) is the timestamp of the highest-applied Paxos write. Because timestamps increase
+        monotonically and writes are applied in order, writes will no longer occur at or below
+        \(t_{safe}^{Paxos}\) with respect to Paxos.
 
+        \(t_{safe}^{TM}\) is \(\infty\) at a replica if there are zero prepared (but not committed)
+        transactions—that is, transactions in between the two phases of two-phase commit. (For a participant
+        slave, \(t_{safe}^{TM}\) actually refers to the replica’s leader’s transaction manager, whose state
+        the slave can infer through metadata passed on Paxos writes.) If there are any such transactions, then
+        the state affected by those transactions is indeterminate: a participant replica does not know yet
+        whether such transactions will commit. The commit protocol ensures that every participant knows a
+        lower bound on a prepared transaction’s timestamp. Every participant leader (for a group \(g\)) for a
+        transaction \(T_i\) assigns a prepare timestamp \(s^{prepare}_{i,g}\) to its prepare record. The
+        coordinator leader ensures that the transaction’s commit timestamp \(s_i\ge s_{i,g}^{prepare}\) over
+        all participant groups \(g\). Therefore, for every replica in a group \(g\), over all transactions
+        \(T_i\) prepared at \(g\), \(t_{safe}^{TM}=\min_i(s_{i,g}^{prepare}-1)\) over all transactions
+        prepared at \(g\).
+
+*** Assigning Timestamps to RO Transactions
+        A read-only transaction executes in two phases:
+        1. Assign a timestamp \(s_{read}\)
+        2. execute the transaction's reads as snapshot reads at \(s_{read}\)
+
+        The simple assignment of \(s_{read}=TT.now().latest\), at any time after a transaction starts,
+        preserves external consistency by an argument analogous to that presented for writes in Section
+        [[ref:4.1.2]].
+
+        However, such a timestamp may require the execution of the data reads at \(s_{read}\) to block if
+        \(s_{safe}\) has not advanced sufficiently. (In addition, note that choosing a value of \(s_{read}\) may also
+        advance \(s_{max}\) to preserve disjointness.) To reduce the chances of blocking, Spanner should
+        assign the oldest timestamp that preserves external consistency.
+
+** Details
+*** Read-Write Transactions
+        Like Bigtable, writes that occur in a transaction are buffered at the client until commit. As a
+        result, reads in a transaction do not see the effects of the transaction’s writes.
+
+        Reads within read-write transactions use wound-wait to avoid deadlocks.
+        1. The client issues reads to the leader replica of the appropriate group, which acquires read locks
+           and then reads the most recent data.
+        2. While a client transaction remains open, it sends keepalive messages to prevent participant leaders
+           from timing out its transaction.
+        3. When a client has completed all reads and buffered all writes, it begins two-phase commit.
+        4. The client chooses a coordinator group and sends a commit message to each participant’s leader with
+           the identity of the coordinator and any buffered writes.
+
+        Having the client drive two-phase commit avoids sending data twice across wide-area links.
+
+        A non-coordinator-participant leader first acquires write locks. It then chooses a prepare timestamp
+        that must be /larger than any timestamps it has assigned to previous transactions/ (to preserve
+        monotonicity), and logs a prepare record through Paxos. Each participant then notifies the coordinator
+        of its prepare timestamp.
+
+        The coordinator leader also first acquires write locks, but skips the prepare phase. It chooses a
+        timestamp for the entire transaction after hearing from all other participant leaders. The commit
+        timestamp \(s\) must be greater or equal to all prepare timestamps (to satisfy the constraints
+        discussed in Section ref:4.1.3), greater than \(TT.now().latest\) at the time the coordinator received
+        its commit message, and greater than any timestamps the leader has assigned to previous transactions
+        (again, to preserve monotonicity). The coordinator leader then logs a commit record through Paxos (or
+        an abort if it timed out while waiting on the other participants).
+
+        Before allowing any coordinator replica to apply the commit record, the coordinator leader waits until
+        \(TT.after(s)\), so as to obey the commit-wait rule described in Section ref:4.1.2. Because the
+        coordinator leader chose s based on \(TT.now().latest\), and now waits until that timestamp is
+        guaranteed to be in the past, the expected wait is at least \(2\cdot\bar{\epsilon}\). This wait is
+        typically overlapped with Paxos communication. After commit wait, the coordinator sends the commit
+        timestamp to the client and all other participant leaders. Each participant leader logs the
+        transaction’s outcome through Paxos. All participants apply at the same timestamp and then release
+        locks.
+*** Read-Only Transactions
+        Assigning a timestamp requires a negotiation phase between all of the Paxos groups that are involved
+        in the reads. As a result, Spanner requires a *scope* expression for every read-only transaction, which
+        is an expression that summarizes the keys that will be read by the entire transaction. Spanner
+        automatically infers the scope for standalone queries.
+
+        If the scope’s values are served by a single Paxos group, then the client issues the read-only
+        transaction to that group’s leader. (The current Spanner implementation only chooses a timestamp for a
+        read-only transaction at a Paxos leader.) That leader assigns \(s_{read}\) and executes the read. For
+        a single-site read, Spanner generally does better than \(TT.now().latest\). Define \(LastTS()\) to be
+        the timestamp of the last committed write at a Paxos group. If there are no prepared transactions, the
+        assignment \(s_{read}=LastTS()\) trivially satisfies external consistency: the transaction will see
+        the result of the last write, and therefore be ordered after it.
+
+        If the scope’s values are served by multiple Paxos groups, there are several options. The most
+        complicated option is to do a round of communication with all of the groups’s leaders to negotiate
+        \(s_{read}\) based on \(LastTS()\). Spanner currently implements a simpler choice. The client avoids a
+        negotiation round, and just has its reads execute at \(s_{read} = TT.now().latest\) (which may wait
+        for safe time to advance). All reads in the transaction can be sent to replicas that are sufficiently
+        up-to-date.
+*** Schema-Change Transactions
+        TrueTime enables Spanner to support atomic schema changes. It would be infeasible to use a standard
+        transaction, because the number of participants (the number of groups in a database) could be in the
+        millions. Bigtable supports atomic schema changes in one datacenter, but its schema changes block all
+        operations. A Spanner schema-change transaction is a generally non-blocking variant of a standard
+        transaction.
+        1. It is explicitly assigned a timestamp in the future, which is registered in the prepare phase. As a
+           result, schema changes across thousands of servers can complete with minimal disruption to other
+           concurrent activity
+        2. Reads and writes, which implicitly depend on the schema, synchronize with any registered
+           schema-change timestamp at time \(t\): they may proceed if their timestamps precede \(t\), but they
+           must block behind the schema-change transaction if their timestamps are after \(t\).
+
+           Without TrueTime, defining the schema change to happen at \(t\) would be meaningless.
+*** Refinements
+        \(t_{safe}^{TM}\) as defined above has a weakness, in that a single prepared transaction prevents
+        \(t_{safe}\) from advancing. As a result, no reads can occur at later timestamps, even if the reads do
+        not conflict with the transaction. Such false conflicts can be removed by augmenting \(t_{safe}^{TM}\)
+        with a fine-grained mapping from key ranges to prepared-transaction timestamps. This information can
+        be stored in the lock table, which already maps key ranges to lock metadata. When a read arrives, it
+        only needs to be checked against the fine-grained safe time for key ranges with which the read
+        conflicts.
+
+        \(LastTS()\) as defined above has a similar weakness: if a transaction has just committed, a
+        non-conflicting read-only transaction must still be assigned \(s_{read}\) so as to follow that
+        transaction. As a result, the execution of the read could be delayed. This weakness can be remedied
+        similarly by augmenting \(LastTS()\) with a fine-grained mapping from key ranges to commit timestamps
+        in the lock table.
+
+        When a read-only transaction arrives, its timestamp can be assigned by taking the maximum value of
+        \(LastTS()\) for the key ranges with which the transaction conflicts, unless there is a conflicting
+        prepared transaction (which can be determined from fine-grained safe time).
+
+        \(t_{safe}^{Paxos}\) as defined above has a weakness in that it cannot advance in the absence of Paxos
+        writes. That is, a snapshot read at \(t\) cannot execute at Paxos groups whose last write happened
+        before \(t\). Spanner addresses this problem by taking advantage of the disjointness of leader-lease
+        intervals. Each Paxos leader advances \(t_{safe}^{Paxos}\) by keeping a threshold above which future
+        writes’ timestamps will occur: it maintains a mapping \(MinNextTS(n)\) from Paxos sequence number
+        \(n\) to the minimum timestamp that may be assigned to Paxos sequence number \(n+1\). A replica can
+        advance \(t_{safe}^{Paxos}\) to \(MinNextTS(n) − 1\) when it has applied through \(n\).
+
+        A single leader can enforce its \(MinNextTS()\) promises easily. Because the timestamps promised by
+        \(MinNextTS()\) lie within a leader’s lease, the disjointness invariant enforces \(MinNextTS()\)
+        promises across leaders. If a leader wishes to advance \(MinNextTS()\) beyond the end of its leader
+        lease, it must first extend its lease. Note that \(s_{max}\) is always advanced to the highest value
+        in \(MinNextTS()\) to preserve disjointness.
+
+        A leader by default advances \(MinNextTS()\) values every 8 seconds. Thus, in the absence of prepared
+        transactions, healthy slaves in an idle Paxos group can serve reads at timestamps greater than 8
+        seconds old in the worst case. A leader may also advance \(MinNextTS()\) values on demand from slaves.
+* Evaluation
 * Problems
         1. [[1]]: Why?
+        2. What is \(\epsilon\)
+        3. Why do we need long lease?
+        4.
+
 * References
 <<bibliographystyle link>>
 bibliographystyle:alpha
