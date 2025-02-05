@@ -1,0 +1,122 @@
+#+title: Serializable Isolation for Snapshot Databases
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/ssi.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Background
+
+** Snapshot Isolation
+
+** Write Skew
+        \begin{equation*}
+        r_1(x=50,y=50)r_2(x=50,y=50)w_1(x=-20)w_2(y=-30)c_1c_2
+        \end{equation*}
+        Suppose each transaction maintains the constraint that \(x+y>0\), then consistency is violated.
+
+        We can understand these situations using a multiversion serialization graph (MVSG). We put an edge
+        from one committed transaction T1 to another committed transaction T2 in the following situations:
+        * T1 produces a version of x, and T2 produces a later version of x (this is a \(ww\)-dependency)
+        * T1 produces a version of x, and T2 reads this (or a later) version of x (this is a
+          \(wr\)-dependency)
+        * T1 reads a version of x, and T2 produces a later version of x (this is a \(rw\)-dependency).
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/71.png]]
+
+        As usual in transaction theory, the absence of a cycle in the MVSG proves that the history is
+        serializable. Thus it becomes important to understand what sorts of MVSG can occur in histories of a
+        system using SI for concurrency control.
+
+        It is shown that any cycle must have two \(rw\)-dependency edges that occur consecutively, and
+        further, each of these edges is between two concurrent transactions.
+
+        We call an \(rw\)-dependency between concurrent transactions a *vulnerable edge*; we call the situation
+        where two consecutive vulnerable edges occur in a cycle as a *dangerous structure*. It is illustrated in
+        Fig [[ref:3]]. We refer to the transaction at the junction of the two consecutive vulnerable edges as a
+        *pivot* transaction. There is a pivot in any non-serializable execution allowed by SI.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION:
+        [[../../images/papers/72.png]]
+
+
+        Consider
+        \begin{align*}
+        &T0: r(y)w(x)\\
+        &T1: w(y)w(z)\\
+        &TN:r(x)r(z)
+        \end{align*}
+        These three transactions can interleave such that TN, a read-only transaction, sees a state that could
+        never have existed in the database had T0 and T1 executed serially. If TN is omitted, T0 and T1 are
+        serializable because there is only a single anti-dependency from T0 to T1.
+
+        Two of the possible non-serializable interleavings of these three transactions are illustrated in
+        Figure [[ref:4]]. These diagrams should be read from left to right; the arrows indicate the
+        \(rw\)-dependencies between transactions. In Figure [[ref:4]](a), both reads occur after the writes. In
+        Figure [[ref:4]](b), TN reads x before it is written by T0.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 4
+        #+CAPTION:
+        [[../../images/papers/73.png]]
+
+* Serializable Snapshot Isolation
+        The essence of our new concurrency control algorithm is to allow standard SI to operate, but to add
+        some book-keeping so we can dynamically detect cases where a non-serializable execution could occur,
+        and then we abort one of the transactions involved.
+
+        The building block for this theory is the notion of a \(rw\)-dependency (also called an
+        *anti-dependency*), which occurs from T1 to T2 if T1 reads a version of an item x, and T2 produces a
+        version of x that is later in the version order than the version read by T1. It was shown that in any
+        non-serializable SI execution, there are two rw-dependency edges in a cycle in the multiversion
+        serialization graph. And it is shown that there were two rw-dependency edges which form consecutive
+        edges in a cycle, and furthermore, each of these rw-edges involves two transactions that are active
+        concurrently.
+
+        Our proposed serializable SI concurrency control algorithm detects a potential non-serializable
+        execution whenever it finds two consecutive \(rw\)-dependency edges in the serialization graph, where
+        each of the edges involves two transactions that are active concurrently. Whenever such a situation is
+        detected, one of the transactions will be aborted. To support this algorithm, the DBMS maintains, for
+        each transaction, two boolean flags: ~T.inConflict~ indicates whether there is an \(rw\)-dependency from
+        another concurrent transaction to T, and ~T.outConflict~ indicates whether there is an rw-dependency
+        from T to another concurrent transaction. Thus a potential non-serializability is detected when
+        ~T.inConflict~ and ~T.outConflict~ are both true.
+
+        How can we keep track of situations where there is an \(rw\)-dependency between two concurrent
+        transactions? There are two different ways in which we notice such a dependency.
+
+        One situation arises when a transaction T reads a version of an item x, and the version that it
+        reads (the one which was valid at T’s start time) is not the most recent version of x. In this case
+        the writer U of any more recent version of x was active after T started, and so there is a
+        \(rw\)-dependency from T to U. When we see this, we set the flags ~T.outConflict~ and ~U.inConflict~ (and
+        we check for consecutive edges and abort a transaction if needed). This allows us to find
+        \(rw\)-dependency edges for which the read occurs in real-time after the write that is logically
+        later. However, it does not account for edges where the read occurs first, and at a later real-time, a
+        version is created by a concurrent transaction.
+
+        To notice these other \(rw\)-dependency cases, we use a lock management infrastructure. A normal WRITE
+        lock is taken when a new version is created; note that many SI implementations do keep such
+        write-locks anyway, as a way to enforce the First-Committer-Wins rule. We also introduce a new lock
+        mode called SIREAD. This remembers the fact that an SI transaction has read a version of an item.
+        However, obtaining the SIREAD lock does not cause any blocking, even if a WRITE lock is held already,
+        and similarly an existing SIREAD lock does not delay granting of a WRITE lock; instead, the presence
+        of both SIREAD and WRITE locks on an item is a sign of an \(rw\)-dependency, and so we set the
+        appropriate ~inConflict~ and ~outConflict~ flags on the transactions which hold the locks. One difficulty,
+        which we discuss later, is that we need to keep the SIREAD locks that T obtained, even after T is
+        completed, until all transactions concurrent with T have completed.
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

@@ -45,7 +45,7 @@
         * Geo-Partitioned Replicas
         * Geo-Partitioned Leaseholders
         * Duplicated Indexes: Indexes are stored in Ranges that can be pinned to specific regions. By
-          duplicating indexes on a table and pinning each index’s leaseholder to a specific region, the
+          duplicating indexes on a table and pinning each index's leaseholder to a specific region, the
           database can serve fast local reads while retaining the ability to survive regional failures.
 * Transaction
 ** Overview
@@ -75,7 +75,7 @@
 
         *Write Pipelining*. Each operation includes the key that must be read or updated, as well as metadata
         indicating if the transaction should commit with the current operation. In case an operation does not
-        attempt to commit (Line 6), it’s possible to execute it immediately if it does not overlap any earlier
+        attempt to commit (Line 6), it's possible to execute it immediately if it does not overlap any earlier
         operation (Line 7). In this way, multiple operations on different keys can be "pipelined". If an
         operation depends on an earlier in-flight operation, execution must wait for the earlier operation to
         be replicated; such dependencies introduce a "pipeline stall". The pipelining logic is outlined in
@@ -84,7 +84,7 @@
 
         Next the coordinator sends the operation to the lease-holder for execution and waits for a response
         (Line 9). The response may contain an incremented timestamp (Line 10), which indicates that another
-        transaction’s read forced the leaseholder to adjust the operation timestamp. The coordinator then
+        transaction's read forced the leaseholder to adjust the operation timestamp. The coordinator then
         tries to adjust the transaction timestamp to match. This is achieved by verifying (via a round of
         RPCs) that repeating the previous reads in the transaction at the new timestamp will return the same
         value (Lines 11 and 12). If not, the transaction fails (Lines 13 and 14) and may have to be retried.
@@ -145,13 +145,14 @@
         done for performance reasons.
 
         Some talks between myself and chatgpt...
+        Async Commit is combining A and B in essence.
         #+begin_quote
 Cons of Combining A and B into One Message
 Failure Recovery:
 
-While it’s true that B (staging status) wouldn’t fail if A (write replication) succeeds in a combined message, it also means that if either part fails, you need to handle the failure of the entire transaction.
+While it's true that B (staging status) wouldn't fail if A (write replication) succeeds in a combined message, it also means that if either part fails, you need to handle the failure of the entire transaction.
 
-In Parallel Commit, by separating A and B, if A (write replication) succeeds but B (staging replication) fails, the system can retry the staging replication without needing to reapply the writes. In this combined approach, if the message fails (even due to a transient issue like network partition), you cannot simply retry just one part (writes or staging); you’d need to retry the whole transaction.
+In Parallel Commit, by separating A and B, if A (write replication) succeeds but B (staging replication) fails, the system can retry the staging replication without needing to reapply the writes. In this combined approach, if the message fails (even due to a transient issue like network partition), you cannot simply retry just one part (writes or staging); you'd need to retry the whole transaction.
 
 This could increase complexity in dealing with partial failures because you can't independently handle different types of failures (write failures vs. status failures).
 
@@ -161,11 +162,117 @@ By combining A and B, you lose the flexibility to independently manage the two s
 In the current Parallel Commit protocol, since A (writes) and B (staging status) are independent, the system can still allow recovery actions without causing data corruption.
 No Graceful Rollback:
 
-If you combine A and B, the message is effectively a single "commit" operation. If the combined message fails or is lost, you'd need to retry the entire operation from the beginning. In Parallel Commit, if only B fails, it’s possible to just retry the staging replication without needing to repeat the entire transaction, because the writes are already replicated. This is a more efficient way to handle certain types of failures.
+If you combine A and B, the message is effectively a single "commit" operation. If the combined message fails or is lost, you'd need to retry the entire operation from the beginning. In Parallel Commit, if only B fails, it's possible to just retry the staging replication without needing to repeat the entire transaction, because the writes are already replicated. This is a more efficient way to handle certain types of failures.
 Transaction Atomicity Beyond A and B:
 
 While combining A and B makes the commit process more atomic (in the sense that either both succeed or both fail), you are essentially "locking" the entire commit process into a single step. This could be less flexible in certain failure scenarios, especially when partial failures occur and you might want to independently handle different parts of the transaction (like retrying just the commit status replication, if the writes have already been applied).
         #+end_quote
+
+        Specifically we verified atomicity by asserting that every staging transaction was eventually either
+        explicitly committed or aborted, regardless of coordinator failure, and no clients were told
+        otherwise.
+*** Execution at the leaseholder
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/70.png]]
+        It acquires latches on the keys of \(op\) and all the operations \(op\) depends on (Line 3), thus providing
+        mutual exclusion between concurrent, overlapping requests.
+
+        Once the initial checks are complete, the leaseholder evaluates the operation to determine what data
+        modifications are needed in the storage engine without actually making the changes (Line 7).
+
+        This results in a low level /command/ detailing the necessary changes, as well as a response for the
+        client
+
+        Note that Algorithm 2 does not delve into any details about the various scenarios that may occur
+        during the evaluation phase (Line 7).
+
+        This is the period of time when a transaction may encounter uncommitted writes from other transactions
+        or writes so close in time to the transaction's read timestamp that it is not possible to determine
+        the correct order of transactions. The next sections discuss these scenarios, and how CRDB
+        guarantees both atomicity and serializable isolation.
+** Atomicity Guarantees
+        An atomic commit for a transaction is achieved by considering all of its writes provisional until
+        commit time. CRDB calls these provisional values *write intents*. An intent is a regular MVCC KV pair,
+        except that it is preceded by meta-data indicating that what follows is an intent. This metadata
+        points to a transaction record, which is a special key (unique per transaction) that stores the
+        current disposition of the transaction: /pending/, /staging/, /committed/ or /aborted/.
+
+        The transaction record serves to atomically change the visibility of all the intents at once, and is
+        durably stored in the same Range as the first write of the transaction. For long-running transactions,
+        the coordinator periodically heartbeats the transaction record in the pending state to assure
+        contending transactions that it is still making progress.
+
+        Upon encountering an intent, a reader follows the indirection and reads the intent's transaction
+        record. If the record indicates that the transaction is committed, the reader considers the intent as
+        a regular value (and additionally deletes the intent metadata). If the transaction is aborted, the
+        intent is ignored (and cleanup is performed to remove it). If the transaction is found to be pending
+        (indicating that the transaction is still ongoing), then the reader blocks, waiting for it to
+        finalize.
+
+        If the coordinator node fails, contending transactions eventually detect that the
+        transaction record has expired, and mark it aborted. If the transaction is in the staging state (which
+        indicates that the transaction has either been committed or aborted, but the reader is unsure which),
+        the reader attempts to abort the transaction by preventing one of its writes from being replicated. If
+        all writes are already replicated, the transaction is in fact committed, and is updated to reflect
+        that.
+** Concurrency Control
+        1. /Write-read conflicts/. A read running into an uncommitted intent with a lower timestamp will wait
+           for the earlier transaction to finalize. Waiting is implemented using in-memory queue structures. A
+           read running into an uncommitted intent with a higher timestamp ignores the intent and does not
+           need to wait.
+        2. /Read-write conflicts/. A write to a key at timestamp \(t_a\) cannot be performed if there's already been
+           a read on the same key at a higher timestamp \(t_b\ge t_a\). CRDB forces the writing transaction to
+           advance its commit timestamp past \(t_b\).
+        3. /Write-write conflicts/. A write running into an uncommitted intent with a lower timestamp will wait
+           for the earlier transaction to finalize
+
+           If it runs into a committed value at a higher timestamp, it advances its timestamp past it
+** Read Refreshes
+        Advancing a transaction's read timestamp from \(t_a\) to \(t_b>t_a\) is possible if we can prove that
+        none of the data that the transaction read at \(t_a\) has been updated in the interval \((t_a,t_b]\).
+        If the data has changed, the transaction needs to be restarted. If no results from the transaction
+        have been delivered to the client, CRDB retries the transaction internally. If results have been
+        delivered, the client is informed to discard them and restart the transaction.
+
+        To determine whether the read timestamp can be advanced, CRDB maintains the set of keys in the
+        transaction's read set (up to a memory budget). A "read refresh" request validates that the keys have
+        not been updated in a given timestamp interval (Algorithm 1, Lines 11 to 14). This involves
+        re-scanning the read set and checking whether any MVCC values fall in the given interval. This process
+        is equivalent to detecting the rw-antidependencies that PostgreSQL tracks for its implementation of
+        SSI. Similar to PostgreSQL, our implementation may allow false positives (forcing a transaction to
+        abort when not strictly necessary) to avoid the overhead of maintaining a full dependency graph.
+
+        Advancing the transaction's read timestamp is also required when a scan encounters an uncertain value:
+        a value whose timestamp makes it unclear if it falls in the reader's past or future (see Section 4.2).
+        In this case we also attempt to perform a refresh. Assuming it is successful, the value will now be
+        returned by the read.
+** Follower Reads
+        CRDB allows non-leaseholder replicas to serve requests for read-only queries with timestamps
+        sufficiently in the past through a special '~AS OF SYSTEM TIME~' query modifier.
+
+        To enable this functionality safely, a non-leaseholder replica asked to perform a read at a given
+        timestamp \(T\) needs to know that no future writes can invalidate the read retroactively. It also
+        needs to ensure that it has all the data necessary to serve the read. These conditions mean that if a
+        follower read at timestamp \(T\) is to be served, the leaseholder must no longer be accepting writes
+        for timestamps \(T'\le T\), and the follower must have caught up on the prefix of the Raft log
+        affecting the MVCC snapshot at \(T\).
+
+        To this end, each leaseholder tracks the timestamps of all incoming requests and periodically emits a
+        closed timestamp, the timestamp below which no further writes will be accepted. Closed timestamps,
+        alongside Raft log indexes at the time, are exchanged periodically between replicas. Follower replicas
+        use the state built up from received updates to determine if they have all the data needed to serve
+        consistent reads at a given timestamp. For efficiency reasons the closed timestamp and the
+        corresponding log indexes are generated at the node level (as opposed to the Range level).
+
+        Every node keeps a record of its latency with all other nodes in the system. When a node in the
+        cluster receives a read request at a sufficiently old timestamp (closed timestamps typically trail
+        current time by ~2 seconds), it forwards the request to the closest node with a replica of the data.
+* Clock Synchronization
+** Hybrid-Logical Clocks
+        Each node within a CRDB cluster maintains a hybrid-logical clock. Physical time is based on a node’s
+        coarsely-synchronized system clock, and logical time is based on Lamport’s clocks
 * Problems
         1. [[P1]].
 

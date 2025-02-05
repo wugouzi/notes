@@ -1,0 +1,113 @@
+#+title: AutoFDO: Automatic Feedback-Directed Optimization for Warehouse-Scale Applications
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/engineering/autofdo.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/engineering/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        A common approach for improving performance is feedback directed optimization (FDO), which uses
+        information about the code’s runtime behavior to guide optimization, yielding improvements commonly in
+        the 10-15% range and sometimes over 30%. The case for using FDO for datacenter applications is
+        especially compelling, where even small deployments can consume thousands of CPUs. However, until
+        recently only a few dozen of Google’s largest CPU consumers had adopted FDO because the release
+        process was too difficult to maintain. Traditional FDO follows this three-step pattern:
+        1. Compile with instrumentation
+        2. Run a benchmark to generate representative profile
+        3. Recompile with the profile
+
+
+        In this paper, we describe AutoFDO, a system to collect feedback from production workloads and apply
+        it at compile time.
+
+        On benchmarks, AutoFDO achieves 85% of the gains of traditional FDO, but in practice many projects
+        have switched to AutoFDO from tradi- tional processes and found performance to be equivalent.
+
+        Challenges:
+        * Using sampled profiles to achieve performance 85% as good as with instrumentation
+        * Supporting iterative compilation with profiles from AutoFDO optimized binaries with stable performance
+        * Tolerating stale profile data
+        * Scaling and automation for hundreds of production binaries
+
+
+
+
+* System Overview
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION:  System Diagram
+        [[../../images/papers/76.png]]
+        Samples are stored in raw form in a Dremel[21] database, annotated with job metadata. Sampling incurs
+        negligible overhead to the system under observation, and further processing happens offline using a
+        relatively minuscule amount of data- center resources.
+
+        Periodically, a batch job queries the database for aggregated raw samples for each of the top
+        binaries. The batch job first symbolizes the raw samples, mapping addresses back to their source
+        location. Finally, symbolized samples are converted to the compiler’s profile format and submitted to
+        version control.
+
+        During release, the compiler fetches the binary’s profile from the source repository, uses the profile
+        to annotate the intermediate representation of the compiler to drive feedback directed optimizations.
+        The resulting binary is on average 10% faster than binaries optimized without AutoFDO.
+
+* Profiling System
+** Profiling
+        In order for the compiler to use the profile, it needs to be mapped onto the compiler intermediate
+        representation (IR). We begin with a binary-level profile, then convert that to a source-level
+        profile, which is finally converted into a standard compiler format which can be mapped onto the IR.
+        The binary-level profile has two maps:
+        * A map from binary instruction addresses to their frequency. With the help of the CPU’s performance
+          monitoring unit (PMU), which is available on most of the modern processors, one can use a sampling
+          based approach to get this profile with negligible overhead. However, due to PMU design constraints,
+          it is not straightforward to get an accurate instruction frequency profile .
+        * A map from branches to their frequency. A branch is represented as a \(\{source, destination\}\)
+          address pair.
+
+
+        An *extended source location* is a source line location annotated with inline stack information. It can
+        be considered as a stack of source locations where the top of the  stack is the source location of the
+        sampled instruction, and other entries represent the source locations of the inlined callsites.
+
+        A *source location* is defined as a triplet:
+        * ~function name~
+        * ~source line offset to function start~
+        * ~discriminator~
+
+        For example, for the program in Figure [[ref:2]], ~foo~ is inlined into ~bar~ at the callsite in line #7. The
+        extended source location for the instruction at address ~0x690~ is ~[{bar,1,0}]~. The extended source
+        location for the instruction at address ~0x6a2~ is ~[{foo,2,0},{bar,2,0}]~.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION: A simple program and its binary-level profile
+        [[../../images/papers/77.png]]
+
+        *Discriminator* is a logical term used to distinguish instructions that are mapped to the same source
+        line but are with different basic blocks. For example, for the program in Figure [[ref:3]], all
+        instructions are mapped to the same source line, but they are distributed in 3 basic blocks thus with
+        different discriminators.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION: Discriminator assignment
+        [[../../images/papers/78.png]]
+
+        Using extended source location as the key for profile database lookups greatly increases profile
+        stability because a change of one function will not affect the extended source location of other
+        functions, nor will compiler version changes affect extended source locations.
+
+        The source-level profile is organized as a forest of trees which are composed of ~ProfileNode~ nodes.
+        Each profile tree represents the sampled profile data for one standalone function in the profiled
+        binary. Inner nodes in a tree represent function inline instances. Leaf tree nodes represent source
+        statements associated with extended source locations. An inner node has the following properties:
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

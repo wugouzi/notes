@@ -1,0 +1,234 @@
+% Created 2025-01-07 Tue 19:41
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/transaction/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Serializable Snapshot Isolation in PostgreSQL}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Serializable Snapshot Isolation in PostgreSQL},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+The \href{https://github.com/postgres/postgres/commit/dafaa3efb75ce1aae2e6dbefaf6f3a889dea0d21}{pr}. The \href{https://www.postgresql.org/message-id/flat/4A0019EE.EE98.0025.0\%40wicourts.gov}{discussion}. \href{https://www.postgresql.org/message-id/flat/4A1D5D8C.EE98.0025.1\%40wicourts.gov}{Discussion 2}.
+The problem in mind
+\begin{enumerate}
+\item There is abstract, conceptual agreement that support for serializable transactions would be A Good
+Thing.
+\item There is doubt that an acceptably performant implementation is possible in PostgreSQL.
+\item Some, but not all, don't want to see an implementation which produces false positive serialization
+faults with some causes, but will accept them for other causes.
+\item Nobody believes that an implementation with acceptable performance is possible without the disputed
+false positives mentioned in (3).
+\item There is particular concern about how to handle repeated rollbacks gracefully if we use the non-blocking technique.
+\item There is particular concern about how to protect long-running transactions from rollback.  (I'm not
+sure those concerns are confined to the new technique.)
+\item Some, but not all, feel that it would be beneficial to have a correct implementation (no false
+negatives) even if it had significant false positives, as it would allow iterative refinement of
+the locking techniques.
+\item One or two people feel that there would be benefit to an implementation which reduces the false
+negatives, even if it doesn't eliminate them entirely.  (Especially if this could be a step toward
+a full implementation.)
+\end{enumerate}
+\section{Snapshot Isolation}
+\label{sec:org47d8c59}
+
+\subsection{Example 1: Simple Write Skew}
+\label{sec:org3f7d755}
+
+\subsection{Example 2: Batch Processing}
+\label{sec:org713261f}
+Consider a transaction-processing system that maintains two tables. A \emph{receipts} table tracks the day’s
+receipts, with each row tagged with the associated batch number. A separate \emph{control} table simply holds
+the current batch number. There are three transaction types:
+\begin{itemize}
+\item NEW-RECEIPT: reads the current batch number from the control table, then inserts a new entry in the
+receipts table tagged with that batch number
+\item CLOSE-BATCH: increments the current batch number in the control table
+\item REPORT: reads the current batch number from the control table, then reads all entries from the
+receipts table with the previous batch number (i.e. to display a total of the previous day’s
+receipts)
+\end{itemize}
+
+
+The following useful invariant holds under serializable executions: after a REPORT transaction has
+shown the total for a particular batch, subsequent transactions cannot change that total.
+\begin{center}
+\includegraphics[width=.5\textwidth]{../../images/papers/74.png}
+\label{2}
+\end{center}
+\section{Serializable Snapshot Isolation}
+\label{sec:org911e8e3}
+
+\subsection{Snapshot Isolation Anomalies}
+\label{sec:org0743ec4}
+Adya proposed representing an execution with a multi-version serialization history graph. This graph
+contains a node per transaction, and an edge from transaction \(T_1\) to transaction \(T_2\) if
+\(T_1\) must have preceded \(T_2\) in the apparent serial order of execution. Three types of
+dependencies can create these edges:
+\begin{itemize}
+\item \textbf{wr-dependencies}:
+\item \textbf{ww-dependencies}:
+\item \textbf{rw-dependencies}: if \(T_1\) writes a version of some object, and \(T_2\) reads the previous version
+of that object, then \(T_1\) appears to have executed after \(T_2\) , because \(T_2\) did not see its update.
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=.5\textwidth]{../../images/papers/75.png}
+\label{3}
+\end{center}
+\subsection{Serializability Theory}
+\label{sec:orge877114}
+Note that a wr-dependency from \(A\) to \(B\) means that \(A\) must have committed before  \(B\)
+began, as this is required for \(A\)’s changes to be visible to \(B\)’s snapshot. The same is true of
+ww-dependencies because of write locking. However, rw-antidependencies occur between concurrent
+transactions: one must start while the other was active. Therefore, they play an important role in SI
+anomalies.
+
+\begin{theorem}[]
+\label{thm1}
+Every cyle in the serialization history graph contains a sequence of edges
+\(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) where each edge is a rw-dependency. Furthermore, \(T_3\)
+must be the first transaction in the cycle to commit.
+\end{theorem}
+
+\begin{corollary}[]
+Transaction \(T_1\) is concurrent with \(T_2\), and \(T_2\) is concurrent with \(T_3\), because
+rw-antidependencies occur only between concurrent transactions.
+\end{corollary}
+\subsection{SSI}
+\label{sec:org5967c8b}
+The SSI paper describes a method for identifying these dependencies by having transactions acquire
+locks in a special “SIREAD” mode on the data they read. These locks do not block conflicting writes
+(thus, “lock” is somewhat of a misnomer). Rather, a conflict between a SIREAD lock and a write lock
+flags an rw-antidependency, which might cause a transaction to be aborted. Furthermore, SIREAD locks
+must persist after a transaction commits, because conflicts can occur even after the reader has
+committed (e.g. the \(T_1\xrightarrow{rw}T_2\) conflict in Example 2). Corollary 2 implies that the
+locks must be retained until all concurrent transactions commit. Our PostgreSQL implementation uses
+SIREAD locks, but their implementation differs significantly because PostgreSQL was purely
+snapshot-based, as we describe in Section 5.2.
+\subsubsection{Varaints on SSI}
+\label{sec:org3b2ce0b}
+Subsequent work has suggested refinements to the basic SSI approach. Cahill’s thesis suggests a commit
+ordering optimization that can reduce false positives. Theorem 1 actually shows that every cycle
+contains a dangerous structure \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) , where \(T_3\) is the
+first to commit. Thus, even if a dangerous structure is found, no aborts are necessary if either
+\(T_1\) or \(T_2\) commits before \(T_3\) . Verifying this condition requires tracking some additional
+state, but avoids some false positive aborts. We use an extension of this optimization in PostgreSQL.
+It does not, however, eliminate all \(T_1\) that closes the false positives: there may not be a path
+\(T_3\) cycle. For example, in Example 2, if \(T_1\)'s REPORT accessed only the receipts table (not
+the current batch number), there would be no wr-dependency from T3 to T1 , and the execution would be
+serializable with order \(\la T_1,T_2,T_3\ra\). However, the dangerous structure of
+rw-antidependencies \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) would force some transaction to be
+spuriously aborted.
+\section{Read-only Optimizations}
+\label{sec:org31e5203}
+We improve performance for read-only transactions in two ways. Both derive from a new serializability
+theory result that characterizes when read-only transactions can be involved in SI  anomalies.
+\begin{enumerate}
+\item the theory enables a \emph{read-only snapshot ordering optimization} to reduce the false-positive abort rate
+\item we also identify certain safe snapshots on which read-only transactions can execute safely without
+any SSI overhead or abort risk, and introduce deferrable transactions, which delay their execution
+to ensure they run on safe snapshots.
+\end{enumerate}
+\subsection{Theory}
+\label{sec:orgc969404}
+\begin{theorem}[]
+Every serialization anomaly contains a dangerous structure
+\(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\), where if \(T_1\) is read-only, \(T_3\) must have
+committed before \(T_1\) took its snapshot.
+\end{theorem}
+
+\begin{proof}
+Consider a cycle in the serialization history graph. From Theorem \ref{thm1}, we know it must have a
+dangerous structure \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) where \(T_3\)is the first
+transaction in the cycle to commit. Consider the case where \(T_1\) is read-only.
+
+Because there is a cycle, there must be some transaction \(T_0\) that precedes \(T_1\) in the cycle.
+The edge \(T_0\to T_1\) can't be a rw-antidependency or a ww-dependency, because \(T_1\) was
+read-only, so it must be a wr-dependency. A wr-dependency means that \(T_0\)'s change were visible to
+\(T_1\), so \(T_0\) must have committed before \(T_1\) took its snapshot. Because \(T_3\) is the first
+transaction in the cycle to commit, it must commit before \(T_0\) commits, and therefore before
+\(T_1\) takes its snapshot.
+\end{proof}
+
+Therefore if a dangerous structure is detected where \(T_1\) is read-only, it can be disregarded as a
+false positive unless \(T_3\) committed before \(T_1\)'s snapshot.
+\subsection{Safe Snapshots}
+\label{sec:orga7a90e5}
+A read-only transaction \(T_1\) cannot have a rw-conflict pointing in, as it did not perform any
+writes. The only way it can be part of a dangerous structure, therefore, is if it has a conflict out
+to a concurrent read/write transaction \(T_2\) , and \(T_2\) has a conflict out to a third transaction
+\(T_3\) that committed before \(T_1\)’s snapshot. If no such \(T_2\) exists, then \(T_1\) will never
+cause a serialization failure. This depends only on the concurrent transactions, not on \(T_1\)’s
+behavior; therefore, we describe it as a property of the snapshot:
+
+\textbf{Safe snapshots}: A read-only transaction \(T\) has a \textbf{safe snapshot} if no concurrent read/write
+transaction has committed with a rw-antidependency out to a transaction that committed before \(T\)'s
+snapshot, or has the possibility to do so.
+
+An unusual property of this definition is that we cannot determine whether a snapshot is safe at the
+time it is taken, only once all concurrent read/write transactions complete, as those transactions
+might subsequently develop conflicts. Therefore, when a \texttt{READ ONLY} transaction is started, PostgreSQL
+makes a list of concurrent transactions. The read-only transaction executes as normal, maintaining
+SIREAD locks and other SSI state, until those transactions commit. After they have committed, if the
+snapshot is deemed safe, the read-only transaction can drop its SIREAD locks, essentially becoming a
+REPEATABLE READ (snapshot isolation) transaction.
+\subsection{Deferrable Transactions}
+\label{sec:org5907589}
+Some workloads contain long-running read-only transactions and take more SIREAD locks.
+
+These transactions would especially benefit from running on safe snapshots: they could avoid taking
+SIREAD locks, they would be guaranteed not to abort, and they would not prevent concurrent
+transactions from releasing their locks. \textbf{Deferrable transactions}, a new feature, provide a way to
+ensure that complex read-only transactions will always run on a safe snapshot. Read-only serializable
+transactions can be marked as deferrable with a new keyword, e.g. BEGIN TRANSACTION READ ONLY,
+DEFERRABLE. Deferrable transactions always run on a safe snapshot, but may block before their first
+query.
+\section{Implementing SSI in PostgreSQL}
+\label{sec:org08612a1}
+\subsection{PostgreSQL Background}
+\label{sec:orgfda58f0}
+        All queries in PostgreSQL are performed with respect to a snapshot, which is represented as the set of transactions whose effects
+are visible in the snapshot. Each tuple is tagged with the transaction
+ID of the transaction that created it (xmin), and, if it has been deleted
+or replaced with a new version, the transaction that did so (xmax).
+Checking which of these transactions are included in a snapshot
+determines whether the tuple should be visible. Updating a tuple
+is, in most respects, identical to deleting the existing version and
+creating a new tuple. The new tuple has a separate location in the
+heap, and may have separate index entries.2 Here, PostgreSQL dif-
+fers from other MVCC implementations (e.g. Oracle’s) that update
+tuples in-place and keep a separate rollback log.
+\section{Problems}
+\label{sec:org4d16092}
+
+
+\section{References}
+\label{sec:org9f9842a}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../../../references}
+\end{document}
