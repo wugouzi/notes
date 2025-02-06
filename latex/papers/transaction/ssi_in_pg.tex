@@ -1,4 +1,4 @@
-% Created 2025-01-07 Tue 19:41
+% Created 2025-02-06 Thu 19:31
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -50,13 +50,13 @@ negatives, even if it doesn't eliminate them entirely.  (Especially if this coul
 a full implementation.)
 \end{enumerate}
 \section{Snapshot Isolation}
-\label{sec:org47d8c59}
+\label{sec:org4a2cf56}
 
 \subsection{Example 1: Simple Write Skew}
-\label{sec:org3f7d755}
+\label{sec:org62aebd7}
 
 \subsection{Example 2: Batch Processing}
-\label{sec:org713261f}
+\label{sec:org71f2d2d}
 Consider a transaction-processing system that maintains two tables. A \emph{receipts} table tracks the day’s
 receipts, with each row tagged with the associated batch number. A separate \emph{control} table simply holds
 the current batch number. There are three transaction types:
@@ -77,10 +77,10 @@ shown the total for a particular batch, subsequent transactions cannot change th
 \label{2}
 \end{center}
 \section{Serializable Snapshot Isolation}
-\label{sec:org911e8e3}
+\label{sec:org3ccf8ec}
 
 \subsection{Snapshot Isolation Anomalies}
-\label{sec:org0743ec4}
+\label{sec:org5656b3a}
 Adya proposed representing an execution with a multi-version serialization history graph. This graph
 contains a node per transaction, and an edge from transaction \(T_1\) to transaction \(T_2\) if
 \(T_1\) must have preceded \(T_2\) in the apparent serial order of execution. Three types of
@@ -98,7 +98,7 @@ of that object, then \(T_1\) appears to have executed after \(T_2\) , because \(
 \label{3}
 \end{center}
 \subsection{Serializability Theory}
-\label{sec:orge877114}
+\label{sec:org2869fc2}
 Note that a wr-dependency from \(A\) to \(B\) means that \(A\) must have committed before  \(B\)
 began, as this is required for \(A\)’s changes to be visible to \(B\)’s snapshot. The same is true of
 ww-dependencies because of write locking. However, rw-antidependencies occur between concurrent
@@ -117,7 +117,7 @@ Transaction \(T_1\) is concurrent with \(T_2\), and \(T_2\) is concurrent with \
 rw-antidependencies occur only between concurrent transactions.
 \end{corollary}
 \subsection{SSI}
-\label{sec:org5967c8b}
+\label{sec:org94b8d3e}
 The SSI paper describes a method for identifying these dependencies by having transactions acquire
 locks in a special “SIREAD” mode on the data they read. These locks do not block conflicting writes
 (thus, “lock” is somewhat of a misnomer). Rather, a conflict between a SIREAD lock and a write lock
@@ -128,7 +128,7 @@ locks must be retained until all concurrent transactions commit. Our PostgreSQL 
 SIREAD locks, but their implementation differs significantly because PostgreSQL was purely
 snapshot-based, as we describe in Section 5.2.
 \subsubsection{Varaints on SSI}
-\label{sec:org3b2ce0b}
+\label{sec:org2652dcf}
 Subsequent work has suggested refinements to the basic SSI approach. Cahill’s thesis suggests a commit
 ordering optimization that can reduce false positives. Theorem 1 actually shows that every cycle
 contains a dangerous structure \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) , where \(T_3\) is the
@@ -142,7 +142,7 @@ serializable with order \(\la T_1,T_2,T_3\ra\). However, the dangerous structure
 rw-antidependencies \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) would force some transaction to be
 spuriously aborted.
 \section{Read-only Optimizations}
-\label{sec:org31e5203}
+\label{sec:orgdee1a18}
 We improve performance for read-only transactions in two ways. Both derive from a new serializability
 theory result that characterizes when read-only transactions can be involved in SI  anomalies.
 \begin{enumerate}
@@ -152,7 +152,7 @@ any SSI overhead or abort risk, and introduce deferrable transactions, which del
 to ensure they run on safe snapshots.
 \end{enumerate}
 \subsection{Theory}
-\label{sec:orgc969404}
+\label{sec:org46199bd}
 \begin{theorem}[]
 Every serialization anomaly contains a dangerous structure
 \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\), where if \(T_1\) is read-only, \(T_3\) must have
@@ -173,9 +173,9 @@ transaction in the cycle to commit, it must commit before \(T_0\) commits, and t
 \end{proof}
 
 Therefore if a dangerous structure is detected where \(T_1\) is read-only, it can be disregarded as a
-false positive unless \(T_3\) committed before \(T_1\)'s snapshot.
+false positive unless \(T_3\) committed before \(T_1\)'s snapshot. (\emph{commit ordering optimization})
 \subsection{Safe Snapshots}
-\label{sec:orga7a90e5}
+\label{sec:orge5fe132}
 A read-only transaction \(T_1\) cannot have a rw-conflict pointing in, as it did not perform any
 writes. The only way it can be part of a dangerous structure, therefore, is if it has a conflict out
 to a concurrent read/write transaction \(T_2\) , and \(T_2\) has a conflict out to a third transaction
@@ -195,7 +195,7 @@ SIREAD locks and other SSI state, until those transactions commit. After they ha
 snapshot is deemed safe, the read-only transaction can drop its SIREAD locks, essentially becoming a
 REPEATABLE READ (snapshot isolation) transaction.
 \subsection{Deferrable Transactions}
-\label{sec:org5907589}
+\label{sec:org70f8697}
 Some workloads contain long-running read-only transactions and take more SIREAD locks.
 
 These transactions would especially benefit from running on safe snapshots: they could avoid taking
@@ -206,26 +206,193 @@ transactions can be marked as deferrable with a new keyword, e.g. BEGIN TRANSACT
 DEFERRABLE. Deferrable transactions always run on a safe snapshot, but may block before their first
 query.
 \section{Implementing SSI in PostgreSQL}
-\label{sec:org08612a1}
+\label{sec:org631ae45}
 \subsection{PostgreSQL Background}
-\label{sec:orgfda58f0}
-        All queries in PostgreSQL are performed with respect to a snapshot, which is represented as the set of transactions whose effects
-are visible in the snapshot. Each tuple is tagged with the transaction
-ID of the transaction that created it (xmin), and, if it has been deleted
-or replaced with a new version, the transaction that did so (xmax).
-Checking which of these transactions are included in a snapshot
-determines whether the tuple should be visible. Updating a tuple
-is, in most respects, identical to deleting the existing version and
-creating a new tuple. The new tuple has a separate location in the
-heap, and may have separate index entries.2 Here, PostgreSQL dif-
-fers from other MVCC implementations (e.g. Oracle’s) that update
-tuples in-place and keep a separate rollback log.
+\label{sec:org15980c4}
+All queries in PostgreSQL are performed with respect to a snapshot, which is represented as the set of
+transactions whose effects are visible in the snapshot. Each tuple is tagged with the transaction ID
+of the transaction that created it (\(xmin\)), and, if it has been deleted or replaced with a new
+version, the transaction that did so (\(xmax\)). Checking which of these transactions are included in
+a snapshot determines whether the tuple should be visible. Updating a tuple is identical to deleting
+the existing version and creating a new tuple. The new tuple has a separate location in the heap, and
+may have separate index entries. Here, PostgreSQL differs from other MVCC implementations (e.g.
+Oracle’s) that update tuples in-place and keep a separate rollback log.
+
+Internally, PostgreSQL uses three distinct lock mechanisms:
+\begin{itemize}
+\item \textbf{lightweight locks} are standard reader-writer locks for synchronizing access to shared memory
+structures and buffer cache pages; these are typically referred to as latches elsewhere in the literature
+\item \textbf{heavyweight locks} are used for long-duration (e.g. transaction-scope) locks, and support deadlock
+detection. A variety of lock modes are available, but normal-case operations such as SELECT and
+UPDATE acquire locks in non-conflicting modes. Their main purpose is to prevent schema-changing
+operations, such as DROP TABLE or REINDEX, from being run concurrently with other operations on the
+same table. These locks can also be explicitly acquired using LOCK TABLE.
+\item \textbf{tuple locks} prevent concurrent modifications to the same tuple. Because a transaction might acquire
+many such locks, they are not stored in the heavyweight lock table; instead, they are stored in the
+tuple header itself, reusing the \(xmax\) field to identify the lock holder. SELECT FOR UPDATE also
+acquires these locks. Conflicts are resolved by calling the heavyweight lock manager, to take
+advantage of its deadlock detection.
+\end{itemize}
+\subsection{Detecting Conflicts}
+\label{sec:orgcdeb049}
+One of the main requirements of SSI is to be able to detect rw-conflicts as they happen.
+
+Earlier work suggested modifying the lock manager to acquire read locks in a new SIREAD mode, and
+flagging a rw-antidependency when a conflicting lock is acquired. Unfortunately, this technique cannot
+be directly applied to PostgreSQL because the lock managers described above do not have the necessary
+information.
+
+To begin with, PostgreSQL did not previously acquire read locks on data accessed in any isolation
+level, unlike the databases used in prior SSI implementations, so SIREAD locks cannot simply be
+acquired by repurposing existing hooks for read locks. Worse, even with these locks, there is no easy
+way to match them to conflicting write locks because PostgreSQL’s tuple-level write locks are stored
+in tuple headers on disk, rather than an in-memory table.
+
+Instead, PostgreSQL’s SSI implementation uses existing MVCC data as well as a new lock manager to
+detect conflicts. Which one is needed depends on whether the write happens chronologically before the
+read, or vice versa.
+\begin{enumerate}
+\item If the write happens first, then the conflict can be inferred from the MVCC data, without using
+locks. Whenever a transaction reads a tuple, it performs a visibility check, inspecting the tuple’s
+\(xmin\) and \(xmax\) to determine whether the tuple is visible in the transaction’s snapshot.
+\item If the tuple is not visible because the transaction that created it had not committed when the
+reader took its snapshot, that indicates a rw-conflict: the reader must appear before the writer in
+the serial order.
+\item if the tuple has been deleted – i.e. it has an \(xmax\) – but is still visible to the reader
+because the deleting transaction had not committed when the reader took its snapshot, that is also
+a rw-conflict that places the reader before the deleting transaction in the serial order.
+\end{enumerate}
+
+We also need to handle the case where the read happens before the write. This cannot be done using
+MVCC data alone; it requires tracking read dependencies using SIREAD locks. Moreover, the SIREAD locks
+must support predicate reads. As discussed earlier, none of PostgreSQL’s existing lock mechanisms were
+suitable for this task, so we developed a new SSI lock manager. The SSI lock manager stores only
+SIREAD locks. It does not support any other lock modes, and hence cannot block. The two main
+operations it supports are to obtain a SIREAD lock on a relation, page, or tuple, and to check for
+conflicting SIREAD locks when writing a tuple.
+\subsubsection{Implementation of the SSI Lock Manager}
+\label{sec:org909682f}
+The PostgreSQL SSI lock manager, like most lock managers used for S2PL-based serializability, handles
+predicate reads using index-range locks.
+
+Reads acquire SIREAD locks on all tuples they access, and index access methods acquire SIREAD locks on
+the “gaps” to detect phantoms. Currently, locks on B+-tree indexes are acquired at page granularity;
+we intend to refine this to next-key locking in a future release.
+
+Both heap and index locks can be promoted to coarser granularities to save space in the lock table,
+e.g. replacing multiple tuple locks with a single page lock.
+
+SIREAD locks must be kept up to date when concurrent transactions modify the schema with
+data-definition language (DDL) statements. Statements that rewrite a table, such as RECLUSTER or ALTER
+TABLE, cause the physical location of tuples to change. As a result, page- or tuple-granularity SIREAD
+locks, which are identified by phys- ical location, are no longer valid; PostgreSQL therefore promotes
+them to relation-granularity. Similarly, if an index is removed, any index-gap locks on it can no
+longer be used to detect conflicts with a predicate read, so they are replaced with a relation-level
+lock on the associated heap relation.
+\subsection{Tracking Conflicts}
+\label{sec:org047069a}
+We chose to keep a list of all rw-antidependencies in or out for each transaction, but not wr- and
+ww-dependencies. Keeping pointers to the other transaction involved in the rw-antidependency, rather
+than a simple flag, is necessary to implement the commit ordering optimization and read-only
+optimization.
+\subsection{Resolving Conflicts: Safe Retry}
+\label{sec:org0f1f648}
+We want to choose the transaction to abort in a way that ensures the following property:
+
+\textbf{Safe retry}: If a transaction is aborted, immediately retrying the same transaction will not cause it
+to fail again with the same serialization failure
+
+Once we have identified a dangerous structure \(T_1\xrightarrow{rw}T_2\xrightarrow{rw}T_3\) , the key
+principle for ensuring safe retry is to abort a transaction that conflicts with a \emph{committed}
+transaction. When the aborted transaction is retried, it will not be concurrent with the committed
+transaction, and cannot conflict with it. Specifically, the following rules are used to ensure safe
+retry:
+\begin{enumerate}
+\item Do not abort anything until \(T_3\) commits. This rule is needed to support the commit ordering
+optimization, but it also serves the safe retry goal.
+\item Always choose to abort \(T_2\) if possible, i.e. if it has not already committed. T2 must have been
+concurrent with both \(T_1\) and \(T_3\) . Because \(T_3\) is already committed, the retried
+\(T_2\) will not be concurrent with it and so will not be able to have a rw-conflict out to it,
+preventing the same error from recurring.
+\item If both \(T_2\) and \(T_3\) have committed when the dangerous structure is detected, then the only
+option is to abort T1 . But this is safe; T2 and T3 have already committed, so the retried
+transaction will not be concurrent with them, and cannot conflict with either.
+\end{enumerate}
+
+
+One might worry that this delayed resolution could cause wasted work or additional conflicts, because
+a transaction continues to execute even after a conflict that could force it to abort. However,
+aborting a transaction immediately would cause an equivalent amount of wasted work, if the transaction
+is immediately retried only to abort again.
+\section{Memory Usage Mitigation}
+\label{sec:org7736f9b}
+After implementing the basic SSI functionality, one of the problems we were immediately confronted
+with was its potentially unbounded memory usage. The problem is not merely that one transaction can
+hold a large number of locks – a standard lock manager problem – but one unique to SSI: a
+transaction’s locks cannot be released until that transaction and all concurrent transactions commit.
+
+We were faced with two requirements related to memory usage.
+\begin{enumerate}
+\item The SSI implementation’s memory usage must be \emph{bounded}: the lock table and dependency graph must
+have a fixed size (specified by the configuration file).
+\item The system must also be able to \emph{gracefully degrade}. Even in the presence of long-running
+transactions, the system should not fail to process new transactions because it runs out of memory.
+Instead, it should be able to accept new transactions, albeit possibly with a higher false positive
+abort rate.
+
+Our PostgreSQL implementation uses four techniques to limit the memory usage of the SSI lock
+manager:
+\begin{enumerate}
+\item Safe snapshots and deferred transactions
+\item granularity promotion
+\item \emph{Aggressive cleanup}
+\item \emph{Summarization}
+\end{enumerate}
+\end{enumerate}
+\subsection{Aggressive Cleanup}
+\label{sec:orgb6bd89b}
+\subsection{Summarizing Committed Transactions}
+\label{sec:org9977aa5}
+Our SSI implementation reserves storage for a fixed number of committed transactions. If more
+committed transactions need to be tracked, we \textbf{summarize} the state of previously committed
+transactions. It is usually sufficient to discover that a transaction has a conflict with some
+previously committed transaction, but not which one. Summarization allows the database to continue
+accepting new transactions, although the false positive abort rate may increasebecause some
+information is lost in the process.
+
+Our summarization procedure is based on the observation that information about committed transactions
+is needed in two cases:
+
+        First, an active transaction modifying a tuple needs to know if some committed transaction read that
+        tuple. This could create a dangerous structure
+        \(T_{committed}\xrightarrow{rw}T_{active}\xrightarrow{rw}T_3\) . We need to keep a SIREAD lock to
+        detect that such a transaction existed – but it does not matter what specific transaction it was,
+        whether it had other rw-antidependencies in or out, etc. This motivates the first part of summarizing
+        a committed transaction: the summarized transaction’s SIREAD locks are \emph{consolidated} with those of
+        other summarized transactions, by reassigning them to a single dummy transaction.
+Each lock assigned to this dummy transaction also records the com-
+mit sequence number of the most recent transaction that held the
+lock, to determine when the lock can be cleaned up. The benefit of
+consolidation is that each lock only needs to be recorded once, even
+if it was held by multiple committed transactions. Combined with
+the ability to promote locks to a coarser granularity, this can make it
+unlikely that the SIREAD lock table will be exhausted.
+\section{Feature Interactions}
+\label{sec:org0972c21}
+\subsection{Two-Phase Commit}
+\label{sec:orgf0c1ff0}
+\subsection{Streaming Replication}
+\label{sec:orgfb14a34}
+\subsection{Savepoints and Subtransactions}
+\label{sec:org083a7d9}
+\subsection{Index Types}
+\label{sec:org4625905}
 \section{Problems}
-\label{sec:org4d16092}
+\label{sec:org40f8c21}
 
 
 \section{References}
-\label{sec:org9f9842a}
+\label{sec:orgb0de7d2}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 
