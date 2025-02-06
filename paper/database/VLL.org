@@ -179,6 +179,45 @@
         Since \(C\) appears at the head of all its request queues, a standard implementation would know that C
         could safely be run, whereas VLL is not able to determine that.
 
+        When contention is low, this inability of VLL to immediately determine possible transactions that
+        could potentially be unblocked is not costly. However, under higher contention workloads, and
+        especially when there are distributed transactions in the workload, VLL’s resource utilization
+        suffers, and additional optimizations are necessary.
+
+
+** Selective contention analysis (SCA)
+        For high-contention and high-percentage multi-partition workloads, VLL spends a growing percentage of
+        CPU cycles in the state where no transaction can be found that is known to be safe to execute—whereas
+        a standard lock manager would have been able to find one. In order to maximize CPU resource
+        utilization, we introduce the idea of SCA.
+
+        SCA simulates the standard lock manager’s ability to detect which transactions should inherit released
+        locks. It does this by spending work examining contention—but only when CPUs would otherwise be
+        sitting idle (i.e., TxnQueue is full and there are no obviously unblockable transactions). SCA
+        therefore enables VLL to selectively increase its lock management overhead when (and only when) it is
+        beneficial to do so.
+
+        Any transaction in the ~TxnQueue~ that is in the ’blocked’ state, conflicted with one of the
+        transactions that preceded it in the queue at the time that it was added. Since then, however, the
+        transaction(s) that caused it to become blocked may have completed and released their locks. As the
+        transaction gets closer and closer to the head of the queue, it therefore becomes much less likely to
+        be “actually” blocked.
+
+        In general, the \(i\)th transaction in the TxnQueue can only conflict now with up to \(i-1\) prior
+        transactions, whereas it previously had to contend with (up to) the number of ~TxnQueueSizeLimit~ prior
+        transactions. Therefore, SCA starts at the front of the queue and works its way through the queue
+        looking for a transaction to execute. The whole while, it keeps two- bit arrays, \(D_X\) and \(D_S\) ,
+        each of size 100 kB (so that both will easily fit inside an L2 cache of size 256 kB) and initialized
+        to all 0s. SCA then maintains the invariant that after scanning the first \(i\) transactions:
+        * \(D_X[j]=1\) iff an element of one of the scanned transactions' write sets hashes to \(j\)
+        * \(D_S[k]=1\) iff an element of one of the scanned transactions' read sets hashes to \(k\)
+
+        Therefore, if at any point the next transaction scanned (let's call it \(T_{next}\)) has the
+        properties:
+        * \(D_X[hash(key)]=0\) for all keys in \(T_{next}\)'s read set
+        * \(D_X[hash(key)]\) for all keys in \(T_{next}\)'s write set
+        * \(D_S[hash(key)]=0\) for all keys in \(T_{next}\)'s write set
+        then \(T_{next}\) does not conflict with any of the prior scanned transactions and can safely be run.
 * Problems
 
 
