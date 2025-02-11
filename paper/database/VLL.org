@@ -218,6 +218,74 @@
         * \(D_X[hash(key)]\) for all keys in \(T_{next}\)'s write set
         * \(D_S[hash(key)]=0\) for all keys in \(T_{next}\)'s write set
         then \(T_{next}\) does not conflict with any of the prior scanned transactions and can safely be run.
+
+        #+LATEX: \wu{
+        What if we want to delete a large portion of data?
+
+        Equivalently, what if read/write set is large?
+
+        Better to run it when it is at head of the queue.
+
+        Then another question: How to represent a write set?
+        #+LATEX: }
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 4
+        #+CAPTION: SCA pseudocode
+        [[../../images/papers/84.png]]
+
+        Minor optimization: Each key needs to be hashed into the 100 kB bitstring, but hashing every key for
+        each transaction as we iterate through the TxnQueue can be expensive. We therefore cache (inside the
+        transaction state) the results of the hash function the first time SCA encounters a transaction. If
+        that transaction is still in the TxnQueue the next time SCA iterates through the queue, the algorithm
+        may then use the saved list of offsets that corresponds to the keys read and written by that
+        transaction to set the appropriate bits in the SCA bitstring, rather having to re-hash each key.
+
+
+** Very lightweight locking of ranges (VLLR)
+        For workloads that frequently read, write, or delete many consecutive rows within the same
+        transaction, it can be useful to lock ranges of rows rather than many individual “point” rows.
+
+        VLLR works by locking bitstring prefixes. When locking a range of primary keys, the range is
+        represented first as a range \(R\) of (lexicographically sorted) bitstrings, and then a set \(P\) of
+        bitstrings is generated such that for each bitstring \(K\) of the range, there exists an element
+        \(p\in P\) that is a prefix of \(K\) . One simple way to generate \(P\) is to choose the set
+        consisting of the longest common prefix of the minimum and maximum bitstrings in \(R\).
+
+        To manage lock states, VLLR uses four counters per key: \(C_X\), \(C_S\), \(I_X\) and \(I_S\). When
+        requesting a lock on a prefix \(p\in P\), \(C_X[p]\) or \(C_S[p]\) is incremented and for each
+        nonempty strict prefix \(p_j\) of \(p\), \(I_X[p_j]\) or \(I_s[p_j]\) is incremented, respectively.
+        For each incremented counter, all conflicting counters are checked to see whether the lock is
+        acquired.
+
+
+        |---+---------+---------+---------+---------+---------+---|
+        |   |         | \(C_X\) | \(C_S\) | \(I_X\) | \(I_X\) |   |
+        |---+---------+---------+---------+---------+---------+---|
+        | / | <       | <       | <       | <       | <       | < |
+        |---+---------+---------+---------+---------+---------+---|
+        |   | \(C_X\) | X       | X       | X       | X       |   |
+        |---+---------+---------+---------+---------+---------+---|
+        |   | \(C_S\) | X       |         | X       |         |   |
+        |---+---------+---------+---------+---------+---------+---|
+        |   | \(I_X\) | X       | X       |         |         |   |
+        |---+---------+---------+---------+---------+---------+---|
+        |   | \(I_S\) | X       |         |         |         |   |
+        |---+---------+---------+---------+---------+---------+---|
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 6
+        #+CAPTION: Psudocode for the VLLR algorithm
+        [[../../images/papers/85.png]]
+
+* Experimental evaluation
+
+** Experimental Setup
+        Distributed versions of VLL are susceptible to entering distributed deadlock states. We presented two
+potential solutions to this problem:
+        1. detecting deadlocks by analyzing transaction dependencies and aborting transactions to break cycles
+        2. avoiding deadlocks via global coordination of lock acquisition order.
+
 * Problems
 
 

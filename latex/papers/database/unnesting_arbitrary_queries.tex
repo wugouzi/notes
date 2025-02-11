@@ -1,4 +1,4 @@
-% Created 2024-12-05 Thu 20:27
+% Created 2025-02-11 Tue 19:51
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -33,24 +33,87 @@ linenos}
  pdftitle={Unnesting Arbitrary Queries},
  pdfkeywords={},
  pdfsubject={},
- pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)}, 
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)},
  pdflang={English}}
 \begin{document}
 
 \maketitle
+\section{Introduction}
+\label{sec:orgb7f8077}
+\begin{listing}[htbp]
+\begin{minted}[]{sql}
+select s.name, e.course
+from   students s, exams e
+where  s.id = e.sid and
+       e.grade = (select min(e2.grade)
+                  from exams e2
+                  where s.id = e2.sid)
+\end{minted}
+\caption{Q1}
+\end{listing}
+The query contains a \textbf{dependent join}, i.e., a nested loop join where the evaluation of the right hand
+side depends on the current value of the left-hand side. These joins are highly inefficient, and lead
+to quadratic execution time.
+
+A rewrite would look like this
+\begin{listing}[htbp]
+\begin{minted}[]{sql}
+select s.name, e.course
+from   students s, exams e,
+       (select e2.sid as id, min(e2.grade) as best
+        from exams e2
+        group by e2.sid) m
+where  s.id = e.sid and m.id = s.id and
+       e.grade = m.best
+\end{minted}
+\caption{Q1'}
+\end{listing}
+Here, the evaluation of the subquery no longer depends on the values of s, and thus regular joins can
+be used.
+
+Now consider another query, by 2015, no system can unnests it
+\begin{listing}[htbp]
+\begin{minted}[]{sql}
+select s.name, e.course
+from   students s, exams e
+where  s.id = e.sid and
+  (s.major = 'CS' or s.major = 'Games Eng') and
+   e.grade >= (select avg(e2.grade) + 1
+               from exams e2
+               where s.id = e2.sid or
+               (e2.curriculums = s.major and
+                s.year > e2.date))
+\end{minted}
+\caption{Q2}
+\end{listing}
 \section{Preliminaries}
-\label{sec:orgd6e31b4}
-\textbf{(inner) join}:r
+\label{sec:org96ca1f9}
+\textbf{(inner) join}:
 \begin{equation*}
 T_1\bowtie_p T_2:=\sigma_p(T_1\times T_2)
 \end{equation*}
 \textbf{dependent join}:
 \begin{equation*}
-T_1\lfbowtie T_2:=\{t_1\circ t_2\mid t_1\in T_1\wedge t_2\in T_2(t_1)\wedge p(t_1\circ t_2)\}
+T_1\lfbowtie_p T_2:=\{t_1\circ t_2\mid t_1\in T_1\wedge t_2\in T_2(t_1)\wedge p(t_1\circ t_2)\}
 \end{equation*}
 Here the right hand side is evaluated for every tuple of the left hand side. We denote the attributes
 produced by an expression \(T\) by \(\cala(T)\), and free variables occurring in an expression \(T\)
 by \(\calf(T)\). To evaluate dependent join, \(\calf(T_2)\subseteq \cala(T_1)\) must hold.
+
+Take Q1 as example (sort of). \(T_1\) is
+\begin{minted}[]{sql}
+select s.name, s.id from students
+\end{minted}
+\(T_2\) is
+\begin{minted}[]{sql}
+select e.id, e.course
+from exams e
+where e.grade = (select min(e2.grade)
+                 from exams e2
+                 where X = e2.sid)
+\end{minted}
+So \(T_1, T_2\) here are actually all functions
+
 
 We use \textbf{natural join} in the join predicate to simplify the notation. We assume that all relations
 occuring in a query will have unique attribute names, even if they reference the same physical table,
@@ -62,7 +125,7 @@ duplicate columns are projected out. Consider, for example:
 \end{equation*}
 
 Here, the top-most join checks both the predicate \(p\) and compares the columns of \(C\) that come
-from both sides.
+from both sides (and eliminates one of the two copies of \(C\)'s columns)
 
 \begin{itemize}
 \item \textbf{semi join}:
@@ -88,9 +151,10 @@ We define the dependent joins accordingly as \(\lftimes\), \(\rhd'\), \(\leftout
 
 \textbf{group by}:
 \begin{equation*}
-\Gamma_{A;a:f}(e):=\{x\circ(a:f(y))\mid x\in\prod_A(e)\wedge y=\{z\mid z\in e\wedge\forall a\in A:x.a=z.a\}\}
+\Gamma_{A;a:f}(e):=\{x\circ(a:f(y))\mid x\in\Pi_A(e)\wedge y=\{z\mid z\in e\wedge\forall a\in A:x.a=z.a\}\}
 \end{equation*}
-If groups its input \(e\) by \(A\) and evaluates one aggregation function.
+It groups its input \(e\) by \(A\) and evaluates one aggregation function.
+\wu{I guess \(a\) is the attribute of \(\im f\)}
 
 \textbf{map}:
 \begin{equation*}
@@ -103,10 +167,10 @@ t_1=_At_2:=\forall_{a\in A}:t_1.a=t_2.a
 \end{equation*}
 It compares NULL values as equal
 \section{Unnesting}
-\label{sec:org71023ad}
+\label{sec:org471566d}
 The algebraic representation of a query with correlated subqueries results in a dependent join
 \subsection{Simple Unnesting}
-\label{sec:orga6312bc}
+\label{sec:org042c665}
 Consider
 \begin{minted}[]{sql}
 select ...
@@ -125,35 +189,47 @@ which is equivalent to
 l_1\ltimes_{l_1.okey=l_2.okey}(l_2)
 \end{equation*}
 \subsection{General Unnesting}
-\label{sec:orgfc960cf}
+\label{sec:orgc81aa7c}
 First, we translate the dependent join into a “nicer” dependent join (i.e., one that is easier to
 manipulate), and second, we will push the new dependent join down into the query until we can
 transform it into a regular join.
+
+First,
 \begin{equation*}
 T_1\lfbowtie_pT_2\equiv T_1\bowtie_{p\wedge T_1=_{\cala(D)}D}(D\lfbowtie T_2)
 \end{equation*}
 where
 \begin{equation*}
-D:=\prod_{\calf(T_2)\cap\cala(T_1)}(T_1)
+D:=\Pi_{\calf(T_2)\cap\cala(T_1)}(T_1)
 \end{equation*}
 
 In the original expression, we had to evaluate \(T_2\) for every tuple of \(T_1\). In the second
 expression, we first compute the domain \(D\) of all variables bindings, evaluate \(T_2\) only once
-for every distinct variable binding, and then use a regular join to match the results to the original
+for every distinct variable binding \wu{the result of \(\Pi\) is a set}, and then use a regular join to match the results to the original
 \(T_1\) value. If there are a lot of duplicates, this already greatly reduces the number of
 invocations of \(T_2\).
 
-Consider the query for determining the best exam for every student.
+Consider the query for determining the worst exam for every student:
 \begin{gather*}
-\sigma_{e.grade=m}((\text{student }s\bowtie_{s.id=e.id}\text{exams }e))\lfbowtie\\
-(\Gamma_{\emptyset;m:min(e2.grade)})(\sigma_{s.id=e2.sid}\text{exams }e2)
+\sigma_{e.grade=m}((\text{student }s\bowtie_{s.id=e.id}\text{exams }e)\lfbowtie\\
+(\Gamma_{\emptyset;m:min(e2.grade)}(\sigma_{s.id=e2.sid}\text{exams }e2)))
 \end{gather*}
+\wu{
+\((\text{student }s\bowtie_{s.id=e.id}\text{exams
+        }e)\lfbowtie(\Gamma_{\emptyset;m:min(e2.grade)}(\sigma_{s.id=e2.sid}\text{exams }e2))\)
+In left side, each student has many exams and grades. Then in the right side, for each student, its
+worst grade is taken. Therefore it generates students + students grades + student worst grade. Then
+we need \(\sigma\) to filter out those unrelated grades.
+}
 
 The equivalence rule allows to restrict the computation of the best grades to each student
 \begin{gather*}
-\dots\prod_{d.id:s.id}((\text{students }s\bowtie_{s.id=e.sid}\text{exams }e)\lfbowtie\\
+\dots(\Pi_{d.id,s.id}(\text{students }s\bowtie_{s.id=e.sid}\text{exams }e)\lfbowtie\\
 (\Gamma_{\emptyset;m:min(e2.grade)}(\sigma_{d.id=e2.sid}\text{exams }e2)))
 \end{gather*}
+\wu{
+Here \(d.id:s.id\) means we replace \(s.id\) with \(d.id\).
+}
 
 \begin{center}
 \includegraphics[width=.8\textwidth]{../../images/papers/53.png}
@@ -172,7 +248,7 @@ D\lfbowtie T\equiv D\bowtie T\text{ if }\calf(T)\cap\cala(D)=\emptyset
 
 For selections, a push-down is very simple:
 \begin{equation*}
-D\lfbowtie_{\sigma_p}(T_2)\equiv\sigma_p(D\lfbowtie T_2)
+D\lfbowtie \sigma_p(T_2)\equiv\sigma_p(D\lfbowtie T_2)
 \end{equation*}
 We first push the dependent join down as far as possible, until it can either be eliminated completely
 due to substitution, or until it can be transformed into a regular join. Once all dependent joins have
@@ -229,11 +305,11 @@ D\lfbowtie(\Pi_A(T))\equiv\Pi_{A\cup\cala(D)}(D\lfbowtie T)
 &D\lfbowtie(T_1\setminus T_2)\equiv(D\lfbowtie T_1)\setminus(D\lfbowtie T_2)
 \end{align*}
 \section{Problems}
-\label{sec:org9823ec5}
+\label{sec:org273725f}
 
 
 \section{References}
-\label{sec:org921ab80}
+\label{sec:org5a66ca9}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 
