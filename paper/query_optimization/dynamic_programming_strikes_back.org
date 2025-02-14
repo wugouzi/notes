@@ -1,0 +1,158 @@
+#+title: Dynamic Programming Strikes Back
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/dynamtic_programming_strikes_back.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        In this paper, we introduct ~DPhyp~. Experiments will shwo that it is highly superior to existing
+        approaches.
+
+* Hypergraphs
+** Definitions
+        #+ATTR_LATEX: :options [Hypergraph]
+        #+BEGIN_definition
+        A *hypergraph* is a pair \(H=(V,E)\) s.t.
+        1. \(V\) is a non-empty set of nodes
+        2. \(E\) is a set of hyperedges, where a *hyperedge* is an unordered pair \((u,v)\) of non-empty subsets
+           of \(V\) (\(u\subset V\) and \(v\subset V\)) with the additional condition that \(u\cap
+           v=\emptyset\)
+
+        We call any non-empty subset of \(V\) a *hypernode*. We assume that the nodes in \(V\) are totally
+        ordered via an (arbitrary) relation \(\prec\). The ordering on nodes is important for our algorithm.
+
+        A hyperedge \((u,v)\) is *simple* if \(\abs{u}=\abs{v}=1\). A hypergraph is *simple* if all its hyperedges
+        are simple.
+        #+END_definition
+
+        In our context, the nodes of hypergraphs are relations and the edges are abstractions of join
+        predicates. Consider a join predicate of the form
+        \begin{equation*}
+        R_1.a+R_2.b+R_3.c=R_4.d+R_5.e+R_6.f
+        \end{equation*}
+        This predicate will result in a hyperedge \((\{R_1,R_2,R_3\}, \{R_4,R_5,R_6\})\).
+
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION: Sample hypergraph
+        [[../../images/papers/94.png]]
+
+        Fig [[ref:2]] contains an example of a hypergraph. The set \(V\) of nodes is \(V=\{R_1,\dots,R_6\}\). Concerning the node ordering, we assume that
+        \(R_i\prec R_j\Leftrightarrow i<j\). There are simple edges \((\{R_1\},\{R_2\})\),
+        \((\{R_2\},\{R_3\})\), \((\{R_4\},\{R_5\})\) nad \((\{R_5\},\{R_6\})\).
+
+        Note that is possible to rewrite the above complex join predicate. For example, it is equivalent to
+        \begin{equation*}
+        R_1.a+R_2.b=R_4.d+R_5.e+R_6.f-R_3.c
+        \end{equation*}
+        This leads to a hyperedge \((\{R_1,R_2\},\{R_3,R_4,R_5,R_6\})\).
+
+        #+ATTR_LATEX: :options [Subgraph]
+        #+BEGIN_definition
+        Let \(H=(V,E)\) be a hypergraph and \(V'\subseteq V\) a subset of nodes. The *node induced subgraph*
+        \(G|_{V'}\) of \(G\) is defined as \(G|_{V'}=(V',E')\) with \(E'=\{(u,v)\mid (u,v)\in E,u\subseteq
+        V',v\subseteq V'\}\).
+        The node ordering on \(V'\) is the restriction of the node ordering of \(V\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Connected]
+        #+BEGIN_definition
+        Let \(H=(V,E)\) be a hypergraph. \(H\) is connected if \(\abs{V}=1\) or if there exists a partitioning
+        \(V'\), \(V''\) of \(V\) and a hyperedge \((u,v)\in E\) s.t. \(u\subseteq V'\), \(v\subseteq V''\) and
+        both \(G|_{V'}\) and \(G|_{V''}\) are connected.
+        #+END_definition
+
+        Let \(H=(V,E)\) is a hypergraph and \(V'\subseteq V\) is a subset of the nodes s.t. the node-induced
+        subgraph \(G|_{V'}\) is connected, then we call \(V'\) a *connected subgraph* or *csg* for short. The
+        number of connected subgraphs is important for dynamic programming: it directly corresponds to the
+        number of entries in the dynamic programming table. If a node set \(V''\subseteq(V\setminus V')\)
+        induces a connected subgraph \(G|_{V''}\), we call \(V''\) a *connected complement* of \(V'\) or *cmp* for
+        short.
+
+        Within this paper, _we will assume that all hypergraphs are connected_. This way, we can make sure that
+        no cross products are needed. However, when dealing with hypergraphs, this condition can easily be
+        assured by adding according hyperedges: for every pair of connected components, we can add a hyperedge
+        whose hypernodes contain exactly the relations of the connected components. By considering these
+        hyperedges as \(\bowtie\) operators with selectivity 1, we get an equivalent connected hypergraph
+** Csg-cmp-pair
+        #+ATTR_LATEX: :options [Csg-cmp-pair]
+        #+BEGIN_definition
+        Let \(H=(V,E)\) be a hypergraph and \(S_1\), \(S_2\) two subsets of \(V\) s.t. \(S_1\subseteq V\) and
+        \(S_2\subseteq(V\setminus S_1)\) are a connected subgraph and a connected complement. If there further
+        exists a hyperedge \((u,v)\in E\) s.t. \(u\subseteq S_1\) and \(v\subseteq S_2\), we call
+        \((S_1,S_2)\) a *csg-cmp-pair*.
+        #+END_definition
+
+        We will restrict the enumeration of csg-cmp-pairs to those \((S_1,S_2)\) which satisfy the condition
+        that \(\min(S_1)\prec\min(S_2)\).
+
+        Obviously, in order to be correct, any dynamic programming algorithm has to consider all
+        csg-cmp-pairs. Further, only these have to be considered. Thus, the minimal number of cost function
+        calls of any dynamic programming algorithm is exactly the number of csg-cmp-pairs for a given
+        hypergraph. Note that the number of connected subgraphs is far smaller than the number of
+        csg-cmp-pairs.
+
+        The problem now is to enumerate the csg-cmp-pairs efficiently and in an order
+        acceptable for dynamic programming. The latter can be expressed more specifically. Before enumerating
+        a csg-cmp-pair \((S_1,S_2)\), all csg-cmp-pairs \(S_1',S_2'\) with \(S_1'\subseteq S\) and
+        \(S_2'\subseteq S_2\) have to be enumerated.
+** Neighborhood
+        The main idea to generate csg-cmp-pairs is to incrementally expand connected subgraphs by considering
+        new nodes in the *neighborhood* of a subgraph. Informally, the neighborhood \(N(S)\) under an exclusion
+        set \(X\) consists of all nodes reachable from \(S\) that are not in \(X\). We derive an exact
+        definition below
+
+        When choosing subsets of the neighborhood for inclusion, we have to treat a hypernode as a single
+        instance: either all of its nodes are inside an enumerated subset or none of them. Since we want to
+        use the fast subset enumeration procedure introduced by Vance and Maier, we must have a single bit
+        representing a hypernode and also single bits for relations occurring in simple edges. Since these may
+        overlap, we are constained to choose one unique representative of every hypernode occuring in a
+        hyperedge. We choose the node \(\min(S)\).
+
+        Let \(S\) be a current set, which we want to expand by adding further relations. Consider a hyperedge
+        \((u,v)\) with \(u\subseteq S\). Then we will add \(\min(v)\) to the neighborhood of \(S\). However,
+        we have to make sure that the missing elements of \(v\), i.e., \(v\setminus\min(v)\), are also
+        contained in any set emitted. We thus define
+        \begin{equation*}
+        \bbar{\min}(S)=S\setminus \min(S)
+        \end{equation*}
+
+        We define the set of non-subsumed hyperedges a s the minimal subset \(E\downarrow\) of \(E\) s.t. for
+        all \((u,v)\in E\) there exists a hyperedge \((u',v')\in E\downarrow\) with \(u'\subseteq u\) and
+        \(v'\subseteq v\). Additionally, we make sure that none of the nodes of a hypernode are contained in a
+        set \(X\), which is to be excluded from neighborhood considerations. We thus define a set containing
+        the *interesting hypernodes* for given sets \(S\) and \(X\). We do so in two steps.
+        1. Collect the potentially interesting hypernodes into a set \(E\downarrow'(S,X)\) and then minimize
+           this set to eliminate subsumed hypernodes:
+           \begin{equation*}
+           E\downarrow'(S,X)=\{v\mid (u,v)\in E,u\subseteq S,v\cap S=\emptyset,v\cap X=\emptyset\}
+           \end{equation*}
+        2. Define \(E\downarrow(S,X)\) to be the minimal set of hypernodes s.t. for all
+           \(v\in E\downarrow'(S,X)\) there exists a hypernode \(v'\) in \(E\downarrow(S,X)\) s.t.
+           \(v'\subseteq v\).
+
+
+
+        We now define the *neighborhood* of a hypernode \(S\), given a set of excluded nodes \(X\), to be:
+        \begin{equation*}
+        \caln(S,X)=\bigcup_{v\in E\downarrow(S,X)}\min(v)
+        \end{equation*}
+        For hypergraph in Fig [[ref:2]] and with \(X=S=\{R_1,R_2,R_3\}\), we have
+        \begin{gather*}
+        E\downarrow'(S,X)=\{\{R_4,R_5,R_6\}\}\\
+        E\downarrow(S,X)=\{\{R_4,R_5,R_6\}\}\\
+        \caln(S,X)=\{R_4\}
+        \end{gather*}
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+<<bibliography link>>
+bibliography:/Users/wu/notes/references.bib

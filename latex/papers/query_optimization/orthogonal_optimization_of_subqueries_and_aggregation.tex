@@ -1,0 +1,168 @@
+% Created 2025-02-13 Thu 19:25
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/query_optimization/}}
+\DeclareMathOperator{\SA}{\mathcal{SA}}
+\definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+\usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+\setminted{breaklines,
+mathescape,
+bgcolor=mintedbg,
+fontsize=\footnotesize,
+frame=single,
+linenos}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Orthogonal Optimization Of Subqueries And Aggregation}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Orthogonal Optimization Of Subqueries And Aggregation},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:org599abbf}
+In this paper, we present subquery and aggregation techniques implemented in Microsoft SQL Server.
+\subsection{Standard subquery execution strategies}
+\label{sec:org36c090c}
+Before describing subquery strategies in detail, it is important to clarify the two forms of
+aggregation in SQL, whose behavior diverges on an empty input.
+
+“Vector” aggregation specifies grouping columns as well as aggregates to compute.
+\begin{minted}[]{sql}
+select o_orderdate, sum(o_totalprice)
+from orders
+group by o_orderdate
+\end{minted}
+
+And there are querys that \emph{always returns exactly one row}:
+\begin{minted}[]{sql}
+select sum(o_totalprice) from orders
+\end{minted}
+
+In algebraic expressions we denote vector aggregate as \(\calg_{A,F}\), where \(A\) are the grouping
+columns and \(F\) are the aggregates to compute; and denote scalar aggregate as \(\calg^1_F\)
+
+We review standard subquery execution strategies using the following SQL query, which finds customers
+who have ordered more than \$1,000,000.
+\begin{minted}[]{sql}
+-- Q1
+select c_custkey
+from customer
+where 100000 <
+      (select sum(o_totalprice)
+       from orders
+       where o_custkey = c_custkey)
+\end{minted}
+
+\textbf{Outerjoin, then aggregate}:
+\begin{minted}[]{sql}
+select c_custkey
+from customer left outer join
+     orders on o_custkey = c_custkey
+group by c_custkey
+having 1000000 < sum(o_totalprice)
+\end{minted}
+
+\textbf{Aggregate, then join}:
+\begin{minted}[]{sql}
+select c_custkey
+from customer,
+     (select o_custkey from orders
+      group by c_custkey
+      having 1000000 < sum(o_totalprice))
+     as aggresult
+where o_custkey = c_custkey
+\end{minted}
+\subsection{Our technique: Use primitive, orthogonal pieces}
+\label{sec:orgbaf466f}
+\begin{center}
+\includegraphics[width=.5\textwidth]{../../images/papers/95.png}
+\captionof{figure}{\label{1}Primitives connecting different execution strategies}
+\end{center}
+
+By implementing all these orthogonal techniques, the query processor should then pro- duce the same
+efficient execution plan for the various equiv- alent SQL formulations we have listed above, achieving
+a degree of syntax-independence.
+
+\begin{itemize}
+\item \textbf{Algebrize into initial operator tree}
+\item \textbf{Remove correlations}
+\item \textbf{Simplify outerjoin}
+\item \textbf{Reorder GroupBy}
+\end{itemize}
+\subsection{A useful tool: Represent parameterized execution algebraically}
+\label{sec:org4d25325}
+\textbf{Apply} takes a relational input \(R\) and a parameterized expression \(E(r)\); it evaluates expression
+\(E\) for each row \(r\in R\), and collects the results. Formally,
+\begin{equation*}
+R\cala^{\otimes}E=\bigcup_{r\in R}(\{r\}\otimes E(r))
+\end{equation*}
+where \(\otimes\) is either cross product, left outerjoin, left semijoin, or left antijoin.
+
+The most primitive form is \(\cala^\times\), and cross product is assumed if no join variant is
+specified.
+
+All operators used in this paper are bag-oriented, and we assume no automatic removal of duplicates.
+In particular, the union operator above is \texttt{UNION ALL}. Duplicates are removed explicitly using
+\texttt{DISTINCT}.
+
+Now Q1 is like
+\begin{center}
+\includegraphics[width=.5\textwidth]{../../images/papers/96.png}
+\captionof{figure}{\label{2}Subquery execution using Apply}
+\end{center}
+
+Apply works on expressions that take scalar (or row-valued) parameters. A second useful construct is
+\textbf{SegmentApply}, which deals with expressions using \emph{table}-valued parameters. It takes a relation input
+\(R\), a parameterized expression \(E(S)\), and a set of segmenting columns \(A\) from \(R\). It
+creates segments of \(R\) using columns \(A\), much like GroupBy, and for each such segment \(S\) it
+executes \(E(S)\). Formally,
+\begin{equation*}
+R\SA_AE=\bigcup_{a}(\{a\}\times E(\sigma_{A=a}R))
+\end{equation*}
+where \(a\) takes all values in the domain of \(A\).
+\section{Representing and normalizing subqueries}
+\label{sec:org9c8abcb}
+\subsection{Direct algebraic representation with mutual recursion}
+\label{sec:org0327870}
+\subsection{Algebraic representation with Apply}
+\label{sec:orgf914b49}
+\subsection{Removal of Apply}
+\label{sec:orgc3bc9ed}
+\begin{align*}
+R\cala^{\otimes}E&=R\otimes_{\text{true}}E\tag{1}\\
+\hspace{2cm}\text{if no parameters in \(E\) resolved from \(R\)}\\
+R\cala^{\otimes}(\sigma_pE)&=R\otimes_pE\tag{2}\\
+\text{if no parameters in \(E\) resolved from \(R\)}
+\end{align*}
+\section{Problems}
+\label{sec:orga570c03}
+
+
+\section{References}
+\label{sec:org28b8c3e}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\label{bibliography link}
+\bibliography{../../../references}
+\end{document}

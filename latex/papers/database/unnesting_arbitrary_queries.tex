@@ -1,4 +1,4 @@
-% Created 2025-02-11 Tue 19:51
+% Created 2025-02-12 Wed 19:58
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -39,7 +39,7 @@ linenos}
 
 \maketitle
 \section{Introduction}
-\label{sec:orgb7f8077}
+\label{sec:orgd95fb1a}
 \begin{listing}[htbp]
 \begin{minted}[]{sql}
 select s.name, e.course
@@ -87,7 +87,7 @@ where  s.id = e.sid and
 \caption{Q2}
 \end{listing}
 \section{Preliminaries}
-\label{sec:org96ca1f9}
+\label{sec:org3e4d29c}
 \textbf{(inner) join}:
 \begin{equation*}
 T_1\bowtie_p T_2:=\sigma_p(T_1\times T_2)
@@ -113,7 +113,6 @@ where e.grade = (select min(e2.grade)
                  where X = e2.sid)
 \end{minted}
 So \(T_1, T_2\) here are actually all functions
-
 
 We use \textbf{natural join} in the join predicate to simplify the notation. We assume that all relations
 occuring in a query will have unique attribute names, even if they reference the same physical table,
@@ -158,7 +157,7 @@ It groups its input \(e\) by \(A\) and evaluates one aggregation function.
 
 \textbf{map}:
 \begin{equation*}
-\chi_{a:f}:=\{x\circ(a:f(x))\mid x\in e\}
+\chi_{a:f}(e):=\{x\circ(a:f(x))\mid x\in e\}
 \end{equation*}
 
 We define the attribute comparison operator \(=_A\) as
@@ -167,10 +166,10 @@ t_1=_At_2:=\forall_{a\in A}:t_1.a=t_2.a
 \end{equation*}
 It compares NULL values as equal
 \section{Unnesting}
-\label{sec:org471566d}
+\label{sec:orgc466b44}
 The algebraic representation of a query with correlated subqueries results in a dependent join
 \subsection{Simple Unnesting}
-\label{sec:org042c665}
+\label{sec:orgdca06e3}
 Consider
 \begin{minted}[]{sql}
 select ...
@@ -189,7 +188,7 @@ which is equivalent to
 l_1\ltimes_{l_1.okey=l_2.okey}(l_2)
 \end{equation*}
 \subsection{General Unnesting}
-\label{sec:orgc81aa7c}
+\label{sec:org8d0f0d1}
 First, we translate the dependent join into a “nicer” dependent join (i.e., one that is easier to
 manipulate), and second, we will push the new dependent join down into the query until we can
 transform it into a regular join.
@@ -304,12 +303,92 @@ D\lfbowtie(\Pi_A(T))\equiv\Pi_{A\cup\cala(D)}(D\lfbowtie T)
 &D\lfbowtie(T_1\cap T_2)\equiv(D\lfbowtie T_1)\cap(D\lfbowtie T_2)\\
 &D\lfbowtie(T_1\setminus T_2)\equiv(D\lfbowtie T_1)\setminus(D\lfbowtie T_2)
 \end{align*}
+\subsection{Optimization of Example Query Q1}
+\label{sec:org4e5dc78}
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/86.png}
+\captionof{figure}{\label{2}Original Query Q1}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/87.png}
+\captionof{figure}{\label{3}Query Q1, Transformation Step 1}
+\end{center}
+
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/88.png}
+\captionof{figure}{\label{4}Query Q1, Transformation Step 2}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/89.png}
+\captionof{figure}{\label{5}Query Q1, Transformation Step 3}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/90.png}
+\captionof{figure}{\label{6}Query Q1, Transformation Step 4}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/91.png}
+\captionof{figure}{\label{6}Query Q1, Transformation Step 5}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/92.png}
+\captionof{figure}{\label{7}Query Q1, Optional Transformation Step 6 (decoupling both sides)}
+\end{center}
+\subsection{Optimization of Example Query Q2}
+\label{sec:org558d9a9}
+\begin{center}
+\includegraphics[width=.6\textwidth]{../../images/papers/93.png}
+\captionof{figure}{\label{8}Query Q2, Optimized From with Sideways Information Passing}
+\end{center}
+\subsection{Anti-Join Example}
+\label{sec:orgca35b03}
+\begin{minted}[]{sql}
+select R.*
+from   R
+where  R.X = all (select S.Y
+                  from S
+                  where S.B = R.A)
+\end{minted}
+\section{Optimizations}
+\label{sec:orge45611f}
+The general unnesting case however has to add the projection to compute the domain \(D\), and the join
+with D, which causes some extra costs.
+
+In general, we can eliminate \(D\), if we can substitute it with values that already exist in the
+subtree anyway. This is commonly the case with equi-joins, for example the query contains the
+expression \(D\bowtie_{D.a=R.b}R\), we can learn the possible values of \(D.a\) that can make it to
+the original dependent join by inspecting the values of \(R.b\). The emphasized part of the statement
+is important, of course \(D\) can contain values that do not exist in \(R\), but these will never find
+a join partner and will thus never reach the original dependent join. We can therefore ignore them.
+
+To decide about substitution we must first analyze the query tree to find equivalence classes that are
+induced by the join and filter conditions. For example a filter condition \(\sigma_{a=b}\) implies
+that \(a\) and \(b\) are in the same equivalence class. We know that in the final result \(a\) and
+\(b\) have the same value, we can thus substitute \(a\) with \(b\). Computing these equivalence is
+relatively straight forward. One potential cause for problems would be outer joins, which can cause
+\(a\) and \(b\) to not be equal in the example above, but as the top-most join on \(D\) is known to be
+NULL-rejecting this is not an issue here.
+
+After having identified the equivalence classes \(C\), we can decide about a possible substitution as
+shown below:
+\begin{equation*}
+D\lfbowtie T\subseteq\chi_{\cala(D):B}(T)\quad\text{ if }\quad
+\exists B\subseteq\cala(T):\cala(D)\equiv_CB
+\end{equation*}
+Thus, instead of joining with \(D\), we can extend \(T\) and compute the implied attribute value from
+\(D\) by using the equivalent attributes. Note that this only holds because \(D\) is a set.
 \section{Problems}
-\label{sec:org273725f}
+\label{sec:orgd9d48e4}
 
 
 \section{References}
-\label{sec:org5a66ca9}
+\label{sec:orgd06bc5e}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 

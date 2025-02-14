@@ -123,7 +123,7 @@ where e.grade = (select min(e2.grade)
 
         *map*:
         \begin{equation*}
-        \chi_{a:f}:=\{x\circ(a:f(x))\mid x\in e\}
+        \chi_{a:f}(e):=\{x\circ(a:f(x))\mid x\in e\}
         \end{equation*}
 
         We define the attribute comparison operator \(=_A\) as
@@ -325,6 +325,34 @@ where  R.X = all (select S.Y
                   from S
                   where S.B = R.A)
         #+end_src
+
+* Optimizations
+        The general unnesting case however has to add the projection to compute the domain \(D\), and the join
+        with D, which causes some extra costs.
+
+        In general, we can eliminate \(D\), if we can substitute it with values that already exist in the
+        subtree anyway. This is commonly the case with equi-joins, for example the query contains the
+        expression \(D\bowtie_{D.a=R.b}R\), we can learn the possible values of \(D.a\) that can make it to
+        the original dependent join by inspecting the values of \(R.b\). The emphasized part of the statement
+        is important, of course \(D\) can contain values that do not exist in \(R\), but these will never find
+        a join partner and will thus never reach the original dependent join. We can therefore ignore them.
+
+        To decide about substitution we must first analyze the query tree to find equivalence classes that are
+        induced by the join and filter conditions. For example a filter condition \(\sigma_{a=b}\) implies
+        that \(a\) and \(b\) are in the same equivalence class. We know that in the final result \(a\) and
+        \(b\) have the same value, we can thus substitute \(a\) with \(b\). Computing these equivalence is
+        relatively straight forward. One potential cause for problems would be outer joins, which can cause
+        \(a\) and \(b\) to not be equal in the example above, but as the top-most join on \(D\) is known to be
+        NULL-rejecting this is not an issue here.
+
+        After having identified the equivalence classes \(C\), we can decide about a possible substitution as
+        shown below:
+        \begin{equation*}
+        D\lfbowtie T\subseteq\chi_{\cala(D):B}(T)\quad\text{ if }\quad
+        \exists B\subseteq\cala(T):\cala(D)\equiv_CB
+        \end{equation*}
+        Thus, instead of joining with \(D\), we can extend \(T\) and compute the implied attribute value from
+        \(D\) by using the equivalent attributes. Note that this only holds because \(D\) is a set.
 
 * Problems
 
