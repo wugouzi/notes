@@ -1,4 +1,4 @@
-% Created 2025-02-13 Thu 19:25
+% Created 2025-02-14 Fri 13:55
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -27,10 +27,10 @@ linenos}
 
 
 \date{\today}
-\title{Orthogonal Optimization Of Subqueries And Aggregation}
+\title{Orthogonal Optimization Of Subqueries And Aggregationn}
 \hypersetup{
  pdfauthor={},
- pdftitle={Orthogonal Optimization Of Subqueries And Aggregation},
+ pdftitle={Orthogonal Optimization Of Subqueries And Aggregationn},
  pdfkeywords={},
  pdfsubject={},
  pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)},
@@ -39,10 +39,10 @@ linenos}
 
 \maketitle
 \section{Introduction}
-\label{sec:org599abbf}
+\label{sec:orgc25cbe9}
 In this paper, we present subquery and aggregation techniques implemented in Microsoft SQL Server.
 \subsection{Standard subquery execution strategies}
-\label{sec:org36c090c}
+\label{sec:org2b0a137}
 Before describing subquery strategies in detail, it is important to clarify the two forms of
 aggregation in SQL, whose behavior diverges on an empty input.
 
@@ -93,7 +93,7 @@ from customer,
 where o_custkey = c_custkey
 \end{minted}
 \subsection{Our technique: Use primitive, orthogonal pieces}
-\label{sec:orgbaf466f}
+\label{sec:org246ed94}
 \begin{center}
 \includegraphics[width=.5\textwidth]{../../images/papers/95.png}
 \captionof{figure}{\label{1}Primitives connecting different execution strategies}
@@ -110,7 +110,7 @@ a degree of syntax-independence.
 \item \textbf{Reorder GroupBy}
 \end{itemize}
 \subsection{A useful tool: Represent parameterized execution algebraically}
-\label{sec:org4d25325}
+\label{sec:org6fc5651}
 \textbf{Apply} takes a relational input \(R\) and a parameterized expression \(E(r)\); it evaluates expression
 \(E\) for each row \(r\in R\), and collects the results. Formally,
 \begin{equation*}
@@ -141,28 +141,125 @@ R\SA_AE=\bigcup_{a}(\{a\}\times E(\sigma_{A=a}R))
 \end{equation*}
 where \(a\) takes all values in the domain of \(A\).
 \section{Representing and normalizing subqueries}
-\label{sec:org9c8abcb}
+\label{sec:orgc5e1c11}
 \subsection{Direct algebraic representation with mutual recursion}
-\label{sec:org0327870}
+\label{sec:orgae05b9b}
 \subsection{Algebraic representation with Apply}
-\label{sec:orgf914b49}
+\label{sec:orge4f5d82}
 \subsection{Removal of Apply}
-\label{sec:orgc3bc9ed}
+\label{sec:orgf052fcf}
 \begin{align*}
 R\cala^{\otimes}E&=R\otimes_{\text{true}}E\tag{1}\\
-\hspace{2cm}\text{if no parameters in \(E\) resolved from \(R\)}\\
+&\hspace{-0.7cm}\text{if no parameters in \(E\) resolved from \(R\)}\\
 R\cala^{\otimes}(\sigma_pE)&=R\otimes_pE\tag{2}\\
-\text{if no parameters in \(E\) resolved from \(R\)}
+&\hspace{-0.7cm}\text{if no parameters in \(E\) resolved from \(R\)}\\
+R\cala^\times(\sigma_pE)&=\sigma_p(R\cala^\times E)\tag{3}\\
+R\cala^\times(\pi_vE)&=\pi_{v\cup\text{columns}(R)}(R\cala^\times E)\tag{4}\\
+R\cala^\times(E_1\cup E_2)&=(R\cala^\times E_1)\cup(R\cala^\times E_2)\tag{5}\\
+R\cala^\times(E_1- E_2)&=(R\cala^\times E_1)-(R\cala^\times E_2)\tag{6}\\
+R\cala^\times(E_1\times E_2)&=(R\cala^\times E_1)\bowtie_{R.key}(R\cala^\times E_2)\tag{7}\\
+R\cala^\times(\calg_{A,F}E)&=\calg_{A\cup\text{columns}(R),F}(R\cala^\times E)\tag{8}\\
+R\cala^\times(\calg^1_FE)&=\calg_{\text{columns}(R),F'}(R\cala^{LOJ}E)\tag{9}
 \end{align*}
+
+
+In (9), \(F'\) contains aggregates in \(F\) expressed over a single-column - for example, if \(F\) is
+\texttt{COUNT(*)}, then \(F'\) is \texttt{COUNT(C)} for some not-nullable column \(C\) from \(E\). It is valid for all
+aggregates s.t. \(agg(\emptyset)=agg(\{null\})\), which is true for SQL aggregates.
+
+LOJ is left outerjoin
+
+The proof is in \cite{galindo-legaria2000parameterized}
+\subsection{All SQL subqueries}
+\label{sec:orgb7e102b}
+For boolean-valued subqueries, i.e., \texttt{EXISTS}, \texttt{NOT EXISTS}, \texttt{IN} subquery, and quantified comparisons, the
+subquery can be rewritten as a scalar \texttt{COUNT} aggregate. From the utilization context of the aggregate
+result, either equal to zero or greater than zero, it is possible for the aggregate operator to stop
+requesting rows as soon as one has bee found, since additional rows do not affect the result of the
+comparison.
+
+A common case that is further optimized is when a relational select has an existential subquery as its
+only predicate. In this case, the complete select operator is turned into Apply-semijoin for \emph{exists},
+or Apply-antisemijoin for \emph{not exists}. Such Apply is then converted into a non-correlated expression,
+if possible, using Identify (2).
+
+There are two scenarios where normalization into standard relational algebra operators is hindered in
+a fundamental way. We call those \textbf{exception subqueries} and they require scalar-specific features.
+Consider the following query.
+\begin{minted}[]{sql}
+-- Q2
+select c_name,
+       (select o_orderkey from orders
+        where o_custkey = c_custkey)
+from customer
+\end{minted}
+
+For every customer, output the customer name, and the result of a subquery that retrieves an oderkey.
+There are three cases: If exactly one row is returned from the subquery, then such value is used in
+the scalar expression; if no rows are returned, then null is used; finally, if more than one row is
+returned, then a run-time error is generated. We call such operator \texttt{Max1row}.
+\subsection{Subquery classes}
+\label{sec:org2be17e6}
+\subsubsection{Class 1. Subqueries that can be removed with no additional common subexpressions}
+\label{sec:org2591474}
+In general, removing Apply requires introduction of additional common subexpressions. E.g., Identity
+(5) introduces two copies of \(R\).
+
+The common case of subqueries that are formed by a simple select/project/join/aggregate block are easy
+to handle.
+\subsubsection{Class 2. Subqueries that are removed by introducing common subexpressions}
+\label{sec:org2d4aee7}
+It is hard to formulate a short, meaningful query that fits in this class, using the TPCH schema.
+\subsubsection{Class 3. Exception subqueries}
+\label{sec:org88fe12c}
+\section{Comprehensive optimization of aggregation}
+\label{sec:org15a1c0e}
+\subsection{Reordering GroupBy}
+\label{sec:orgbc173a7}
+We will denote GroupBy as \(\calg_{A,F}\), where \(A\) is the set of grouping columns and \(F\) are
+the aggregate functions.
+
+We can move a filter around a GroupBy iff all the columns used in the filter are functionally
+determined by the grouping columns in the input relation.
+
+A GroupBy can be pushed below a join if the grouping columns, the aggregate calculations and the join
+predicate each satisfy certain conditions. Suppose we have a GroupBy above a join of two relations,
+i.e., \(\calg_{A,F}(S\bowtie_pR)\), and we want to push the GroupBy below the join so that the
+relation \(R\) is aggregated before it is joined, i.e.,
+\begin{equation*}
+S\bowtie_p(\calg_{A\cup\text{columns}(p)-\text{columns}(S),F}R)
+\end{equation*}
+\wu{
+Assuming \(S\) and \(R\) have no common columns, and \(p\) has columns from \(S\), so we need to
+filter them out.
+}
+This is feasible iff the following conditions are met:
+\begin{enumerate}
+\item If a column used in the join predicate \(p\) is defined by the relation \(R\) then it is part of
+the grouping columns
+\item The key of the relation \(R\) \wu{typo in the paper} is part of the grouping columns
+\item The aggregate expressions only use columns defined by the relation \(R\)
+\end{enumerate}
+
+Pulling a GroupBy above a join is a lot easier. All that is required is that the relation being joined
+has a key and that the join predicate does not use the results of the aggregate functions.
+\begin{equation*}
+S\bowtie_p(\calg_{A,F}R)=\calg_{A\cup\text{columns}(S),F}(S\bowtie_pR)
+\end{equation*}
+
+One can think of semijoins and antisemijoins as filters since they include or exclude rows of a
+relation based on the column values. The conditions necessary to reorder these operators around
+\subsection{Moving GroupBy around an outerjoin}
+\label{sec:org5c2ce2e}
+Removing correlations for scalar valued subqueries results in an outerjoin followed by a GroupBy.
 \section{Problems}
-\label{sec:orga570c03}
+\label{sec:orge6cf44d}
 
 
 \section{References}
-\label{sec:org28b8c3e}
+\label{sec:org58f5545}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 
-\label{bibliography link}
-\bibliography{../../../references}
+\bibliography{/Users/wu/notes/notes/references.bib}
 \end{document}

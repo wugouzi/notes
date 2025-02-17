@@ -5,6 +5,7 @@
 #+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/orthogonal_optimization_of_subqueries_and_aggregation.tex
 #+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
 #+LATEX_HEADER: \DeclareMathOperator{\SA}{\mathcal{SA}}
+#+LATEX_HEADER: \DeclareMathOperator{LOJ}{\text{LOG}}
 #+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
 #+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
 #+LATEX_HEADER: \setminted{breaklines,
@@ -138,6 +139,8 @@ where o_custkey = c_custkey
         aggregates s.t. \(agg(\emptyset)=agg(\{null\})\), which is true for SQL aggregates.
 
         LOJ is left outerjoin
+
+        The proof is in [[cite:&galindo-legaria2000parameterized]]
 ** All SQL subqueries
         For boolean-valued subqueries, i.e., ~EXISTS~, ~NOT EXISTS~, ~IN~ subquery, and quantified comparisons, the
         subquery can be rewritten as a scalar ~COUNT~ aggregate. From the utilization context of the aggregate
@@ -209,7 +212,35 @@ from customer
         One can think of semijoins and antisemijoins as filters since they include or exclude rows of a
         relation based on the column values. The conditions necessary to reorder these operators around
 ** Moving GroupBy around an outerjoin
+        Removing correlations for scalar valued subqueries results in an outerjoin followed by a GroupBy.
 
+        In order to push a GroupBy below an outer join the join predicate, grouping columns and the aggregate
+        calculations once again have to meet the three conditions mentioned above. The only difference is that
+        an extra project may have to be added above the outerjoin if the aggregate expressions do not meet a
+        certain condition.
+
+        The result of an outerjoin has two types of rows vis. those that match, and those that do not and are
+        padded with NULLs. We know that our grouping columns include a key of the outer relation. This implies
+        that a group can never have both matched and unmatched rows. For the rows that match, correctness can
+        be proved by using the same argument as join. For the rows that do not match, early aggregation means
+        that they will not be aggregated at all. This is where the extra condition and the optional project
+        comes in.
+
+        In the result of an outerjoin, an unmatched row appears exactly once. Therefore given that our
+        grouping columns include the key of the outer relation, a group that has an unmatched row cannot have
+        any other row. The aggregate functions use only the columns from the non-outer relation. For an
+        unmatched row all these columns are NULL. Therefore the property of aggregate expressions that is
+        important to us is the result of applying it to NULLs. If the result is NULL as it is for most simple
+        aggregate expressions, we need do nothing more. The outerjoin will automatically provide the NULLs we
+        need. For the aggregate expressions which do not result in a NULL, we need to add a project which for
+        each unmatched row sets the aggregate result to the appropriate constant value. Note that this
+        constant can be calculated at compile time. For ~count(*)~, the value of this constant is zero.
+
+        Formally, we have
+        \begin{equation*}
+        \calg_{A,F}(S\LOJ_pR)=\pi_c(S\LOJ_p(\calg_{A-\text{columns}(S),F}R))
+        \end{equation*}
+** Local Aggregates
 * Problems
 
 
@@ -217,5 +248,4 @@ from customer
 <<bibliographystyle link>>
 bibliographystyle:alpha
 
-<<bibliography link>>
-bibliography:/Users/wu/notes/references.bib
+\bibliography{/Users/wu/notes/notes/references.bib}

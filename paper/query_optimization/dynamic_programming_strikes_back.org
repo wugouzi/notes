@@ -121,7 +121,7 @@
         \bbar{\min}(S)=S\setminus \min(S)
         \end{equation*}
 
-        We define the set of non-subsumed hyperedges a s the minimal subset \(E\downarrow\) of \(E\) s.t. for
+        We define the set of non-subsumed hyperedges as the minimal subset \(E\downarrow\) of \(E\) s.t. for
         all \((u,v)\in E\) there exists a hyperedge \((u',v')\in E\downarrow\) with \(u'\subseteq u\) and
         \(v'\subseteq v\). Additionally, we make sure that none of the nodes of a hypernode are contained in a
         set \(X\), which is to be excluded from neighborhood considerations. We thus define a set containing
@@ -147,6 +147,42 @@
         E\downarrow(S,X)=\{\{R_4,R_5,R_6\}\}\\
         \caln(S,X)=\{R_4\}
         \end{gather*}
+* The algorithm
+        High level:
+        1. Constructs ccps (csg-cmp-pair) by enumerating connected subgraphs from an increasing part of the query graph
+        2. both the primary connected subgraphs and its connected complement are created by recursive graph traversals
+        3. during traversal, some nodes are *forbidden* to avoid creating duplicates
+        4. connected subgraphs are increased by following edges to neighboring nodes. For this purpose
+           hyperedges are interpretaed as \(n:1\) edges, leading from \(n\) of one side to one canonical nodes
+           of the other side.
+
+        Summarizing the above, the algorithm traverses the graph in a fixed order and recursively produces
+        larger connected sub- graphs.
+
+        We give the implementation of our join ordering algorithm for hypergraphs by means of pseudocode for
+        member functions of a class ~DPhyp~.
+
+        The whole algorithm is distributed over five subroutines.
+        * The top-level routine ~Solve~ initializes the dynamic programming table with access plans for single
+          relations and then calls ~EmitCsg~ and ~EnumerateCsgRec~ for each set containing exactly one relation.
+        * The member function ~EnumerateCsgRec~ is responsible for enumerating connected subgraphs. It does so
+          by calculating the neighborhood and iterating over each of its subset.
+        * For each such subset \(S_1\) , ~EnumerateCsgRec~ calls ~EmitCsg~. This member function is responsible
+          for finding suitable complements.
+        * ~EmitCsg~ does so by calling ~EnumerateCmpRec~, which recursively enumerates the complements \(S_2\) for
+          the connected subgraph \(S_1\) found before.
+        * The pair \((S_1,S_2)\) is a csg-cmp-pair. For every such pair, ~EmitCsgCmp~ is called. Its main
+          responsibility is to consider a plan built up from the plans for \(S_1\) and \(S_2\) .
+** Solve
+        \begin{align*}
+        &\texttt{Solve}()\\
+        &\textbf{for each }v\in V\quad\text{// initialize dpTable}\\
+        &\quad\text{dpTable}[\{v\}]=\text{plan for }v\\
+        &\textbf{for each }v\in V\textbf{ descending }\text{according to }\prec\\
+        &\quad\texttt{EmitCsg}(\{v\})\quad\text{// process singleton sets}\\
+        &\quad\texttt{EnumerateCsgRec}(\{v\},\calb_v)\quad\text{// expand singleton sets}\\
+        &\textbf{return }\text{dpTable}[V]
+        \end{align*}
 * Problems
 
 
