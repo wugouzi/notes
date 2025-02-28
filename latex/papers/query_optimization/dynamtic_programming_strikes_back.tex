@@ -1,4 +1,4 @@
-% Created 2025-02-12 Wed 20:35
+% Created 2025-02-18 Tue 13:28
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -32,13 +32,13 @@
 
 \maketitle
 \section{Introduction}
-\label{sec:org8e58a5c}
+\label{sec:org7a2460f}
 In this paper, we introduct \texttt{DPhyp}. Experiments will shwo that it is highly superior to existing
 approaches.
 \section{Hypergraphs}
-\label{sec:org783f34e}
+\label{sec:org450b895}
 \subsection{Definitions}
-\label{sec:org15be184}
+\label{sec:orgefef46d}
 \begin{definition}[Hypergraph]
 A \textbf{hypergraph} is a pair \(H=(V,E)\) s.t.
 \begin{enumerate}
@@ -104,7 +104,7 @@ assured by adding according hyperedges: for every pair of connected components, 
 whose hypernodes contain exactly the relations of the connected components. By considering these
 hyperedges as \(\bowtie\) operators with selectivity 1, we get an equivalent connected hypergraph
 \subsection{Csg-cmp-pair}
-\label{sec:org317a7fe}
+\label{sec:orgeeff945}
 \begin{definition}[Csg-cmp-pair]
 Let \(H=(V,E)\) be a hypergraph and \(S_1\), \(S_2\) two subsets of \(V\) s.t. \(S_1\subseteq V\) and
 \(S_2\subseteq(V\setminus S_1)\) are a connected subgraph and a connected complement. If there further
@@ -126,7 +126,7 @@ acceptable for dynamic programming. The latter can be expressed more specificall
 a csg-cmp-pair \((S_1,S_2)\), all csg-cmp-pairs \(S_1',S_2'\) with \(S_1'\subseteq S\) and
 \(S_2'\subseteq S_2\) have to be enumerated.
 \subsection{Neighborhood}
-\label{sec:orgd506c6d}
+\label{sec:org95aaf8b}
 The main idea to generate csg-cmp-pairs is to incrementally expand connected subgraphs by considering
 new nodes in the \textbf{neighborhood} of a subgraph. Informally, the neighborhood \(N(S)\) under an exclusion
 set \(X\) consists of all nodes reachable from \(S\) that are not in \(X\). We derive an exact
@@ -147,7 +147,7 @@ contained in any set emitted. We thus define
 \bbar{\min}(S)=S\setminus \min(S)
 \end{equation*}
 
-We define the set of non-subsumed hyperedges a s the minimal subset \(E\downarrow\) of \(E\) s.t. for
+We define the set of non-subsumed hyperedges as the minimal subset \(E\downarrow\) of \(E\) s.t. for
 all \((u,v)\in E\) there exists a hyperedge \((u',v')\in E\downarrow\) with \(u'\subseteq u\) and
 \(v'\subseteq v\). Additionally, we make sure that none of the nodes of a hypernode are contained in a
 set \(X\), which is to be excluded from neighborhood considerations. We thus define a set containing
@@ -175,12 +175,80 @@ E\downarrow'(S,X)=\{\{R_4,R_5,R_6\}\}\\
 E\downarrow(S,X)=\{\{R_4,R_5,R_6\}\}\\
 \caln(S,X)=\{R_4\}
 \end{gather*}
+\section{The algorithm}
+\label{sec:org017a573}
+High level:
+\begin{enumerate}
+\item Constructs ccps (csg-cmp-pair) by enumerating connected subgraphs from an increasing part of the query graph
+\item both the primary connected subgraphs and its connected complement are created by recursive graph traversals
+\item during traversal, some nodes are \textbf{forbidden} to avoid creating duplicates
+\item connected subgraphs are increased by following edges to neighboring nodes. For this purpose
+hyperedges are interpretaed as \(n:1\) edges, leading from \(n\) of one side to one canonical nodes
+of the other side.
+\end{enumerate}
+
+Summarizing the above, the algorithm traverses the graph in a fixed order and recursively produces
+larger connected sub- graphs.
+
+We give the implementation of our join ordering algorithm for hypergraphs by means of pseudocode for
+member functions of a class \texttt{DPhyp}.
+
+The whole algorithm is distributed over five subroutines.
+\begin{itemize}
+\item The top-level routine \texttt{Solve} initializes the dynamic programming table with access plans for single
+relations and then calls \texttt{EmitCsg} and \texttt{EnumerateCsgRec} for each set containing exactly one relation.
+\item The member function \texttt{EnumerateCsgRec} is responsible for enumerating connected subgraphs. It does so
+by calculating the neighborhood and iterating over each of its subset.
+\item For each such subset \(S_1\) , \texttt{EnumerateCsgRec} calls \texttt{EmitCsg}. This member function is responsible
+for finding suitable complements.
+\item \texttt{EmitCsg} does so by calling \texttt{EnumerateCmpRec}, which recursively enumerates the complements \(S_2\) for
+the connected subgraph \(S_1\) found before.
+\item The pair \((S_1,S_2)\) is a csg-cmp-pair. For every such pair, \texttt{EmitCsgCmp} is called. Its main
+responsibility is to consider a plan built up from the plans for \(S_1\) and \(S_2\) .
+\end{itemize}
+
+
+\begin{center}
+\includegraphics[width=.99\textwidth]{../../images/papers/97.png}
+\captionof{figure}{\label{3}Trace of algorithm For Figure 2}
+\end{center}
+\subsection{Solve}
+\label{sec:orgae8c5da}
+\begin{align*}
+&\texttt{Solve}()\\
+&\textbf{for each }v\in V\quad\text{// initialize dpTable}\\
+&\quad\text{dpTable}[\{v\}]=\text{plan for }v\\
+&\textbf{for each }v\in V\textbf{ descending }\text{according to }\prec\\
+&\quad\texttt{EmitCsg}(\{v\})\quad\text{// process singleton sets}\\
+&\quad\texttt{EnumerateCsgRec}(\{v\},\calb_v)\quad\text{// expand singleton sets}\\
+&\textbf{return }\text{dpTable}[V]
+\end{align*}
+\subsection{EnumerateCsgRec}
+\label{sec:org8bea9ec}
+\begin{align*}
+&\texttt{EnumerateCsgRec}(S_1,X)\\
+&\textbf{for each }N\subseteq\caln(S_1,X):N\neq\emptyset\\
+&\quad\textbf{if }\text{dpTable}[S_1\cup N]\neq\emptyset\\
+&\quad\quad\texttt{EmitCsg(S_1\cup N)}
+\end{align*}
+\subsection{EmitCsg}
+\label{sec:org32c6212}
+\begin{align*}
+&\texttt{EmitCsg}(S_1)\\
+&X=S_1\cup\calb_{\min(S_1)}\\
+&N=\caln(S_1,X)\\
+&\textbf{for each }v\in N\textbf{ descending }\text{according to }\prec\\
+&\quad S_2=\{v\}\\
+&\quad\textbf{if }\exists(u,v)\in E:u\subseteq S_1\wedge v\subseteq S_2\\
+&\quad\quad\texttt{EmitCsgCmp}(S_1,S_2)\\
+&\quad\texttt{EnumerateCmpRec}(S_1,S_2,X)
+\end{align*}
 \section{Problems}
-\label{sec:org77342fd}
+\label{sec:org15f8b18}
 
 
 \section{References}
-\label{sec:orgde00f46}
+\label{sec:org2653cac}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 

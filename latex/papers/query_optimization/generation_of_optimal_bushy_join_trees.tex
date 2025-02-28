@@ -1,0 +1,442 @@
+% Created 2025-02-25 Tue 19:54
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/query_optimization/}}
+\DeclareMathOperator{\csg}{\texttt{csg}}
+\DeclareMathOperator{\ccp}{\texttt{ccp}}
+\DeclareMathOperator{\ncsg}{\#\texttt{csg}}
+\DeclareMathOperator{\nccp}{\#\texttt{ccp}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Analysis of Two Existing and One New Dynamic Programming Algorithm for the Generation of Optimal Bushy Join Trees without Cross Products}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Analysis of Two Existing and One New Dynamic Programming Algorithm for the Generation of Optimal Bushy Join Trees without Cross Products},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 31.0.50 (Org mode 9.8-pre)},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:org4a98df8}
+Problem: Find the optimal join order
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/98.png}
+\captionof{figure}{\label{1}Algorithm \texttt{DPsize}}
+\end{center}
+\section{Algorithms and Analysis}
+\label{sec:orgf471c8c}
+\subsection{Size-Driven Enumeration}
+\label{sec:org99448b4}
+We can construct optimal plans of size \(n\) by joining plans \(P_1\) and \(P_2\) of size \(k\) and
+\(n-k\). We just have to take:
+\begin{enumerate}
+\item the sets of relations contained in \(P_1\) and \(P_2\) do not overlap
+\item there is a join predicate connecting a relation in \(P_1\) with a relation in \(P_2\)
+\end{enumerate}
+
+
+The algorithm \texttt{DPsize} can be made more efficient in case of \(s_1=s_2\). Assume that plans of equal
+size are repenseted as a linked list. If \(s_1=s_2\), then it is possible to iterate through the list
+for retriving all plans \(p_1\). For \(p_2\) we consider the plans succeeding \(p_1\)in the list.
+Thus, the complexity can be decreased to \(s_1\times s_2/2\).
+\subsection{Subset-Driven Enumeration}
+\label{sec:org5610336}
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/99.png}
+\captionof{figure}{\label{2}Algorithm \texttt{DPsub}}
+\end{center}
+\subsection{Algorithm-Independent Results}
+\label{sec:orgc876a0f}
+\subsubsection{Definition of \texttt{csg} and \texttt{ccp}}
+\label{sec:orgae5c0aa}
+Consider a join ordering problem with \(n\) relations \(R_0,\dots,R_{n-1}\). We assume the query graph
+to be connected. Any subset \(S\) of \(\{R_0,\dots,R_{n-1}\}\) induces a subgraph of the query. If the
+subgraph induced by \(S\) is connected, we call \(S\) a \textbf{connected subset} or simply \textbf{connected}. For a
+given query graph \(G\) in \(n\) relations, we denote by \(\#\csg_G\) the number of non-empty
+connected subgraphs/subsets. For a given kind of query graph, every \(n\) uniquely determines a query
+graph. Since the kind of query graph will always be clear from the context, we write \(\ncsg(n)\).
+
+Let \(S_1\) and \(S_2\) be two subsets of \(\{R_0,\dots,R_{n-1}\}\). If there is a join predicate
+between a relation in \(S_1\) and another relation in \(S_2\), we call \(S_1\) and \(S_2\) \textbf{connected}.
+Since we want to enumerate only bushy trees without cross products, we are only interested in
+connected sets \(S_1\) and \(S_2\) which are connected. Moreover, in order to form a valid join tree
+for relations in \(S:=S_1\cup S_2\), \(S_1\) and \(S_2\) may not overlap
+
+Summarizing, during plan generation we are interested in pairs \((S_1,S_2)\) where
+\begin{itemize}
+\item \(S_1\) is a non-empty subset of \(\{R_0,\dots,R_{n-1}\}\)
+\item \(S_2\) is a non-empty subset of \(\{R_0,\dots,R_{n-1}\}\)
+\end{itemize}
+s.t.
+\begin{enumerate}
+\item \(S_1\) is connected
+\item \(S_2\) is connected
+\item \(S_1\cap S_2\)
+\item there exists nodes \(v_1\in S_1\) and \(v_2\in S_2\) s.t. there is an edge between \(v_1\) and
+\(v_2\) in the query graph
+\end{enumerate}
+
+Let's call such a pair \textbf{csg-cmp-pair}. Here csg is the abbreviation of connected subgraph and cmp is the
+abbreviation of complement.
+
+In the following, we are interested in
+\begin{enumerate}
+\item the number of connected, non-empty subsets
+\item the number of csg-cmp-pairs
+\end{enumerate}
+
+We denote the total number of csg-cmp-pairs including symmetric pairs by \(\nccp\).
+Ono and Lohman counted the number of csg-cmp-pairs by excluding symmetric pairs
+
+For any correct dynamic programming algorithm \(\nccp\) provides a lower bound on the number of calls
+to \texttt{CreateJoinTree}
+\section{The New Algorithm \texttt{DPccp}}
+\label{sec:org25399e6}
+\subsection{Problem Statement}
+\label{sec:orgdac8070}
+If the search space is sparse, the \texttt{DPsub} algorithm considers many subproblems which are not connected
+and, therefore, are not relevant for the solution.
+
+The main idea of \texttt{DPccp} is that it only considers pairs of connected subproblems.
+
+Thus, our goal is to efficiently enumerate all csg-cmp-pairs \((S_1,S_2)\). Requirements:
+\begin{enumerate}
+\item Enumerate every pair once and only once.
+\item whenever a pair \((S_1,S_2)\) is generated, all non-empty subsets of \(S_1\) and \(S_2\) must have
+been generated before as a component of a pair.
+\item overhead for generating a single csg-cmp-pair must be constant or at most linear
+\end{enumerate}
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/100.png}
+\captionof{figure}{\label{i4}Algorithm \texttt{DPccp}}
+\end{center}
+\subsection{Enumerating Connected Subsets}
+\label{sec:orgcb4c3da}
+Let \(G=(V,E)\) be an undirected graph. For a node \(v\in V\) define the \textbf{neighborhood} \(\caln(v)\) of
+\(v\) as \(\caln(v):=\{v'\mid (v,v')\in E\}\). For a subset \(S\subseteq V\) of \(V\) we define the
+\textbf{neighborhood} of \(S\) as \(\caln(S):=\bigcup_{v\in S}\caln(v)\setminus S\). Note that for all
+\(S,S'\subset V\) we have \(\caln(S\cup S')=(\caln(S)\cup\caln(S'))\setminus(S\cup S')\). This allows
+for an efficient bottom-up calculation.
+
+Let \(S\) be a connected subset of an undirected graph \(G\) and \(S'\) be any subset of \(\caln(S)\).
+Then \(S\cup S'\) is connected. As a consequence, a connected subset can be enlarged by adding any
+subset of its neighborhood.
+
+We could generate all connected subsets as follows. For every node \(v_i\in V\) we perform the
+following enumeration steps:
+\begin{enumerate}
+\item Emit \(\{v_i\}\) as a connected subset
+\item Expand \(\{v_i\}\) by calling a routine that extends a given connected set to bigger connected sets
+\item let the routine be called with some connected set \(S\). It then calculates the neighborhood
+\(\caln(S)\)
+\item For every non-empty subset \(N\subseteq\caln(S)\), it emits \(S'=S\cup N\) as a further connected
+subset and resurcively calls itself with \(S'\)
+\end{enumerate}
+The problem with this routine is that it produces duplicates.
+
+This is the point where the breadth-first numbering comes into play. Let \(V=\{v_0,\dots,v_{n-1}\}\),
+where the indices are consistent with a breadth-first numbering produced by a breadth-first search
+starting at node \(v_0\). The idea is to use the numbering to define an enumeration order: In order to
+avoid duplicates, the algorithm enumerates connected subgraphs for every node \(v_i\), but restricts
+them to contain no \(v_j\) with \(j<i\). Using the definition \(\calb_i=\{v_j\mid j\le i\}\), the
+pseudocode looks as follows:
+
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/101.png}
+\captionof{figure}{\label{4.1}Algorithm \texttt{EnumerateCsg}}
+\end{center}
+
+Lets's consider an example. Figure \ref{6} contains a query graph. The calls to \texttt{EnumerateCsgRec} are
+contained in the table \ref{7}. In this table, \(S\) and \(X\) are the arguments of \texttt{EnumerateCsgRec}.
+\(N\) is the local variable after its initialization. The column \(\text{emit}/S\) contains the
+connected subset emitted, which then becomes the argument of the recursive call to \texttt{EnumerateCsgRec}
+(labelled by \(\to\))
+
+\begin{center}
+\includegraphics[width=.5\textwidth]{../../images/papers/103.png}
+\captionof{figure}{\label{i6}Sample graph to illustrate \texttt{EnumerateCsgRec}}
+\end{center}
+
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/102.png}
+\captionof{figure}{\label{i7}Call sequence for Figure \ref{6}}
+\end{center}
+\subsection{Enumerating Complements of Connected Subgraphs}
+\label{sec:org227b54a}
+We have to generate all csg-cmp-pairs. The basic idea to do so is as follows. Algorithm \texttt{EnumerateCsg}
+is used to create the first component \(S_1\) of every csg-cmp-pair. Then, for each such \(S_1\), we
+generate all its complement components \(S_2\). This can be done by calling \texttt{EnumerateCsgRec} with the
+correct parameters.
+
+We need some definitions to state the actual algorithm., Let \(S_1\subseteq V\) be a non-empty subset
+of \(V\). Then, we need to define \(\min(S_1):=\min(\{i\mid v_i\in S_1\})\). This is used to extract
+the starting node from which \(S_1\) was constructed. Let \(W\subset V\) be a non-empty subset of
+\(V\). Then we define \(\calb_i(W):=\{v_j\mid v_j\in W,j\le i\}\).
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../../images/papers/104.png}
+\captionof{figure}{\label{233}Algorithm \texttt{EnumerateCmp}}
+\end{center}
+
+Consider the graph \ref{6}. Assume \texttt{EnumerateCmp} is called with \(S_1=\{R_1\}\). Then \(X=\{R_0,R_1\}\).
+\(N=\{R_0,R_4\}\setminus\{R_0,R_1\}=\{R_4\}\). Now we get a pair \((\{R_1\},\{R_4\})\).
+Then the recursive call to \texttt{EnumerateCsgRec} follows with arguments \(G\), \(\{R_4\}\) and
+\(\{R_0,R_1,R_4\}\). Subsequent \texttt{EnumerateCsgRec} generates the connected sets \(\{R_2,R_4\}\),
+\(\{R_3,R_4\}\) and \(\{R_2,R_3,R_4\}\), giving three more csg-cmp-pairs.
+\subsection{Correctness Proof}
+\label{sec:org6580ae3}
+\subsubsection{Preliminaries}
+\label{sec:orga0774e3}
+The correctness of \texttt{DPccp} follows if the csg-cmp-pairs are enumerated correctly, as it simply
+enumerates all possible pairs and fills the DP table accordingly. Therefore, we only have to prove the
+correctness of the functions \texttt{EnumerateCsg}, \texttt{EnumerateCsgRec} and \texttt{EnumerateCmp}. The rest of this section
+is independent of the join ordering problem. Thus, we concentrate on undirected graphs.
+
+Given a connected undirected graph \(G=(V,E)\), we want to enumerate all vertices \(V'\subseteq V\),
+s.t. \(G'=(V',E|_{V'})\) is a connected subgraph of \(G\), where
+\(E|_{V'}=\{(v,v')\in E\mid v,v'\in V'\}\). We denote the direct neighbors of a node \(v\) by
+\begin{equation*}
+\caln(v)=\{v'\in V\mid(v,v')\in E\}
+\end{equation*}
+Indirect neighbors are collected into sets \(\caln_i(v)\):
+\begin{align*}
+\caln_0(v)&=\{v\}\\
+\caln_1(v)&=\caln(v)\\
+\caln_{i+1}(v)&=\left(\bigcup_{v'\in\caln_i(v)}\caln(v')\right)\setminus\left(\bigcup_{j=0}^i\caln_j(v)\right)
+\end{align*}
+If a vertex \(v\in V\) has a label, the label is determined by \(L(v)\). The labels will be unique,
+therefore we can identify a vertex by its label: \(v=v_{L(v)}\)
+
+We assume that the graph \(G\) contains no self-cycles, i.e., \(\exists v\in V:(v,v)\in E\).
+Furthermore, we assume that the vertices in the graph are labeled in a breadth-first manner. That is,
+we demand that
+\begin{itemize}
+\item there exists one vertex \(v_0\in V\) that has the label 0
+\item the vertices in \(\caln_1(v_0)\) have labels in \([1,\abs{\caln_1(v_0)}]\)
+\item the vertices in \(\caln_k(v_0)\) have labels in
+\(\left[\sum_{i=0}^{k-1}\abs{\caln_i(v_0)},\sum_{i=0}^k\abs{\caln_i(v_0)}\right]\)
+\end{itemize}
+\subsubsection{Correctness of \texttt{EnumerateCsg}}
+\label{sec:org7b55145}
+\begin{lemma}[]
+\label{1}
+Algorithm \texttt{EnumerateCsg} terminates if \(G\) is a finite graph
+\end{lemma}
+
+\begin{lemma}[]
+\label{2}
+Algorithm \texttt{EnumerateCsg} enumerates only connected components
+\end{lemma}
+
+\begin{proof}
+Induction on the recursion depth \(n\).
+
+\(n=0\): Singleton is a connected component.
+
+Induction: \texttt{EnumerateCsgRec} at recursion level \(n+1\) is called with a connected component \(S\) (IH)
+and considers only vertices that are connected to vertices in \(S\). Any subset of \(N\) can be added
+to \(S\) to form a connected component
+\end{proof}
+
+\begin{lemma}[]
+\label{5}
+Given a connected undirected graph \(G=(V,E)\), a vertex \(v\in V\), a natural number \(n\ge 0\), and
+\(V_n'=\bigcup_{i=0}^n\caln_i(v)\). Then \((V_n',E|_{V_n'})\) is a connected component.
+\end{lemma}
+
+\begin{lemma}[]
+Given a connected, undirected graph \(G=(V,E)\) and a vertex \(v\in V\). Then \(\exists n\ge 0\) s.t.
+\(\forall_{0\le i\le n}\caln_i(v)\neq\emptyset\) and \(\forall_{i>n}\caln_i(v)=\emptyset\)
+\end{lemma}
+
+\begin{lemma}[]
+Given a connected, undirect graph \(G=(V,E)\), \(\abs{V}>1\) and a set of vertices \(V'\subseteq V\)
+s.t. \((V',E|_{V'})\) is a connected component. Then \(\exists v\in V'\) s.t.
+\((V'\setminus\{v\},E|_{V'\setminus\{v\}})\) is a connected component.
+\end{lemma}
+
+\begin{proof}
+Let \(G'=(V',E|_{V'})\) be a connected undirected graph and the base to compute \(\caln(v)\) and
+\(\caln_i(v)\). Choose arbitrary \(v_0\in V'\) and a natural number \(n\) s.t.
+\(\caln_n(v_0)\neq\emptyset\wedge\caln_{n+1}(v_0)=\emptyset\). Note that \(n>0\) as \(\abs{V'}>1\) and
+that \(\bigcup_{0\le i\le n}\caln_i(v_0)=V'\). Now any \(v\in\caln_n(v_0)\) can be removed.
+\end{proof}
+
+\begin{lemma}[]
+When \texttt{EnumerateCsgRec} is called with additional vertices, it enumerates at least the same components as
+without the vertices. More formally:
+\begin{gather*}
+\{V\cup A\mid(V,E)\text{ enumerated by }\texttt{EnumerateCsgRec}(G,S,X)\}\subseteq\\
+\{V\mid(V,E)\text{ enumerated by }\texttt{EnumerateCsgRec}(G,S\cup A,X)\}
+\end{gather*}
+\end{lemma}
+
+\begin{lemma}[]
+\label{7}
+Algorithm \texttt{EnumerateCsg} enumerates all connected components consisting of a single vertex
+\end{lemma}
+
+\begin{lemma}[]
+Algorithm \texttt{EnumerateCsg} enumerates all connected components
+\end{lemma}
+
+\begin{proof}
+By contradiction. We assume that not all connected components are enumerated. Thus
+\(\exists V'\subseteq V\wedge V\neq\emptyset\) s.t. \((V',E|_{V'})\) is a connected component and
+\(V'\) is not enumerated. If several such \(V'\) exists, we choose \(V'\) s.t. \(\abs{V'}\) is
+minimal. Then \(\abs{V'}>1\) by Lemma \ref{7} and we can delete a vertice \(v'\) from \(V'\) by Lemma \ref{5} and
+get a new connected component which is enumerated.
+
+Case 1: \(v'\) appeared in \(N\) during the enumeration of \(V'\setminus\{v\}\), then \(V'\) would be
+enumerated by Lemma \ref{6}
+
+Case 2: \(v'\) did not appear in \(N\) during the enumeration of \(V'\setminus\{v'\}\). Since \(v'\)
+is connected to \(V'\setminus\{v'\}\), it must have been excluded, i.e.,
+\(L(v')<\min(\{L(v)\mid v\in V'\setminus\{v'\}\})\). Then \texttt{EnumerateCsg} will enumerate \(V'\) when
+selecting \(v'\) as the start vertex
+\end{proof}
+
+\begin{lemma}[]
+\label{9}
+If \(V'\) and \(V''\) are both enumerated and
+\(\min(\{L(v)\mid v\in V'\})=\min(\{L(v)\mid v\in V''\})\), \(V'\) and \(V''\) are enumerated using
+the same start vertex
+\end{lemma}
+
+\begin{lemma}[]
+\label{10}
+Algorithm \texttt{EnumerateCsg} enumerates all connected components only once
+\end{lemma}
+
+\begin{proof}
+By contradiction. Choose  \(V'\subseteq V\) that is enumerated at least twice and is of minimal
+cardinality.
+
+Case 1: \(\abs{V'}=1\)
+
+Case 2: \(\abs{V'}>1\). By Lemma \ref{9}, all enumerations of \(V'\) started with the same vertex and
+\(X\).
+
+A single invocation of \texttt{EnumerateCsgRec} (without the recursive call) does not produce duplicates.
+\(V'\) cannot be enumerated by two different calls to \texttt{EnumerateCsgRec} with the same parameters, as
+\(\abs{V'}\) is minimal. Thus there exists \(S_1,S_2,X_1,X_2\subseteq V\) s.t. \(S_1\neq S_2\),
+\(S_1,S_2,X_1,X_2\) are constructed by \texttt{EnumerateCsgRec} starting from the same start vertex and both
+\(\texttt{EnumerateCsgRec}(G,S_1,X_1)\) and \(\texttt{EnumerateCsgRec}(G,S_2,X_2)\) enumerate \(V'\).
+Hence
+\begin{equation*}
+(V'\setminus S_1)\cap X_1=\emptyset\wedge
+(V'\setminus S_2)\cap X_2=\emptyset
+\end{equation*}
+
+As \(S_1\neq S_2\), there exists a invocation of \texttt{EnumerateCsgRec}, that recursively calls
+\texttt{EnumerateCsgRec} with \(S_1'\) and \(S_2'\), which finally lead to \(S_1\) and \(S_2\). Let \(Y\) be
+the corresponding exclusion filter in line 6. Then
+\begin{gather*}
+\exists v\in (S_1'\cup S_2'):v\notin(S_1'\cap S_2')\wedge v\in Y\\
+((v\in S_1\wedge v\notin S_2)\vee(v\notin S_1\wedge v\in S_2))\wedge(v\in Y)\\
+v\in V'\wedge v\notin V'
+\end{gather*}
+
+\wu{
+Essentially, \(S_1\neq S_2\) but \(X_1=X_2\). Now \(v\in X_2=X_1\), \(v\notin S_2\) and therefore \(v\notin V\). But
+\(v\in S_1\subseteq V'\).
+}
+\end{proof}
+
+\begin{lemma}[]
+If \(V'\subset V''\), \(n=\abs{V''}-\abs{V'}-1\) and both \((V',E|_{V'})\) and
+\((V'',E|_{V''})\) are connected components, then \(\exists V_1\dots V_n\) s.t.
+\(V'\subset V_1\), \(V_i\subset V_{i+1}\), \(V_n\subset V''\) and \((V_i,E|_{V_i})\) is a connected
+component for all \(1\le i\le n\)
+\end{lemma}
+
+\begin{lemma}[]
+\label{12}
+If \(V'\subset V''\) and both \((V',E|_{V'})\) and \((V'',E|_{V''})\) are connected components,
+\texttt{EnumerateCsg} enumerates \((V',E|_{V'})\) before \((V'',E|_{V''})\)
+\end{lemma}
+
+\begin{theorem}[]
+Algorithm \texttt{EnumerateCsg} is correct
+\end{theorem}
+
+\begin{proof}
+\ref{1}, \ref{2}, \ref{8}, \ref{10}, \ref{12}
+\begin{itemize}
+\item Terminate
+\item Only list connected components
+\item enumerates all connected components
+\item enumerates all connected components only once
+\item enumerates in a order that is suitable for dynamic programming
+\end{itemize}
+\end{proof}
+\subsubsection{Correctness of \texttt{EnumerateCmp}}
+\label{sec:org73d7281}
+Besides enumerating the connected components themselves, the \texttt{DPccp} algorithm requires enumerating all
+connected components in the adjacent complement of the graph. More formally, given a connected graph
+\(G=(V,E)\) and \((V'\subseteq V)\) s.t. \((V',E|_{V'})\) is a connected component, enumerate all
+\(V''\subseteq V\setminus V'\) s.t. \((V'',E|_{V''})\) and \((V'\cup V'',E|_{V'\cup V''})\) are
+connected components.
+
+The algorithm presented suppress duplicates. This means that if \(V''\) is enumerated for a given
+\(V'\), \(V'\) will not be enumerated if \(V''\) is given as a \textbf{primary} connected component (i.e., as a
+first component in a csg-cmp-pair). Furthermore, a \(V''\) is only enumerated if it was already
+enumerated as a primary connected component. This allows us to define a total ordering between disjoin
+connected components that matches the enumeration order used in \texttt{EnumeratedCsg}:
+\begin{equation*}
+V''<V'\Leftrightarrow\min(\{L(v)\mid v\in V'\})<\min(\{L(v)\mid v\in V''\})
+\end{equation*}
+Using this ordering, we only enumerate \(V''\) for \(V'\) if \(V'<V''\).
+\subsubsection{Proofs}
+\label{sec:orgfe76cbc}
+\begin{lemma}[]
+Algorithm \texttt{EnumerateCmp} terminates if \(G\) is a finite graph
+\end{lemma}
+
+\begin{lemma}[]
+Algorithm \texttt{EnumerateCmp} enumerates all connected components consisting of a single vertex
+\end{lemma}
+
+\begin{lemma}[]
+Algorithm \texttt{EnumerateCmp} enumerates all adjacent connected components in the complement (that satisfy
+the ordering)
+\end{lemma}
+
+\begin{lemma}[]
+Algorithm \texttt{EnumerateCmp} enumerates connected components only once
+\end{lemma}
+
+\begin{theorem}[]
+Algorithm \texttt{EnumerateCmp} is correct
+\end{theorem}
+\section{Problems}
+\label{sec:org63fe12a}
+
+
+\section{References}
+\label{sec:org2f87942}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+\end{document}

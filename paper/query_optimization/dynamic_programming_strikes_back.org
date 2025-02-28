@@ -4,6 +4,7 @@
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
 #+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/dynamtic_programming_strikes_back.tex
 #+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+LATEX_HEADER: \DeclareMathOperator{\LOP}{\mathcal{LOP}}
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
 
@@ -173,6 +174,13 @@
           the connected subgraph \(S_1\) found before.
         * The pair \((S_1,S_2)\) is a csg-cmp-pair. For every such pair, ~EmitCsgCmp~ is called. Its main
           responsibility is to consider a plan built up from the plans for \(S_1\) and \(S_2\) .
+
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION: Trace of algorithm For Figure \ref{2}
+        [[../../images/papers/97.png]]
+
 ** Solve
         \begin{align*}
         &\texttt{Solve}()\\
@@ -183,6 +191,129 @@
         &\quad\texttt{EnumerateCsgRec}(\{v\},\calb_v)\quad\text{// expand singleton sets}\\
         &\textbf{return }\text{dpTable}[V]
         \end{align*}
+        The algorithm calls \(\texttt{EmitCsg}(\{v\})\) for single nodes \(v\in V\) to generate all
+        csg-cmp-pairs \((\{v\,S_2\})\) via calls to ~EnumerateCsgCmp~ and ~EmitCsgCmp~, where \(v\prec\min(S_2)\) holds.
+** EnumerateCsgRec
+        The general purpose of ~EnumerateCsgRec~ is to extend a given set \(S_1\), which induces a connected
+        subgraph of \(G\) to a larger set with the same property.
+        \begin{align*}
+        &\texttt{EnumerateCsgRec}(S_1,X)\\
+        &\textbf{for each }N\subseteq\caln(S_1,X):N\neq\emptyset\\
+        &\quad\textbf{if }\text{dpTable}[S_1\cup N]\neq\emptyset\\
+        &\quad\quad\texttt{EmitCsg}(S_1\cup N)\\
+        &\textbf{for each }N\subseteq\caln(S_1,X):N\neq\emptyset\\
+        &\quad\texttt{EnumerateCsgRec}(S_1\cup N,X\cup\caln(S_1,X))
+        \end{align*}
+** EmitCsg
+        ~EmitCsg~ takes as an argument a non-empty, proper subset \(S_1\) of \(V\), which induces a connected
+        subgraph. It is then responsible to generate the seeds for all \(S_2\) s.t. \((S_1,S_2)\) becomes a
+        csg-cmp-pair.
+
+        All nodes that have ordered before the smallest element in \(S_1\) (captured by the set
+        \(\calb_{\min(S_1)}\)) are removed from the neighborhood to avoid duplicate enumerations.
+        \begin{align*}
+        &\texttt{EmitCsg}(S_1)\\
+        &X=S_1\cup\calb_{\min(S_1)}\\
+        &N=\caln(S_1,X)\\
+        &\textbf{for each }v\in N\textbf{ descending }\text{according to }\prec\\
+        &\quad S_2=\{v\}\\
+        &\quad\textbf{if }\exists(u,v)\in E:u\subseteq S_1\wedge v\subseteq S_2\\
+        &\quad\quad\texttt{EmitCsgCmp}(S_1,S_2)\\
+        &\quad\texttt{EnumerateCmpRec}(S_1,S_2,X)
+        \end{align*}
+** EnumerateCmpRec
+        ~EnumerateCsgRec~ has three parameters. The first parameter \(S_1\) is only used to pass it to
+        ~EmitCsgCmp~. The second parameter is a set \(S_2\) which is connected and must be extended until a
+        valid csg-cmp-pair is reached. Therefore, it considers the neighborhood of \(S_2\). For every
+        non-empty, proper subset \(N\) of the neighborhood, it checks whether \(S_2\cup N\) induces a
+        connected subset and is connected \(S_1\). If so, we have a vlid csg-cmp-pair
+
+        \begin{align*}
+        &\texttt{EnumerateCmpRec}(S_1,S_2,X)\\
+        &\textbf{for each }N\subseteq\caln(S_2,X):N\neq\emptyset\\
+        &\quad\textbf{if }\text{dpTable}[S_2\cup N]\neq\emptyset\wedge\\
+        &\quad\quad\quad\exists(u,v)\in E:u\subseteq S_1\wedge v\subseteq S_2\cup N\\
+        &\quad\quad\texttt{EmitCsgCmp}(S_1,S_2\cup N)\\
+        &X=X\cup\caln(S_2,X)\\
+        &\textbf{for each }N\subseteq\caln(S_2,X):N\neq\emptyset\\
+        &\quad\texttt{EnumerateCmpRec}(S_1,S_2\cup N,X)
+        \end{align*}
+** EmitCsgCmp
+        The task of \(\texttt{EmitCsgCmp}(S_1,S_2)\) is to join the optimal plans for \(S_1\) and \(S_2\),
+        which must form a csg-cmp-pair
+
+        For a given hypergraph \(G=(V,E)\) and a hyperedge \((u,v)\in E\), we denote by \(\calp(u,v)\) the
+        predicate represented by the hyperedge \((u,v)\)
+
+        \begin{align*}
+        &\texttt{EmitCsgCmp}(S_1,S_2)\\
+        &\text{plan}_1=\text{dpTable}[S_1]\\
+        &\text{plan}_2=\text{dpTable}[S_2]\\
+        &S=S_1\cup S_2\\
+        &\text{newplan}=\text{plan}_1\bowtie_p\text{plan}_2\\
+        &p=\wedge_{(u_1,u_2)\in E,u_i\subseteq S_i}\calp(u_1,u_2)\\
+        &\textbf{if }\text{dpTable}[S]=\emptyset\vee\text{cost}(\text{newplan})<\text{cost}(\text{dpTable}[S])\\
+        &\quad\text{dpTable}=\text{newplan}\\
+        &\text{newplan}=\text{plan}_2\bowtie_p\text{plan}_1\\
+        &p=\wedge_{(u_1,u_2)\in E,u_i\subseteq S_i}\calp(u_1,u_2)\\
+        &\textbf{if }\text{cost}(\text{newplan})<\text{cost}(\text{dpTable}[S])\\
+        &\quad\text{dpTable}=\text{newplan}\\
+        \end{align*}
+        The calculation of the predicate \(p\) seems to be expensive, since all edges have to be tested.
+        However, we can attach the set of predicates
+        \begin{equation*}
+        p_S=\{\calp(u,v)\mid(u,v)\in E,u\subseteq S\}
+        \end{equation*}
+        to any plan class \(S\subseteq V\). If we represent the \(p_S\) by a bit vector, then for a
+        csg-cmp-pair we can easily calculate \(p_{S_1}\cap p_{S_2}\) and just consider the result
+* Non-reorderable Operators
+        Omitted, not that interesting
+        check another paper On the Correct and Complete Enumeration of the Core Search Space
+** Considered Binary Operators
+        Let us define the set of binary operators which we allow for in our plans. Besides the fully
+        reorderable join (\(\bowtie\)), we also consider the following operators with limited reorderability
+        capabilities: full outer join (\(\fullouterjoin\)), left outer join (\(\leftouterjoin\)), left
+        antijoin (\(\rhd\)), left semijoin (\(\ltimes\)), and left nestjoin.
+
+        Additionally to the above operators, we consider their dependent variants.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/105.png]]
+
+** Reorderability
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Let \(\circ\) be a binary operator on relations. If for all relations \(S\) and \(T\) the following
+        two conditions hold, then \(\circ\) is called *left linear*:
+        1. \(\emptyset\circ T=\emptyset\)
+        2. \((S_1\cup S_2)\circ T=(S_1\circ T)\cup(S_2\circ T)\) for all relations \(S_1\) and \(S_2\)
+        Similarly, \(\circ\) is called *right linear* if
+        1. \(S\circ\emptyset=\emptyset\)
+        2. \(S\circ(T_1\cup T_2)=(S\circ T_1)\cup(S\circ T_2)\) for all relations \(T_1\) and \(T_2\)
+        #+END_definition
+
+        #+BEGIN_observation
+        All operations of \(\mathcal{LOP}\) are left- and right-linear
+        #+END_observation
+
+        #+ATTR_LATEX: :options [Reorderability]
+        #+BEGIN_theorem
+        Let \(\to^1\) and \(\to^2\) be operators in \(\LOP\). Then
+        \begin{align*}
+        (R\to^1_{p_{RS}}S)\to^2_{p_{RT}}T&=(R\to^2_{p_{RT}}T)\to^1_{p_{RS}}S\tag{2}\\
+        (R\bowtie_{p_{RS}}S)\to^2_{p_{ST}}T&=R\bowtie_{p_{RS}}(S\to^2_{p_{ST}}T)\tag{3}\\
+        (R\bowtie_{p_{RS}}S)\to^2_{p_{RT}}T&=S\bowtie_{p_{RS}}(R\to^2_{p_{RT}}T)\tag{4}
+        \end{align*}
+        #+END_theorem
+
+
+* Translations of Join Predicates
+        In general, the relations involved in a join predicate can be classified into three groups
+        * Those that must appear on one side of the join
+        * those that must appear on the other side the join
+        * those that can appear on any of the two
 * Problems
 
 
