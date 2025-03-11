@@ -10,6 +10,14 @@
 #+LATEX_HEADER: \DeclareMathOperator{\enq}{\textsf{enq}}
 #+LATEX_HEADER: \DeclareMathOperator{\deq}{\textsf{deq}}
 #+LATEX_HEADER: \makeindex
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
 #+STARTUP: shrink
 
 * Mutual exclusion
@@ -417,5 +425,615 @@ class Bakery implements Lock {
         no pending method calls.
 
         #+BEGIN_principle
+        [[label:3.5.1]]
         Method calls separated by a period of quiescence should appear to take effect in real-time order.
         #+END_principle
+
+        For example, suppose \(A\) and \(B\) concurrently enqueue \(x\) and \(y\) in a FIFO queue. The queue
+        becomes quiescent, and then \(C\) enqueues \(z\). We are not able to predict the relative order of
+        \(x\) and \(y\) in the queue, but we do know they are ahead of \(z\).
+
+        Principles [[ref:3.3.1]] and ref:3.5.1 define a correctness property called *quiescent consistency*.
+        Informally, it says that any time an object becomes quiescent, the execution so far is equivalent to
+        some sequential execution of the completed calls.
+
+        Sequential consistency and quiescent consistency are /incomparable/: There exists sequentially
+        consistent executions that are not quiescently consistent, and vice versa.
+
+        Quiescent consistency is nonblocking
+
+        Quiescent consistency is compositional: A system composed of quiescently consistent objects is itself
+        quiescently consistent.
+** Formal definitions
+*** Histories
+        We model the observable behaviour of an execution of a concurrent system by a sequence of *events*
+        called a *history*, where an event is an *invocation* or *response* of a method. We write a method
+        invocation as \(\la x.m(a^*)\;A\ra\), where \(x\) is an object, \(m\) is a method name, \(a^*\) is a
+        sequence of argument, and \(A\) is a thread. We write a method response as \(\la x:t(r^*)\;A\ra\),
+        where \(t\) is either OK or an exception name, and \(r^*\) is a sequence of result values.
+
+        An invocation and a response *match* if they name the same object and thread. An invocation in \(H\) is
+        *pending* if no matching response follows the invocation. A *method call* in a history \(H\) is a pair
+        consisting of an invocation and either the next matching response in \(H\) or a special \(\bot\)
+        value if the invocation is pending. We say that a method call is *pending* if its invocation is pending,
+        and that it is *complete* otherwise. A history is complete if all its method calls are complete. For a
+        history \(H\), we denote the subsequence of \(H\) consisting of all events of complete method calls
+        (i.e., eliding all the pending invocations of \(H\)) by \(complete(H )\).
+
+        The *interval* of a method call in a history \(H\) is the history’s sequence of events starting from its
+        invocation and ending with its response, or the suffix of \(H\) starting from its invocation if the method
+        call is pending. Two method calls overlap if their intervals *overlap*.
+
+        A history is *sequential* if its first event is an invocation, and each invocation, except possibly the
+        last, is followed immediately by a matching response, and each response is immediately preceded by an
+        invocation. No method calls overlap in a sequential history, and a sequential history has at most one
+        pending invocation.
+
+        A *subhistory* of a history \(H\) is a subsequence of \(H\) . Sometimes we focus on a single thread or
+        object: A *thread subhistory*, \(H|A\) (“\(H\) at \(A\)”), of a history \(H\) is the  subsequence of all
+        events in \(H\) whose thread names are \(A\). An *object subhistory* \(H|x\) is similarly defined for an
+        object \(x\). We require each thread to complete each method call before calling another method: A
+        history \(H\) is *well formed* if each thread subhistory is sequential. Henceforth, we consider only
+        well-formed histories. Although thread subhistories of a well-formed history are always sequential,
+        object subhistories need not be; method calls to the same object may overlap in a well-formed history.
+
+        Finally, because what matters in the end is how each thread views the history, we say that two
+        histories are *equivalent* if every thread has the same thread subhistory in both histories; that is,
+        \(H\) and \(H'\) are equivalent if \(H|A=H'|A\) for every thread \(A\).
+
+        How can we tell whether a concurrent object is correct? Or, said differently, how do we define
+        correctness for a concurrent object? The basic idea is to require a concurrent execution to be
+        equivalent, in some sense, to some sequential history; the exact sense of equivalence is different for
+        different correctness properties. We assume that we can tell whether a sequential object is correct,
+        that is, whether a sequential object history is a legal history for the object’s class. A *sequential
+        specification* for an object is just a set of legal sequential histories for the object. A sequential
+        history \(H\) is *legal* if each object subhistory is legal for that object.
+
+        #+LATEX: \wu{
+        For two overlap option \(A=[a,b]\) and \(B=[x,y]\), and suppose we can think of \(A\) and \(B\) succeeds
+        instantaneously. Let the succeed timestamps of \(A\) and \(B\) be \(t_1\) and \(t_2\) respectively.
+        Suppose \(t_1<t_2\). This means that we can safely swap operations of \(A\) between \([t_1,b]\) and
+        operations of \(B\) between \([x,t_2]\). Safety here is just legalness.
+        #+LATEX: }
+
+        A method \(m\) of an object \(x\) is *total* if for every finite complete history \(H\) in the
+        sequential specification of \(x\) and every invocation \(\la x.m(a^*)\;A\ra\) of \(m\), there is a
+        response \(\la x:t(r^*)\;A\ra\) such that \(H\cdot\la x.m(a^*)\;A\ra\cdot\la x:t(r^*)\;A\ra\) is in
+        the sequential specification of \(x\). A method is *partial* if it is not total.
+*** Linearizability
+        A key concept in defining linearizability is the *real-time order* of a history.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_fact
+        If \(\to\) is a partial order on \(X\), then there exists a total order \(<\) on \(X\) s.t. if
+        \(x\to y\) then \(x<y\)
+        #+END_fact
+
+        We say that a method call \(m_0\) *precedes* a method call \(m_1\) in history \(H\) if \(m_0\) finishes
+        before \(m_1\) starts, that is, if \(m_0\)'s response event occurs before \(m_1\)'s invocation event
+        in \(H\). This notion is important enough to introduce some shorthand notation: Given a history \(H\)
+        containing method calls \(m_0\) and \(m_1\) , we write \(m_0\to_Hm_1\) if \(m_0\) precedes \(m_1\) in
+        \(H\). Note that if \(H\) is sequential, then \(\to_H\) is a total order. Given a history \(H\) and an
+        object \(x\) such that \(H|x\) contains method calls \(m_0\) and \(m_1\) , when \(H\) is clear from
+        the context, we write \(m_0\to_xm_1\) if \(m_0\) precedes \(m_1\) in \(H|x\).
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A _legal_ sequential history \(S\) is a *linearization* of a history \(H\) if \(H\) can be extended to a
+        history \(H'\) by appending zero or more responses s.t.
+        1. [@L1] \(complete(H')\) is equivalent to \(S\)
+        2. [@L2] if method calls \(m_0\) precedes method call \(m_1\) in \(H\), then the same is true in \(S\)
+        \(H\) is *linearizable* if there is a linearization of \(H\).
+        #+END_definition
+
+        Informally, extending \(H\) to \(H'\) captures the idea that some pending invocations may have taken
+        effect, even though their responses have not yet been returned to the caller.
+*** Linearizability is compositional
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        \(H\) is linearizable iff for each object \(x\), \(H|x\) is linearizable
+        #+END_theorem
+
+        #+BEGIN_proof
+        \(\Leftarrow\): For each object \(x\), pick a linearization of \(H|x\). Let \(R_x\) be the set of
+        responses appended to \(H|x\) to construct the linearization, and let \(\to_x\) be the corresponding
+        linearization order. Let \(H'\) be the history constructed by appending to \(H\) each response in
+        \(H_x\).
+
+        We argue by induction on the number of method calls in \(H'\). For the base case, if \(H'\) contains
+        no method calls, we are done. Otherwise, for each object, consider the last method call in \(H'|x\).
+        One of these calls \(m\) must be maximal with respect to \(\to_H\); that is, there is no \(m'\) such
+        that \(m\to_Hm'\). Let \(G'\) be the history defined by removing \(m\) from \(H'\) . Because \(m\) is
+        maximal, \(H'\) is equivalent to \(G'\cdot m\). By the induction hypothesis, \(G'\) is linearizable to
+        a sequential history \(S'\) , and both \(H'\) and \(H\) are linearizable to \(S'\cdot m\).
+        #+END_proof
+*** Linearizability is nonblocking
+        Linearizability is a *nonblocking* property: A pending invocation of a total method is never required
+        to wait for another pending invocation to complete.
+
+        #+LATEX: \wu{
+        Why
+        #+LATEX: }
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        If \(m\) is a total method of an object \(x\) and \(\la x.m(a^*)\;P\ra\) is a pending invocation in a
+        linearizable history \(H\), then there exists a response \(\la x:t(r^*)\;P\ra\) s.t.
+        \(H\cdot\la x:t(r^*)\;P\ra\) is linearizable
+        #+END_theorem
+
+        #+BEGIN_proof
+        Let \(S\) be any linearization of \(H\). If \(S\) incluses a response \(\la x:t(r^*)\;P\ra\) to
+        \(\la x.m(a^*)\;P\ra\), we are done, since \(S\) is also a linearization of
+        \(H\cdot\la x:t(r^*)\;P\ra\).  Otherwise, \(\la x.m(a^*)\;P\ra\) does not appear in \(S\) either.
+        Because the method is total, there exists a response \(\la x:t(r^*)\;P\ra\) s.t.
+        \begin{equation*}
+        S'=S\cdot\la x.m(a^*)\;P\ra\cdot\la x:t(r^*)\;P\ra
+        \end{equation*}
+        is a legal sequential history. \(S'\) is a linearization of \(H\cdot\la x:t(r^*)\;P\ra\), and hence is
+        also a linearization of \(H\).
+        #+END_proof
+
+        The nonblocking property does not rule out blocking in situations where it is explicitly intended. For
+        example, it may be sensible for a thread attempting to de- queue from an empty queue to block, waiting
+        until another thread enqueues an item. A queue specification would capture this intention by making
+        the \(\texttt{deq}()\) method’s specification partial, leaving its effect undefined when applied to an empty queue.
+** Memory consistency models
+        We can consider the memory read and written by a program as a single object—the composition of many
+        registers—shared by all threads of the program. This shared memory is often the only means of
+        communication among threads Its correctness property is called the *memory consistency model*, or *memory
+        model* for short.
+
+        Java uses ~volatile~ to get sequential consistency
+** Progress conditions
+        The nonblocking property of linearizability (and sequential consistency and quiescent consistency)
+        ensures that any pending invocation has a correct response. But linearizability does not tell us how
+        to compute such a response, nor even require an implementation to produce a response at all.
+
+        Suppose a queue is initially empty, and thread \(A\) halts halfway through enqueuing \(x\), while
+        holding the lock, and \(B\) then invokes ~deq()~. The nonblocking property guarantees that there is a
+        correct response to \(B\)’s call to ~deq()~; indeed, there are two: It could throw an exception or
+        return \(x\). In this implementation, however, B is unable to acquire the lock, and will be delayed as long as A is delayed.
+
+        Such an implementation is called *blocking*, because delaying one thread can prevent others from making
+        progress. Unexpected thread delays are common in multiprocessors. A cache miss might delay a processor
+        for a hundred cycles, a page fault for a few million cycles, preemption by the operating system for
+        hundreds of millions of cycles. These delays depend on the specifics of the machine and the operating
+        system. The part of the system that determines when threads take steps is called the *scheduler*, and
+        the order in which threads take steps is the *schedule*.
+
+        In this section, we consider *progress conditions*, which require implementations to produce responses
+        to pending invocations. Ideally, we would like to say simply that every pending invocation gets a
+        response. Of course, this is not possible if the threads with pending invocations stop taking steps.
+        So we require progress only for those threads that keep taking steps.
+*** Wait-freedom
+        A method of an object implementation is *wait-free* if every call finishes its execution in a finite
+        number of steps; that is, if a thread with a pending invocation to a wait-free method keeps taking
+        steps, it completes in a finite number of steps. We say that an object implementation is *wait-free* if
+        all its methods are wait-free, and that a class is *wait-free* if every object of that class is
+        wait-free.
+*** Lock-freedom
+        A method of an object implementation is *lock-free* if executing the method guarantees that some method
+        call finishes in a finite number of steps.
+
+        Lock-freedom guarantees *minimal progress* and wait-freedom guarantees *maximal progress*.
+*** Obstruction-freedom
+        We say that a thread executes *in isolation* in an interval if no other threads take steps in that
+        interval. A method of an object implementation is *obstruction-free* if, from any point after which it
+        executes in isolation, it finishes in a finite number of steps
+** Exercises
+        #+BEGIN_exercise
+        [[label:e3.7]]
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: i3.13
+        #+CAPTION: \texttt{IQueue} implementation for Exercise \ref{e3.7}
+        [[../images/papers/106.png]]
+
+        Consider the FIFO queue implementation shown in Fig. ref:i3.13. Give an example showing that this
+        implementation is /not/ linearizable
+        #+END_exercise
+
+        #+BEGIN_proof
+        Essentially, ~enq~ does:
+        1. read ~tail~
+        2. update ~tail~
+        3. set ~items~
+
+        Consider
+        \begin{equation*}
+        \texttt{enq}\to[1] \to[2]\to\texttt{deq}\to[3]
+        \end{equation*}
+        Here ~deq~ would throw an exception
+        #+END_proof
+* Foundations of shared memory
+** The space of registers
+        A *read–write register* (or just a *register*) is an object that encapsulates a value that can be observed
+        by a ~read()~ method and modified by a ~write()~ method (these methods are often called load and store).
+
+        #+CAPTION: The \texttt{Register<T>} interface
+        #+begin_src java
+public interface Register<T> {
+  T read();
+  void write(T v);
+}
+        #+end_src
+
+        #+NAME: f4.2
+        #+CAPTION: The \texttt{SequentialRegister} class
+        #+begin_src java
+public class SequentialRegister<T> implements Register<T> {
+  private T value;
+  public T read() {
+    return value;
+  }
+  public void write(T v) {
+    value = v;
+  }
+}
+        #+end_src
+
+        An *atomic register* is a linearizable implementation of the sequential register class shown in Fig.
+        ref:f4.2. Informally, an atomic register behaves exactly as we would expect: Each read returns the
+        “last” value written.
+
+        For brevity, we use SRSW for “single-reader, single-writer,” MRSW for “multi-reader, single-writer,”
+        and MRMW for “multi-reader, multi-writer.”
+
+        In this chapter, we address the following fundamental question:
+        #+BEGIN_center
+        Can any data structure implemented using the most powerful registers also be implemented using the weakest?
+        #+END_center
+
+        [[index:safe register]]
+        An SRSW or MRSW register implementation is *safe* if:
+        * A ~read()~ call that does not overlap a ~write()~ call returns the value written by the most recent
+          ~write()~ call. (The “most recent ~write()~ call” is well defined because there is a single writer.)
+        * A ~read()~ call that overlaps a write() call may return any value within the register’s allowed range
+          of values (e.g., 0 to \(M-1\) for an \(M\)-valued register).
+
+        Consider the history shown in Fig. ref:f4.3. If the register is /safe/, then the three read calls might
+        behave as follows:
+        * \(R^1\) returns 0, the most recently written value.
+        * \(R^2\) and \(R^3\) are concurrent with \(W(1)\), so they may return any value in the range of the register.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f4.3
+        #+CAPTION:
+        [[../images/papers/107.png]]
+
+
+        [[index:regular register]]
+        It is convenient to define an intermediate level of consistency between safe and atomic.
+        A *regular* register is an SRSW or MRSW register where writes do not happen atomically. Instead, while the write()
+        call is in progress, the value being read may “flicker” between the old and new value before finally
+        replacing the older value.
+
+        More precisely:
+        * A regular register is safe, so any ~read()~ call that does not overlap a ~write()~ call returns the most
+          recently written value.
+        * Suppose a ~read()~ call overlaps one or more ~write()~ calls. Let \(v^0\) be the value written by the
+          latest preceding ~write()~ call, and let \(v^1,\dots,v^k\) be the sequence of values written by
+          ~write()~ calls that overlap the ~read()~ call. The ~read()~ call may return \(v^i\) for any
+          \(i\in[0,\dots,k]\).
+
+        For the execution in Fig. [[ref:f4.3]], a regular register might behave as follows:
+        * \(R^1\) returns the old value, 0
+        * \(R^2\) and \(R^3\) each return either the old value 0 or the new value 1
+
+        Regular registers are quiescently consistent.
+
+        For an atomic register, the execution in Fig. ref:f4.3 might produce the following results:
+        * \(R^1\) returns the old value, 0
+        * If \(R^2\) returns 1, then \(R^3\) also returns 1
+        * If \(R^2\) returns 0, then \(R^3\) returns either 0 or 1
+
+
+        To reason about algorithms for implementing regular and atomic registers, it is convenient to rephrase
+        our definitions directly in terms of object histories. From now on, we consider only histories in
+        which each ~read()~ call returns a value written by some ~write()~ call (regular and atomic registers do
+        not allow reads to make up return values). For simplicity, we assume values read or written are
+        unique.
+
+        Recall that an object history is a sequence of /invocation/ and /response/ events, where an invocation
+        event occurs when a thread calls a method, and a matching response event occurs when that call
+        returns. A method call (or just a call) is the interval between matching invocation and response
+        events (including the invocation and response events). Any history induces a partial order → on
+        method calls, defined as follows: If \(m_0\) and \(m_1\) are method calls, \(m_0\to m_1\) if \(m_0\)'s response event
+        precedes \(m_1\)'s call event.
+
+        Any register implementation (whether safe, regular, or atomic) defines a total order on the ~write()~
+        calls called the write order, the order in which writes “take effect” in the register. For safe and
+        regular registers, the write order is trivial because they allow only one writer at a time. For atomic
+        registers, method calls have a linearization order. We use this order to index the write calls: Write
+        call \(W^0\) is ordered first, \(W^1\) second, and so on. We use \(v^i\) to denote the unique value
+        written by \(W^i\) . Note that for SRSW or MRSW safe or regular registers, the write order is exactly
+        the same as the precedence order on writes.
+
+        We use \(R^i\) to denote any read call that returns \(v^i\) . Note that although a history contains at
+        most one \(W^i\) call, it might contain multiple \(R^i\) calls.
+
+        \begin{equation}
+        \label{e4.1.1}
+        \text{It is never the case that }R^i\to W^i
+        \end{equation}
+        \begin{equation}
+        \label{e4.1.2}
+        \text{It is never the case that for some }j, W^i\to W^j\to R^i
+        \end{equation}
+        \begin{equation}
+        \label{e4.1.3}
+        R^i\to R^j\Rightarrow i\le j
+        \end{equation}
+
+        Regular = eqref:e4.1.2 + eqref:e4.1.1
+
+        To show that a register implementation is atomic, we need first to define a write order, and then to
+        show that its histories satisfy Conditions eqref:e4.1.1 + eqref:e4.1.2 + eqref:e4.1.3
+** Register constructions
+        We now show how to implement a range of surprisingly powerful registers from simple safe Boolean SRSW registers.
+*** Safe MRSW registers
+        \wu{Why do we need an array? Because our ingredient is the SRSW registers}
+        #+CAPTION: safe Boolean MRSW register
+        #+NAME: f4.6
+        #+begin_src java
+public class SafeBooleanMRSWRegister implements Register<Boolean> {
+  boolean[] s_table; // array of safe SRSW registers
+  public SafeBooleanMRSWRegister(int capacity) {
+    s_table = new boolean[capacity];
+  }
+  public Boolean read() {
+    return s_table[ThreadID.get()];
+  }
+  public void write(Boolean x) {
+    for (int i = 0; i < s_table.length; i++)
+      s_table[i] = x;
+  }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The construction in ref:f4.6 is a safe MRSW register
+        #+END_lemma
+*** A regular MRSW register
+        #+CAPTION: a regular Boolean MRSW register constructed from a safe Boolean MRSW register
+        #+NAME: f4.7
+        #+begin_src java
+public class RegularBooleanMRSWRegister implements Register<Boolean> {
+  ThreadLocal<Boolean> last;
+  boolean s_value; // safe MRSW register
+  RegularBooleanMRSWRegister(int capacity) {
+    last = new ThreadLocal<Boolean>() {
+        protected Boolean initialValue() { return false; };
+      };
+  }
+  public void write(Boolean x) {
+    if (x != last.get()) {
+      last.set(x);
+      s_value = x;
+    }
+  }
+  public Boolean read() {
+    return s_value;
+  }
+}
+        #+end_src
+*** A regular \texorpdfstring{\(M\)}{M}-valued MRSW register
+        #+CAPTION: a regular \(M\)-valued MRSW register
+        #+NAME: f4.8
+        #+begin_src java
+public class RegularMRSWRegister implements Register<Byte> {
+  private static int RANGE = Byte.MAX_VALUE - Byte.MIN_VALUE + 1;
+  boolean[] r_bit = new boolean[RANGE]; // regular Boolean MRSW
+  public RegularMRSWRegister(int capacity) {
+    for (int i = 1; i < r_bit.length; i++)
+      r_bit[i] = false;
+    r_bit[0] = true;
+  }
+  public void write(Byte x) {
+    r_bit[x] = true;
+    for (int i = x - 1; i >= 0; i--)
+      r_bit[i] = false;
+  }
+  public Byte read() {
+    for (int i = 0; i < RANGE; i++)
+      if (r_bit[i]) {
+        return i;
+      }
+    return -1; // impossible
+  }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The ~read()~ call in the construction in Fig. ref:f4.8 always returns a value corresponding to a bit in
+        \(0\dots M-1\) set by some ~write()~ call
+        #+END_lemma
+
+        #+BEGIN_proof
+        The following property is invariant: If a reading thread is reading ~r_bit[j]~, then some bit at index
+        \(j\) or higher, written by a ~write()~ call, is set to \(true\)
+
+        When the register is initialized, there are no readers; the constructor set ~r_bit[0]~ is \(true\).
+        Assume a reader is reading ~r_bit[j]~, and that ~r_bit[k]~ is \(true\) for \(k\ge j\)
+        * If the reader advances from \(j\) to \(j+1\), then ~r_bit[j]~ is \(false\), so \(k>j\)
+        * The writer clears ~r_bit[k]~ only if it has set a higher ~r_bit[l]~ to \(true\) for \(l>k\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The construction in Fig. ref:f4.8 is a regular \(M\)-valued MRSW register
+        #+END_lemma
+*** An atomic SRSW register
+        We need to satisfy condition eqref:e4.1.3.
+        #+CAPTION: allows a timestamp and a value to be read or written together
+        #+NAME: f4.10
+        #+begin_src java
+public class StampedValue<T> {
+  public long stamp;
+  public T value;
+  // initial value with zero timestamp
+  public StampedValue(T init) {
+    stamp = 0;
+    value = init;
+  }
+  // later values with timestamp provided
+  public StampedValue(long ts, T v) {
+    stamp = ts;
+    value = v;
+  }
+  public static StampedValue max(StampedValue x, StampedValue y) {
+    if (x.stamp > y.stamp) {
+      return x;
+    } else {
+      return y;
+    }
+  }
+  public static StampedValue MIN_VALUE = new StampedValue(null);
+}
+        #+end_src
+
+        #+CAPTION: an atomic SRSW register constructed from a regular SRSW register
+        #+NAME: f4.11
+        #+begin_src java
+public class AtomicSRSWRegister<T> implements Register<T> {
+  ThreadLocal<Long> lastStamp;
+  ThreadLocal<StampedValue<T>> lastRead;
+  StampedValue<T> r_value;
+  // regular SRSW timestamp-value pair
+  public AtomicSRSWRegister(T init) {
+    r_value = new StampedValue<T>(init);
+    lastStamp = new ThreadLocal<Long>() {
+        protected Long initialValue() { return 0; };
+      };
+    lastRead = new ThreadLocal<StampedValue<T>>() {
+        protected StampedValue<T> initialValue() { return r_value; };
+      };
+  }
+  public T read() {
+    StampedValue<T> value = r_value;
+    StampedValue<T> last = lastRead.get();
+    StampedValue<T> result = StampedValue.max(value, last);
+    lastRead.set(result);
+    return result.value;
+  }
+  public void write(T v) {
+    long stamp = lastStamp.get() + 1;
+    r_value = new StampedValue(stamp, v);
+    lastStamp.set(stamp);
+  }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The construction in Fig. ref:f4.11 is an atomic SRSW register.
+        #+END_lemma
+
+        #+BEGIN_proof
+        Check.
+        #+END_proof
+*** An atomic MRSW register
+        Let the SRSW registers composing the table array ~a_table[0..n−1]~ be atomic instead of safe, with all
+        other calls remaining the same: The writer writes the array locations in increasing index order and
+        then each reader reads and returns its associated array entry. The result is not an atomic
+        multi-reader register. Condition [[eqref:e4.1.3]] holds for any single reader because each reader reads
+        from an atomic register, yet it does not hold for distinct readers. Consider, for example, a write
+        that starts by setting the first SRSW register ~a_table[0]~, and is delayed before writing the remaining
+        locations ~a_table[1..n−1]~. A subsequent read by thread 0 returns the correct new value, but a
+        subsequent read by thread 1 that completely follows the read by thread 0 reads and returns the earlier
+        value because the writer has yet to update ~a_table[1..n − 1]~.
+
+        We address this problem by having earlier reader threads /help out/ later threads by telling them which
+        value they read.
+
+        #+CAPTION: an atomic MRSW register constructed from atomic SRSW registers
+        #+NAME: f4.12
+        #+begin_src java
+public class AtomicMRSWRegister<T> implements Register<T> {
+  ThreadLocal<Long> lastStamp;
+  private StampedValue<T>[][] a_table; // each entry is an atomic SRSW register
+  public AtomicMRSWRegister(T init, int readers) {
+    lastStamp = new ThreadLocal<Long>() {
+        protected Long initialValue() { return 0; };
+      };
+    a_table = (StampedValue<T>[][]) new StampedValue[readers][readers];
+    StampedValue<T> value = new StampedValue<T>(init);
+    for (int i = 0; i < readers; i++) {
+      for (int j = 0; j < readers; j++) {
+        a_table[i][j] = value;
+      }
+    }
+  }
+  public T read() {
+    int me = ThreadID.get();
+    StampedValue<T> value = a_table[me][me];
+    for (int i = 0; i < a_table.length; i++) {
+      value = StampedValue.max(value, a_table[i][me]);
+    }
+    for (int i = 0; i < a_table.length; i++) {
+      if (i == me) continue;
+      a_table[me][i] = value;
+    }
+    return value;
+  }
+  public void write(T v) {
+    long stamp = lastStamp.get() + 1;
+    lastStamp.set(stamp);
+    StampedValue<T> value = new StampedValue<T>(stamp, v);
+    for (int i = 0; i < a_table.length; i++) {
+      a_table[i][i] = value;
+    }
+  }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The construction in Fig. ref:f4.12 is an atomic MRSW register.
+        #+END_lemma
+
+        Check
+*** An atomic MRMW register
+        #+CAPTION: Atomic MRMW register
+        #+NAME: f4.14
+        #+begin_src java
+public class AtomicMRMWRegister<T> implements Register<T>{
+  private StampedValue<T>[] a_table; // array of atomic MRSW registers
+  public AtomicMRMWRegister(int capacity, T init) {
+    a_table = (StampedValue<T>[]) new StampedValue[capacity];
+    StampedValue<T> value = new StampedValue<T>(init);
+    for (int j = 0; j < a_table.length; j++) {
+      a_table[j] = value;
+    }
+  }
+  public void write(T value) {
+    int me = ThreadID.get();
+    StampedValue<T> max = StampedValue.MIN_VALUE;
+    for (int i = 0; i < a_table.length; i++) {
+      max = StampedValue.max(max, a_table[i]);
+    }
+    a_table[me] = new StampedValue(max.stamp + 1, value);
+  }
+  public T read() {
+    StampedValue<T> max = StampedValue.MIN_VALUE;
+    for (int i = 0; i < a_table.length; i++) {
+      max = StampedValue.max(max, a_table[i]);
+    }
+    return max.value;
+  }
+}
+        #+end_src
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        The construction in Fig. ref:f4.14 is an atomic MRMW register
+        #+END_lemma
+
+        #+BEGIN_proof
+        Define the write order among ~write()~ calls based on the lexicographic order of their timestamps and
+        thread IDs.
+
+
+        #+END_proof
