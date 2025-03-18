@@ -1,0 +1,58 @@
+#+title: Highly Available Transactions: Virtues and Limitations
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/highly_available_transactions.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        In this work, we consider the problem of providing Highly Available Transactions (HATs): transactional
+        guarantees that do not suffer unavailability during system partitions or incur high network latency.
+        We introduce a taxonomy of highly avail- able systems and analyze existing ACID isolation and
+        distributed data consistency guarantees to identify which can and cannot be achieved in HAT systems.
+        This unifies the literature on weak trans- actional isolation, replica consistency, and highly
+        available systems.
+* Why High Availability
+** Network Partitions at Scale
+** Latency and Planet Earth
+* ACID in the Wild
+* High Availability
+        Traditionally, a system provides *high availability* if every user that can contact a correct
+        (non-failing) server eventually receives a response from that server, even in the presence of
+        arbitrary, indefinitely long network partitions between servers
+** Sticky Availability
+        We say that a system provides *sticky availability* if, whenever a client’s transactions is executed
+        against a copy of database state that reflects all of the client’s prior operations, it eventually
+        receives a response, even in the presence of indefinitely long partitions
+** Transactional Availability
+        We say that a transaction has *replica availability* if it can contact at least one replica for every
+        item it attempts to access;
+
+        We call a transaction abort due to a transaction’s own choosing (e.g., as an operation of the
+        transaction itself or due to a would-be violation of a declared integrity constraint) an /internal
+        abort/ and an abort due to system implementation or operation an /external abort/.
+
+        We say that a system provides *transactional availability* if, given replica availability for every data
+        item in a transaction, the transaction eventually commits (possibly after multiple client retries) or
+        internally aborts. A system provides *sticky transactional availability* if, given sticky availability,
+        a transaction eventually commits or internally aborts.
+* Highly Available Transactions
+        In this section, we describe ACID, distributed replica consistency, and session consistency levels
+        which can be achieved with high availability
+** Achievable HAT Semantics
+        To begin, Adya captures *Read Uncommitted* isolation as /PL-1/. In this model, writes to each object are
+        totally ordered, corresponding to the order in which they are installed in the database. In a
+        distributed database, different replicas may receive writes to their local copies of data at different
+        times but should handle concurrent updates (i.e., overwrites) in accordance with the total order for
+        each item. /PL-1/ requires that writes to different objects be ordered consistently across transactions,
+        prohibiting Adya’s phenomenon \(G0\) (also called “Dirty Writes”). If we build a graph of transactions
+        with edges from one transaction to another and, when the former overwrites the latter’s write to the
+        same object, then, under Read Uncommitted, the graph should not contain cycles. Consider the following example:
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

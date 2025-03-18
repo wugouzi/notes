@@ -1,0 +1,98 @@
+#+title: Taking a Long Look at Quic
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/network/taking_a_long_look_at_quic.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/network/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Transport-layer congestion control is one of the most important elements for enabling both fair and
+        high utilization of Internet links shared by multiple flows.
+
+        Yyears can pass between development of a new transport-layer protocol
+        and its wide deployment in operating systems. In contrast, developing an application-layer transport
+        can enable rapid evolution and innovation by requiring
+        only changes to application code, with the potential cost due to performance issues arising from
+        processing packets in userspace instead of in the kernel.
+
+        The QUIC protocol takes the latter approach by implementing reliable, high-performance, in-order
+        packet delivery with congestion control at the application layer (and using UDP as the transport layer).
+
+        Our key findings are as follows.
+        * In the desktop environment, QUIC outperforms TCP+HTTPS in nearly every scenario. This is due to
+          factors that include 0-RTT connection establishment and recovering from loss quickly—properties known to provide performance benefits.
+        * However, we found QUIC to be sensitive to out-of-order packet delivery. In presence of packet
+          re-ordering, QUIC performs significantly worse than TCP in many scenarios. This occurs because QUIC
+          interprets such behavior as loss, which causes it to send packets more slowly.
+        * Due to its reliance on application-layer packet processing and encryption, we find that all of
+          QUIC’s performance gains are diminished on phones from 2013 and late 2014. It is likely that even older phones will see worse performance with QUIC.
+        * QUIC outperforms TCP in scenarios with fluctuating bandwidth. This is because QUIC’s ACK
+          implementation eliminates ACK ambiguity, resulting in more precise RTT and bandwidth estimations.
+        * We found that when competing with TCP flows, QUIC is unfair to TCP by consuming more than twice its
+          fair share of the bottleneck bandwidth.
+        * QUIC achieves better quality of experience for video streaming, but only for high-resolution video.
+        * A TCP proxy can help TCP to shrink the performance gap with QUIC in low latency cases and also under
+          loss. Furthermore, an unoptimized QUIC proxy improves performance under loss for large objects but
+          can hurt performance for small object sizes due to lack of 0-RTT connection establishment.
+        * QUIC performance has improved since 2016 mainly due to a change from a conservative maximum
+          congestion window to a much larger one.
+
+* Background and Related Work
+** Background
+        Quick UDP Internet Connections (QUIC)
+
+        *QUIC motivation*:
+        1. Experimenting with and deploying new transport layers in the OS is difficult to do quickly and at
+           scale. On the other hand, changing application-layer code can be done relatively easily,
+           particularly when client and server code are controlled by the same entity
+        2. To avoid privacy violations as well as transparent proxying and content modification by
+           middleboxes, QUIC is encrypted end-to-end, protecting not only the application-layer content (e.g.,
+           HTTP) but also the transport-layer headers. QUIC features.
+
+        *Quick features* QUIC implements several optimizations and features borrowed from existing and proposed
+         TCP, TLS, and HTTP/2 designs. These include:
+        * *“0-RTT” connection establishment*: Clients that have previously communicated with a server can start
+          a new session without a three-way handshake, using limited state stored at clients and servers. This
+          shaves multiple RTTs from connection establishment, which we demonstrate to be a significant savings
+          for data flows that fit within a small number of packets.
+        * *Reduced “head of line blocking”*: HTTP/2 allows multiple objects to be fetched over the same
+          connection, using multiple streams within a single flow. If a loss occurs in one stream when using
+          TCP, all streams stall while waiting for packet recovery. In contrast, QUIC allows other streams to
+          continue to exchange packets even if one stream is blocked due to a missing packet.
+        * *Improved congestion control*: QUIC implements better estima-tion of connection RTTs and detects and
+          recovers from loss more efficiently.
+
+        QUIC currently uses the Linux TCP Cubic congestion control/BBR implementation.
+** Related Work
+        * *Google-reported QUIC performance*.
+          * Google claims that QUIC yields a 3% improvement in mean page load time (PLT) on Google Search when
+            compared to TCP, and that the slowest 1% of connections load one second faster when using QUIC
+          * Google reported that on average, QUIC reduces Google search latency by 8% and 3.5% for desktop and
+            mobile users respectively, and reduces video rebuffer time by 18% for desktop and 15.3% for mobile
+            users.
+* Methodology
+** Testbed
+** Network Environments
+        We compare TCP and QUIC performance across a wide range of net- work conditions (i.e., various
+        bandwidth limitations, delays, packet losses) and application scenarios (i.e., web page object sizes
+        and number of objects; video streaming). Table [[ref:2]] shows the scenarios we consider for our tests.
+        #+ATTR_LATEX: :width .2\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/116.png]]
+
+** Experiments and Performance Metrics
+
+* Fairness
+
+** State Machine Fairness
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

@@ -1,16 +1,26 @@
 #+title: Logical Physical Clocks and Consistent Snapshots in Globally Distributed Databases
-
 #+AUTHOR:
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
-#+EXPORT_FILE_NAME: ../../latex/papers/transaction/logical_physical_clocks.tex
-#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+EXPORT_FILE_NAME: ../../latex/papers/distributed_systems/logical_physical_clocks.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/distributed_systems/}}
 #+LATEX_HEADER: \DeclareMathOperator{\hb}{\textsf{hb}}
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
 
+
 * Introduction
         VC mains a vector at each node which tracks the knowledge this node has about the logical clocks of
         other nodes.
+
+        PT leverages on physical clocks at nodes that are synchronized using the Network Time Protocol (NTP)
+        While PT avoids the disadvantages of LC by using physical time for timestamping, it introduces new
+        disadvantages:
+        1. When the uncertainty intervals are overlapping, PT cannot order events. NTP can usually maintain
+           time to within tens of milliseconds over the public Internet, and can achieve one millisecond
+           accuracy in local area networks under ideal conditions, however, asymmetric routes and network
+           congestion can occasionally cause errors of 100 ms or more.
+        2. PT has several kinks such as leap seconds and non-monotonic updates to POSIX time which may cause
+           the timestamps to go backwards.
 * Preliminaries
         We use LC to denote the logical clock, and use \(lc.e\) to denote the timestamp assigned to event
         \(e\) by this algorithm.
@@ -21,19 +31,18 @@
         \end{equation*}
         We have
         \begin{gather*}
-        e\hb\Rightarrow lc.e<lc.f\\
+        e\hb f\Rightarrow lc.e<lc.f\\
         lc.e=lc.f\Rightarrow e||f\\
         e\hb f\Leftrightarrow vc.e<vc.f
         \end{gather*}
 
 * HLC: Hybrid Logical Clocks
-
 ** Problem statement
         Given a distributed system, assign each event \(e\) a timestamp, \(l.e\), s.t.
         1. \(e\hb f\Rightarrow l.e<l.f\)
         2. Space requirement for \(l.e\) is \(O(1)\) integers
         3. \(l.e\) is represented with bounded space
-        4. \(l.e.\) is *close* to \(pt.e\), i.e., \(\abs{l.e-pt.e}\) is bounded. PT here means physical time
+        4. \(l.e.\) is *close* to \(pt.e\), i.e., \(\abs{l.e-pt.e}\) is bounded.
 ** Description of the Naive Algorithm
         Given the goal that \(l.e\) should be close to \(pt.e\), in the naive algorithm, we begin with the
         rule: /for any event \(e\)/, \(l.e\ge pt.e\). We design our algoirithm as shown in Figure [[ref:3]].
@@ -46,7 +55,8 @@
         set \(l.f\) to be \(\max(l.e+1,pt.j)\), where \(e\) is the previous event on node \(j\). This ensures
         \(l.e<l.f\) and \(l.f\ge pt.f\).
 
-        The algorithm satisfies the first two requirement. Consider figure [[ref:4]],
+        The algorithm satisfies the first two requirement. Consider figure [[ref:4]] but violates the fourth
+        requirement
         #+ATTR_LATEX: :width .6\textwidth :float nil
         #+NAME: 4
         #+CAPTION: Counter example
@@ -59,6 +69,7 @@
         messages).
 
         As such, there is no suitable place to reset l value to bound the \(l-pt\) difference.
+
 * Problems
 
 
@@ -66,5 +77,4 @@
 <<bibliographystyle link>>
 bibliographystyle:alpha
 
-<<bibliography link>>
-bibliography:/Users/wu/notes/references.bib
+\bibliography{/Users/wu/notes/notes/references.bib}

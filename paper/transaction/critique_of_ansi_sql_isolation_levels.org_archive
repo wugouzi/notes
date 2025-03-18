@@ -1,0 +1,75 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /Users/wu/notes/notes/paper/transaction/critique_of_ansi_sql_isolation_levels.org
+
+
+* Analyzing ANSI SQL Isolation Levels
+:PROPERTIES:
+:ARCHIVE_TIME: 2025-03-18 Tue 19:27
+:ARCHIVE_FILE: ~/notes/notes/paper/transaction/critique_of_ansi_sql_isolation_levels.org
+:ARCHIVE_CATEGORY: critique_of_ansi_sql_isolation_levels
+:END:
+        Locking READ UNCOMMITTED provides long duration write locking to avoid a phenomenon called "Dirty
+        Writes," but ANSI SQL does not exclude this anomalous behavior other than ANSI SERIALIZABLE. Dirty
+        writes are defined as follows:
+
+        * P0 (Dirty Write): Transaction \(T_1\) modifies a data item. Another transaction \(T_2\) then further
+          modifies that data item before \(T_1\) performs a ~COMMIT~ or ~ROLLBACK~. If \(T_1\) or \(T_2\) then
+          performs a ~ROLLBACK~, it is unclear whtat the correct data value should be
+
+
+        #+BEGIN_center
+        P0: \(w_1[x]\dots w_2[x]\dots((c_1\text{ or }a_1)\text{ and }(c_2\text{ or }a_2)\text{ in any order})\)
+        #+END_center
+
+        Without protection from P0, the system can’t undo updates by restoring before images. Consider the
+        history: \(w_1[x]w_2[x]a_1\). You don’t want to undo \(w_1[x]\) by restoring its before-image of \(x\), because
+        that would wipe out \(w_2\)’s update. But if you don’t restore its before-image, and transaction \(T_2\) later aborts,
+        you can’t undo \(w_2[x]\) by restoring its before-image either!
+
+        So we conclude:
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        ANSI SQL isolation should be modified to require P0 for all isolation levels.
+        #+END_remark
+
+        Consider history \(H_1\):
+        \begin{equation*}
+        H_1:r_1[x=50]w_1[x=10]r_2[x=10]r_2[y=50]c_2r_1[y=50]w_1[y=90]c_1
+        \end{equation*}
+
+        \(H_1\) is non-serializable, the classical inconsistent analysis problem where transaction \(T_1\) is
+        transferring a quantity 40 from \(x\) to \(y\), maintaining a total balance of 100, but \(T_2\) reads
+        an inconsistent state where the total balance is 60.
+
+        But \(H_1\) does not violate any of the anomalies \(A_1\), \(A_2\) or \(A_3\). But consider instead
+        taking the broad interpretation of \(A_1\), the phenomenon \(P_1\):
+        \begin{equation*}
+        w_1[x]\dots r_2[x]\dots((c_1\text{ or }a_1)\text{ and }(c_2\text{ or }a_2)\text{ in any order})
+        \end{equation*}
+        \(H_1\)indeed violates \(P_1\).
+
+        Similar arguments show that \(P_2\) should be taken as the ANSI intention rather than \(A_2\). A
+        history that discriminates these two interpretations is:
+        \begin{equation*}
+        H_2:r_1[x=50]r_2[x=50]w_2[x=10]r_2[y=50]w_2[y=90]c_2r_1[y=90]c_1
+        \end{equation*}
+        \(H_2\) is non-serializable, where \(T_1\) sees a total balance of 140. This time neither transaction
+        reads dirty data. Thus \(P_1\) is satisfied. Once again, no data item is read twice nor is any
+        relevant predicate evaluation changed. The problem with \(H_2\) is that by the time \(T_1\) reads
+        \(y\), the value for \(x\) is out of date. If \(T_1\) were to read \(x\) again, it would have been
+        changed; but since \(T_1\) doesn't do that, \(A_2\) doesn't apply.
+
+        #+LATEX: \wu{
+        In essence, \(T_1\) doesn't aware of \(T_2\)'s existence and can't determine if its read value is the newest.
+        #+LATEX: }
+
+        Finally, consider
+        \begin{equation*}
+        H_3:r_1[P]w_2[\text{insert }y\in  P]r_2[z]w_2[z]c_2r_1[z]c_1
+        \end{equation*}
+        Here \(T_1\) performs a ~<search condition>~ to find the list of active employees. Then \(T_2\) performs an
+        insert of a new active employee and then updates \(z\), the count of employees in the company.
+        Following this, \(T_1\) reads the count of active employees as a check and sees a discrepancy. This
+        history is clearly not serializable, but is allowed by A3 since no predicate is evaluated twice.

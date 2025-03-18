@@ -1,0 +1,63 @@
+#+title: Weak Consistency: A Generalized Theory and Optimisitc Implementations for Distributed Transactions
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/weak_consistency.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+** Why New Consistency Definitions are Needed
+        Any set of definitions for weak consistency levels must satisfy two goals.
+        1. they must be sufficiently restrictive to disallow all behavior that is considered undesirable by
+           application programmers and end-users, e.g., non-serializable histories should be disallowed by the
+           consistency level that provides serializability.
+        2. they must also be permissive enough to allow all good behavior that is expected by applications, or
+           at least all histories that can occur using some realistic concurrency control technique. In
+           particular, we would like to allow both pessimistic and optimistic concurrency control approaches.
+
+        Pessimistic schemes such as 2-phase locking require appropriate permission (e.g., read or write) to be
+        obtained before an object can be accessed. On the other hand, optimistic concurrency control schemes
+        allow immediate access to objects. At the end of a transaction, the database system checks for
+        conflicts and, the transaction is aborted if necessary.
+** Contributions: Specifying Degrees of Isolation
+*** Definitions of Existing Isolation Levels
+        Our levels for committed transactions are called PL-1, PL-2, and PL-3 where PL-3 is the same as
+        serializability.
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 1-1
+        #+CAPTION:
+        [[../../images/papers/117.png]]
+*** New Isolation Levels
+        Our first level, PL-2+, is the weakest level that ensures that transactions do not observe violated
+        multi-object constraints. However, it allows transactions to update the database in an inconsistent
+        manner. Thus, PL-2+ lies “halfway” between degrees 2 and 3 since it ensures consistent reads but
+        allows inconsistent writes.
+* Existing Definitions
+** Degrees of Isolation
+** ANSI/ISO SQL-92 Definitions
+        * Dirty Read (Read Committed) - Transaction \(T_1\) modifies \(x\).  Another transaction \(T_2\) then reads \(x\)
+          before \(T_1\) commits or aborts. If \(T_1\) then aborts, \(T_2\) has read a data item that was
+          never committed and so vever really existed.
+        * Fuzzy or Non-repeatable Read (Repeatable Read) - Transaction \(T_1\) reads \(x\) and then \(T_2\) modifies or deletes
+          \(x\) and commits. If \(T_1\) then attempts to reread \(x\), it receives a modified value or
+          discovers that the data has been deleted
+        * Phantom (Serializable) - Transaction \(T_1\) reads a set of data items satisfying some condition. Transaction
+          \(T_2\) then creates data items that satsify \(T_1\)'s condition and commits. If \(T_1\) then
+          repeats its read with the same condition, it gets a set of data items different from the first read.
+** Preventative Phenomena Approach
+
+        #+CAPTION: Anomaly and Preventative Interpretations of ANSI levels
+        #+NAME: 2-1
+        |-------------+------------------------+-----------------------------|
+        | Phenomenon  | Anomaly Interpretation | Preventative Interpretation |
+        |-------------+------------------------+-----------------------------|
+        | Dirty Write | None                   | \(P0:w_1(x)\dots w_2(x)\)   |
+        | Dirty Read  |                        |                             |
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

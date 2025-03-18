@@ -447,8 +447,95 @@
           applications, database configuration changes, and direct internal database functionality
           invocations. Workloads are composable to exercise various features and are reused to construct
           comprehensive test cases.
-* Problems
 
+        * *Test oracles*. FDB uses a variety of test oracles to detect failures in simulation. Most of the
+          synthetic workloads used in simulation have assertions built in to verify the contracts and
+          properties of the database (for example, by checking invariants in their data that can only be
+          maintained through transaction atomicity and isolation). Assertions are used throughout the
+          code-base to check properties that can be verified “locally”. Properties like recoverability
+          (eventual availability) can be checked by returning the modeled hardware environment (after a set of
+          failures perhaps sufficient to break the database’s availability) to a state in which recovery
+          should be possible and verifying that the cluster eventually recovers.
+
+        * *Fault injection*. The FDB simulator injects machine, rack, and data-center level fail-stop failures
+          and reboots, a variety of network faults, partitions, and latency problems, disk behavior (e.g. the
+          corruption of unsynchronized writes when machines reboot), and randomizes event times. This variety
+          of fault injection both tests the database’s resilience to specific faults and increases the
+          diversity of states in simulation. Fault injection distributions are carefully tuned to avoid
+          driving the system into a small state-space caused by an excessive fault rate.
+
+          FDB itself cooperates with the simulation in making rare states and events more common, through a
+          high-level fault injection technique informally referred to as “buggification”.
+          * At many places in its codebase, the simulation is given the opportunity to inject some unusual
+            behavior such as unnecessarily returning an error from an operation
+            that usually succeeds, injecting a delay in an operation that is usually fast, choosing an unusual
+            value for a tuning parameter, etc.
+          * Randomization of tuning parameters also ensures that specific performance tuning values do not
+            accidentally become necessary for correctness.
+
+          Swarm testing is extensively used to maximize the diversity of simulation runs. Each run uses a
+          random cluster size and configuration, random workloads, random fault injection parameters, random
+          tuning parameters, and enables and disables a different random subset of buggification points.
+
+          Conditional coverage macros are used to evaluate and tune the effectiveness of the simulation. For
+          example, a developer concerned that a new piece of code may rarely be invoked with a full buffer can
+          add the line ~TEST(buffer.is_full());~ and analysis of simulation results will tell them how many
+          distinct simulation runs achieved that condition. If the number is too low, or zero, they can add
+          buggification, workload, or fault injection functionality to ensure that scenario is adequately tested.
+
+        * *Latency to bug discovery*. Finding bugs quickly is important.Discrete-event simulation can run
+          arbitrarily faster than real-time if CPU utilization within the simulation is low, as the simulator
+          can fast-forward clock to the next event.
+          \wu{How can we test merge test fast?}
+
+          Additionally, bugs can be found faster simply by running more simulations in parallel. Randomized
+          testing is embarrassingly parallel and FDB developers can and do “burst” the amount of testing they
+          do immediately before major releases, in the hopes of catching exceptionally rare bugs that have
+          thus far eluded the testing process.
+
+        * *Limitations*.
+          * Simulation is not able to reliably detect performance issues, such as an imperfect load balancing
+            algorithm.
+          * It is also unable to test third-party libraries or dependencies, or even first-party code not
+            implemented in Flow. As a consequence, we have largely avoided taking dependencies on external
+            systems.
+          * Finally, bugs in critical dependent systems, such as a filesystem or the operating system, or
+            misunderstandings of their contract, can lead to bugs in FDB. For example, several bugs have
+            resulted from the true operating system contract being weaker than it was believed to be.
+* Evaluation
+** Production Measurement
+** Reconfiguration Duration
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f10
+        #+CAPTION:
+        [[../../images/papers/115.png]]
+
+        We collected 289 reconfiguration (i.e., transaction system recovery) traces from our production
+        clusters that typically host hundreds of TBs data. Because of the client-facing nature, short
+        reconfiguration time is critical for the high availability of these clusters. Figure ref:f10
+        illustrates the cumulative distribution function (CDF) of the reconfiguration times. The median and
+        90-percentile are 3.08 and 5.28 seconds, respectively. The reason for these short recovery times is
+        that they are not bounded by the data or transaction log size, and are only related to the system
+        metadata sizes. During the recovery, read-write transactions were temporarily blocked and were retried
+        after timeout. However, client reads were not impacted, because they are served by StorageServers. As
+        a result, clients were often unaware the cluster was unavailable for a few seconds. The causes of
+        these reconfigurations include automatic failure recovery from software or hardware faults, software
+        upgrades, database configuration changes, and the manual mitigation of production issues by the Site
+        Reliability Engineering (SRE) team.
+* Lessons Learned
+** Architecture Design
+** Simulation Testing
+** Fast Recovery
+
+** 5s MVCC Window
+        FDB chooses a 5-second MVCC window to limit the memory usage of the transaction system and storage
+        servers, because the multiversion data is stored in the memory of ~Resolvers~ and ~StorageServers~, which
+        in turn restricts transaction sizes. From our experience, this 5s window is long enough for the
+        majority of OLTP use cases. If a transaction exceeds the time limit, it is often the case that the
+        client application is doing something inefficient, e.g., issuing reads one by one instead of parallel
+        reads. As a result, exceeding the time limit often exposes inefficiency in the application.
+* Problems
+        1. Why does FoundationDB have very short recovery time?
 
 * References
 <<bibliographystyle link>>
