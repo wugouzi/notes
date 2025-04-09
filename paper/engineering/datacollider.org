@@ -1,0 +1,221 @@
+#+title: DataCollider: Effective Data-Race Detection for the Kernel
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/engineering/datacollider.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/engineering/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+        [[https://www.microsoft.com/en-us/download/details.aspx?id=52264][download link]]
+* Introduction
+        Two memory accesses in a program are said to *conflict* if they access the same memory location and at
+        least one of them is a write. A program contains a *data race* if two conflicting accesses can occur concurrently.
+
+        DataCollider samples a small number of memory accesses for data-race detection and uses
+        code-breakpoint and data-breakpoint1 facilities available in modern hardware architectures to
+        efficiently perform this sampling.
+
+        We have implemented DataCollider for the 32-bit Windows kernel running on the x86 architecture, and
+        used it to detect data races in the core kernel and several modules such as the filesystem, the
+        networking stack, the storage drivers, and a network file system. We have found a total of 25
+        erroneous data races of which 12 have already been fixed at the time of writing. In our experiments,
+        the tool is able to find erroneous data races for sampling rates that incur runtime overheads of
+        less than 5%.
+
+        Researchers have proposed multitude of dynamic data-race detectors for user-mode programs. In essence,
+        these tools work by dynamically monitoring the memory accesses and synchronizations performed during a
+        concurrent execution. As data races manifest rarely at runtime, these tools attempt to infer
+        conflicting accesses that could have executed concurrently. The tools differ in how they perform this
+        inference, either using the happens-before ordering induced by the synchronization operations or a
+        lock-set based reasoning or a combination of the two.
+
+        There are several challenges in engineering a data-race detection tool for the kernel based on
+        previous approaches.
+        1. The kernel-mode code operates at a lower concurrency abstraction than user-mode code. In the
+           kernel, the same thread context can execute code from a user-mode process, a device interrupt
+           service routine, or a deferred procedure call (DPC). In addition, it is an onerous task to
+           understand the semantics of complex synchronization primitives in order to infer the happens-before
+           relation or lock-sets.
+
+           For instance, Windows supports more than a dozen locks with different semantics on how the lock
+           holder synchronizes with hardware interrupts, the scheduler, and the DPCs. It is also common for
+           kernel modules to roll-out custom implementations of synchronization primitives.
+        2. Hardware-facing kernel modules need to synchronize with hardware devices that concurrently modify
+           device state and memory. It is important to design a data-race detection tool that can find these
+           otherwise hard-to-find data races between the hardware and the kernel.
+        3. Existing dynamic data-race detectors add prohibitive run-time overheads.
+
+
+        DataCollider uses a different approach as shown in Figure ref:f2.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/123.png]]
+* Background and Motivation
+** Definition of Data Race
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        * Two operations that access main memory are called *conflicting* if
+          * the physical memory they access is not disjoint
+          * at least one of them is a write
+          * they are not both synchronization accesses
+        * A program *has a data race* if it can be executed on a multiprocessor in such a way that two
+          conflicting memory accesses are performed simultaneously (by processors or any other device).
+        #+END_definition
+** Precision of Detection
+        * A *missed race* is a data race that the tool does not warn about.
+        * A *benign* data race is a data race that does not adversely affect the behavior of the program.
+
+          Common examples of benign data races include threads racing on updates to logging or statistics
+          variables and threads concurrently updating a shared counter where the occasional incorrect update
+          of the counter does not affect the outcome of the program.
+        * A *false* data race is an error report that does not correspond to a data race in the program.
+
+          Static data-race detection techniques commonly produce false data races due to their inherent
+          inability to precise-ly reason about program paths, aliased heap objects, and function pointers.
+
+          Dynamic data-race detectors can report false data races if they do not identify or do not understand
+          the semantics of _all_ the synchronizations used by the program.
+** Related Work
+*** Static vs. Dynamic
+*** Happens-Before Tracking
+        Tracking a happens-before relation on program events is one way to infer the existence of a racy schedule.
+*** Lock Sets
+        The basic idea is to examine the lock set of each data access (that is, the set of locks held during
+        the access) and then to take for each memory location the intersection of the lock sets of all
+        accesses to it. If that intersection is empty, the variable is not consistently protected by any one
+        lock and a warning is issued.
+
+        The main limitation of the lock set approach is that it does not check for true data races but for
+        violations of  specific locking discipline. Unfortunately, many applications (and in particular kernel
+        code) use locking disciplines that are complex and use synchronization other than locks.
+*** Problems with Tracking Synchronizations
+        There are two fundamental difficulties we encountered when trying to apply these techniques in the
+        kernel:
+        1. Abstractions that we take for granted in user mode (such as threads) are no longer clearly defined
+           in kernel mode.
+        2. The synchronization vocabulary of kernel code is much richer and may include complicated sequences
+           and ordering mechanisms provided by the hardware.
+* DataCollider implementation
+** The Sampling Algorithm
+        1. Data races involve two memory accesses both of which need to be sampled to detect the race. If
+           memory accesses are sampled independently, then the probability of finding the data race is a
+           product of the individual sampling probabilities.
+
+           DataCollider avoids this multiplicative effect by sampling the first access and using a data
+           breakpoint to trap the second access. This allows DataCollider to be effective at low sampling rates.
+        2. Data races are rare events – most executed instructions do not result in a data race. The sampling
+           algorithm should weed out the small percentage of racing accesses from the majority of non-racing
+           accesses.
+
+           The key intuition behind the sampling algorithm is that if a program location is buggy and fails to
+           use the right synchronization when accessing shared data, then every dynamic execution of that
+           buggy code is likely to participate in a data race. Accordingly, DataCollider performs static
+           sampling of program locations rather than dynamic sampling of executed instructions.
+
+           A static sampler provides equal preference to rarely execution instructions (which are likely to
+           have bugs hidden in them) and frequently executed instructions.
+*** Static Sampling Using Code Breakpoints
+        Given a program binary, DataCollider disassembles the binary to generate a *sampling set* consisting of
+        all program locations that access memory.
+
+        * DataCollider performs a simple static analysis to identify instructions that are guaranteed to only
+          touch thread- local stack locations and removes them from the sampling set.
+        * Similarly, DataCollider removes synchronizing instructions from the sampling set by removing
+          instructions that accesses memory locations tagged as “volatile” or those that use hardware
+          synchronization primitives, such as interlocked.
+
+        DataCollider samples program locations from the sampling set by inserting code breakpoints. The
+        initial breakpoints are set at a small number of program locations chosen uniformly randomly from
+        the sampling set. If and when a code breakpoint fires, DataCollider performs conflict detection for
+        the memory access at that breakpoint. Then, DataCollider choses another program location uniformly
+        randomly from the sampling set and sets a breakpoint at that location.
+
+        This algorithm uniformly samples all program locations in the sampling set irrespective of the
+        frequency with which the program executes these locations. This is because the choice of inserting a
+        code breakpoint is performed uniformly at random for all locations in the sampling set. Over a period
+        of time, the breakpoints will tend to reside at rarely executed program locations, increasing the
+        likelihood that those locations are sampled the next time they execute.
+*** Controlling the Sample Rate
+** Conflict-Detection
+        For these sampled accesses, DataCollider pauses the current thread waiting to see if another thread
+        makes a conflicting access to the same memory location. It uses two strategies: data breakpoints and
+        repeated-reads. DataCollider uses these two strategies simultaneously as each complements the
+        weaknesses of the other.
+*** Detecting Conflicts with Data Breakpoints
+        The x86 hardware supports four data breakpoint registers. DataCollider uses them to effectively
+        monitor possible conflicting accesses to the currently sampled access.
+
+        When the current access is a write, DataCollider instructs the processor to trap on a read or write to
+        the memory location. If the current access is a read, DataCollider instructs the processor to trap
+        only on a write, as concurrent reads to the same location do not conflict. If no conflicting accesses
+        are detected, DataCollider resumes the execution of the current thread after clearing the data
+        breakpoint registers.
+        #+LATEX: \wu{
+        How to know when to resume.
+        #+LATEX: }
+
+        Each processor has a separate data breakpoint register. DataCollider uses an inter-processor interrupt
+        to update the break points on all processors atomically. This also synchronizes multiple threads
+        attempting to sample different memory locations concurrently.
+
+        An x86 instruction can access variable sized memory. For 8, 16, or 32-bit accesses, DataCollider sets
+        a breakpoint of the appropriate size. The x86 processor traps if another instruction accesses a memory
+        location that overlaps with a given breakpoint. Luckily, this is precisely the semantics required for data-race detection.
+        For accesses that span more than 32 bits, DataCollider uses more than one breakpoint up to the maximum
+        available of four. If DataCollider runs out of breakpoint registers, it simply resorts to the
+        repeated-read strategy discussed below.
+
+        When a data breakpoint fires, DataCollider has successfully detected a race.
+
+        One particular shortcoming of data breakpoint support in x86 that we had to work around was the fact
+        that, when paging is enabled, x86 performs the breakpoint comparisons based on the virtual address and
+        has no mechanism to modify this behavior. Two concurrent accesses to the same virtual addresses but
+        different physical addresses do not race. In Windows, most of the kernel resides in the same address
+        space with two exceptions:
+        * Kernel threads accessing the user address space cannot conflict if the threads are executing in the
+          context of different processes. If a sampled access lies in the user address space, DataCollider
+          does not use breakpoints and defaults to the repeated-read strategy.
+        * Similarly, a range of kernel-address space, called session memory, is mapped to different address
+          spaces based on the session the process belongs to. When a sampled access lies in the session memory
+          space, DataCollider sets a data breakpoint but checks if the conflicting accesses belong to the same
+          session before reporting the conflict to the user.
+        * Finally, a data breakpoint will miss conflicts if a processor uses a different virtual address
+          mapped to the same physical address as the sampled access. Similarly, data breakpoints cannot detect
+          conflicts arising from hardware devices directly accessing memory. The repeated-read strategy
+          discussed below covers all these cases.
+*** Detecting Conflicts with Repeated Reads
+        The repeated-read strategy relies on a simple insight: if a conflicting write changes the value of a
+        memory location, DataCollider can detect this by repeatedly reading  the memory location checking for
+        value changes.
+
+        * An obvious disadvantage of this approach is that it cannot detect conflicting reads.
+        * Similarly, it cannot detect multiple conflicting writes the last of which writes the same value as
+          the initial value.
+
+        Despite these shortcomings, we have found this strategy to be very useful in practice. This is the
+        first strategy we implemented (as it is easier to implement than using data breakpoints) and we were
+        able to find several kernel bugs with this approach.
+*** Inserting Delays
+        Depending on the IRQL (Interrupt Request Level) of the executing thread, DataCollider delays the
+        thread for a preset maximum amount of time. At IRQLs higher than the DISPATCH level (the level at
+        which the kernel scheduler operates), DataCollider does not insert any delay. We considered inserting
+        a small window of delay at this level to identify possible data races between interrupt service
+        routines. But we did not expect that DataCollider would be effective at short delays.
+
+        Threads running at the DISPATCH level cannot yield the processor to another thread. As such, the delay
+        is simply a busy loop. We currently delay threads at this level for a random amount of time less than
+        1 ms. For lower IRQLs, DataCollider delays the thread for a maximum of 15 ms by spinning in a loop
+        that yields the current time quantum. During this loop, the thread repeatedly checks to see if other
+        threads are making progress by inspecting the rate at which breakpoints fire. If progress is not
+        detected, the waiting thread prematurely  stops its wait.
+*** Dealing with Benign Data Races
+*** Evaluation
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

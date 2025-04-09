@@ -53,6 +53,47 @@
         |-------------+------------------------+-----------------------------|
         | Dirty Write | None                   | \(P0:w_1(x)\dots w_2(x)\)   |
         | Dirty Read  |                        |                             |
+* Proposed Specifications for Existing Isolation Levels
+** System Model and Terminology
+*** Database Model
+        When a transaction writes an object \(x\), it creates a new version of \(x\). A transaction \(T\) can
+        modify an object multiple times; its first update of object \(x\) is denoted by \(x_{i.1}\) , the
+        second by \(x_{i.2}\), and so on. Version \(x_i\) denotes the final modification of \(x\) performed by
+        \(T_i\) before it commits or aborts. That is,
+        \begin{equation*}
+        x_i\equiv x_{i.n}\text{ where }n=\max\{j\mid x_{i.j}\text{ exists}\}
+        \end{equation*}
+        The last operation of a transaction is a commit or abort operation to indicate whether the
+        transaction’s execution was successful or not; there is at most one commit or abort operation for a
+        transaction.
+
+        An *event* is added to a transaction’s sequence of events after it has been registered by the database,
+        e.g., for a read event of version \(x\) , it could mean that the database has added \(x\) to the
+        transaction’s read set and returned the relevant value. Similarly, in an optimistic system, a commit
+        may be requested for transaction \(T_i\) but \(T_i\) may abort; in this case, we register an abort event
+        for \(T_i\) and not a commit event.
+
+        The *database state* refers to the versions of objects that have been created by committed and
+        uncommitted transactions. The committed state of the database reflects only the modifications of
+        committed transactions. When transaction \(T\) commits, each version \(x_i\) created by \(T_i\)
+        becomes a part of the committed state and we say that \(T_i\) installs \(x_i\) . If \(T_i\) aborts,
+        \(x_i\) does not become part of the committed state. Thus, the system needs to prevent modifications
+        made by uncommitted and aborted transactions from affecting the committed database state.
+
+        Conceptually, the committed state comes into existence as a result of running a special initialization
+        transaction, \(T_{init}\). Transaction \(T_{init}\) creates all objects that will ever exist in the
+        database; at this point, each object \(x\) has an initial version, \(x_{init}\), called the *unborn
+        version*. When an application transaction inserts an object \(x\) (e.g., inserts a tuple in a
+        relation), we model it as the creation of a visible version for \(x\). When a transaction \(T_i\)
+        deletes an object \(x\) (e.g., by deleting a tuple from some relation), we model it as the creation of
+        a special dead version, i.e., in this case, \(x_i\) (also called \(x_{dead}\)) is a *dead version*.
+        Thus, object versions can be of three kinds — *unborn*, *visible*, and *dead*
+
+
+All objects in the database have a unique identity that is not based on field values. Suppose
+transaction T deletes x (i.e., x is a dead version) and a later transaction T checks if this tuple
+exists and inserts a new tuple. Transaction T ’s insert operation overwrites the unborn version of an
+object y that has not been used before and creates a visible version of y, i.e., the deleted and inserted
 * Problems
 
 

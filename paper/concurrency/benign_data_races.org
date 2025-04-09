@@ -1,0 +1,102 @@
+#+title: How to miscompile programs with "benign" data races
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/concurrency/benign.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/concurrency/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Here we show that all kinds of C or C++ source-level "benign" races discussed in the literature can in
+        fact lead to incorrect execution as a result of perfectly reasonable compiler transformations, or when
+        the program is moved to a different hardware platform.
+
+* "Benign" data races
+        Although data races have arguably never been allowed in multithreaded versions of C and C++, they are
+        commonly used in existing code, and there is a strong perception that they are acceptable in certain
+        contexts.
+** Double checks for lazy initialization
+        #+begin_src c++
+if (!init_flag) {
+  lock();
+  if (!init_flag) {
+    my_data = ...;
+    init_flag = true;
+  }
+  unlock();
+}
+tmp = my_data;
+        #+end_src
+        Nothing prevents an optimizing compiler from either reordering the setting of ~my_data~ with that of
+        ~init_flag~, or even from advancing the load of ~my_data~ to before the first test of ~init_flag~, reloading
+        it in the conditional if ~init_flag~ was not set.
+
+        Either of these can result in the final read of ~my_data~ seeing an uninitialized value and producing
+        incorrect results.
+
+        #+LATEX: \wu{
+        We need a release here
+        #+LATEX: }
+** Both values are valid
+        The problem here is that it is quite possible that the reader will see a result /inconsistent with/
+        /reading either the old or the new value/.
+
+        Assume the consumer code from above were written as something like:
+        #+begin_src c++
+{
+  int my_counter = counter;
+  int (* my_func) (int);
+  if (my_counter > my_old_counter) {
+    // Consume data
+    my_func = ...;
+    // Do some more consumer work
+  }
+  // Do some other work
+  if (my_counter > my_old_counter) {
+    my_func(...);
+  }
+}
+        #+end_src
+
+        If the compiler decides that it needs to spill the register containing my counter between the two
+        tests, it may well decide to avoid storing the value (it’s just a copy of counter, after all), and to
+        instead simply re-read the value of counter for the second comparison involving my counter,
+        effectively transforming the code to:
+
+        #+begin_src c++
+{
+  int my_counter = counter;  // Read global
+  int (* my_func) (int);
+
+  if (my_counter > my_old_counter) {
+    // Consume data
+    my_func = ...;
+    // Do some more consumer work
+  }
+  // Do some other work
+  my_counter = counter;      // Reread global!
+  if (my_counter > my_old_counter) {
+    my_func(...) ;
+  }
+}
+        #+end_src
+        This may lead to the first test failing, and the second succeeding, with the call to my func resulting
+        in a wild branch.
+
+        The core problem arises from the compiler taking advantage of the assumption that variable values
+        cannot asynchronously change without an explicit assignment.
+** User constructed synchronization
+        Using ordinary variables for such accesses is unsafe in portable code for at least three reasons:
+        1. The operations may again fail to be indivisible, as in the preceding section. For example, on an
+           x86 machine, a pointer that was misaligned and spanned a cache-line boundary might appear to be
+           updated in two steps. Although most compilers avoid generating such code, they are not prohibited
+           from doing so.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

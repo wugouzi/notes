@@ -1,0 +1,378 @@
+#+title: Dynamic Race Detection For C++11
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/concurrency/dynamic_race_detection_for_c++11.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/concurrency/}}
+#+LATEX_HEADER: \DeclareMathOperator{\RMW}{\textbf{RMW}}
+#+LATEX_HEADER: \DeclareMathOperator{\rlx}{\textbf{rlx}}
+#+LATEX_HEADER: \DeclareMathOperator{\rel}{\textbf{rel}}
+#+LATEX_HEADER: \DeclareMathOperator{\acq}{\textbf{acq}}
+#+LATEX_HEADER: \DeclareMathOperator{\bra}{\textbf{ra}}
+#+LATEX_HEADER: \DeclareMathOperator{\bsc}{\textbf{sc}}
+#+LATEX_HEADER: \DeclareMathOperator{\na}{\textbf{na}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        * The definition of a data race in C++11 is far from trivial, due to the complex rules for when
+          synchronisation occurs between various atomic operations provided by the language
+        * Another subtlety of this new memory model is the reads-from relation, which specifies the values
+          that can be observed by an atomic load.
+
+        Although tsan can be applied to programs that use C++11 concurrency, the tool does not understand the
+        specifics of the C++11 memory model.
+        #+LATEX: \wu{
+        Maybe this is true in 2017, but nowadays it understands, maybe not fully.
+        #+LATEX: }
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION:
+        [[../../images/papers/126.png]]
+
+* Background
+** C/C++11 Memory Model
+        The C/C++11 standards provide several low level atomic operations on atomic types, which allow
+        multiple threads to interact: stores, loads, read-modify-writes (RMWs) and fences. RMWs will modify
+        (e.g. increment) the existing value of an atomic location, storing the new value and returning the
+        previous value atomically. Fences decouple the memory ordering constraints mentioned  from atomic
+        locations, allowing for finer control over synchronisation.
+
+        Each operation can be annotated with one of six memory orderings: relaxed, consume, acquire, release,
+        acquire-release and sequentially consistent.
+
+        We start by defining a few basic types of operation. A *load* is an atomic load or RMW. An *acquire load*
+        is a load with acquire, acquire-release or sequentially consistent ordering. A *store* is an atomic
+        store or RMW. A *release store* is a store with release, acquire-release or sequentially consistent
+        ordering.
+
+        The model is defined using a set of relations and predicates.
+*** Pre-executions
+        A program execution represents the behaviour of a single run of the program. These are shown as
+        execution graphs, where nodes represent memory events. For example, \(\ba:\bW_{\textbf{rel}}\bx=1\)
+        is a memory event that corresponds to a relaxed write of 1 to memory location \(\bx\); \(\ba\) is a
+        unique identifier for the event. The event types \(\bW\), \(\bR\), \(\RMW\) and \(\bF\) represent
+        read, write, RMW and fence events, respectively. Memory orderings are shortened to \(\rlx\), \(\rel\),
+        \(\acq\), \(\bra\), \(\bsc\) and \(\na\) for relaxed, release, acquire, release-acquire,
+        sequentially-consistent and non-atomic, respectively.
+
+        An RMW has two associated values, representing both the value read and written. For example,
+        \(\bb:\RMW_{\bra}\bx=1/2\) shows event \(\bb\) reading value 1 from and writing value 2 to \(\bx\)
+        atomically.
+
+        Fences have no associated values or atomic location; an example release fence event is \(\bc:\bF_{\rel}\) .
+
+        *Sequenced-before* (*sb*) is an intra-thread relation that orders events by the order they appear in the
+        program. Operations within an expression are not ordered, so \(sb\) is not total within a thread.
+
+        *Additional-synchronises-with* (*asw*) causes synchronization on thread launch, between the parent thread
+        and the newly created thread. Let \(a\) be the last event performed by a thread before it creates a
+        new thread, and \(b\) be the first event in the created thread. Then \((a,b)\in asw\) . Similarly, an
+        \(asw\) edge is also created between the last event in the child thread and the event immediately
+        following the join in the parent thread.
+
+        The events, \(sb\) edges and \(asw\) edges form a pre-execution. In the program of Figure [[ref:1]]b,
+        whether an event is created for the second read in T2 depends on whether, under short-circuit
+        semantics, it is necessary to evaluate the second argument to the logical && operator. In most of the
+        graphs we show, obvious relations like \(asw\) are elided to prevent the graphs from becoming
+        cluttered. The values read by read events are unbound, as matching reads and writes comes at a later
+        stage. As a result, only a select few pre-executions of a program lead to valid executions.
+*** Presentations of Execution Graphs
+        Throughout the paper we present a number of execution graphs, such as those depicted in Figures [[ref:2]]
+        and [[ref:3]]. These graphs are best viewed in colour. In each graph, events in the same column are issued
+        by the same thread. We sometimes omit write events that give initial values to locations; e.g. in
+        Figure [[ref:2]] we label events starting with \(c\), not showing events \(a\) and \(b\) that give initial values to locations \(\bx\) and \(\textbf{nax}\).
+*** Witness Relations
+        A single pre-execution, disregarding the event values, can give rise to many different executions,
+        depending on the behaviours the program can exhibit. A pre-execution combined with a set of relations
+        characterising the behaviour of a particular execution is referred to as a candidate execution. Not
+        all pre-executions can be extended to a candidate execution, if, for example, a read cannot be matched
+        with a write.
+
+        *Reads-from* (*rf* ) shows which store each load reads from. For a store \(a\) and load \(b\),
+        \((a,b)\in rf\) indicates that the value read by \(b\) was written by \(a\). In any given execution,
+        there are usually many stores that a load can read from.
+
+        *Modification-order* (*mo*) is a total order over all of the stores to a single atomic location. Each location has its own order.
+
+        *Sequentially-consistent* (*sc*) order is a total order over all atomic operations in the execution marked
+        with sequentially-consistent ordering. This removes a lot of the weak behaviours that a program could
+        otherwise exhibit. For example, a sequentially consistent load will read from the last sequentially
+        consistent store to the location, but not from an earlier sequentially consistent store.
+
+        The candidate set of executions is the set of pre-executions extended with the witness relations.
+*** Derived Relations
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION:
+        [[../../images/papers/127.png]]
+
+        A *release-sequence* (*rs*) represents a continuous subset of the modification order. It is headed by a
+        release store, and continues along all stores to the same location. The \(rs\) is *blocked* when another
+        thread performs a store to the location. An RMW from another thread will however continue the \(rs\).
+        Figure [[ref:2]] shows a release sequence that is immediately blocked by a relaxed write from another
+        thread.
+        #+LATEX: \wu{
+        I DON'T UNDERSTAND
+        #+LATEX: }
+
+        A *hypothetical-release-sequence* (*hrs*) works in the same way as a release sequence, but is headed by
+        both release stores and non-release stores. The rules for extending and blocking are the same as for
+        release sequences. The \(hrs\) is used for fence synchronisation
+
+        *Synchronises-with* (*sw*) defines the points in an execution where one thread has synchronised with
+        another. When a thread performs an acquire load, and reads from a store that is part of a release
+        sequence, the head of the release sequence synchronises with the acquire load. An \(asw\) edge is also
+        \(sw\) an edge.
+
+        *Happens-before* (*hb*) is simply \((sb\cup sw)^+\) (where + denotes transitive closure), representing
+        Lamport’s partial ordering over the events in a system. Because an \(sw\) edge is also an \(hb\) edge,
+        when thread \(A\) synchronises with thread \(B\), every side effect that has occurred in \(A\) up to
+        this point will become visible to every event issued by \(B\) from this point.
+*** Data Races
+        Now that we have defined the happens-before relation, we can give a formal definition of a *data race*,
+        as described by the C/C++11 standard. A data race occurs between two memory accesses when at least one
+        is non-atomic, at least one is a store, and neither happens before the other according to the hb
+        relation. Figure [[ref:2]] shows an execution with a data race, as there is no \(sw\) edge between the
+        release store \(d\) and acquire load \9g, and therefore no \(hb\) edge between the non-atomic accesses
+        \(c\) and \(h\).
+
+        The presence of a data race is indicative of a program bug. The standard states that data races are
+        undefined behaviour, and the negative consequences of data races are well known
+*** Consistent Executions
+        The C++11 memory model is axiomatic - it provides a set of axioms that an execution must abide by in
+        order to be exhibited by a program. A candidate execution that conforms to such axioms is said to be
+        *consistent*.
+        If any consistent execution is shown to have a data race, then the set of allowed executions is empty,
+        leaving the program undefined.
+
+        There are seven axioms that determine consistency. As we are not considering consume memory ordering
+        and locks, some of these are fairly simple.
+        * The /well _formed _threads/ axiom states that \(sb\) must be intra-thread and a strict pre-order.
+          \wu{equivalent to partial order}
+        * The /well _formed _rf _mapping/ axiom ensures that nothing unusual is happening with the \(rf\)
+          relation, such as a load specified at one location reading from a store to another location, from
+          multiple stores, or from a store whose associated value is different from the value read by the
+          load.
+        * The /consistent_locks/ axiom we do not consider, as locks have not been affected by our work.
+        * The /consistent_ithb/ axiom, without consume, simply requires \(hb\) to be irreflexive.
+
+        The last three axioms, /consistent_sc_order/ , /consistent_mo/ and /consistent_rf _mapping/, correspond with
+        the formation of the \(sc\), \(mo\) and \(rf\) relations. We cover these in detail when presenting our
+        instrumentation library.
+
+        So long as an execution follows these axioms, it will be allowed. This leads to some interesting
+        behaviours. We refer to a *weak behaviour* as one that would not appear under any interleaving of the
+        threads using sequentially consistent semantics. To illustrate this, Figure [[ref:3]] shows two such
+        executions that arise from well-known litmus tests.
+        * In the load and store buffering  examples, at least one of the reads will not read from the most recent write in \(mo\), no matter how the threads are
+        interleaved.
+        * In the load buffering example, one of the reads will read from a write that has not even been
+          performed yet.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION:
+        [[../../images/papers/128.png]]
+** Dynamic Race Detection
+        [[label:2.2]]
+        A VC holds an epoch for each thread, and each thread has its own VC, denoted \(\C_t\) for thread
+        \(t\). Each epoch in \(\C_t\) represents the logical time of the last instruction by the corresponding
+        thread that happens before any instruction thread t will perform in the future. The epoch for thread
+        \(t\),\(\C_t(t)\), is denoted \(c@t\).
+
+        VCs have an *initial value*, \(\bot_V\), a *join* operator, \(\cup\), and a *comparison* operator, \(\le\),
+        and a per-thread increment operator, \(inc_t\), as defined in:
+        \begin{gather*}
+        \bot_V=\lambda t.0\hspace{1cm}V_1\cup V_2:=\lambda t.\max(V_1(t), V_2(t))\\
+        V_1\le V_2:=\forall t.V_1(t)\le V_2(t)\\
+        inc_t(V)=\lambda u.\text{if }u=t\text{ then }V(u)+1\text{ else }V(u)
+        \end{gather*}
+        Upon creation of thread \(t\), \(\C_t\) is initialised to \(inc_t(\bot_V)\) (possibly joined with the
+        clock of the parent thread, depending on the synchronisation semantics of the associated programming
+        language).  Each atomic location \(m\) has its own VC, \(\L_m\), that is updated as follows: when
+        thread \(t\) performs a release operation on \(m\), it releases \(\C_t\) to \(m\): \(\L_m:=\C_t\) .
+        When thread \(t\) performs an acquire operation on \(m\), it acquires \(\L_m\) using the join
+        operator: \(\C_t:=\C_t\cup\L_m\). Thread \(t\) releasing to location \(m\) and the subsequent acquire
+        of \(m\) by thread \(u\) simulates synchronisation between \(t\) and \(u\). On performing a release
+        operation, thread t’s vector clock is incremented: \(\C_t:=inc_t(\C_t)\).
+
+        To detect data races, we must check that certain accesses to each location are ordered by \(hb\). As
+        all writes must be totally ordered, only the epoch of the last write to a location \(x\) needs to be
+        known at any point, denoted \(W_x\) . As data races do not occur between reads, they do not need to be
+        totally ordered, and so the epoch of the last read by each thread may need to be known. A full VC must
+        therefore be used to track reads for each memory location, denoted \(\R_x\) for location \(x\);
+        \(\R_x(t)\) gets set to the epoch \(\C_t(t)\) when \(t\) reads from \(x\). To check for races, a
+        different check must be performed depending on the type of the current and previous accesses. These
+        are outlined as follows, where thread \(u\) is accessing location \(x\), \(c@t\) is the epoch of the
+        last write to \(x\) and \(\R_x\) represents the latest read for \(x\) by each thread; if any check
+        fails then there is a race:
+        * *write-write*: \(c@t\le\C_u(t)\)
+        * *write-read*: \(c@t\le\C_u(t)\)
+        * *read-write*: \(c@t\le\C_u(t)\wedge\R_x\le\C_u\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Consider example [[ref:1]]a.
+
+        Initially, the thread VCs are \(\C_{T1}=(1,0,0)\), \(\C_{T2}=(0,1,0)\), \(\C_{T3}=(0,0,1)\), and we
+        have \(\R_{nax}=\L_x=\bot_V\).
+
+        Statement ~A~ writes to ~nax~, which has not been accessed previously, no race check is required. After ~A~,
+        \(W_{nax}=1@T1\), bacause T1's epoch is 1. After T1's release store at ~B~,
+        \(\L_x:=\L_x\cup\C_{T1}=(1,0,0)\) and \(\C_{T_1}=inc_{T1}(\C_{T1})=(2,0,0)\). After ~T2~'s acquire load
+        ~C~, \(\C_{T2}=\C_{T2}\cup\L_x=(1,1,0)\). The race analysis state is not updated by ~T2~'s store at ~D~
+        since relaxed ordering is used.
+
+        After ~T3~'s acquire load at ~E~, \(\C_{T3}:=\C_{T3}\cup\L_x=(1,0,1)\). Thread ~T3~ then reads from ~nax~ at
+        statement ~F~, thus a race check is required between this read and the write issued at ~A~. A *write-read*
+        check is required, to show that \(c\le\C_{T3}(t)\), where \(W_{nax}=c@t\). Because \(W_{nax}=1@T1\),
+        this simplifies to \(1\le \C_{T3}(T1)\), which can be seen to hold. The execution is thus deemed
+        race-free.
+
+        Later, we will revisit the example, showing that our refinements to the VC algorithm to capture the
+        semantics of C++11 release sequences identify a data race in this execution.
+        #+END_examplle
+** ThreadSanitizer
+        *Limitations of tsan*. Under certain conditions, a release sequence can be blocked. In tsan, release
+        sequences are never blocked, and all will continue indefinitely. This creates an over-approximation of
+        the happens-before relation, which leads to missed data races as illustrated by the example of Figure
+        [[ref:1]]a. On the other hand, tsan does not recognise fence semantics and their role in synchronisation,
+        causing tsan to under-approximate the happens-before relation and produce false positives. The example
+        of Figure [[ref:1]]c illustrates this: tsan will not see the synchronisation between the two fences and so
+        will report a data race on ~nax~.
+* Data Race Detection for C++11
+        The traditional VC algorithm outlined in [[ref:2.2]], and implemented in tsan, is defined over simple
+        release and acquire operations, and is unaware of the more complicated synchronisation patterns of
+        C++11.
+** Release Sequences
+        An event a will synchronise with event \(b\) if \(a\) is a release store and \(b\) is an acquire load
+        that reads from a store in the release sequence headed by \(a\). We explain why this is not captured
+        accurately by the existing VC algorithm, and how our new algorithm fixes this deficiency.
+*** Blocking Release Sequences
+        Recall the execution of Figure [[ref:2]]. The release sequence started by event \(d\) is blocked by the
+        relaxed write at event \(f\) . The effect is that when event \(g\) reads from event \(e\), no
+        synchronisation occurs, as the release sequence headed by event \(c\) does not extend to event \(e\).
+        In the original VC algorithm, synchronisation does occur, as the VC for a location is never cleared;
+        thus it is as if release sequences continue forever.
+
+        To adapt the VC algorithm to correctly handle the blocking of release sequences, we store for each
+        location \(m\) the id of the thread that performed the last release store to \(m\). Let \(\T_m\)
+        record this thread id. When a thread with id \(t\) performs a release store to \(m\), the contents of
+        the VC for \(m\) are over-written: \(\L_m:=\C_t\) , and \(t\) is recorded as the last thread to have
+        released to \(m\): \(\T_m:=t\). This records that \(t\) has started a release sequence on \(m\). Now,
+        if a thread with id \(u\neq\T_m\) performs a relaxed store to \(m\), the VC for \(m\) is cleared, i.e.
+        \(\L_m:=\bot_V\) . This has the effect of blocking the release sequence started by \(\T_m\) .
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Recall our example of the VC algorithm applied to schedule ~A~-~F~ of Figure [[ref:1]]a.
+        Revising this example to take release sequence blocking into account, we find that the relaxed store
+        by T2 at ~D~ causes \(\L_x\) to be set to \(\bot_V\). As a result, the acquire load by T3 at ~E~ yields
+        \(\C_{T3}=\C_{T3}\cup\L_x=(0,0,1)\). This causes the write-read race check on nax to fail at ~F~.. Thus
+        a race is detected, as required by the C++11 memory model.
+        #+END_examplle
+*** Read-Modify-Writes
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 4
+        #+CAPTION:
+        [[../../images/papers/129.png]]
+
+        RMWs provide an exception to the blocking rule: an RMW on location \(m\) does not block an existing
+        release sequence on \(m\). Each RMW on \(m\) with release ordering starts a new release sequence on
+        \(m\), meaning that an event can be part of multiple release sequences. If a thread t that started a
+        release sequence on \(m\) performs a non-RMW store to \(m\), the set of currently active release
+        sequences for \(m\) collapses to just the one started by \(t\).
+        In Figure [[ref:4]], release sequences from the left and middle threads are active on event \(e\), before a
+        relaxed store by the middle thread causes all but its own release sequence to be blocked.
+
+        To represent multiple release sequences on a location \(m\), we make \(\L_m\) join with the VC for
+        each thread that starts a release sequence. An acquiring thread will effectively acquire all of the
+        VCs that released to \(\L_m\) when it acquires \(\L_m\). This is not enough however. Consider the case
+        of collapsing release sequences when a thread \(t\) that started a release sequence on \(m\) performs
+        a relaxed non-RMW store. We require the ability to replace \(\L_m\) with the VC that \(t\) held when
+        it started its release sequence on \(m\), but this information is lost if \(t\)'s VC has been updated
+        since it performed the original release store. To preserve this information, we introduce for each
+        location \(m\) a vector of vector clocks (VVC), \(\V_m\) , that stores the VC for each thread that has
+        started a release sequence  on \(m\).
+
+        How \(\V_m\) is updated depends on the type of operation being performed. If thread \(t\) performs a
+        non-RMW store to \(m\), \(\V_m(u)\) is set to \(\bot_V\) for each thread \(u\neq t\). If the store has
+        release ordering, \(\V_m(t)\) and \(\L_m\) are set to \(\C_t\) ; as a result, \(t\) is the only thread
+        for which there is a release sequence on \(m\). If instead the store has relaxed ordering, \(\V_m(t)\)
+        is left unchanged, and \(\L_m\) is set to \(\V_m(t)\), i.e. to the VC associated with the head of a
+        release sequence on \(m\) started by \(t\), or to \(\bot_V\) if \(t\) has not started such a release
+        sequence.
+
+        Suppose instead that \(t\) performs an RMW on m. If the RMW
+has relaxed ordering then there are no changes to Lm nor Vm and
+all release sequences continue as before. If the RMW has release
+ordering, Vm (t) is updated to Ct , and the VC for t is joined on to
+the VC for m, i.e. Lm := Lm ∪Ct . By updating Lm in this manner,
+we ensure that when a thread acquires from m, it synchronises with
+all threads that head a release sequence on m.
+In practice, recording a full VVC for each location would be
+prohibitively expensive. In our implementation (§7.1) we instead
+introduce a mapping from thread ids to VCs that grows on demand
+when threads actually perform RMWs.
+** Fences
+        Fences are not handled in tsan: programs such as that of Figure [[ref:1]]c will not be properly instrumented,
+        leading to false positives.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 5
+        #+CAPTION:
+        [[../../images/papers/130.png]]
+        * Acquire fences will synchronise if a load sequenced before the fence reads from a store that is part
+          of a release sequence, even if the load has relaxed ordering, as shown in Figure [[ref:5]]a.
+        * Release fences use the hypothetical release sequence. A release fence will synchronise if an acquire
+          load reads from a hypothetical release sequence that is headed by a store sequenced after the fence,
+          as shown in Figure [[ref:5]]b.
+        * Release fences and acquire fences can also synchronise with each other, shown in Figure [[ref:5]]c.
+
+        In order to allow the VC algorithm to handle fence synchronisation, the VC from whence a thread
+        performed a release fence must be known, as this VC will be released to \(\L_m\) if the thread then does a
+        relaxed store to \(m\). When a thread performs a relaxed load, the VC that would be acquired if the
+        load had acquire ordering must be remembered, because if the thread then performs an acquire fence,
+        the thread will acquire said VC. To handle this, for each thread t we introduce two new VCs to track
+        this information: the *fence release* clock \(\F_t^{rel}\) , and the *fence acquire clock*, \(\F_t^{acq}\) . We then extend the
+        VC algorithm as follows.
+
+        * When thread \(t\) performs a release fence, \(\F_t^{rel}\) is set to \(\C_t\)
+        * when \(t\) performs an acquire fence, \(\F_t^{acq}\) is joined on to the thread's clock, i.e.,
+          \(\C_t=\C_t\cup\F_t^{acq}\)
+        * When a thread \(t\) performs a relaxed store to \(m\), \(\F_t^{rel}\) is joined on to \(\L_m\) .
+        * If \(t\) performs a relaxed load from \(m\), \(\L_m\) is joined on to \(\F_t^{acq}\)
+
+        To illustrate fence synchronisation, consider the four operations shown in the execution fragment in
+        Figure [[ref:5]]c. Let events \(a\), \(b\), \(c\) and \(d\) be carried out in that order. After \(a\),
+        \(\mathbb{F}_t^{rel}=\mathbb{C}_t\). After \(b\), \(\L_x=\F_t^{rel}\). After \(c\),
+        \(\F_{u}^{acq}\prime=\F_u^{acq}\cup\L_x\).
+        Finally, after \(d\), we have
+        \(\C_u'=\C_u\cup\F_u^{acq}\prime\ge\C_u\cup\F_t^{rel}=\C_u\cup\C_t\). Thus we have synchronisation between
+        \(a\) and \(d\).
+* Exploring Weak Behaviours
+        The fact that the C++11 memory model allows non-SC behaviours poses a problem for data race detection
+        techniques: a tool such as tsan that only considers SC executions will not be able to explore these
+        additional behaviours. For example, tsan cannot detect errors associated with non-SC executions of the
+        program of Figure [[ref:1]]b
+
+        To address this, we now present the design of a novel library that allows a program to be
+        instrumented, at compile time, with auxiliary state that can enable exploration of a large fragment of
+        the non-SC executions allowed by C++11. The essential idea is as follows: every atomic store is
+        intercepted, and information relating to the store is recorded in a *store buffer*. Every atomic load is
+        also intercepted, and the store buffer is queried to determine the set of possible stores that the
+        load may acceptably read from.
+
+        By controlling the order in which threads are scheduled and the stores from which atomic load
+        operations read, our instrumenta- tion enables exploration of a large set of non-SC behaviours. Our
+        buffering-based approach has some limitations, for example it does not facilitate a load reading from
+        a store that has not yet been issued;
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

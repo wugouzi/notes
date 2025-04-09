@@ -1,0 +1,148 @@
+#+title: Fast Incremental Maintenance of Approximate Histograms
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/fast_incremental_maintenance_of_approximate_histograms.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Histograms and their maintenance
+        The *domain* \(\cald\) of an attribute \(X\) is the set of all possible values of \(X\) and the *value
+        set* \(\calv\subseteq\cald\) for a relation \(R\) is the set of values of \(X\) that are present in
+        \(R\). Let \(\calv=\{v_i:1\le i\le\abs{\calv}\}\), where \(v_i<v_j\) when \(i<j\). The *frequency*
+        \(f_i\) of \(v_i\) is the number of tuples \(t\in R\) with \(t.X=v_i\). The *data distribution* of \(X\)
+        (in \(R\)) is the set of pairs \(\calt=\{(v_1,f_1),\dots,(v_{\abs{\calv}},f_{\abs{\calv}})\}\)
+
+        A *histogram* on attribute \(X\) is constructed by partitioning the data distribution \(\calt\) into
+        \(\beta\) mutually disjoint subsets called *buckets* and pproximating the values and frequencies in each
+        bucket in some common fashion. Typically, a bucket is assumed to contain either all \(m\) values in
+        \(\cald\) between the smallest and largest  values in that bucket (the bucket's *range), or just
+        \(k\le m\) equi-distan values in the range, where \(k\) is actual number of values in the bucket. The
+        former is known as the *continuous value assumption*, and the latter is known as the *uniform spread
+        assumption*. Let \(f_B\) be the number of tuples \(t\in R\) with \(t.X=v\) for some value \(v\) in
+        bucket \(B\). The frequencies for values in a bucket \(B\) approximated by their averages; i.e., by
+        either \(f_B/m\) or \(f_B/k\).
+
+        Different *classes* of histograms can be obtained by using different rules for partitioning values into
+        buckets. In this paper, we focus on two important classes of histograms, namely the *equi-depth* and
+        *Compressed*\((V,F)\) (simply called *Compressed* in this paper) classes.
+        * In an equi-depth (or equi-height) histogram, contiguous ranges of attribute values are grouped into
+          buckets such that the number of tuples, \(f_B\), in each bucket \(B\) is the same.
+        * In a Compressed histogram, the \(n\) highest frequencies are stored separately in \(b\) singleton
+          buckets; the rest are partitioned as in an equi-depth histogram.
+
+        In our target Compressed histogram, the value of \(n\) adapts to the data distribution to ensure that
+        no singleton bucket can fit within an equi-depth bucket and yet no single value spans an equi-depth
+        bucket.
+
+        For both equi-depth and Compressed histograms, we store for each bucket \(B\) the largest value in the
+        bucket, \(B.maxval\), and a count, \(B.count\), that equals or approximates \(f_B\). When using the
+        histograms to estimate range selectivities, we apply the uniform spread assumption for singleton
+        buckets and the continuous value assumption for equi-depth buckets.
+** Approximate histograms
+        Let \(\calh\) be the class \(C\) histogram, or \(C\)-histogram, on attribute \(X\) for a relation
+        \(R\). When \(R\) is modified, the accuracy of \(\calh\) is affected in two ways:
+        * \(\calh\) may no longer be the correct \(C\)-histogram on the updated data (*Class Error*)
+        * \(\calh\) may contain inaccurate information about \(X\) (*Distribution Error*).
+
+        For a given attribute, an approximate \(C\)-histogram provides an approximation to the actual
+        \(C\)-histogram for the relation. The quality of the approximation can be evaluated according to
+        various error metrics defined based on the class and distribution errors.
+
+        *The \(\mu_{count}\) error metric*. An example of a distribution error metric, relevant to many
+        histogram types, reflects the accuracy of the counts associated with each bucket. For example, when
+        \(R\) is modified, but the histogram is not, then there may be buckets \(B\) with \(B.count\neq f_B\);
+        the difference between \(f_B\) and \(B.count\) is the approximation error for \(B\).
+        We consider the error metric, \(\mu_{count}\),defined as follows:
+        \begin{equation*}
+        \mu_{count}=\frac{\beta}{N}\sqrt{\frac{1}{\beta}\sum_{i=1}^\beta(f_{B_i}-B_i.count)^2}
+        \end{equation*}
+        where \(N\) is the number of tuples in \(R\) and \(\beta\) is the number of buckets.
+** Incremental histogram maintenance
+        There are two components to our incremental approach:
+        1. maintaining a backing sample
+        2. a framework for maintaining an approximate histogram that performs a few program instructions in
+           response to each update to the database, and detects when the histogram is in need of an adjustment
+           of one or more of its bucket boundaries.
+* Backing sample
+        A *backing sample* is a uniform random sample of the tuples in a relation that is kept up-to-date in the
+        presence of updates to the relation.
+
+        At any given time, the backing sample for a relation \(R\) needs to be equivalent to a random sample
+        of the same size that would be extracted from \(R\) at that time. In this section, we present
+        techniques for maintaining a provably random backing sample of R based on the sequence of updates to
+        \(R\), while accessing \(R\) very infrequently (R is accessed only when an update sequencedeletes
+        about half the tuples in \(R\)).
+
+        Let \(\cals\) be a backing sample maintained for a relation \(R\). We first consider insertions to
+        \(R\). Our technique for maintaining \(\cals\) as a simple random sample in the presence of inserts is
+        based on the Reservoir Sampling technique. The algorithm proceeds by inserting the first \(n\) tuples
+        into a “reservoir.” Then a random number of records are skipped, and the next tuple replaces a
+        randomly selected tuple in the reservoir. Another random number of records are then skipped, and so
+        forth, until the last record has been scanned.
+
+        We extend Vitter’s algorithm to handle modify and delete operations, as follows. Modify operations are
+        handledby updating the value field, if the element is in the sample. Delete operations are handled by
+        removing the element from the sample,if it is in the sample. However, such deletions decrease the size
+        of the sample from the target size \(n\), and moreover,it is not known how to use subsequent
+        insertions to obtain a provably random sampleof size \(n\) once the sample has dropped below \(n\).
+        Instead, we maintain a sample whose size is initially a prespecified upper bound \(U\), and allow for
+        it to decrease as a result of deletions of sample items down to a prespecified lower bound \(L\). If
+        the sample size drops below L, we rescan the relation to re-populate the random sample. In the full
+        paper, we show that with high probability, no such rescans will occur in databases with infrequent
+        deletions. Moreover, even in the worst case where deletions are frequent, the cost of any rescan scan
+        be amortized against the cost of the large number of deletions that with high probability must occur
+        before a rescan becomes necessary.
+
+        The overheads of the algorithm can be lowered by using a hash table of the row ids in the sample to
+        test an id’s presence and by batching deletions together whenever possible.
+* Fast maintenance of approximate equi-depth histograms
+        Consider an approximate equi-depth histogram with \(\beta\) buckets for a relation of \(N\) tuples. We
+        consider an error metric, \(\mu_{ed}\), that reflects the extent to which the histogram’s bucket
+        boundaries succeed in evenly dividing the tuples in the relation:
+        \begin{equation*}
+        \mu_{ed}=\frac{\beta}{N}
+        \sqrt{\frac{1}{\beta}\sum_{i=1}^\beta\left(f_{B_i}-\frac{N}{\beta}\right)^2}
+        \end{equation*}
+        This is the standard deviation of the buckets sizes from the mean bucket size, normalized with respect
+        to the mean bucket size.
+
+        Given a random sample, an approximate equi-depth histogram can be computed by constructing an
+        equi-depth histogram on the sample by setting the bucket counts to be \(N/\beta\). Denote this the
+        ~Sample-Compute~ algorithm.
+
+        We will next present an incremental algorithm that occasionally uses ~Sample-Compute~. The accuracy of
+        the approximate histogram maintained by the incremental algorithm depends on the accuracy resulting
+        from this procedure, which is stated in the following theorem. The statement of the theorem is in
+        terms of a sample size \(m\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(\beta\ge 3\). Let \(m=(c\ln^2\beta)\beta\), for some \(c\ge 4\). Let \(\cals\) be a random
+        sample of size \(m\) of values drawn uniformly from a set of size \(N\ge m^3\), either with or without
+        replacement. Then ~Sample-Compute~ computes an approximate equi-depth histogram s.t. with probability at
+        least \(1-\beta^{-\sqrt{c}-1}-N^{-1/3}\), \(\mu_{ed}=\mu_{count}\le\alpha\).
+        #+END_theorem
+** Maintaining equi-depth histograms using a backing sample
+        We first devise an algorithm that monitors the accuracy of the histogram, and recomputes the histogram
+        from the backing sample only when the approximation error exceeds a tolerance parameter. We denote this algorithm
+        the ~Equi-depth_Simple~ algorithm. We assume throughout that a backing sample is being maintained using
+        the algorithm of Section 3 with \(L\) set to the sample size \(m\) from the theorems.
+
+        The algorithm works in phases. At each phase we maintain a threshold \(T=(2+\gamma)N'/\beta\), where
+        \(N'\) is the number of tuples in the relation at the beginning of the phase, and \(\gamma>-1\) is a
+        tunable performance parameter. The threshold is set at the beginning of each phase. The number of tuples in any given bucket is maintained below the thresh-
+old T. (Recall that the ideal target number for a bucket
+size would be N/P.) As new tuples are added to the re-
+lation, we increment the counts of the appropriate buckets.
+When a count exceeds the threshold T, the entire equi-
+depth histogram is recomputed from the backing sample
+using Sample-Compute, and a new phase is started.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

@@ -1,0 +1,283 @@
+#+title: ThreadSanitizer - data race detection in practice
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/engineering/thread_sanitizer.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/engineering/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* History
+        Late in 2007 we tried several publicly available race detectors, but all of them failed to work
+        properly “out of the box”. The best of these tools was Helgrind 3.3 which had a hybrid algorithm. But
+        even Helgrind had too many false positives and missed many real races. Early in 2008 we modified the
+        Helgrind’s hybrid algorithm and also introduced an optional pure happens-before mode. The
+        happens-before mode had fewer false positives but missed even more data races than the initial hybrid
+        algorithm. Also, we introduced dynamic annotations (section 5) which helped eliminate false positive
+        reports even in the hybrid mode. Still, Helgrind did not work for us as effectively as we would like
+        it to — it was still too slow, missed too many races in the pure happens-before mode and was too noisy
+        in the hybrid mode
+* Algorithm
+** Definitions
+        *ID*: a unique ID of a memory location
+
+        *EventType*:  one of READ, WRITE, WRLOCK, RDLOCK, WRUNLOCK, RDUNLOCK, SIGNAL, WAIT
+
+        *Event*: a triple \(\{EventType, Tid, ID\}\)
+
+        A lock \(L\) is *write-held* by a thread \(T\) at a given point of time if the number of events
+        \(WrLock_T(L)\) observed so far is greater than the number of events \(WrUnlock_T(L)\)
+
+        A lock \(L\) is *read-held* by a thread if it is write-held by \(T\) or if the number of events
+        \(RdLock_T(L)\) is greater than the number of events \(RdUnlock_T(L)\)
+
+        *Lock Set* (\(LS\)): a set of locks
+
+        *Writer Lock Set* (\(LS_{Wr}\)): the set of all write-held locks of a given thread
+
+        *Reader Lock Set* (\(LS_{Rd}\)): the set of all read-held locks of a given thread
+
+        *Segment*: a sequence of events of one thread that contains only memory access events. The context of a
+        segment is the context of the first event in the segment. Each segment has its writer and reader
+        LockSets. Each memory access event belongs to exactly
+
+        *Happens-before arc*: a pair of events \(X=Signal_{T_X}(A_X)\) and \(Y=Wait_{T_Y}(A_Y)\) s.t.
+         \(A_X=A_Y\), \(T_X\neq T_Y\) and \(X\) is observed first.
+
+        *Happens-before*: a partial order on the set of events. Given two events \(X=TypeX_{T_X}(A_X)\) and
+         \(Y=TypeY_{T_Y}(A_Y)\), the events \(X\) *happens-before* or *precedes* the event \(Y\) (in short,
+         \(X\prec Y\)) if \(X\) has been observed before \(Y\) and at least one of the following statements is
+         true:
+         * \(T_X=T_Y\)
+         * \(\{X,Y\}\) is a happens-before arc
+         * \(\exists E_1,E_2:X\preceq E_1\prec E_2\preceq Y\)
+
+        *Segment Set*: a set of \(N\) segments \(\{S_1,\dots,S_N\}\) s.t. \(\forall i,j:S_1\not\preceq S_j\)
+
+        *Concurrent*: two memory access events \(X\) and \(Y\) are concurrent if \(X\not\preceq Y\),
+         \(Y\not\preceq X\) and the intersectio of the lock sets of these events is empty
+
+        *Data Race*: a data race is a situation when two threads concurrently access a shared memory location
+         and at least one of the accesses is a Write.
+** Hybrid state machine
+        The state of ThreadSanitizer consists of global and per-ID states. The global state is the information
+        about the synchronization events that have been observed so far (lock sets, happen-before arcs).
+        Per-ID state (also called *shadow memory* or *metadata*) is the information about each memory location of
+        the running program.
+
+        ThreadSanitizer's per-ID state consists of two segment sets: the writer segment set \(SS_{Wr}\) and
+        the reader segment set \(SS_{Rd}\). \(SS_{Wr}\) of a given ID is a set of segments where the writes to
+        this ID appeard. \(SS_{Rd}\) is a set of all segments where the reads from the given ID appeared, s.t.
+        that
+        \(\forall S_r\in SS_{Rd}, S_w\in SS_{Wr}:S_r\not\preceq S_w\)
+
+        Each memory access is processed with the following procedure. It adds and removes segments from
+        \(SS_{Wr}\) and \(SS_{Rd}\) so that \(SS_{Wr}\) and \(SS_{Rd}\) still match their definitions. At the
+        end, this procedure checks if the current state represents a race.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: c1
+        #+CAPTION:
+        [[../../images/papers/124.png]]
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: c2
+        #+CAPTION:
+        [[../../images/papers/125.png]]
+** Segments and context
+        ThreadSanitizer has three different modes with regard to creation of segments:
+** Variations of the state machine
+*** Pure happens-before state machine
+        *Extended happens-before arc*: a pair of events \((X,Y)\) s.t. \(X\) is observed before \(Y\) and one of
+         the following is true:
+         * \(X=WrUnlock_{T_1}(L)\), \(Y=WrLock_{T_2}(L)\)
+         * \(X=WrUnlock_{T_1}(L)\), \(Y=RdLock_{T_2}(L)\)
+         * \(X=RdUnlock_{T_1}(L)\), \(Y=WrLock_{T_2}(L)\)
+         * \((X,Y)\) is a happens-before arc
+
+        The following example explains the difference between pure happens-before and hybrid modes
+        | T1              | T2                       |
+        |-----------------+--------------------------|
+        | ~obj->UpdateMe()~ | ~mu.Lock()~                |
+        | ~mu.Lock()~       | ~bool f=flag~              |
+        | ~flag=true~       | ~mu.Unlock()~              |
+        | ~mu.Unlock()~     | ~if (f) obj->UpdateMe()~ |
+
+
+        If ~flag~ is initially ~false~, ThreadSanitizer cannot distinguish between these two cases. In the hybrid
+        mode, the tool will always report a data race.
+*** Fast-mode state machine
+        In most real programs, the majority of memory locations are never shared between threads. It is
+        natural to optimize the race detector for this case. Such an optimization is implemented in
+        ThreadSanitizer and is called *fast mode*
+
+        Memory IDs in ThreadSanitizer are grouped into cache lines. Each cache line contains 64 IDs and the
+        Tid of the thread which made the first access to this cache line. In fast mode, we ignore all accesses
+        to a cache line until we see an access from another thread.
+
+        This optimization affects accuracy. Eraser has the initialization state that reduces the number of
+        false positives produced by the lock-set algorithm. Similarly, the ThreadSanitizer’s fast mode reduces
+        the number of false positives in the hybrid state machine. Both these techniques may as well hide real races.
+** Comparison with other state machines
+        ThreadSanitizer and Eraser use locksets differently. In Eraser, the per-ID state stores the
+        intersection of locksets. In ThreadSanitizer, the per-ID state contains original locksets (locksets
+        are stored in segments, which are stored in segment sets and, hence, in the per-ID state) and
+        lockset intersection is computed each time when we check for a race. This way we are able to report
+        all locks involved in a race. Surprisingly enough, this extra computation adds only a negligible
+        overhead.
+* Dynamic Annotations
+        Any dynamic race detector must understand the synchronization mechanisms used by the tested program,
+        otherwise the detector will not work. For this purpose we have created a set of *dynamic annotations* —
+        a kind of race detection API.
+
+        Each dynamic annotation is a C macro definition. The most important annotations are:
+        * ~ANNOTATE_HAPPENS_BEFORE(ptr)~
+        * ~ANNOTATE_HAPPENS_AFTER(ptr)~
+        These annotations create, respectively, \(Signal(ptr)\) and \(Wait(ptr)\) events for the current
+        thread.
+* Race Detection in Practice
+** Performance
+        ThreadSanitizer spends almost all the time intercepting and analyzing memory accesses. If a given
+        memory location has been accessed by just one thread, the analysis is fast. If a memory location has
+        been accessed by many threads and there have been a lot of synchronization events, the analysis is
+        slow.
+
+        So, there are two major ways to speed up the tool: make the analysis of one memory access faster and
+        analyze fewer memory accesses.
+
+        In order to make the analysis of one access faster, we used various well known techniques and
+        algorithms such as vector time-stamps and caching. We also limited the size of a segment set with a
+        small constant (currently, 4) to avoid huge slowdowns in corner cases. But whatever we do to speed up
+        the analysis, the overhead will always remain significant: remember that we replace a memory access
+        instruction with a call to a quite sophisticated function that usually runs for few hundreds of CPU
+        cycles.
+
+        A much more attractive approach is to reduce the number of analyzed memory accesses. For example,
+        ThreadSanitizer does not instrument the internals of the threading library (there is no sense in
+        analysing races on internal representation of a mutex). The tool also supports a mechanism to ignore
+        parts of the program marked as safe by the user. In some cases this allows to speed up the run by
+        2-3 times by ignoring a single hot spot.
+** Memory consumption
+        * A constant size buffer that stores segments, including stack traces. By default, there are
+          \(2^{23}\) segments and each occupies ≈100 bytes (≈50 bytes in 32-bit mode). So, the buffer is
+          ≈800M. Decreasing this size may lead to loosing some data races. If we are not tracking the contexts
+          of previous accesses, the segments occupy much less memory (≈250M).
+        * Vector time clocks attached to each segment. This memory is limited by the number of threads times
+          number of segments, but in most cases it is quite small.
+        * Per-ID state. In the fast mode, the memory required for per-ID state linearly depends on the amount
+          of memory shared between more than one thread. In the full hybrid and in the pure happens-before
+          modes, the footprint is a linear function of all memory in the program. However, these are the worst
+          case assumptions and in practice a simple compression technique reduces the memory usage
+          significantly.
+        * Segment sets and locksets may potentially occupy arbitrary large amount of memory, but in reality
+          they constitute only a small fraction of the overhead.
+
+        On an average Google unit test the memory overhead is within 3x-4x
+*** Flushing state
+** Common real races
+        | T1     | T2 |
+        |--------+----|
+        | ~int v;~ |    |
+        | ~v++;~   | ~v++;~ |
+
+        | T1                   | T2 |
+        |----------------------+----|
+        | ~std::map<int,int> m;~ |    |
+        | ~m[123]=1;~            | ~m[345]=0~ |
+
+        | T1                 | T2           |
+        |--------------------+--------------|
+        | ~bool done = false;~ |              |
+        | ~while(!done)~       | ~done = true;~ |
+        | \texttt{  sleep(1);}  |              |
+
+        | T1                 | T2                 |
+        |--------------------+--------------------|
+        | ~MyObj* obj = NULL;~ | ~while(obj == NULL)~ |
+        |                    | \texttt{  yield()} |
+        | ~obj = new MyObj();~ | ~obj->DoSomething();~ |
+
+        | T1         | T2 |
+        |------------+----|
+        | ~InitObj();~ | ~InitObj();~ |
+
+        | T1                 | T2                   |
+        |--------------------+----------------------|
+        | ~mu.ReaderLock();~   | ~mu.ReaderLock();~     |
+        | ~var++;~             | ~var++;~               |
+        | ~mu.ReaderUnlock();~ | ~mu.ReaderUnlock();~ |
+
+        If ~x~ is of ~struct { int a:4, b:4;}, we will have a bug
+        | T1     | T2 |
+        |--------+----|
+        | ~x.a++;~ | ~x.b++~ |
+
+        #+begin_src c
+bool inited = false;
+void Init() {
+  // May be called by multiple threads
+  if (!inited) {
+    mu.Lock();
+    if (!inited) {
+      // .. initialize something
+    }
+    inited = true;
+    mu.Unlock();
+  }
+}
+        #+end_src
+
+        #+begin_src c
+void Thread1 () {
+  SomeType object ;
+  ExecuteCallbackInThread2 (
+      SomeCallback , & object );
+  //...
+  // " object " is destroyed when
+  // leaving its scope .
+}
+        #+end_src
+
+        #+begin_src cpp
+class A {
+public:
+  A() { sem_init(&sem_, 0, 0); }
+  virtual void F() { printf("A::F\n"); }
+  void Done() { sem_post(&sem_); }
+  virtual ~A() {
+    sem_wait(&sem_);
+    sem_destroy(&sem_);
+  }
+
+private:
+  sem_t sem_;
+};
+
+class B : public A {
+public:
+  virtual void F() { printf("B::F\n"); }
+  virtual ~B() {}
+};
+static A *obj = new B;
+        #+end_src
+
+        An object ~obj~ of static type ~A~ and dynamic type ~B~ is created. One thread executes ~obj->F()~ and then
+        signals to the second thread. The second thread calls delete obj (i.e. ~B::~B~) which then calls ~A::~A~,
+        which, in turn, waits for the signal from the first thread. The destructor ~A::~A~ overwrites the ~vptr~
+        (pointer to virtual function table) to ~A::vptr~. So, if the first thread executes ~obj->F()~ after the
+        second thread starting executing ~A::~A~, then ~A::F~ will be called instead of ~B::F~
+
+        | T1             | T2          |
+        |----------------+-------------|
+        |                | ~delete obj;~ |
+        | ~obj->F();~      |             |
+        | ~obj->Done();~ |             |
+* Race Detection for Chromium
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
