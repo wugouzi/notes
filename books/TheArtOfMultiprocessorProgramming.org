@@ -1037,3 +1037,87 @@ public class AtomicMRMWRegister<T> implements Register<T>{
 
 
         #+END_proof
+** Atomic snapshots
+        What if we want to read multiple register values atomically? We call such an operation an *atomic
+        snapshot*.
+
+        An atomic snapshot constructs an instantaneous view of an array of MRSW registers.
+
+        #+begin_src java
+public interface Snapshot<T> {
+  public void update(T v);
+  public T[] scan();
+}
+        #+end_src
+
+        #+begin_src java
+public class SeqSnapshot<T> implements Snapshot<T> {
+  T[] a_value;
+  public SeqSnapshot(int capacity, T init) {
+    a_value = (T[]) new Object[capacity];
+    for (int i = 0; i < a_value.length; i++) {
+      a_value[i] = init;
+    }
+  }
+  public synchronized void update(T v) {
+    a_value[ThreadID.get()] = v;
+  }
+  public synchronized T[] scan() {
+    T[] result = (T[]) new Object[a_value.length];
+    for (int i = 0; i < a_value.length; i++)
+      result[i] = a_value[i];
+    return result;
+  }
+}
+        #+end_src
+
+*** Ab obstruction-free snapshot
+        We begin with a ~SimpleSnapshot~ class for which ~update()~ is wait-free but ~scan()~ is obstruction-free.
+        We then extend this algorithm to make ~scan()~ wait-free.
+
+
+        #+begin_src java
+public class SimpleSnapshot<T> implements Snapshot<T> {
+  private StampedValue<T>[] a_table; // array of atomic MRSW registers
+  public SimpleSnapshot(int capacity, T init) {
+    a_table = (StampedValue<T>[]) new StampedValue[capacity];
+    for (int i = 0; i < capacity; i++) {
+      a_table[i] = new StampedValue<T>(init);
+    }
+  }
+  public void update(T value) {
+    int me = ThreadID.get();
+    StampedValue<T> oldValue = a_table[me];
+    StampedValue<T> newValue = new StampedValue<T>((oldValue.stamp)+1, value);
+    a_table[me] = newValue;
+  }
+  private StampedValue<T>[] collect() {
+    StampedValue<T>[] copy = (StampedValue<T>[]) new StampedValue[a_table.length];
+    for (int j = 0; j < a_table.length; j++)
+      copy[j] = a_table[j];
+    return copy;
+  }
+  public T[] scan() {
+    StampedValue<T>[] oldCopy, newCopy;
+    oldCopy = collect();
+ collect: while (true) {
+      newCopy = collect();
+      if (! Arrays.equals(oldCopy, newCopy)) {
+        oldCopy = newCopy;
+        continue collect;
+      }
+      T[] result = (T[]) new Object[a_table.length];
+      for (int j = 0; j < a_table.length; j++)
+        result[j] = newCopy[j].value;
+      return result;
+    }
+  }
+}
+        #+end_src
+
+        If we perform two collects one after the other, and both collects read the same set of timestamps,
+        then we know that there was an interval during which no thread updated its register, so the result of
+        the collect is a snapshot of the array immediately after the end of the first collect. We call such a
+        pair of collects a *clean double collect*.
+
+*** A wait-free snapshot

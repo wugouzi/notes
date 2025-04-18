@@ -14,7 +14,267 @@
 
         *Search algorithm*
 
+*  Key Transformation
+** Access Path Transformation
+        *Access path selection* focuses on choosing the access method(s) that minimize the cost of retrieving
+        the requested data from the base relations
 
+        We illustrate some alternatives for access path selection using an example of a single-table query.
+        Consider a table \(S(id, a, b, c)\) with four columns, where \(id\) is the primary key of table \(S\), and suppose
+        the following B+-tree indexes exist on the table:
+        * Index \(I_{id}\) is a primary key clustered index where the key column of the index is the \(id\) column.
+        * \(I_a\) and \(I_b\) are single-column non-clustered indexes where the key columns are \(a\) and \(b\) respectively.
+        * \(I_a(c, b)\) is a non-clustered index where the key column is \(a\) and the include columns are \(c\) and \(b\).
+        * \(I_b(c, a)\) is a non-clustered index where the key column is \(b\) and the include columns are
+          \(c\) and \(a\).
+
+        An *include* column of an index cannot be used to seek values, however, the value of each include column
+        is available in the index, and hence can be used for projecting and filtering once the rows have been
+        retrieved from the index.
+
+        Now consider
+        #+begin_src sql
+SELECT S.a, S.b
+FROM S
+WHERE S.a > 10 AND S.b = 20
+        #+end_src
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f4.1
+        #+CAPTION:
+        [[../images/papers/141.png]]
+
+        In some cases, we can retrieve rows from a single table by combining multiple access methods on the
+        table. Consider the plan shown in Figure [[ref:f4.1]]e. Here, we can use the index \(I_a\) to identify the
+        rows satisfying the predicate \(S.a > 10\). Then for each such row, we use a Key Lookup on the
+        clustered index \(I_id\) to lookup the value of \(S.b\) for that row and then apply the Filter
+        operator with the predicate \(S.b = 20\).
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION:
+        [[../images/Misc/5.png]]
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: f4.2
+        #+CAPTION:
+        [[../images/Misc/6.png]]
+
+        #+ATTR_LATEX: :width .99\textwidth :float nil
+        #+NAME: f4.3
+        #+CAPTION:
+        [[../images/Misc/7.png]]
+** Inner Join Transformations
+        Inner join is the most commonly used join type, which outputs a tuple corresponding to a pair of rows
+        from the joined relations if and only if that pair satisfies the join condition.
+*** Join commutativity and associativity
+        We start with the logical transformation rules of join ordering for equi-joins, including:
+        * Commutativity: \(A\bowtie B\Rightarrow B\bowtie A\)
+        * Right associativity: \((A\bowtie B)\bowtie C\Rightarrow A\bowtie(B\bowtie C)\)
+        * Left associativity: \(A\bowtie(B\bowtie C)\Rightarrow(A\bowtie B)\bowtie C\)
+
+        To illustrate why join commutativity is useful, consider the transformed expression \(B\bowtie A\). If
+        there is an index on column \(A.z\), then the plan where a Nested Loops Join is used with an Index
+        Seek on \(A.z\) becomes possible, but only after the join commutativity rule is invoked on the
+        original expression.
+
+        #+ATTR_LATEX: :width .89\textwidth :float nil
+        #+NAME: f4.5
+        #+CAPTION:
+        [[../images/Misc/8.png]]
+
+        Suppose \(C\) is a large table, e.g., a fact table in a data warehouse, and \(A\) and \(B\) are
+        smaller tables, e.g., dimension tables. In this case, if both join operators are Hash Joins with table
+        \(A\) and \(B\) on the build side respectively, then using a single scan of table \(C\), we can probe
+        the hash table for \(B\) and the resulting output rows can be used to probe the hash table for \(A\).
+        Such a plan can be efficient when there is sufficient memory to hold hash tables of \(A\) and \(B\).
+*** Push-down (pull-up) of filters below join
+*** Physical transformation rules of inner join
+        Nested Loops Join is the only join method that applies to arbitrary inner joins, e.g., if the join
+        predicate is a user-defined function. In contrast, Hash Join can be used only for equi-joins. Since
+        Merge Join requires its inputs to be sorted on the join column(s), it can be effective when an
+        explicit sort operation is not required on the results of one or both of its inputs.
+** Outer Join Transformations
+        Notation: left outer join (\(\leftarrow\)), right outer join (\(\to\)), full outer join (\(\leftrightarrow\))
+*** Commutativity and associativity
+        * \(A\leftarrow B\Leftrightarrow B\to A\), \(A\leftrightarrow B\Leftrightarrow B\leftrightarrow A\)
+        * \((A\leftarrow B)\leftrightarrow C\Leftrightarrow A\leftarrow(B\leftarrow C)\),
+          \((A\leftrightarrow B)\leftrightarrow C\Leftrightarrow A\leftrightarrow(B\leftrightarrow C)\)
+
+        For more rule, refer [[cite:&10.1145/244810.244812]]
+*** Redundancy rule
+        An important class of transformations for outer joins aims at identifying conditions where outer joins
+        can be replaced by inner joins
+
+        The *redundancy rule* ,introduced in [[cite:&213169]], is an example of such a rule.
+
+        It uses the property of *null-rejecting* predicates. If a predicate \(p\) evaluates to false or
+        undefined for NULL values, then \(p\) is said to be null-rejecting. For example, consider the
+        predicate \(S.a > 10\). Since it evaluates to false when S.a is NULL, the predicate is null-rejecting.
+        Intuitively, if the ancestor operator of an outer join contains a null-rejecting predicate on a column
+        with padded NULLs introduced by the outer join, then the outer join can be rewritten as an inner join
+        without changing the result.
+
+        For example, \(\sigma_{S.a>10}(R\leftarrow_{R_k=S_k}S)\) can be rewritten as
+        \(\sigma_{S.a>10}(R\bowtie_{R_k=S_k}S)\)
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: t8
+        #+CAPTION:
+        [[../images/papers/143.png]]
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f4.10
+        #+CAPTION:
+        [[../images/Misc/9.png]]
+*** Group-by and Join
+        Consider
+        #+begin_src sql
+-- Q10
+SELECT student, SUM(end - start) AS TotalCourseTime
+FROM StudentClass AS S INNER JOIN ClassSchedule AS C
+ON S.class = C.class
+GROUP BY student
+        #+end_src
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f4.11
+        #+CAPTION:
+        [[../images/Misc/10.png]]
+*** Complete group-by push-down
+        The necessary and sufficient conditions for a group-by operator \(GBY\) on top of \(R_1\bowtie R_2\)
+        to be eligible for a complete one-sided group-by push-down to \(R_2\) with a group-by operator
+        \(GBY'\) atop \(R_2\) are presented in [[cite:&10.1145/375663.375748]]:
+        1. All aggregate functions specified in the group-by operator \(GBY\) only uses columns from \(R_2\)
+        2. A primary key of \(R_1\) is a subset of the grouping columns of \(GBY\).
+        3. The grouping columns of the group-by operator \(GBY'\) is the union of grouping columns of \(GBY\)
+           and the equi-join columns of \(R_2\) in \(R_1\bowtie R_2\) . The specification of the aggregations
+           in \(GBY'\) is identical to those in \(GBY\)
+
+        * Without the first condition, no one-sided push-down of the group-by with elimination of the group-by
+          above join is possible as columns of \(R_1\) are not available to \(GBY'\).
+        * Without the second condition, it will be possible for a single tuple of \(R_1\) to be part of two or
+          more different groups in the final output (and thus contribute to aggregated values in multiple
+          distinct groups). If that were the case, multiple groups in \(GBY'\) will need to be coalesced and
+          thus GBY cannot be eliminated.
+        * The last condition ensures that no tuples that would have been eliminated during the join
+          \(R_1\bowtie R_2\) are used in producing aggregate results.
+          As we will see later, the strategy of *fattening* the set of grouping columns leveraged in the third
+          condition will be essential when we discuss partial group-by push-down later in this section.
+
+        The complete group-by push-down transformation applies to all /aggregate functions, including user
+        defined functions/.
+
+        The opportunity for complete group-by push-down often occurs in the context of primary-key-foreign-key
+        joins. Interestingly, a special case of complete group-by push-down is when the grouping columns of
+        \(GBY\) contain the foreign key of \(R_1\) , where the third condition becomes redundant. In such
+        cases, the specifications of \(GBY\) and \(GBY ′\) are identical. This special case is referred to as
+        *invariant grouping* [[cite:&10.5555/645920.672834]]. For example, in the following Query:
+        #+begin_src sql
+-- Q11
+SELECT SUM(R.a)
+FROM R INNER JOIN S
+ON R.fk = S.k
+GROUP BY S.k, R.fk
+        #+end_src
+
+        When \(R.fk\) is a foreign key of \(R\) and \(S.k\) is the primary key of \(S\), the group-by operator
+        can be pushed down to \(R\) and the aggregate \(SUM\) on \(R.a\) is computed for each group prior to
+        joining with \(S\). Figure ref:f4.12 shows the plan before and after the group-by push-down.
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f4.12
+        #+CAPTION:
+        [[../images/Misc/11.png]]
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: t9
+        #+CAPTION:
+        [[../images/Misc/12.png]]
+*** Partial group-by push-down
+        When all aggregate functions specified in the group-by operator \(GBY\) over \(R_1\bowtie R_2\) still
+        only use columns from one of the operands \(R_2\) of the join (i.e., the first condition for complete
+        group-by push-down is satisfied but not the second), there may still be opportunities to add a
+        group-by operator before the join to reduce the cardinality of the input of the join.
+
+        The *partial aggregates* (also referred to as *local* aggregates) from the added group-by operator before
+        the join are combined to calculate the final *global aggregates*. However, for this to be possible, each
+        aggregate function \(agg\) specified in \(GBY\) over \(R_1\bowtie R_2\) must satisfy *distributive
+        properties*. Specifically, we say that the aggregation function \(agg\) satisfies the *simple
+        distributive property* if the following holds:
+        \begin{equation*}
+        agg(S\cup S′)=agg(agg(S), agg(S′))
+        \end{equation*}
+        Examples of aggregate functions that satisfy this property include MIN, MAX, DISTINCT, and SUM. In
+        such cases, the partial group-by push-down transformation is referred to as *simple coalescing
+        grouping*. The transformation leaves \(GBY\) over \(R_1\bowtie R_2\) unchanged. The additional group-by
+        operator \(GBY'\) introduced atop \(R_2\) has the same specification for the aggregates but its
+        grouping columns will be the union of the join columns of \(R_2\) in \(R_1\bowtie R_2\) and the subset
+        of grouping columns of \(GBY\) that are from \(R_2\) . The last condition ensures, as in condition (3)
+        of complete group-by push-down that aggregations computed in \(GBY ′\) do not erroneously include
+        contributions from R2 tuples that would be eliminated in the output of \(R_1\bowtie R_2\) .
+
+        Consider
+        #+begin_src sql
+SELECT SUM(R.a)
+FROM R INNER JOIN S
+ON R.fk = S.k
+GROUP BY S.b
+        #+end_src
+
+        Note that because the key of \(S\) is not part of the group-by columns, we cannot apply the complete
+        group-by push-down here. Instead, we can use the partial push-down of group-by (simple coalescing
+        grouping) by computing a partial aggregate of \(SUM (R.a)\) on \(R\) and then aggregate on the result
+        of the join as shown in Figure ref:f4.13.
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f4.13
+        #+CAPTION: Push down partial aggregates below join
+        [[../images/Misc/13.png]]
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: t10
+        #+CAPTION:
+        [[../images/Misc/14.png]]
+
+        A more general version of the distributive property for an aggregate function \(agg\) opens the door for
+        more opportunities for partial group-by push-down. The required property may be stated as:
+        \begin{equation*}
+        agg(S\cup S')=f(agg'(S),agg'(S'),count(S),count(S'))
+        \end{equation*}
+        where \(agg'\) is an auxiliary aggregate function that is not necessarily the given aggregate function
+        in the query, and \(f\) combines the partial aggregates into the final aggregate while leveraging the
+        additional aggregate \(count\). For example,
+        \begin{equation*}
+        AVG(S\cup S')=\frac{SUM(S)+SUM(S')}{COUNT(S)+COUNT(S')}
+        \end{equation*}
+        We refer to the above case of group-by push-down as *generalized coalescing grouping*.
+
+        For this partial group-by push-down transformation, the additional local group-by operator \(GBY'\)
+        introduced above \(R_2\) (but prior to the join) has the same set of group-by columns as in the case
+        of simple coalescing grouping, but each aggregation function \(agg\) is replaced by \(agg'\). In
+        addition, an extra aggregation function \(count\) is added to the list of aggregation functions
+        \(agg'\) . As in the case of simple coalescing grouping, the grouping columns of \(GBY′\) will be the
+        union of the join columns of \(R_2\) in \(R_1\bowtie R_2\) and the subset of grouping columns of
+        \(GBY\) that are from \(R_2\) . Unlike simple coalescing grouping where the specification of the
+        \(GBY\) operator after \(R_1\bowtie R_2\) was unchanged, in the case of generalized coalescing
+        grouping, the aggregation functions \(agg\) are changed to \(agg'\) corresponding to the computation
+        needs of the global aggregate
+
+        Consider
+        #+begin_src sql
+-- Q13
+SELECT student, AVG(end - start) AS AvgCourseTime
+FROM StudentClass AS S INNER JOIN ClassSchedule AS C
+ON S.class = C.class
+GROUP BY student
+        #+end_src
+
+        In this case, as shown in Figure [[ref:f4.11]]c, we can first calculate the total number of hours (hours)
+        and the number of counts (cnt) per course when aggregating on the ClassSchedule table, and then join
+        with the StudentClass table to produce the final global aggregate. Observe how the aggregation
+        functions have been modified to support the computation of the local and global aggregates.
+*** Physical transformation rules of group-by
 * Cost Estimation
 
 ** Overview

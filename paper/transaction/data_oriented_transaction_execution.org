@@ -1,0 +1,45 @@
+#+title: Data-Oriented Transaction Execution
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/data-oriented_transaction_execution.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+** Thread-to-transaction vs. thread-to-data
+        In this paper, we argue that the primary cause of the contention problem is the uncoordinated data
+        accesses that is characteristic of conventional transaction processing systems.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/140.png]]
+
+        Rather than coupling each thread with a transaction, DORA couples each thread with a disjoint subset
+        of the database. Transactions flow from one thread to the other as they access different data, a
+        mechanism we call thread-to-data assignment.
+
+        DORA decomposes the transactions to smaller actions according to the data they access, and routs them
+        to the corresponding threads for execution.
+* The Lock Manager as Source of Contention
+        In Shore-MT every logical lock is a data structure that contains the lock’s mode, the head of a linked
+        list of lock requests (granted or pending), and a latch. When a transaction attempts to acquire a lock
+        the lock manager first ensures the transaction holds higher-level intention locks, requesting them
+        automatically if needed. If an appropriate coarser-grain lock is found the request is granted
+        immediately. Otherwise, the manager probes a hash table to find the desired lock. Once the lock is
+        located, it is latched and the new request is appended to the request list. If the request is
+        incompatible with the lock’s mode the transaction must block. Finally, the lock is unlatched and the
+        request returns. Each transaction maintains a list of all its lock requests in the order that it
+        acquired them. At transaction completion, the transaction releases the locks one by one starting from
+        the youngest. To release a lock, the lock manager latches the lock and unlinks the corresponding
+        request from the list. Before unlatching the lock, it traverses the request list to compute the new
+        lock mode and to find any pending requests which may now be granted.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

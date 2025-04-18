@@ -1,4 +1,4 @@
-% Created 2025-04-09 Wed 13:21
+% Created 2025-04-18 Fri 10:32
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
@@ -30,7 +30,7 @@
 
 \maketitle
 \section{Introduction}
-\label{sec:org8bc8db7}
+\label{sec:orgf90f9ad}
 Data is written once, read often, never modified, and rarely deleted.
 
 In our experience, we find that the disadvantages of a traditional POSIX based filesystem are
@@ -42,9 +42,9 @@ storage capacity.
 order to find the file itself.
 \end{itemize}
 \section{Background \& Previous Design}
-\label{sec:orgbb2da0f}
+\label{sec:org761048e}
 \subsection{Background}
-\label{sec:org644e6f1}
+\label{sec:org054c291}
 \begin{center}
 \includegraphics[width=.8\textwidth]{../../images/papers/132.png}
 \captionof{figure}{\label{f1}Typical Design}
@@ -64,7 +64,7 @@ from the site’s storage systems.
 \item The CDN then updates its cached data and sends the image to the user’s browser.
 \end{enumerate}
 \subsection{NFS-based Design}
-\label{sec:org8322bf4}
+\label{sec:orga02f8ff}
 In our first design we implemented the photo storage system using an NFS-based approach.
 
 The major lesson we learned is that CDNs by themselves do not offer a practical solution to serving
@@ -101,7 +101,7 @@ minor improvement as less popular photos are less likely to be cached to begin w
 The major lesson we learned from the NAS approach is that focusing only on caching— whether the NAS
 appliance’s cache or an external cache like memcache—has limited impact for reducing disk operations.
 \subsection{Discussion}
-\label{sec:org44b857f}
+\label{sec:org41563e3}
 One could phrase the dilemma we faced as existing storage systems lacked the right RAM-to-disk ratio.
 However, there is no right ratio. The system just needs enough main memory so that all of the
 filesystem metadata can be cached at once. In our NAS-based approach, one photo corresponds to one
@@ -110,13 +110,13 @@ memory in this approach is not cost-effective. To achieve a better price/perform
 to build a custom storage system that reduces the amount of filesystem metadata per photo so that
 having enough main memory is dramatically more cost-effective than buying more NAS appliances.
 \section{Design \& Implementation}
-\label{sec:org60fd19d}
+\label{sec:org014ffee}
 In the following description of Haystack, we distinguish between two kinds of metadata. \textbf{Application
 metadata} describes the information needed to construct a URL that a browser can use to retrieve a
 photo. \textbf{Filesystem metadata} identifies the data necessary for a host to retrieve the photos that reside
 on that host’s disk.
 \subsection{Overview}
-\label{sec:orgfae61f3}
+\label{sec:orgcc50960}
 The Haystack architecture consists of 3 core components: the Haystack Store, Haystack Directory, and
 Haystack Cache.
 
@@ -152,7 +152,7 @@ Store. A typical URL that directs the browser to the CDN looks like the followin
 \captionof{figure}{\label{f4}Uploading a photo}
 \end{center}
 \subsection{Haysatack Directory}
-\label{sec:org7fabe14}
+\label{sec:orga30c0bb}
 The Directory serves four main functions.
 \begin{enumerate}
 \item It provides a mapping from logical volumes to physical volumes. Web servers use this mapping when
@@ -169,7 +169,7 @@ When we increase the capacity of the Store by adding new machines, those machine
 only write-enabled machines receive uploads. Over time the available capacity on these machines
 decreases. When a machine exhausts its capacity, we mark it as read-only.
 \subsection{Haystack Cache}
-\label{sec:orgcc7baa5}
+\label{sec:org2795662}
 The Cache receives HTTP requests for photos from CDNs and also directly from users’ browsers. We
 organize the Cache as a distributed hash table and use a photo’s id as the key to locate cached data.
 If the Cache cannot immediately respond to the request, then the Cache fetches the photo from the
@@ -199,7 +199,7 @@ Thus the write-enabled Store machines would see the most reads if it were not fo
 this characteristic, an optimization we plan to implement is to proactively push recently uploaded
 photos into the Cache as we expect those photos to be read soon and often.
 \subsection{Haystack Store}
-\label{sec:org36a396b}
+\label{sec:orgfe9dd5a}
 Reads make very specific and well-contained requests asking for a photo with a given id, for a certain
 logical volume, and from a particular physical Store machine.
 
@@ -231,9 +231,9 @@ volumes. That data structure maps pairs of (key, alternate key) to the correspon
 size in bytes, and volume offset. After a crash, a Store machine can reconstruct this mapping directly
 from the volume file before processing requests.
 \subsubsection{Photo Read}
-\label{sec:orgbe22af3}
+\label{sec:org249e06c}
 \subsubsection{Photo Write}
-\label{sec:org8f3069e}
+\label{sec:org3a99f6d}
 When uploading a photo into Haystack web servers provide the logical volume id, key, alternate key,
 cookie, and data to Store machines. Each machine synchronously appends needle images to its physical
 volume files and updates in-memory mappings as needed.
@@ -251,11 +251,11 @@ to the same corresponding physical volumes.
 Haystack distinguishes such duplicate needles based on their offsets. That is, the latest version of a
 needle within a physical volume is the one at the highest offset.
 \subsubsection{Photo Delete}
-\label{sec:org19735d8}
+\label{sec:org3188a1d}
 Deleting a photo is straight-forward. A Store machine sets the delete flag in both the in-memory
 mapping and synchronously in the volume file.
 \subsubsection{The Index File}
-\label{sec:org3148868}
+\label{sec:orgd17d2cd}
 Store machines use an important optimization—the \textbf{index file} —when rebooting.
 Index files allow a Store machine to build its in-memory mappings quickly, shortening restart time.
 
@@ -296,7 +296,7 @@ fact been deleted. To address this issue, after a Store machine reads the entire
 that machine can then inspect the deleted flag. If a needle is marked as deleted the Store machine
 updates its in-memory map- ping accordingly and notifies the Cache that the object was not found.
 \subsubsection{Filesystem}
-\label{sec:org96191cf}
+\label{sec:org1a1d8ca}
 In particular, the Store machines should use a filesystem that does not need much memory to be able to
 perform random seeks within a large file quickly.
 
@@ -308,7 +308,7 @@ Haystack.
 maps can grow.
 \end{enumerate}
 \subsubsection{Recovery from failures}
-\label{sec:org67d7710}
+\label{sec:orgb695815}
 To proactively find Store machines that are having problems, we maintain a background task, dubbed
 \textbf{pitchfork}, that periodically checks the health of each Store machine. Pitchfork remotely tests the
 connection to each Store machine, checks the availability of each volume file, and attempts to read
@@ -323,23 +323,23 @@ out. The main bottleneck is that the amount of data to be bulk synced is often o
 greater than the speed of the NIC on each Store machine, resulting in hours for mean time to recovery.
 We are actively exploring techniques to address this constraint.
 \subsection{Optimizations}
-\label{sec:org1317fef}
+\label{sec:org3ddd884}
 \subsubsection{Compaction}
-\label{sec:org2b3859a}
+\label{sec:orgf1fd9d8}
 A Store machine compacts a volume file by copying needles into a new file while skipping any duplicate
 or deleted entries. During compaction, deletes go to both files. Once this procedure reaches the end
 of the file, it blocks any further modifications to the volume and atomically swaps the files and
 in-memory structures.
 \subsubsection{Saving more memory}
-\label{sec:orgdebbaa0}
+\label{sec:orgaadc2e9}
 \subsubsection{Batch upload}
-\label{sec:org746bc21}
+\label{sec:org4bd1862}
 \section{Problems}
-\label{sec:org73cb39a}
+\label{sec:org79a2a06}
 
 
 \section{References}
-\label{sec:org747dfd5}
+\label{sec:org5cab7be}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 

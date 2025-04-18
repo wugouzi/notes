@@ -1,0 +1,71 @@
+#+title: High Performance Transactions via Early Write Visibility
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/early_write_visibility.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+
+* Introduction
+        In order to guarantee recoverability, most concurrency control protocols only permit a transaction’s
+        writes to be read when it commits or at least finishes executing. This *write visibility delay* can
+        adversely impact strong isolation levels such as serializability.
+
+        We show that if a database system only aborts transactions under a restricted set of conditions, then
+        it can avoid pessimistic recoverability mechanisms based on delayed write visibility.
+
+        This paper proposes a new deterministic concurrency control protocol, piece-wise visibility (PWV),
+        explicitly designed to enable early write visibility.
+
+
+* Early Write Visibility
+
+
+
+* Piece-wise Visibility
+        This section presents piece-wise visibility, or PWV, a new deterministic serializable concurrency
+        control protocol that schedules work at the granularity of subsets of transactions’ individual reads
+        and writes.
+
+        This fine-grained scheduling allows PWV to fully exploit early write visibility. PWV *decomposes* the
+        totally ordered set of statements that constitute a straight-line transaction into a partially ordered
+        set of statements based on the transaction’s data-flow and commit point. PWV then schedules each
+        decomposed transaction’s constituent statements using a deterministic scheduler.
+** Transaction decomposition
+        The input to PWV’s scheduler is a totally ordered set of decomposed transactions. A decomposed
+        transaction is a partially ordered set of the transaction’s constituent statements. This partially
+        ordered set can be represented by a directed acyclic graph (DAG) whose nodes we refer to as *pieces*.
+        The edges of the DAG define the order in which its pieces can execute.
+
+        There exist two situations under which an edge is created from piece \(p_1\) to\(p_2\) .
+        1. Ihe input of p2 depends on the output of \(p_1\) (data dependencies).
+        2. \(p_2\) contains an update statement, and follows its transaction’s commit point, while \(p_1\)
+           precedes the commit point (commit dependencies).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/139.png]]
+
+        Edges corresponding to data dependencies are represented by solid arrows. Edges corresponding to
+        commit dependencies are represented by dashed arrows.
+
+        In our current implementation, transactions are decomposed by hand.
+        #+LATEX: \wu{
+        WTF
+        #+LATEX: }
+** Rendezvous points
+        PWV must execute the pieces of a decomposed transaction in an order that is consistent with the DAG
+        constructed via the analysis of a transaction’s data and commit dependencies.
+        PWV coordinates the execution of pieces whose execution must be ordered using *rendezvous points*, a
+        mechanism for synchronizing a partially ordered set of transaction statements.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
