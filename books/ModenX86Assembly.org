@@ -1,0 +1,58 @@
+#+TITLE: Modern X86 Assembly Language Programming
+
+* X86-64 Core Architecture
+
+** Historica Overview
+        * 2011: Sandy Bridge, AVX
+        * 2013: Haswell, AVX2, fused-multiply add (FMA)
+** Data Types
+*** Fundamental Data Types
+        A fundamental data type is an elementary unit of data that the processor manipulates during program
+        execution. The x86-64 platform supports fundamental data types ranging from 8 bits (1 byte) to 128
+        bits
+        | Data Types      | Size (Bits) | Typical Use                                               |
+        |-----------------+-------------+-----------------------------------------------------------|
+        | Byte            |           8 | Text characters, small integers                           |
+        | Word            |          16 | Text characters, integers                                 |
+        | Doubleword      |          32 | Integers, single-precision floating-point                 |
+        | Quadword        |          64 | Integers, double-precision floating-point, memory address |
+        | Double Quadword |         128 | Integers, packed integers, packed floating-point          |
+*** SIMD Data Types
+        ~xmmword~, ~ymmword~ and ~zmmword~ are expressions for 128-, 256-, and 512-bit wide SIMD data types,
+        respectively.
+*** X86-64 Processor Architecture
+        From the perspective of an executing application program, the architecture of an x86-64 processor can
+        be partitioned into the following sections:
+        * General-purpose registers
+        * Instruction pointer
+        * RFLAGS register
+        * Floating-point and SIMD registers
+        * MXCSR register
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f1.4
+        #+CAPTION: x86-64 processor internal architecture
+        [[../images/assembly/1.png]]
+*** General-Purpose Registers
+        All x86-64 processors contain 16 64-bit wide general-purpose registers. Functions use these registers
+        to perform integer arithmetic, bitwise logical operations, comparisons, address calculations, and data
+        transfers. A function can also store an intermediate or temporary result in a general-purpose register
+        instead of saving it to memory.
+
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f1.5
+        #+CAPTION: X86-64 general-purpose registers
+        [[../images/assembly/2.png]]
+        The low-order byte, word, and doubleword of each 64-bit general-purpose register are independently
+        accessible and can be employed to carry out operations using 8-, 16-, or 32-bit wide operands. For
+        example, a function can use registers EAX, EBX, ECX, and EDX to perform 32-bit integer arithmetic in
+        the low-order doublewords of RAX, RBX, RCX, and RDX, respectively.
+
+        Despite their designation as general-purpose registers, the x86-64 instruction set imposes some
+        notable restrictions on their use. Some instructions either require or implicitly use specific registers as operands.
+This is a legacy scheme inherited from the 8086 that ostensibly improves code density. For example,
+some variants of the imul (Multiply Signed Integers) instruction save the calculated product in RDX:RAX,
+EDX:EAX, DX:AX, or AX. The colon notation used here signifies that the final product is stored in two
+registers with the first register holding the most significant bits. The idiv (Divide Signed Integers) requires
+the integer dividend to be loaded in RDX:RAX, EDX:EAX, DX:AX, or AX. The x86-64 string instructions use
+registers RSI and RDI for the source and destination buffers, respectively; string instructions that employ a
+repeat (or length) count must load this value into register RCX.
