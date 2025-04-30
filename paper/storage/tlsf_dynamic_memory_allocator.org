@@ -1,0 +1,145 @@
+#+title: TLSF: a new Dynamic Memory Allocator for Real-Time Systems
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/storage/tlsf_dynamic_memory_allocator.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/storage/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Real-Time Requirements for DSA
+        * Bounded response time. The worst-case execution time (WCET) of memory allocation and deallocation
+          has to be known in advance and be independent of application data. This is the main requirement that
+          must be met.
+        * Fast response time. Besides having a bounded response time, the response time has to be short for
+          the DSA algorithm to be usable. A bounded DSA algorithm that is 10 times slower than a conventional
+          one is not useful.
+        * Memory requests need to be always satisfied. Non-real time applications can receive a null pointer
+          or just be killed by the OS when the system runs out of memory. Although it is obvious that it is
+          not possible to always grant all the memory requested, the DSA algorithm has to minimise the chances
+          of exhausting the memory pool by minimising the amount of fragmentation and wasted memory.
+
+* Fragmentation
+
+* DSA Algorithms
+
+* DSA Operational Model
+        A DSA is an abstract data type that keeps track of which blocks of memory are in use and which are
+        free.
+
+        * Initially, the memory that will be managed by the DSA is a single, large block of free memory,
+          usually called the initial pool. It is also possible that the allocator relies on the underlying OS
+          (or the hardware MMU) to request new memory areas to manage.
+        * First allocation requests are fulfilled by taking blocks of memory from the initial pool. The
+          initial pool is shrinked accordingly.
+        * When a previously allocated block is released two things may occur depending on the physical
+          position of the released block:
+          1. the released block can be merged with the initial pool or with one or more free adjacent blocks;
+          2. the free block is surrounded by allocated blocks and can not be merged.
+
+          In the first case, the DSA algorithm may coalesce the block or return it to the initial pool. In the
+          second case, the DSA algorithm inserts the free block in the data structure of free blocks.
+        * If there are free blocks, then new allocation requests can be fulfilled by using the initial pool or
+          by searching for a free block large enough to fit the requested block size. The internal data
+          structure where free blocks are stored and the method used to search a suitable block are the heart
+          of the DSA, and determine its performance. If the free block used to fulfill the allocation request
+          is bigger than the requested size, then the block has to be split and the non-allocated part has to
+          be returned to the data structure of free blocks.
+
+
+
+* TLSF Data Structures
+        Two-Level Segregated Fit
+
+        The basic segregated fit mechanism uses an array of free lists, with each array holding free blocks
+        within a size class. In order to speedup the access to the free blocks and also to manage a large set
+        of segregated lists (to reduce fragmentation) the array of lists has been organised as a two-level
+        array. The first-level array divides free blocks in classes that are a power of two apart (16, 32, 64,
+        128, etc.); and the second-level sub-divides each first-level class linearly, where the number of
+        divisions (referred to as the Second Level Index, ~SLI~) is a user configurable parameter. Each array of
+        lists has an associated bitmap used to mark which lists are empty and which ones contain free blocks.
+        Information regarding each block is stored inside the block itself.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION:
+        [[../../images/papers/159.png]]
+
+        Figure [[ref:f1]] shows the two levels in the data structure. The first level is an array of pointers
+        which point to the second level lists of free blocks. In this case, considering the bitmap of the
+        first level, there are only free blocks of size ranges \([2^6,2^7)\) and \([2^{15},2^{16})\). The
+        bitmap of the second level splits each first level range in four segregated lists.
+
+        In order to easily coalesce free blocks, the TLSF employs the boundary tag technique proposed by D.
+        Knuth that originally consisted in adding a footer field to each free or used block, which is a
+        pointer to the beginning of the same block. When a block is released, the footer of the previous block
+        (which is located one word before the released block) is used to access the head of the previous
+        physical block to check whether it is free or not and merge both blocks accordingly. It is possible to
+        simplify the boundary tag technique by allocating the pointer to the head of the block not at the end
+        of each block but inside the header of the next block.
+
+
+
+** TLSF Block Header
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/160.png]]
+        The block header of free blocks contains the following data:
+        1. The size of the block, required to free the block and to link this block with the new one in the
+           physical link list
+        2. Boundary tag, a pointer to the head of the previous physical block
+        3. Two pointers, to link this block into the corresponding segregated list
+
+        Since block sizes are always a multiple of four (the allocation unit is the word, 4 bytes) the two
+        least significant bits of the size field are used to store the block status: block is busy or free
+        (bit F), and whether the block is the last one of the pool or not (bit T).
+
+** TLSF Structure Functions
+        Given the size of a block, the ~mapping~ function calculates the indexes of the two arrays that point to
+        the corresponding segregated list that holds the requested block.
+
+        \begin{align*}
+        &\texttt{mapping}(size)\to(f,s)\\
+        &\texttt{mapping}(size)=
+        \begin{cases}
+        f:=\floor{\log_2(size)}\\
+        s:=(size-2^f)\frac{2^{SLI}}{2^f}
+        \end{cases}
+        \end{align*}
+
+        where \(f\) and \(s\) denote the first- and second-level indices, respectively.
+
+        The operations provided by TLSF structure are:
+        * Initialize TLSF structure
+        * Destroy TLSF structure
+        * Get a free block
+          1. calculate \(f\) and \(s\).
+          2. Search the next (bigger than the requested size) non-empty segregated list
+
+             if a list is found, then the block at the head of the list will be used to fulfill the request.
+             Since this block is bigger than requested, it has to be split and the remaining is inserted into
+             the corresponding segregated free list.
+          3. insert a free block
+          4. coalesce blocks
+** TLSF Structure Parameters
+        * First Level Index (FLI): number of first-level segregated classes.
+          \begin{equation*}
+          FLI=\min(\log_2(memory\_pool\_size),31)
+          \end{equation*}
+        * Second Level Index (SLI): subdivides FLI, power of two, in the range \([1,32]\)
+        * Minimum block size (MBS): 16 bytes
+
+        Now we can compute:
+        * number of lists: \(2^{SLI}(FLI-\log_2(MBS))\)
+        * range of sizes accepted
+** TLSF Structure Optimisations
+        * Cache and TLB Locality Strategies
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

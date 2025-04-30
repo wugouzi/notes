@@ -1,0 +1,155 @@
+#+title: Monarch: Google's Planet-Scale In-Memory Time Series Database
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/monarch.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+        HackerNews has some additional discussions
+        [[https://news.ycombinator.com/item?id=31379383][duscussions]]
+* Introduction
+        Borgmon's limitations:
+        * Borgmon’s architecture encourages a decentralized operational model where each team sets up and
+          manages their own Borgmon instances. However, this led to non-trivial operational overhead for many
+          teams who do not have the necessary expertise or staffing to run Borgmon reliably. Additionally,
+          users frequently need to examine and correlate monitoring data across application and infrastructure
+          boundaries to troubleshoot issues; this is difficult or impossible to achieve in a world of many isolated Borgmon instances;
+        * Borgmon’s lack of schematization for measurement dimensions and metric values has resulted in
+          semantic ambiguities of queries, limiting the expressiveness of the query language during data analysis;
+        * Borgmon does not have good support for a distribution (i.e., histogram) value type, which is a
+          powerful data structure that enables sophisticated statistical analysis
+        * Borgmon requires users to manually shard the large number of monitored entities of global services
+          across multiple Borgmon instances and set up a query evaluation tree.
+
+        Monarch provides multi-tenant monitoring as a single unified service for all teams, minimizing their
+        operational toil.
+
+* System Overview
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION:
+        [[../../images/papers/163.png]]
+
+        1. Monarch readily trades consistency for high availability and partition tolerance
+           * To promptly deliver alerts, Monarch must serve the most recent data in a timely fashion; for
+             that, Monarch drops delayed writes and returns partial data for queries if necessary.
+           * In the face of network partitions, Monarch continues to support its users’ monitoring and
+             alerting needs, with mechanisms to indicate the underlying data may be incomplete or inconsistent.
+        2. Monarch must be low dependency on the alerting critical path: Monarch stores monitoring data in
+           memory despite the high cost.
+
+        The primary organizing principle of Monarch, as shown in Figure [[ref:f1]], is local monitoring in
+        regional /zones/ combined with global management and querying. Local monitoring allows Monarch to keep
+        data near where it is collected, reducing transmission costs, latency, and reliability issues, and
+        allowing monitoring within a zone independently of components outside that zone. Global management and
+        querying supports the monitoring of global systems by presenting a unified view of the whole system.
+
+        Each Monarch zone is autonomous, and consists of a collection of clusters, i.e., independent failure
+        domains, that are in a strongly network-connected region. Components in a zone are replicated across
+        the clusters for reliability. Monarch stores data in memory and avoids hard dependencies so that
+        each zone can work continuously during transient outages of other zones, global components, and
+        underlying storage systems. Monarch’s global components are geographically replicated and interact
+        with zonal components using the closest replica to exploit locality.
+
+        The components responsible for holding state are:
+        * *Leaves* store monitoring data in an in-memory time series store.
+        * *Recovery logs* store the same monitoring data as the leaves, but on disk. This data ultimately gets
+          rewritten into a long-term time series repository (not discussed due to space constraints).
+        * A global *configuration server* and its zonal mirrors hold configuration data in Spanner databases.
+
+        The data ingestion components are:
+        * *Ingestion routers* that route data to leaf routers in the appropriate Monarch zone, using information
+          in time series keys to determine the routing.
+        * *Leaf routers* that accept data to be stored in a zone and route it to leaves for storage.
+        * *Range assigners* that manage the assignment of data to leaves, to balance the load among leaves in a
+          zone.
+
+        The components involved in query execution are:
+        * *Mixers* that partition queries into sub-queries that get routed to and executed by leaves, and merge
+          sub-query results. Queries may be issued at the root level (by root mixers) or at the zone level (by
+          zone mixers). Root-level queries involve both root and zone mixers.
+        * *Index servers* that index data for each zone and leaf, and guide distributed query execution.
+        * *Evaluators* that periodically issue standing queries to mixers and write the results back to leaves.
+* Data Model
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/164.png]]
+
+        Conceptually, Monarch stores monitoring data as time series in schematized tables. Each table consists
+        of multiple *key columns* that form the time series key, and a *value column* for a history of points of
+        the time series. See Figure [[ref:f2]] for an example. Key columns, also referred to as *fields*, have two sources: *targets* and *metrics*, defined as follows.
+** Targets
+        Monarch uses *targets* to associate each time series with its source entity (or monitored entity), which
+        is, for example, the process or the VM that generates the time series. Each target represents a
+        monitored entity, and conforms to a *target schema* that defines an ordered set of target field names
+        and associated field types. Figure [[ref:f2]] shows a popular target schema named ~ComputeTask~; each
+        ~ComputeTask~ target identifies a running task in a Borg cluster with four fields: ~user~, ~job~, ~cluster~,
+        and ~task_num~
+
+        For locality, Monarch stores data close to where the data is generated. Each target schema has one
+        field annotated as *location*; the value of this location field determines the specific Monarch zone to
+        which a time series is routed and stored. For example, the location field of ~ComputeTask~ is ~cluster~;
+        each Borg cluster is mapped to one (usually the closest) Monarch zone.
+
+        Within each zone, Monarch stores time series of the same target together in the same leaf because they
+        originate from the same entity and are more likely to be queried together in a join. Monarch also
+        groups targets into disjoint target ranges in the form of \([S_{start},S_{end})\) where \(S_{start}\)
+        and \(S_{end}\) are the start and end target strings. A *target string* represents a target by
+        concatenating the target schema name and field values in order . For example, in Figure [[ref:f2]], the
+        target string ~ComputeTask::sql-dba::db.server::aa::0876~ represents the Borg task of a database server.
+        Target ranges are used for lexicographic sharding and load balancing among leaves; this allows more
+        efficient aggregation across adjacent targets in queries
+** Metrics
+        Similar to a target, a metric conforms to a metric schema, which defines the time series value type
+        and a set of metric fields. Metrics are named like files. Figure [[ref:f2]] shows an example metric called
+        ~/rpc/server/latency~ that measures the latency of RPCs to a server; it has two metric fields that
+        distinguish RPCs by service and ~command~.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION:
+        [[../../images/papers/165.png]]
+
+        The value type can be ~boolean~, ~int64~, ~double~, ~string~, ~distribution~, or ~tuple~ of other types. All of
+        them are standard types except distribution, which is a compact type that represents a large number of
+        double values. A distribution includes a *histogram* that partitions a set of double values into subsets
+        called *buckets* and summarizes values in each bucket using overall statistics such as mean, count, and
+        standard deviation. Bucket boundaries are configurable for trade-off between data granularity (i.e.,
+        accuracy) and storage costs: users may specify finer buckets for more popular value ranges. Figure
+        [[ref:f3]] shows an example distribution-typed time series of ~/rpc/server/latency~ which measures servers’
+        latency in handling RPCs; and it has a fixed bucket size of 10ms. Distribution-typed points of a time
+        series can have different bucket boundaries; inter- polation is used in queries that span points with
+        different bucket boundaries. Distributions are an effective feature for summarizing a large number of
+        samples. Mean latency is not enough for system monitoring—we also need other statistics such as 99th
+        and 99.9th percentiles. To get these efficiently, histogram support—aka distribution—is indispensable.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION:
+        [[../../images/papers/166.png]]
+
+        *Exemplars*. Each bucket in a distribution may contain an exemplar of values in that bucket. An exemplar
+        for RPC metrics, such as ~/rpc/server/latency~, may be a Dapper RPC trace, which is very useful in
+        debugging high RPC latency. Additionally, an exemplar contains information of its originating target
+        and metric field values. The information is kept during distribution aggregation, therefore a user can
+        easily identify problematic tasks via outlier exemplars. Figure [[ref:f4]] shows a heat map of a
+        distribution-typed time series including the exemplar of a slow RPC that may explain the tail latency
+        spike in the middle of the graph.
+
+        *Metric types*. A metric may be a gauge or a cumulative. For each point of a gauge time series, its
+        value is an instantaneous measurement, e.g., queue length, at the time indicated by the point
+        timestamp. For each point of a cumulative time series, its value is the accumulation of the measured
+        aspect from a start time to the time indicated by its timestamp.
+* Scalable Collection
+** Data Collection Overview
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

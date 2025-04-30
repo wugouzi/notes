@@ -1,0 +1,308 @@
+% Created 2025-04-24 Thu 13:36
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../../paper/query_optimization/}}
+\definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+\usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+\setminted{breaklines,
+mathescape,
+bgcolor=mintedbg,
+fontsize=\footnotesize,
+frame=single,
+linenos}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc,
+%   !announce-end.
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{The MemSQL Query Optimizer: A modern optimizer for real-time analytics in a distributed database}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={The MemSQL Query Optimizer: A modern optimizer for real-time analytics in a distributed database},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:orgb57ed39}
+
+\subsection{Overview of MemSQL}
+\label{sec:orgbbb5e16}
+\begin{itemize}
+\item MemSQL is a distributed memory-optimized SQL database which excels at mixed real-time analytical and
+transactional processing at scale.
+\item MemSQL can store data in two formats: an in-memory row-oriented store and a disk-backed
+column-oriented store. Tables can be created in either rowstore or columnstore format, and queries
+can involve any combination of both types of tables.
+\item MemSQL's distributed architecture is a shared-nothing architecture with two tiers of nodes:
+scheduler nodes (called \textbf{aggregator} nodes) and execution nodes (called \textbf{leaf} nodes). Aggregator nodes
+serve as mediators between the client and the cluster, while leaf nodes provide the data storage and
+query processing backbone of the system. Users route queries to the aggregator nodes, where they are
+parsed, optimized, and planned.
+\item User data in MemSQL is distributed across the cluster in two ways, selected on a per-table basis.
+For \textbf{Distributed} tables, rows are hash-partitioned, or sharded, on a given set of columns, called the
+\textbf{shard key}, across the leaf nodes. For \textbf{Reference} tables, the table data is replicated across all
+nodes. Queries may involve any combination of such tables.
+\end{itemize}
+
+
+In order to execute a query, the aggregator node converts the input user query into a distributed
+query execution plan (DQEP). The distributed query execution plan is a series of DQEP Steps,
+operations which are executed on nodes across the cluster which may include local computation and data
+movement via reading data from remote tables on other leaf nodes. MemSQL represents these DQEP Steps
+using a SQL-like syntax and framework, using innovative SQL extensions called \textbf{RemoteTables} and
+\textbf{ResultTables}. These enable the MemSQL Query Optimizer to represent DQEPs using a SQL-like syntax and
+interface.
+
+Query plans are compiled to machine code and cached to expedite subsequent executions. Rather than
+cache the results of the query, MemSQL caches a compiled query plan to provide the most efficient
+execution path.
+\subsection{Query Optimization in MemSQL}
+\label{sec:org0fc1f35}
+The optimizer framework is divided into three major modules:
+\begin{enumerate}
+\item \textbf{Rewriter}: The Rewriter applies SQL-to-SQL rewrites on the query.
+\item \textbf{Enumerator}: determines the distributed join order and data movement decisions as well as local join
+order and access path selection.
+\item \textbf{Planner}: The Planner converts the chosen logical execution plan to a sequence of distributed query
+and data movement operations.
+\end{enumerate}
+\section{Overview of MemSQL Query Optimization}
+\label{sec:orgf9dba41}
+
+\subsection{DQEP Examle}
+\label{sec:org4a34540}
+Suppose the \texttt{customer} table is a distributed table that has a shard key on \texttt{c\_custkey} and the \texttt{orders}
+table is also a distributed table that has a shard key on \texttt{o\_orderkey}.
+\begin{minted}[]{sql}
+SELECT c_custkey, o_orderdate
+FROM orders, customer
+WHERE o_custkey = c_custkey
+AND o_totalprice < 1000;
+\end{minted}
+The query above is a simple join and filter query and hence, the Rewriter will not be able to apply
+any query rewrites directly over this query and the operator tree corresponding to the original input
+query is fed to the Enumerator. It can be seen that the shard keys of the tables do not exactly match
+with the join keys (orders is not sharded on \texttt{o\_custkey}), and therefore, there needs to be a data
+movement operation in order to perform the join. The Enumerator will pick a plan based on the
+statistics of the table, number of nodes in the cluster, etc. One possible plan choice is to
+repartition \texttt{orders} on \texttt{o\_custkey} to match customer sharded on \texttt{c\_custkey}. The Planner converts this
+logical plan choice into an execution plan consisting of the following \emph{DQEP Steps}:
+\begin{enumerate}
+\item 
+\begin{minted}[]{sql}
+CREATE RESULT TABLE r0
+  PARTITION BY (o_custkey)
+AS
+  SELECT orders.o_orderdate as o_orderdate,
+    orders.o_custkey as o_custkey
+  FROM
+    orders
+  WHERE orders.o_totalprices < 1000;
+\end{minted}
+\item 
+\begin{minted}[]{sql}
+SELECT customer.c_custkey as c_custkey,
+  r0.o_orderdate as o_orderdate
+FROM
+  REMOTE(r0(p)) JOIN customer
+WHERE r0.o_custkey = customer.c_custkey
+\end{minted}
+\end{enumerate}
+
+
+Each partition reads the partitions of r0 which match the local partition of customer. Then, the join
+between the result of the previous step and the customer table is performed across all partitions.
+Every leaf node returns its result set to the aggregator node, which is responsible for combining and
+merging the result sets as needed and delivering them back to the client application.
+\subsection{Query Optimization Example}
+\label{sec:org831a691}
+In this example, lineitem and part are distributed rowstore tables hash-partitioned on \texttt{l\_orderkey} and
+\texttt{p\_partkey}, respectively. The query is:
+\begin{minted}[]{sql}
+SELECT sum(l_extendedprice) / 7.0 as avg_yearly
+FROM lineitem,
+     part
+WHERE p_partkey = l_partkey
+  AND p_brand = 'Brand#43'
+  AND p_container = 'LG PACK'
+  AND l_quantity < (
+    SELECT 0.2 * avg(l_quantity)
+    FROM lineitem
+    WHERE l_partkey = p_partkey)
+\end{minted}
+
+Rewrite:
+
+\begin{minted}[]{sql}
+SELECT Sum(l_extendedprice) / 7.0 AS avg_yearly
+FROM lineitem,
+  (
+    SELECT 0.2 * Avg(l_quantity) AS s_avg,
+           l_partkey AS s_partkey
+    FROM lineitem,
+         part
+    WHERE p_brand = 'Brand#43'
+    AND p_container = 'LG PACK'
+    AND p_partkey = l_partkey
+    GROUP BY l_partkey
+  ) sub
+WHERE s_partkey = l_partkey
+AND l_quantity < s_avg
+\end{minted}
+
+Enumerate: The Enumerator chooses the cheapest join plan and annotates each join with data movement
+operations and type. The best plan is to broadcast the filtered rows from \texttt{part} and from \texttt{sub}, because
+the best alternative would involve reshuffling the entire \texttt{lineitem} table, which is far larger and thus more expensive.
+\begin{minted}[]{c++}
+Project [s2 / 7.0 AS avg_yearly]
+Aggregate [SUM(1) AS s2]
+Gather partitions:all
+Aggregate [SUM(lineitem_1.l_extendedprice) AS s1]
+Filter [lineitem_1.l_quantity < s_avg]
+NestedLoopJoin
+|---IndexRangeScan lineitem AS lineitem_1,
+|   KEY (l_partkey) scan:[l_partkey = p_partkey]
+Broadcast
+HashGroupBy [AVG(l_quantity) AS s_avg]
+            groups:[l_partkey]
+NestedLoopJoin
+|---IndexRangeScan lineitem,
+|   KEY (l_partkey) scan:[l_partkey = p_partkey]
+Broadcast
+Filter [p_container = 'LG PACK' AND p_brand = 'Brand#43']
+TableScan part, PRIMARY KEY (p_partkey)
+\end{minted}
+
+Planner: The planner creates the DQEP according to the chosen query plan, consisting of a series of
+SQL statements with \emph{ResultTables} and \emph{RemoteTables}. Playing to the strengths of \emph{ResultTables}, the
+entire query can be streamed since there are no pipeline-blocking operators. The group-by can also be
+streamed by taking advantage of the existing index on the \texttt{p\_partkey} column from the part table. For
+clarity, we show a simplified DQEP,
+
+\begin{minted}[]{sql}
+CREATE RESULT TABLE r0 AS
+SELECT p_partkey
+FROM   part
+WHERE  p_brand = 'Brand#43'
+AND p_container = 'LG PACK';
+
+CREATE RESULT TABLE r1 AS
+SELECT 0.2 * Avg(l_quantity) AS s_avg,
+       l_partkey as s_partkey
+FROM   REMOTE(r0),
+       lineitem
+WHERE p_partkey = l_partkey
+GROUP BY l_partkey;
+
+SELECT Sum(l_extendedprice) / 7.0 AS avg_yearly
+FROM   REMOTE(r1),
+       lineitem
+WHERE  p_partkey = s_partkey
+AND    l_quantity < s_avg
+\end{minted}
+\section{Rewriter}
+\label{sec:orga94ab5d}
+\subsection{Heuristic and Cost-Based Rewrites}
+\label{sec:org0a02fb4}
+\begin{itemize}
+\item \textbf{Column Elimination}: remove unsed columns
+\item \textbf{Group-By Pushdown}:
+\item \textbf{Sub-Query Merging}:
+\end{itemize}
+\subsection{Interleaving of Rewrites}
+\label{sec:org3f51b4b}
+The Rewriter applies many query rewrites, many of which have important interactions with each other,
+so we must order the transformations intelligently, and in some cases interleave them.
+
+For example, consider \textbf{Outer Join to Inner Join} conversion, which detects outer joins that can be
+converted to inner joins because a predicate later in the query rejects NULLs of the outer table, and
+\textbf{Predicate Pushdown}, which finds predicates on a derived table which can be pushed down into the
+sub-select. Pushing a predicate down may enable \emph{Outer Join to Inner Join} conversion if that predicate
+rejects NULLs of the outer table. However, \emph{Outer Join to Inner Join} conversion may also enable
+\emph{Predicate Pushdown} because a predicate in the ON condition of a left outer join can now potentially be
+pushed inside the right table, for example. Therefore, to transform the query as much as possible, we
+interleave the two rewrites: going top-down over each select block, we first apply \emph{Outer Join to}
+\emph{Inner Join} conversion, and then \emph{Predicate Pushdown}, before processing any subselects.
+\subsection{Costing Rewrites}
+\label{sec:org72be1f6}
+We can estimate the cost of a candidate query transformation by calling the Enumerator, to see how the
+transformation affects the potential execution plans of the query tree, including join orders and
+group-by execution methods of any affected select blocks.
+
+It is important that the Enumerator determines the best execution plan taking into account data
+distribution, including when called by the Rewriter for the purposes of cost-based rewrites, because
+many query rewrites can potentially alter the distributed plan, including by affecting which operators
+like joins and groupings can be co-located, and which and how much data needs to be sent across the
+network. If the Rewriter makes a decision on whether to apply a rewrite based on a model that is not
+aware of distribution cost, the optimizer can potentially chose inefficient distributed plans.
+
+Consider two tables \(T1(a,b)\) and \(T2(a,b)\) which are shared on the columns \(T1.b\) and \(T2.a\),
+respectively, and with a unique key on column \(a\) for \(T2\)
+
+\begin{minted}[]{sql}
+CREATE TABLE T1 (a int, b int, shard key (b))
+CREATE TABLE T2 (a int, b int, shard key (a),
+                unique key (a))
+\end{minted}
+
+Consider the following query Q1:
+\begin{minted}[]{sql}
+-- Q1
+SELECT sum(T1.b) AS s FROM T1, T2
+WHERE T1.a = T2.a
+GROUP BY T1.a, T1.b
+\end{minted}
+This query can be rewritten to with the \emph{Group-By Pushdown} transformation, which reorders the group-by
+before the join, as shown in the transformed query Q2:
+\begin{minted}[]{sql}
+-- Q2
+SELECT V.s from T2,
+  (SELECT a,
+          sum(b) as s
+   FROM T1
+   GROUP BY T1.a, T1.b
+  ) V
+WHERE V.a = T2.a;
+\end{minted}
+
+Let \(R_1=200,000\) be the rowcount of \(T1\) and \(R_2=50,000\) be the rowcount of \(T2\). Let
+\(S_G=1/4\) be the fraction of rows of \(T1\) left after grouping on \((T1.a, T1.b)\), i.e.
+\(R_1S_G=50,000\) is the number of distinct tuples of \((T1.a, T1.b)\). Let \(S_J=1/10\) be the fraction
+of rows of \(T1\) left after the join between \(T1.a\) and \(T2.a\) (note that each matched row of
+\(T1\) produces only one row in the join since \(T2.a\) is a unique key). Assume the selectivity of
+the join is independent of the grouping, i.e. any given row has a probability \(S_J\) of matching a
+row of \(T2\) in the join. So the number of rows after joining \(T1\) and \(T2\) on \(T1.a = T2.a\) is
+\(R_1S_J=20,000\), and the number of rows after both the join and the group-by of Q1 is
+\(R_1S_JS_G=5,000\)
+
+Assume seeking into the unique key on \(T2.a\) has a lookup cost of \(C_J=1\) units, and the group-by
+is executed using a hash table with an average cost of \(C_G=1\) units per row. Then the costs of the
+query execution plans for Q1 without the Group-By Pushdown transformation, and Q2 with the
+transformation, without taking distribution into account (i.e. assuming the entire query is executed
+locally) are:
+\begin{gather*}
+Cost_{Q1}=R_1C_J+R_1S_JC_G=200,000C_G+20,000C_G=220,000\\
+Cost_{Q2}=R_1C_G+R_1S_GC_J=200,000C_G+50,000C_J=250,000
+\end{gather*}
+\section{Problems}
+\label{sec:orgc302221}
+
+
+\section{References}
+\label{sec:org604a3f0}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+\end{document}
