@@ -65,6 +65,7 @@
 (package! magit-delta)
 
 (package! auctex)
+(package! rainbow-mode)
 
 (package! org :recipe
   (:host nil :repo "https://git.tecosaur.net/mirrors/org-mode.git" :remote "mirror" :fork
@@ -92,16 +93,25 @@
 
 (unpin! org)
 
-;; (when (package! lsp-bridge
-;;         :recipe (:host github
-;;                  :repo "manateelazycat/lsp-bridge"
-;;                  :branch "master"
-;;                  :files ("*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
-;;                  ;; do not perform byte compilation or native compilation for lsp-bridge
-;;                  :build (:not compile)))
-;;   (package! markdown-mode)
-;;   (package! yasnippet))
+(when (package! lsp-bridge
+        :recipe (:host github
+                 :repo "manateelazycat/lsp-bridge"
+                 :branch "master"
+                 :files ("*.el" "*.py" "acm" "core" "langserver" "multiserver" "resources")
+                 ;; do not perform byte compilation or native compilation for lsp-bridge
+                 :build (:not compile)))
+  (package! markdown-mode)
+  (package! yasnippet))
+
 (package! tla-ts-mode
   :recipe (:host github :repo "Davidbrcz/tla-ts-mode"))
 
 (package! wakatime-mode)
+
+(package! logview)
+(package! why-this)
+(package! google-c-style)
+(package! tintin-mode
+  :recipe (:host github
+           :repo "matthewrsilver/tintin-mode"))
+(package! sqlformat)

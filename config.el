@@ -84,6 +84,11 @@
 ;; they are implemented.
 (setq mac-command-modifier 'meta)
 
+(add-to-list 'exec-path (expand-file-name "~/.local/bin"))
+(add-to-list 'exec-path (expand-file-name "~/.cargo/bin"))
+(add-to-list 'exec-path "/opt/local/bin")
+(setenv "PATH" (concat "/opt/local/bin:" (getenv "PATH")))
+
 (use-package smartparens
   :ensure t
   :bind (("M-k" . sp-backward-kill-sexp))
@@ -135,8 +140,32 @@
    )
 
   :config
+  (defface my-org-emphasis-bold
+  '((default :inherit bold)
+    (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
+     :foreground "#048025") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
+    (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
+     :foreground "#ff8059"))
+  "My bold emphasis for Org.")
+
+  (defface my-org-emphasis-italic
+  '((default :inherit italic)
+    (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
+     :foreground "#a16c50") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
+    (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
+     :foreground "#ff8059"))
+  "My italic emphasis for Org.")
+  
+  (setq org-emphasis-alist
+      '(("*" my-org-emphasis-bold)
+	("/" my-org-emphasis-italic)
+	("_" underline)
+        ("=" org-verbatim verbatim)
+        ("~" org-code verbatim)
+	;; ("+" my-org-emphasis-strike-through)
+        ))
+  
   (setq org-highlight-latex-and-related '(script entities)
-        org-latex-preview-process-precompiled t
         org-startup-indented nil
         org-hide-emphasis-markers t
         ;; org-latex-listings 'minted
@@ -144,14 +173,6 @@
                                ("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
         ;; inline image size
         org-image-actual-width 600
-        org-emphasis-alist
-        '(("*" bold)
-          ("/" italic)
-          ("_" underline)
-          ("=" org-verbatim verbatim)
-          ("~" org-code verbatim)
-          ;; ("+" (:strike-through t))
-          )
         org-latex-listings 'minted
         )
   (set-company-backend! 'org-mode '(company-dabbrev :with company-yasnippet))
@@ -183,7 +204,9 @@
 
   (setq org-latex-compiler "xelatex")
 
-  (setq org-startup-with-latex-preview nil)
+  (setq org-startup-with-latex-preview t)
+
+  (setq org-latex-preview-preamble "\\documentclass[dvisvgm]{article}\n[DEFAULT-PACKAGES]\n[PACKAGES]\n\\usepackage{xcolor}")
 
   (setq org-latex-preview-appearance-options
         '(:foreground auto
@@ -381,20 +404,26 @@
 ;; (after! org-mode
 ;;   (set-company-backend! 'org-mode '(company-dabbrev :with company-yasnippet)))
 
-;; (use-package lsp-mode
-;;   :custom
-;;   (lsp-rust-analyzer-server-display-inlay-hints t)
-;;   (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
-;;   (lsp-rust-analyzer-display-chaining-hints t)
-;;   (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
-;;   (lsp-rust-analyzer-display-closure-return-type-hints t)
-;;   (lsp-rust-analyzer-display-parameter-hints nil)
-;;   (lsp-rust-analyzer-display-reborrow-hints nil)
-;;   )
+(use-package lsp-mode
+  :init
+  (setq lsp-inlay-hint-enable t)
+  ;; :hook
+  ;; (c++-mode . lsp-inlay-hints-mode)
+  :custom
+  (setq lsp-rust-analyzer-binding-mode-hints t
+        lsp-rust-analyzer-closing-brace-hints t
+        lsp-rust-analyzer-closure-capture-hints t
+        )
+  )
 
 
 (setq
  rustic-cargo-test-exec-command "test")
+
+(use-package rainbow-mode
+  :hook
+  (json-mode . rainbow-mode)
+  (emacs-lisp-mode . rainbow-mode))
 
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
@@ -403,7 +432,8 @@
           "--clang-tidy"
           "--completion-style=detailed"
           "--header-insertion=never"
-          "--header-insertion-decorators=0"))
+          "--header-insertion-decorators=0"
+          "--compile-commands-dir=build"))
   (set-lsp-priority! 'clangd 2))
 
 ;; annoying org warnings
@@ -484,6 +514,7 @@
  `(org-document-title ((t (:bold t :foreground "#a626a4" :weight bold :height 2.0))))
  '(org-block-begin-line
    ((t (:underline "#A7A6AA" :foreground "#008ED1" :background "#f7f2f5" ))))
+ '(org-indent ((t (:foreground "#2a783f"))))
  '(org-block
    ((t (:background "#fafafa"))))
  ;; '(org-block
@@ -493,6 +524,7 @@
  '(table-cell ((t (:foreground "#000000"))))
  '(variable-pitch ((t (:family "Merriweather" :height 130))))
  '(fixed-pitch ((t ( :family "DejaVu Sans Mono" :height 130))))
+ '(diff-refine-added ((t (:bold t :weight bold :foreground "#40803f" :background "#f0fafa"))))
  '(magit-diff-added-highlight ((t (:bold t :weight bold :foreground "#50a14f" :background "#f0f5f0"))))
  '(magit-diff-added ((t (:bold t :weight bold :foreground "#40803f" :background "#f0fafa"))))
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
@@ -502,6 +534,7 @@
 ;;   :config
 ;;   (setq lsp-bridge-enable-log nil)
 ;;   (global-lsp-bridge-mode))
+
 
 (use-package magit-delta
   :hook (magit-mode . magit-delta-mode)
@@ -526,6 +559,20 @@
 
 (global-wakatime-mode)
 
+(use-package why-this
+  :hook
+  (pdf-view-mode . (lambda ()
+                     (when (string-match-p "\\.pdf\\'" (buffer-name))
+                       (why-this-mode -1))))
+  :config
+  (set-face-background 'why-this-annotate-heat-map-cold "#dde3f4")
+  (set-face-background 'why-this-annotate-heat-map-warm "#f0e0d4")
+  (set-face-attribute 'why-this-face nil
+                      :foreground "dark slate blue")
+  (setq why-this-minimum-column 100)
+  (setq why-this-idle-delay 0.3)
+  (global-why-this-mode))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODUS THEME ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq modus-themes-italic-constructs t
@@ -545,3 +592,40 @@
                            (useany . t)
                            (unusedvariable . t)))
 )
+
+;;;; Global keybinding
+(map! "S-<f12>" #'+lookup/references
+      "C-." #'+lookup/definition
+      "C-<f12>" #'+lookup/implementations
+      "C--" #'pop-global-mark
+      ;; "C-v" #'View-scroll-half-page-forward
+      ;; "M-v" #'View-scroll-half-page-backward
+      )
+
+(add-hook 'c-mode-common-hook 'google-set-c-style)
+(add-hook 'c-mode-common-hook 'google-make-newline-indent)
+
+;; (require 'tintin-mode)
+;; (use-package tintin-mode
+;;   :mode ("\\.tin"))
+
+
+(defun format-sql-file ()
+  "Format current file using sql-formatter if it's a SQL file."
+  (interactive)
+  (let ((filename (buffer-file-name)))
+    ;; Check if buffer is associated with a file and is SQL
+    (when (and filename
+               (string-match "\\.sql\\'" filename))
+      ;; Verify sql-formatter exists in PATH
+      (if (executable-find "sqlfluff")
+          (progn
+            ;; Save buffer before formatting
+            (save-buffer)
+            ;; Format file with proper quoting for spaces in filenames
+            (shell-command (format "sqlfluff fix '%s' --dialect mysql" filename filename))
+            ;; Reload formatted content
+            (revert-buffer t t t)
+            (message "Formatted SQL file: %s" filename))
+        ;; Error message if formatter not found
+        (message "sql-formatter not found in PATH!")))))
