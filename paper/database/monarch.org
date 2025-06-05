@@ -145,6 +145,84 @@
         aspect from a start time to the time indicated by its timestamp.
 * Scalable Collection
 ** Data Collection Overview
+        The two levels of routers perform two levels of divide-and-conquer: /ingestion routers/ regionalize time
+        series data into zones according to location fields, and /leaf routers/ distribute data across leaves
+        according to the range assigner. Recall that each time series is associated with a target and one of
+        the target fields is a location field.
+
+        Writing time series data into Monarch follows four steps:
+        1. A client sends data to one of the nearby ingestion routers, which are distributed across all our
+           clusters. Clients usually use our instrumentation library, which automatically writes data at the
+           frequency necessary to fulfill retention policies
+        2. The ingestion router finds the destination zone based on the value of the target’s location field,
+           and forwards the data to a leaf router in the destination zone. The location-to-zone mapping is
+           specified in configuration to ingestion routers and can be updated dynamically.
+        3. The leaf router forwards the data to the leaves responsible for the target ranges containing the
+           target. Within each zone, time series are sharded lexicographically by their target strings. Each
+           leaf router maintains a continuously-updated range map that maps each target range to three leaf
+           replicas. Note that leaf routers get updates to the range map from leaves instead of the range
+           assigner. Also, target ranges jointly cover the entire string universe; all new targets will be
+           picked up automatically without intervention from the assigner. So data collection continues to
+           work if the assigner suffers a transient failure.
+        4. Each leaf writes data into its in-memory store and recovery logs. The in-memory time series store
+           is highly optimized: it
+           1. encodes timestamps efficiently and shares timestamp sequences among time series from the same
+              target;
+           2. handles delta and run-length encoding of time series values of complex types including
+              distribution and tuple;
+           3. supports fast read, write, and snapshot;
+           4. operates continuously while processing queries and moving target ranges; and
+           5. minimizes memory fragmentation and allocation churn.
+
+        To achieve a balance between CPU and memory, the in-memory store performs only light compression such
+        as timestamp sharing and delta encoding. Timestamp sharing is quite effective: one timestamp sequence
+        is shared by around ten time series on average.
+
+        Note that leaves do not wait for acknowledgement when writing to the *recovery logs* per range. Leaves
+        write logs to distributed file system instances (i.e., Colossus) in multiple distinct clusters and
+        independently fail over by probing the health of a log. However, the system needs to continue
+        functioning even when all Colossus instances are unavailable, hence the best-effort nature of the
+        write to the log. Recovery logs are compacted, rewritten into a format amenable for fast reads (leaves
+        write to logs in a write-optimized format), and merged into the long-term repository by
+        continuously-running background processes whose details we omit from this paper. All log files are
+        also asynchronously replicated across three clusters to increase availability.
+
+        Data collection by leaves also triggers updates in the zone and root *index servers* which are used to
+        constrain query fanout
+** Intra-zone Load Balancing
+        As a reminder, a table schema consists of a target schema and a metric schema. The lexicographic
+        sharding of data in a zone uses only the key columns corresponding to the target schema. This greatly
+        reduces ingestion fanout. This not only allows a zone to scale horizontally by adding more leaf nodes,
+        but also restricts most queries to a small subset of leaf nodes. Additionally, commonly used
+        intra-target joins on the query path can be pushed down to the leaf-level, which makes queries cheaper
+        and faster
+
+        In addition, we allow heterogeneous replication policies (1 to 3 replicas) for users to trade off
+        between availability and storage cost.
+
+        Range assigners balance load in ways similar to Slicer. Within each zone, the range assigner splits,
+        merges, and moves ranges between leaves to cope with changes in the CPU load and memory usage imposed
+        by the range on the leaf that stores it. While range assignment is changing, data collection works
+        seamlessly by taking advantage of recovery logs. For example (range splits and merges are similar),
+        the following events occur once the range assigner decided to move a range, say \(\bR\), to reduce the
+        load on the source leaf:
+        1. The range assigner selects a destination leaf with light load and assigns \(\bR\) to it. The
+           destination leaf starts to collect data for \(\bR\) by informing leaf routers of its new assignment
+           of \(\bR\), storing time series with keys within \(\bR\), and writing recovery logs.
+        2. After waiting for one second for data logged by the source leaf to reach disks, the destination
+           leaf starts to recover older data within \(\bR\), in reverse chronological order (since newer data
+           is more critical), from the recovery logs.
+        3. Once the destination leaf fully recovers data in \(\bR\), it notifies the range assigner to
+           unassign \(\bR\) from the source leaf. The source leaf then stops collecting data for \(\bR\) and
+           drops the data from its in-memory store.
+
+        During this process, both the source and destination leaves are collecting, storing, and logging the
+        same data simultaneously to provide continuous data availability for the range \(\bR\). Note that it
+        is the job of leaves, instead of the range assigner, to keep leaf routers updated about range
+        assignments for two reasons:
+        1. leaves are the source of truth where data is stored; and
+        2. it allows the system to degrade gracefully during a transient range assigner failure.
+** Collection Aggregation
 * Problems
 
 

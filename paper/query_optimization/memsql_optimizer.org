@@ -336,7 +336,7 @@ TableScan T1
         2. Identify *candidate *satellite* tables, which are tables with at least one selective predicate on
            them, such as a predicate of the form ~column = constant~ or ~column IN (constant,…)~.
         3. Out of the list of /candidate satellite/ tables, identify the *satellite tables*, which are the tables
-           connected to only other table in the graph (although possibly with multiple join predicates).
+           connected to only one table in the graph (although possibly with multiple join predicates).
         4. Identify seed tables, which are tables that are connected to at least two distinct tables, at least
            one of which is a satellite table.
         5. For each seed table:
@@ -468,8 +468,198 @@ WHERE
         execution plan, including distributed data movement decisions and join orders, and annotate the
         operator tree accordingly.
 
+        The Enumerator needs to look at cost, table and network statistics, query characteristics etc. to
+        perform the physical optimization .
+
         The Enumerator is built on the assumption that parallelizing the best serial plan is not good enough
         for distributed query processing.
+** Search Space Analysis
+        The Enumerator optimizes the join plan within each select block, but does not consider optimizations
+        involving moving joins between different select blocks, which is instead done by the Rewriter.
+
+        The Enumerator processes the select blocks bottom-up, starting by optimizing the smallest expressions
+        (subselects), and then using the annotation information to progressively optimize larger expressions
+        (subselects that are parents of other sub-selects). Eventually, the physical plan for the entire
+        operator tree is determined when the enumerator is done with the outermost select block.
+
+        Even though a bottom-up approach is used, a top-down enumeration should still be applicable with the
+        same set of pruning heuristics. As mentioned before, the set of possible plans is huge and the search
+        space size increases by the introduction of data movement operations. To limit the combinatorial
+        explosion, the Enumerator implements a bottom-up System-R style dynamic programming based join
+        order enumerator with *interesting properties*.
+
+        System-R style optimizers have the notion of *interesting orders* to help take advantage of physical
+        properties like sort order etc. The MemSQL Optimizer Enumerator employs an interesting property of
+        *sharding distribution*, e.g. the set of columns by which data is sharded across the cluster.
+        Interesting shard keys that can be considered are
+        1. predicate columns of equality joins
+        2. grouping columns.
+        In the dynamic programming, we keep track of the best cost for each candidate join set that yields
+        data distributed on each interesting sharding. By examining plans that yield different sharding
+        distributions, we are able to find plans that later take advantage of the sharding distribution. Even
+        though they may be more expensive for an initial part of the join, they may end up cheaper by avoiding
+        the need for a reshuffle or broadcast later.
+** Distributed Costing
+        The cost model for the distributed optimizer consists of the cost model for local SQL relational
+        operations like joins, grouping etc. and the data movement operations.
+
+        For distributed queries which require non-co-located joins because the shard keys of tables involved
+        do not match the join keys, the data movement processing times are often a dominant component of the
+        query execution time. The cost model for data movement operations assumes that every query runs in
+        isolation; the hardware is homogenous across the cluster; and the data is uniformly distributed across
+        all the nodes.
+
+        *Data Movement Operations*: The data movement operations supported by the distributed query execution engine are:
+        * Broadcast: Tuples are broadcasted from each leaf node to all other leaf nodes.
+        * Partition (also called Reshuffle): Tuples are moved from each leaf node to a target leaf node based
+          on a hash of a chosen set of distribution columns.
+
+        *Data Movement Operation Costs*: The costs for data movement operations include the network and
+        computational costs of sending data over the network, as well as other computational costs required
+        for the operations such as hashing costs for reshuffles. The cost is estimated as follows:
+        * Broadcast: \(RD\)
+        * Partition: \(\frac{1}{N}(RD+RH)\)
+
+        where \(R\) is the number of rows which need to be moved, \(D\) is the average cost per row of moving
+        daa (which depends on the row size and network factors), \(N\) is the number of nodes, and \(H\) is
+        the cost per row of evaluating hashes for partitioning.
+** Fast Enumeration
+        The MemSQL Enumerator uses several advanced pruning techniques to enumerate operator orders, thus
+        making the process very fast. A discussion of those techniques is available in [[cite:&10.1145/2803140.2803148]]
+* Planner
+        The Planner converts the output of the Enumerator to a physical execution plan that can be distributed
+        to all the nodes in a cluster. It consumes the annotated operator tree that is produced by the
+        Enumerator and generates the *DQEP Steps* that are required to execute the query. /DQEP Steps/ are
+        SQL-like steps that can be sent as query text over the network. The /DQEP Steps/ are executed
+        simultaneously on the leaves, streaming data whenever possible. Each step runs in parallel on all
+        partitions of the database.
+** Remote Tables and Result Tables
+        In MemSQL, each step of a DQEP may consist of data movement and local computation.
+
+        MemSQL implements and employs two important SQL extensions to support data movement and node-level
+        computation.
+*** Remote Tables
+        In a simple query, the only inter-node communication required is from the leaf nodes to the aggregator
+        node. Wherever possible, filters and grouping expressions are pushed down into the leaf queries to
+        increase parallelism.
+
+        When more complex queries are considered, data movement between leaf nodes is required. The SQL
+        extension *RemoteTables* allows leaf nodes to query all partitions in the same way an aggregator would.
+        Consider the following query:
+        #+begin_src sql
+SELECT facts.id, facts.value
+FROM   REMOTE(facts) as facts
+WHERE  facts.value > 4
+        #+end_src
+        This query can run on any leaf in the MemSQL cluster. The ~REMOTE~ keyword indicates to the engine that
+        the relation is comprised of tuples from all partitions of the facts table, rather than only the local
+        partition. In the interest of exposing an explicit syntax for the planner to use, the filter is not
+        delegated to each other partition as it would have been in an aggregator query. For the planner to
+        indicate precisely when particular operations should be computed, MemSQL employs an extension called
+        *ResultTables*
+*** Result Tables
+        Using /RemoteTables/ alone would be enough to evaluate any relational expression on a cluster of nodes,
+        but it has certain drawbacks. In a fully distributed query, each partition of the database will need
+        to query a /RemoteTable/. However, with each partition querying all other partitions, a lot of work will
+        be repeated quadratically. Even table scans can be expensive when repeated for each partition of the
+        database. To share computational work, MemSQL nodes can store local *ResultTables*. A result table is a
+        temporary result set, which stores one partition of a distributed intermediate result. These tables
+        are defined using a ~SQL SELECT~ statement, and are read-only after definition. In this way, the planner
+        can delegate work to the partitions with finer granularity.
+
+        In the example above, the planner could arrange for each partition to run the following query on each
+        partition before computing the final select:
+        #+begin_src sql
+CREATE RESULT TABLE facts_filtered
+AS SELECT facts.id, facts.value
+   FROM facts
+   WHERE facts.value > 4
+        #+end_src
+** Using Remote Tables and Result Tables in DQEPs
+        To fully represent a DQEP, the planner must lay out a series of data movement and computational steps
+        in SQL. In a MemSQL plan, this is accomplished by chaining these operations together within
+        /ResultTables/. Each stage of the DQEP is represented by a compute step which optionally pulls rows from
+        another stage of the execution, using /ResultTables/ to represent intermediate result sets. In this way,
+        complex data flow and computation can be expressed using only these SQL extensions. However,
+        /ResultTables/ need not be materialized as actual tables, and for some query execution plans they are
+        simply an abstraction and the underlying execution can stream rows from the writer to the reader
+        without writing to a physical table.
+*** Broadcasts
+        Consider
+        #+begin_src sql
+SELECT * FROM x JOIN y WHERE x.a = y.a AND x.b < 2
+AND y.c > 5
+        #+end_src
+        where table \(x\) shareded on \(a\) but table \(y\) is not. In this case, depending on the relative
+        sizes of the tables after applying filters, the best plan may be to either broadcast \(x\) or
+        reshuffle \(y\) to match the sharding of \(x\). If table \(x\) is much smaller than table \(y\) after
+        the relevant filters, the best plan would be to broadcast \(x\) after the filter. This can be executed
+        with the following DQEP:
+        #+begin_src sql
+-- (1)
+CREATE RESULT TABLE r1 AS SELECT * FROM x WHERE x.b < 2 (on every partition)
+-- (1)
+CREATE RESULT TABLE r2 AS SELECT * FROM REMOTE(r1) (on every node)
+-- (1)
+SELECT * FROM r2 JOIN y WHERE y.c > 5 AND r2.a = y.a (on every partition)
+        #+end_src
+        1. (1) is executed on every partition, to apply the filter ~x.b < 2~ locally prior to the broadcast.
+        2. (2) is executed on every leaf node to bring the filtered rows of \(x\) to every node. In this case,
+           \(r2\) would be materialized into a temporary hashtable for the join with \(y\) in (3).
+        3. (3) is executed on every leaf node, with results streamed across the network to the aggregator and
+           then to the client. The use of \(r2\) allows the broadcasted data to be brought to each leaf once,
+           whereas if (3) read directly from ~REMOTE(r1)~, the query would produce the same results but every
+           partition would separately read the broadcasted data from across the network and materialize the
+           resulting table.
+
+        The flexibility of the /RemoteTables/ and /ResultTables/ abstraction also easily enables various alternate
+        execution methods for this broadcast. For example, another possible DQEP for this broadcast is:
+        #+begin_src sql
+-- (1)
+CREATE RESULT TABLE r1 AS SELECT * FROM x WHERE x.b < 2 (on every partition)
+-- (2)
+CREATE RESULT TABLE r2 AS SELECT * FROM REMOTE(r1) (on a single node)
+-- (3)
+CREATE RESULT TABLE r3 AS SELECT * FROM REMOTE(r2) (on every node)
+-- (4)
+SELECT * FROM r3 JOIN y WHERE y.c > 5 AND r3.a = y.a (on every partition)
+        #+end_src
+
+        Here, a single node reads the broadcasted rows from across the cluster, and then distributes them to
+        all other nodes. This is the smallest example of a broadcast tree. Compared to the first plan, only
+        linearly many connections are used across the cluster instead of quadratically many. On the other
+        hand, this introduces slightly more network latency. Which DQEP is better depends on the cluster
+        topology and data size.
+*** Reshuffles
+        /ResultTables/ can also be created with a specified partitioning key to execute reshuffles. Using the
+        same example query and schema, if after applying filters table \(x\) is larger than or of similar size
+        as table \(y\), the best plan would be to reshuffle \(y\) on a to match \(x\):
+        #+begin_src sql
+-- (1)
+CREATE RESULT TABLE r1 PARTITION BY (y.a) AS SELECT * FROM y WHERE y.c > 5 (on every partition)
+-- (2)
+SELECT * FROM x JOIN REMOTE(r1(p)) WHERE x.b < 2 AND x.a = r1.a (on every partition)
+        #+end_src
+        1. (1) repartitions the rows of \(y\) from each local partition.
+        2. (2) is executed on each partition on the output side of the reshuffle, reading the data
+           corresponding to one partition of the repartitioned data from across the cluster, the partition p
+           which matches the local partition of \(x\), and executing the join.
+
+        If neither x nor y are sharded on \(a\), then the best plan, if the two tables are similarly sized
+        after filters, may be to reshuffle both sides. This can be done with a similar DQEP:
+
+        #+begin_src sql
+-- (1)
+CREATE RESULT TABLE r1 PARTITION BY (x.a) AS SELECT * FROM x WHERE x.b < 2 (on every partition)
+-- (2)
+CREATE RESULT TABLE r2 PARTITION BY (y.a) AS SELECT * FROM y WHERE y.c > 5 (on every partition)
+-- (3)
+SELECT * FROM REMOTE(r1(p)) JOIN REMOTE(r2(p)) WHERE r1.a = r2.a (on every partition)
+        #+end_src
+* Experiments
+** TPC-H Benchmark
+* Related Work
+
 * Problems
 
 

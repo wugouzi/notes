@@ -1,0 +1,183 @@
+#+title: Algorithmic And High-Frequency Trading
+#+AUTHOR:
+#+EXPORT_FILE_NAME: ../latex/algorithmic_and_high-frequency_trading/algorithmic_and_high-frequency_trading.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+* Electronic Markets and the Limit Order Book
+** Electronic markets and how they function
+        *Shares* are claims of ownership on corporations. These claims are used by corporations to raise money.
+        In the US, for these shares to be traded in an electronic exchange they have to be 'listed' by an
+        exchange, and this implies fulfilling certain requirements in terms of the number of shareholders,
+        price, etc. The listing process is usually tied to the first issuance of the public shares (initial
+        public offering, or IPO). The fundamental value of these shares is derived from the nature of the
+        contract it represents. In its simplest form, it is a claim of ownership on the company that gives the
+        owner the right to receive an equal share of the corporation's profits (hence the name, 'share') and
+        to intervene in the corporate decision process via the right to vote in the corporation's annual
+        general (shareholders') meetings. Such shares are called *ordinary shares* (or *common stock*) and are the
+        most common type of shares.
+
+        The other primary instrument used by large corporations to raise capital is *bonds*. Bonds are contracts
+        by which the corporation commits to paying the holder a regular income (interest) but gives them no
+        decision rights. The differences between stocks and bonds are quite clear: shareholders have no
+        guarantees on the magnitude and frequency of dividends but have voting rights, bondholders have
+        guarantees of regular, pre-determined payments and no voting rights.
+
+        There are other instruments with characteristics from both these contracts, the most familiar of which
+        is *preferred stock*. Preferred stock represents a hybrid of stocks and bonds: they are like bonds in
+        that holders have no voting rights and receive a pre-arranged income, but the income they receive has
+        fewer guarantees: its legal treatment is that of equity, rather than debt. This difference is
+        especially relevant when the corporation is in financial distress, as debt is senior to all equity, so
+        that in case of liquidation, debt holders' claims have priority over the corporation's assets -they
+        get paid first. Equity holders, if they get paid, are paid only after all debtholders' claims are
+        settled.
+
+        A *mutual fund* is an investment product that acts as a delegated investment manager. That is, when an
+        investor buys a mutual fund, the investor gives her cash to a financial management company that will
+        use the cash to build a portfolio of assets according to the fund's investment objective. This
+        objective includes the fund's assets and investment strategy, and, of course, its management fees. The
+        fund's assets can belong to a large number of possible asset classes, including all those described
+        above: equities, bonds, cash, FX, real estate, etc. The fund's investment strategy refers to the style
+        of investment, primarily whether the fund is actively managed or passively tracks an index.
+
+        An investor who puts money in a fund participates in both the appreciation and depreciation of the
+        assets as allocated by the fund manager. In order to redeem her investment, i.e. to convert her
+        investment into cash, the investor's options depend on the type of fund she purchased. There are two
+        main types of mutual funds: *open-end* and *closed-end* funds. Closed-end funds are mutual funds that are
+        not redeemable: the fund issues a fixed number of shares usually only once, at inception, and
+        investors cannot sell the shares back to the fund. The fund sells the shares initially through an IPO
+        and these shares are listed on an exchange where investors buy and sell these shares to each other.
+
+        Open-end funds are funds with a varying number of shares. Shares can be created to meet the demand of
+        new investors, or destroyed (bought back by the fund) as investors seek to redeem theirs. This process
+        takes place once a day, as the value of the fund's (net) assets (its Net Asset Value, NAV) is
+        determined after the market close. Thus, closed-end funds, that do not have to adjust their holdings
+        in response to investor demand, have different liquidity requirements than open-end funds and thus may
+        trade at prices different from their NAV.
+
+        A very popular type of fund that, like closed-end funds, are traded in electronic exchanges, are ETFs.
+        Like mutual funds, ETFs act as delegated investment managers, but they differ in two key respects.
+        First, ETFs tend to have very specific investment strategies, usually geared towards generating the
+        same return as a particular market index (e.g., the S&P500). Second, they are not obligated to
+        purchase investors' shares back. Rather, if an investor wants to return their share to the fund, the
+        fund can transfer to the investor a basket of securities that mirrors that of the ETF. This is
+        possible because the ETF sells shares in very large units (Creation Units) which are then broken up
+        and resold as individual shares in the exchange. A Creation Unit can be as large as 50,000 shares.
+        Overall, the general perception one gets is that investors who are looking to reduce their trading
+        costs and find diversified investments prefer ETFs, while investors who are looking for managers with
+        stock-picking or similar unusual skills and who aim to beat the market will prefer mutual funds.
+
+        Some investment firms feel that the regulation that is imposed on mutual fund managers to ensure they
+        fulfill their fiduciary duties to investors are too constraining. In response to this they have
+        created *hedge-funds*, funds that pursue more aggressive trading strategies and have fewer regulatory
+        and transparency requirements. Because of the softer regulatory oversight, access to these investment
+        vehicles is largely limited to accredited investors, who are expected to be better informed and able
+        to deal with the fund's managers. Although these funds are not traded on exchanges, their managers are
+        active participants in those markets.
+
+        There are also other securities traded in electronic exchanges; in particular, there is a great deal
+        of electronic trading in derivative markets, especially futures, swaps and options, and these
+        contracts are written on a wide variety of assets (bonds, FX, commodities, equities, indices). The
+        concepts and techniques we develop in this book apply to the trading of any of these assets, although
+        we primarily focus our examples and applications on equities. However, when designing algorithms and
+        strategies one must always take into account the specific issues associated with the types of assets
+        one is trading in, as well as the specifics of the particular electronic exchange(s) and the trading
+        objectives of other investors one is likely to meet there.
+** Classifying Market Participants
+        Three primary classes of traders (or trading strategies) below.
+        1. *Fundamental* (or *noise* or liquidity ) *traders*: those who are driven by economic fundamentals outside the exchange.
+        2. *Informed traders*: traders who profit from leveraging information not reflected in market prices by
+           trading assets in anticipation of their appreciation or depreciation.
+        3. *Market makers*: professional traders who profit from facilitating exchange in a particular asset and
+           exploit their skills in executing trades.
+** Trading in Electronic Markets
+*** Orders and the Exchange
+        In the basic setup, an electronic market has two types of orders: *Market Orders* (MOs), and *Limit
+        Orders* (LOs).
+        * MOs are usually considered aggressive orders that seek to execute a trade immediately. By sending an
+          MO, a trader indicates that she wants to buy or sell a certain quantity of shares at the best
+          available price, and this will (usually ) result in an immediate trade (execution).
+        * On the other hand, LOs are considered passive orders, as a trader sending in an LO indicates her
+          desire to buy or sell at a given price up to a certain, maximum, quantity of shares. As the price
+          offered in the LO is usually worse than the current market price (higher than the best buy price for
+          sell LOs, and lower than the best sell price for buy LOs), it will not result in an immediate trade,
+          and will thus have to wait until either it is matched with a new order that wants to trade at the
+          offered price (and executed) or it is withdrawn (cancelled).
+
+        Orders are managed by a matching engine and a limit order book (LOB). The LOB keeps track of incoming
+        and outgoing orders. The matching engine uses a well-defined algorithm that establishes when a
+        possible trade can occur, and if so, which criterion is going to be used to select the orders that
+        will be executed. Most markets prioritise MOs over LOs and then use a price-time priority whereby, if
+        an MO to buy comes in, the buy order will be matched with the standing LOs to sell in the following
+        way:
+        1. the incoming order will be matched with the LOs that offer the best price (for buy orders, the sell
+           LOs with the lowest price)
+        2. if the quantity demanded is less than what is on offer at the best price, the matching algorithm
+           selects the oldest LOs, the ones that were posted earliest, and executes them in order until the
+           quantity of the MO is executed completely.
+        3. If the MO demands more quantity than that offered at the best price, after executing all standing
+           LOs at the best price, the matching algorithm will proceed by executing against the LOs at the
+           second-best price, then the third-best and so on until the whole order is executed.
+
+        LOs that have increasingly worse prices are referred to as LOs that are deeper in the LOB, and the
+        process whereby an entering market order executes against standing LOs deeper in the LOB is called
+        'walking the book'.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.1
+        #+CAPTION:
+        [[../images/Misc/15.png]]
+
+        Figure [[ref:f1.1]] shows a snapshot of the limit order book (LOB) on NASDAQ after the 10,000th event
+        of the day for two stocks, FARO and HPQ, on Oct 1, 2013. The two are quite different. The one in
+        the left panel corresponds to HPQ, a frequently traded and liquid asset. HPQ's LOB has LOs posted
+        at every tick out to (at least) 20 ticks away from the midprice. In the right panel, we have FARO's
+        LOB. FARO is a seldom traded, illiquid asset. This asset has thinly posted bids and offers and
+        irregular gaps in the LOB.
+*** Alternate Exchange Structures
+        The above approach is not the only possible way to organise an exchange. For example, one could use an
+        alternative matching algorithm, such as the *prorata rules* used in some money markets.
+
+        Beyond the legal definitions, we generically distinguish lit (open order book) from dark markets based
+        on whether limit book informa­ tion is publicly available or not.
+*** Colocation
+        Exchanges also control the amount and degree of granularity of the information you receive (e.g., you
+        can use the consolidated/public feed at a low cost or pay a relatively much larger cost for
+        direct/proprietary feeds from the exchanges). They also monetise the need for speed by renting out
+        computer/server space next to their matching engines, a process called *colocation*. Through colocation,
+        exchanges can provide uniform service to trading clients at competitive rates. Having the traders'
+        trading engines at a common location owned by the exchange simplifies the exchange's ability to
+        provide uniform service as it can control the hardware connecting each client to the trading engine,
+        the cable (so all have the same cable of the same length), and the network. This ensures that all
+        traders in colocation have the same fast access, and are not disadvantaged (at least in terms of
+        exchange-provided hardware).
+*** Extended Order Types
+        * *Day Orders*: orders for trading during regular trading with options to extend to pre- or post-market sessions;
+        * *Non-routable*: there are a number of orders that by choice or design avoid the default re-routing to
+          other exchanges, such as 'book only', 'post only', 'midpoint peg', ...;
+        * *Pegged, Hide-not-Slide*: orders that move with the midpoint or the national best price;
+        * *Hidden*: orders that do not display their quantity;
+        * *Iceberg*: orders that partially display their quantity (some have options so that the visible portion
+          will automatically be replenished when it is depleted by less than one round lot);
+        * *Immediate-or-Cancel*: orders that execute as much as possible at the best price and the rest are
+          cancelled (such orders are not re-routed to another exchange nor do they walk the book);
+        * *Fill-or-Kill*: orders sent to be executed at the best price in their entirety or not at all;
+        * *Good-Till-Time*: orders with a fixed lifetime built into them so that they will be cancelled if not
+          executed by its expiration time;
+        * *Discretionary*: orders display one price (the limit price) but may be executed at more aggressive
+          (hidden) prices;
+*** Exchange Fees
+** The Limit Order Book
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.2
+        #+CAPTION:
+        [[../images/Misc/16.png]]
+
+        *Addition of LO to LOB*. In Figure ref:f1.2, LOs are displayed as blocks of length equal to their
+        quantities. LOs are ordered in terms of time priority from right to left, so that when a new buy LO
+        comes in at $23.09 (the purple block) it will be added to the line of blocks already at that price.
+        This new LO joins the queue at the point closest to the y-axis, becoming the third LO waiting to be
+        executed at $23.09.
+
+        *MO walks the LOB or is re-routed*.
