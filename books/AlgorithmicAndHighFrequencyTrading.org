@@ -180,4 +180,309 @@
         This new LO joins the queue at the point closest to the y-axis, becoming the third LO waiting to be
         executed at $23.09.
 
-        *MO walks the LOB or is re-routed*.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.3
+        #+CAPTION:
+        [[../images/Misc/17.png]]
+
+
+        *MO walks the LOB or is re-routed*. Suppose we are looking at the venue with the LOB depicted at the top
+         of Figure [[ref:f1.2]]. Assume that this venue's best bid is the best buy quote that the market, across
+         all venues, currently displays. A new MO (to sell) 250 shares enters this market as depicted by the
+         sum of the green blocks in the top panel of Figure [[ref:f1.3]]. The matching engine goes through the
+         LOB, matching existing (posted) LOs (to buy on the bid side) with the entering MO following the rules
+         in the matching algorithm. In the LOB there are two LOs at the best bid $23.09, represented by the
+         two red blocks, both for 100 units, totalling 200 units. These 200 units are executed at the best
+         bid.
+
+        What happens to the final 50 units depends on the order type and the market it is operating in.
+        In a standard market, the remaining 50 units will be executed against the LOs standing at $23.08
+        ordered in terms of time-priority (the MO will 'walk the book'). This is captured by the top panels
+        in Figure [[ref:f1.3]]: the left panel shows that the MO coming in is split into three blocks, the first
+        two are matched with LOs at $23.09 and the last with the LOs at $23.08. After the MO is fully executed
+        the remaining LOB is shown in the top right panel of Figure [[ref:f1.3]].
+
+        In the US, there are order protection rules to ensure MOs get the best possible execution, and which
+        (depending on the order type) may require the exchange to re-route the remaining 50 units to another
+        exchange that is also displaying a best bid price of $23.09. In this case, as shown in the bottom left
+        panel of Figure [[ref:f1.3]], part of the remaining 50 units (the light blue block) is re-routed to
+        another venue(s) with liquidity posted at $23.09. Only once all liquidity at $23.09 in all exchanges
+        is exhausted, can the remaining shares of the MO return and be executed in this venue against any LO
+        resting at (the worse price of) $23.08. In this example, 25 units were re-routed to alternate
+        exchanges, and 25 units returned to this venue and walked the  book.
+
+        The MO could in principle be an Immediate-or-Cancel (IOC) order, which specifies that the remaining 50
+        shares that cannot be executed at the best bid should be cancelled entirely.
+
+        Because of these order protection rules (trade-through rules - there is no such rule in European
+        markets), you will very seldom observe in the US an MO walking the book straight away. Rather, you may
+        see a large MO being chopped up and executed sequentially in several markets in a very short span of
+        time. This also implies that as depth disappears (as during the Flash Crash of May 6th, 2010) an MO at
+        the end of a sequence of other orders may be executed against very poor prices, and, in the worst
+        circumstances it may be matched with *stub quotes* - LOs at prices so ridiculous that clearly indicate
+        they are not expected to be executed (such trades were observed during the Flash Crash in the
+        following assets: JKE, RSP, Excelon, Accenture, amongst others). Thus, the LOB serves to keep track of
+        LOs and apply the algorithm that matches incoming orders to existing LOs.
+
+        [[index:tick]]
+        The LOB is defined on a fixed discrete grid of prices (the price levels). The size of the step (the
+        difference between one price level and the next) is called the *tick*, and in the US the minimum tick
+        size is 1 cent for all stocks with a price above one dollar. In other markets several different tick
+        sizes coexist.
+
+        Figure [[ref:f1.1]] shows a sample plot of the limit order book (LOB) on NASDAQ after the 10,000th event
+        of the day for two stocks, FARO and HP Q, on Oct 1, 2013. In blue you find the sell LOs -traders
+        willing to wait to be able to sell at a high price. The best sell price, the ask, is $21.16, while the
+        best buy price, the bid, is $21.15. The difference between the ask and the bid price, the *quoted
+        spread* is
+        \begin{equation*}
+        \text{Quoted Spread}_t=P_t^a-P_t^b
+        \end{equation*}
+        where \(P_t^b\) and \(P_t^a\) are the best bid  and ask prices, which in this case, is one cent - the
+        minimum quoted spread. However, some times the bid is equal to the ask and the spread is zero. In that
+        case, the market becomes *locked*, but if this happens, it tends not to last long - although for some
+        very liquid assets it is becoming an increasingly more frequent event. Another common object used when
+        describing the LOB is the *midprice*. The midprice is the arithmetic average of the bid and the ask:
+        \begin{equation*}
+        \text{Midprice}_t=\frac{1}{2}(P_t^a+P^b_t)
+        \end{equation*}
+
+        As pointed out earlier, the two LOBs shown in Figure [[ref:f1.1]] are quite different. The one in the left
+        panel corresponds to HPQ, a frequently traded and liquid asset. HPQ's LOB has LOs posted at every tick
+        out to (at least) 20 ticks away  from the midprice and the spread is the minimum spread of 1 tick. In
+        the right panel, we have FARO's LOB. FARO is a seldom traded, illiquid asset. This asset has thinly
+        posted bids and offers and irregular gaps in the LOB. The spread is 20 ticks (20 cents) on a
+        (approximately) $41 priced asset. The difference in liquidity between these assets is also noticeable
+        from the time at which the 10,000th event of the day takes place for these assets. For HPQ, the
+        10,000th event corresponds to a timestamp of about 9:42 a.m. (less than 15 minutes after the market
+        opened), while for FARO the 10,000th event did not occur until about 12:04 p.m. (more than two and a
+        half hours after market open). Also note that there are less than 100 units posted if we sum together
+        the depth at the best two price levels on the bid and ask for FARO, while for HPQ there are more than
+        1,000 shares offered in those first two levels of the LOB - HPQ thus has much greater depth. If one
+        takes into account that FARO trades at a price which is twice as high as that of HPQ, the depth in
+        terms of dollar value of shares posted at those prices is also much greater for HPQ.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.4
+        #+CAPTION:
+        [[../images/Misc/18.png]]
+
+        In Figure [[ref:f1.4]], we show how the LOB evolves through time for different stocks HPQ, NTAP and ORCL.
+        On the x-axis is time in minutes, and on the y-axis are prices in dollars. The static picture we saw
+        in Figure [[ref:f1.1]] is captured by the shaded blue and red regions - the blue regions on top represent
+        the ask side of the LOB, the posted sell volume, while the bid side is below in red, showing the
+        posted buy volume. The best prices, the bid and ask are identified by the edges of the intermediate
+        light shaded beige region, which identifies the bid-ask spread. Volume at each price level, which was
+        captured in Figure [[ref:f1.1]] by horizontal bars, is now illustrated by the size of the shaded region just
+        above/below each price level, although the height of these regions is no longer linear, but a
+        monotonic non-linear transformation that is visually more illustrative.
+
+        In addition, Figure [[ref:f1.4]] identifies when incoming orders were executed. The red/blue circles
+        indicate the time, price and size (indicated by the size of the circle) of an aggressive MO which is
+        executed against the LOs sitting in the LOB. When a sell MO executes against a buy LO, it is said to
+        *hit the bid*; analogously, when a buy MO executes against a sell LO, it is said the *lift the offer*. The
+        brown solid line depicts a variation of the asset known as the *microprice* defined as
+        \begin{equation*}
+        \text{Microprice}_t=\frac{V_t^b}{V_t^b+V_t^a}P_t^a+\frac{V_t^a}{V_t^b+V_t^a}P_t^b
+        \end{equation*}
+        where \(V_t^b\) and \(V_t^a\) are the volumes posted at the best bid and ask, and \(P_t^b\)
+        and |(P_t^a) are the bid and ask prices.
+
+        The microprice is used as a more subtle proxy for the asset's transaction cost-free price, as it
+        measures the tendency that the price has to move either towards the bid or ask side as captured by
+        number of shares posted, and hence indicates the buy (sell) pressure in the market. If there are a lot
+        of buyers (sellers), then the microprice is pushed toward the best ask/bid price to reflect the
+        likelihood that prices are going to increase (decrease).
+* A Primer on the Microstructure of Financial Markets
+** Market Making
+*** Grossman-Miller Market Making Model
+        The first issue faced by an MM when providing liquidity is that by accepting one side of a trade (say
+        buying from someone who wants to sell), the MM will hold an asset for an uncertain period of time, the
+        time it takes for another person to come to the market with a matching demand for liquidity (wanting
+        to buy the asset the MM bought in the previous trade). During that time, the MM is exposed to the risk
+        that the price moves against her (in our example, as she bought the asset, she is exposed to a price
+        decline and hence having to sell the asset at a loss in the next trade).
+
+        Grossman & Miller (1988) provide a model that captures this problem and describes how MMs obtain a
+        liquidity premium from liquidity traders that exactly compensates MMs for the price risk of holding an
+        inventory of the asset until they can unload it later to another liquidity trader.
+
+        Let us consider a simplified version of their model, with a finite number, \(n\), of identical MMs for
+        some given asset and three dates \(t\in\{1,2,3\}\). To simplify the situation, there is no uncertainty
+        about the arrival of matching orders: if at date \(t=1\) a liquidity trader, denoted by LT1, comes to
+        the market to sell \(i\) units of the asset, there will be (for sure) another liquidity trader (LT2)
+        who will arrive at the market to purchase \(i\) units (or more generally, to trade \(-i\) units, so
+        that LT1's trade (of i units) could be negative or positive (LT1 could be buying or selling). However,
+        LT2 does not arrive to the market until \(t=2\). Let all agents start with an initial cash amount
+        equal to \(W_0\) , MMs hold no assets, LT1 holds \(i\) units and LT2 \(-i\) units.
+
+        There are no trading costs or direct costs for holding inventory. The focus is on price changes: the
+        asset will have a cash value at \(t=3\) of \(S_3=\mu+\epsilon_2+\epsilon_3\), where \(\mu\) is
+        constant, \(\epsilon_2\) and \(\epsilon_3\) are independent, normally distributed random variables
+        with mean zero and variance \(\sigma^2\) . These will be publicly announced between dates \(t-1\) and
+        \(t\), that is \(\epsilon_3\) is announced between \(t=2\) and \(t=3\), and \(\epsilon_2\)is announced
+        between \(t=1\) and \(t=2\). Hence, the realised cash value of the asset can increase or decrease
+        (ignore the fact that there are realisations of \(\epsilon_2\) and \(\epsilon_3\) that could make the
+        asset value negative - the model serves to illustrate a point). Because the shocks to the value of the
+        asset are on average zero a risk-neutral trader has no cost at all from holding the asset. The model
+        becomes interesting if we assume that all traders, MMs and liquidity traders, are risk-averse. To be
+        more specific, suppose they have the following expected utility for the future random cash value of
+        the asset (\(X_3\)): \(\E[U(X_3)]\) where \(U(X)=-\exp(-\gamma X)\), and where \(\gamma>0\) is a
+        parameter capturing the utility penalty for taking risks
+
+        Solving the model backwards we obtain a description of trading behaviour and prices. At \(t=3\) the
+        cash value of the asset is realised, \(S_3=\mu+\epsilon_2+\epsilon_3\). At \(t=2\), the \(n\) MMs and
+        LT1 come into the period with asset holdings \(q_1^{MM}\) and \(q_1^{LT1}\) respectively. LT2 comes in
+        with \(-i\) and they all exit with asset holdings \(q_2^j\), where \(j\in\{MM,LT1,LT2\}\). Note that
+        if, for example, \(q_t^j=2\) this denotes the that agent \(j\) is holding 2 units when exiting date
+        \(t\), so that the agent will be long (that is, has an iventory of) two units.
+
+        Given the problem as described so far, at \(t=2\) agent \(j\) chooses \(q_2^j\) to maximise his
+        expected utility knowing the realisation of \(\epsilon_2\) that was made public before \(t=2\):
+        \begin{equation*}
+        \max_{q_2^j}\E\left[ U(X_3^j)|\epsilon \right]
+        \end{equation*}
+        subject to
+        \begin{gather*}
+        X_3^j=X_2^j+q_2^jS_3\\
+        X_2^j+q_2^jS_2=X_1^j+q_1^jS_2
+        \end{gather*}
+        These two contraints capture:
+        1. the fact that the cash value of the agent's assets at \(t=3\), \(X_3\), is equal to the agent's
+           cash holdings at \(t=3\), which is equal to \(X_2\) plus the cash value of the agent's asset
+           inventory \(q_2^j\)
+        2. the fact that the cash value of the agent's assets when exiting date \(t=2\) was equal to the cash
+           value of the agent's assets when entering date \(t=2\)
+
+        Given the normality assumption and the properties of the expected utility function it is
+        straightforward to show that
+        \begin{align*}
+        \E\left[ U(X_3^j)|\epsilon_2 \right]&=-\exp\left\{
+        -\gamma\left( X_2^j+q_2^j\E[S_3|\epsilon_2] \right)+\frac{1}{2}\gamma^2\left( q_2^j \right)^2\sigma^2 \right\}
+        \end{align*}
+        #+LATEX: \wu{
+        Since \(\epsilon_2\) and \(\epsilon_3\) are independent, \(\epsilon_3|\epsilon_2\sim N(0,\sigma^2)\)
+        Therefore \(S|\epsilon_2=y=\mu+y+\epsilon_3|\epsilon_2=y\sim N(\mu+y,\sigma^2)\)
+        Then \(S|\epsilon_2\sim N(\mu+\epsilon_3,\sigma^2)\)
+        Let \(\mu=\E[S_3|\epsilon_2]\). Then \(S|\epsilon\sim N(\mu,\sigma^2)\).
+
+        Assume \(X\sim N(\mu,\sigma^2)\). The *Moment generating function* (*MGF*) is
+        \begin{equation*}
+        M_X(t)=\E[e^{tX}]=\int_{-\infty}^{\infty}e^{tx}\cdot\frac{1}{\sigma\sqrt{2\pi}}e^{\frac{(x-\mu)^2}{2\sigma^2}}dx
+        \end{equation*}
+        As
+        \begin{align*}
+        tx-\frac{(x-\mu)^2}{2\sigma^2}&=\frac{2\sigma^2tx-(x^2-2\mu x+\mu^2)}{2\sigma^2}\\
+        &=-\frac{x^2-2\mu x-2\sigma^2tx+\mu^2}{2\sigma^2}\\
+        &=-\frac{x^2-2x(\mu+\sigma^2t)+\mu^2}{2\sigma^2}\\
+        &=-\frac{(x-(\mu+\sigma^2t))^2-2\mu\sigma^2t-\sigma^4t^2}{2\sigma^2}
+        \end{align*}
+        We have
+        \begin{equation*}
+        M_x(t)=e^{ut+\frac{\sigma^2t^2}{2}}\int_{-\infty}^\infty\frac{1}{\sigma\sqrt{2\pi}}e^{-\frac{x-(\mu+\sigma^2t)^2}{2\sigma^2}}
+        \end{equation*}
+        The integral is the PDF (probability density function) of a \(N(\mu+\sigma^2t,\sigma^2)\)
+        distribution, which integrates to 1. Thus
+        \begin{equation*}
+        M_X(t)=\exp\left\{\mu t+\frac{\sigma^2t^2}{2}\right\}
+        \end{equation*}
+
+        Now
+        \begin{align*}
+        \E[U(X_3^j)\mid\epsilon_2]&=\E[-\exp\left\{ -\gamma_(X_2^j+q_2^jS_3) \right\}\mid\epsilon_2]\\
+        &=-\exp\{-\gamma X_2^j\}\cdot\E[\exp\{-\gamma q_2^jS_3\}\mid\epsilon_2]\\
+        &=-\exp\{-\gamma X_2^j\}\cdot\exp\left\{ -\gamma q_2^j\mu+\frac{1}{2}\gamma^2(q_2^j)^2\sigma^2 \right\}
+        \end{align*}
+        where \(\mu=\E[S_3\mid\epsilon_2]\)
+        #+LATEX: }
+
+        Thus, the problem is concave and the solution is characterized by
+        \begin{equation*}
+        q_2^{j,*}=\frac{\E[S_3\mid\epsilon_3]-S_2}{\gamma\sigma^2}
+        \end{equation*}
+        for all agents: the \(n\) MMs, LT1, and LT2
+
+        As at date \(t=2\) demand and supply for the asset have to be equal to each other, we can solve for
+        the equilibrium price \(S_2\):
+        \begin{equation}
+        \label{e2.1}
+        nq_1^{MM}+q_1^{LT_1}+q_1^{LT2}=nq_2^{MM}+q_2^{LT1}+q_2^{LT2}
+        \end{equation}
+        As we have established above, all \(q_2^j\) are equal, so that the right-hand side of the above
+        equation is equal to
+        \begin{equation}
+        \label{e2.2}
+        nq_2^{MM}+q_2^{LT1}+q_2^{LT2}=(n+2)\frac{\E[S_3\mid\epsilon_2]-S_2}{\gamma\sigma^2}
+        \end{equation}
+        We also know that at date 1 the total quantity of the asset available was equal to the quantity of
+        assets LT1 brought to the market, so that LHS of eqref:e2.1 is
+        \begin{equation*}
+        nq_1^{MM}+q_1^{LT1}+q_1^{LT2}=i-i=0
+        \end{equation*}
+        Hence, we obtain that in equilibrium, at date \(t=2\),
+        \(S_2=\E[S_3]=\mu+\epsilon_2+\E[\epsilon_3]=\mu+\epsilon_2\), and therefore \(q_2^j=0\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2.1
+        #+CAPTION: Trading and price setting in the Grossman-Miller model
+        [[../images/Misc/19.png]]
+
+
+        This makes sense, as at \(t=2\) there are no asset imbalances, the price of the asset reflects its
+        'fundamental value' and no one will want to hold a non-zero amount of the risky asset. This analysis
+        is captured in the bottom half of Figure [[ref:f2.1]], where we see the asset holdings of the three types
+        of participants as they enter \(t=2\), \(q_1^j\), \(j\in\{MM,LT1,LT2\}\), and how after trading at a
+        price equal to \(S_2\) they end up with holdings, \(q_2^j\), equal to zero
+
+        Consider now what happens at date \(t=1\). Participating agents (the \(n\) MMs and LT1) anticipate
+        that whatever they do, the future market price will be efficient and they will end up exiting date
+        \(t=2\) with no inventories, so that \(X_2=X_3\). Thus, their portfolio decision is given by
+        \begin{equation*}
+        \max_q\E\left[ U(X_2^j) \right]
+        \end{equation*}
+        subject to
+        \begin{gather*}
+        X_2^j=X_1^j+q_1^jS_1\\
+        X_1^j+q_1^jS_1=X_0^j+q_0^jS_1
+        \end{gather*}
+        Repeating the analysis, we obtain that the optimal portfolio solution is
+        \begin{equation*}
+        q_1^{j,*}=\frac{\E[S_2]-S_1}{\gamma\sigma^2}
+        \end{equation*}
+        for all agents, \(j\), that are present: the \(n\) MMs and LT1. Also at date \(t=1\) demand and supply
+        for the asset have to be equal to each other, so that
+        \begin{equation*}
+        nq_0^{MM}+q_0^{LT1}=nq_1^{MM}+q_1^{LT1}
+        \end{equation*}
+        where \(q_0^{LT1}=i\). Therefore
+        \begin{equation*}
+        i=(n+1)\frac{\mu-S_1}{\gamma\sigma^2}\Longleftrightarrow S_1=\mu-\gamma\sigma^2\frac{i}{n+1}
+        \end{equation*}
+
+        With this expression we can interpret how the market reaches a solution for LT1's liquidity needs:
+        LT1, a trader who wants to sell a total of \(i>0\) units at \(t=1\),finds that there is no one
+        currently in the market with a balancing liquidity need. There are traders in the market, but they
+        will not accept trading at the efficient price of \(\mu\) because if they do, they will be taking on
+        risky shares ( they are exposed to the price risk from the realisation of \(\epsilon_2\)) without compensation.
+
+        But, if they receive adequate compensation (which we call a liquidity discount, as for
+        \(i>0\),\(S_1<\E[S_2]=\mu\)),the \(n\) MMs will accept the LT1's shares. However, LT1 is
+        price-sensitive, so if he has to accept a discount on the shares,he will not sell all the \(i\) shares
+        at once. In equilibrium, both the \(n\) MMs and LT1 end up holding \(q_1^{j,*}=\frac{i}{n+1}\) units
+        of the asset each,that is LT1 sells \(\frac{n}{n+1}i\) units and holds on to \(\frac{i}{n+1}\) units
+        to be sold later. Trading occurs at a price below the efficient price,
+        \(S_1=\mu-\gamma\sigma^2\frac{i}{n+1}\). The difference between the trading price and the efficient
+        price,namely \(\abs{S_1-\mu}=\abs{\gamma\sigma^2\frac{i}{n+1}}\),represents the (liquidity) discount
+        the MMs receive in order to hold LT1's shares. This size of the discount is influenced by the
+        variables in the model: the size of the liquidity demand (\(\abs{i}\)), the amount of competition
+        amongst MMs (captured by \(n\)), the market's risk aversion (\(\gamma\)), and the risk/volatility of
+        the underlying asset (\(\sigma^2\)). These variables all affect the discount in an intuitive way: the
+        size of the liquidity shock, risk aversion, and volatility all increase the discount,while competition
+        reduces it. This occurs when LT1 wants to sell,i.e. \(i>0\). If LT1 wanted to buy, \(i<0\),then the
+        solution would be the same except that instead of a discount, the MMs would receive a premium equal to
+        \(\abs{S_1-\mu}\) per share when selling to LT1.
+
+        From this analysis we can also see that as competition \(n\) increases, the liquidity premium goes to
+        zero, the price converges to the efficient level, \(S_1=\mu\) and LT1's optimal initial net trade,
+        \(q_1^{LT1,*}-q_0^{LT1}\), converges to his liquidity need \(i\).
+*** Trading Costs
