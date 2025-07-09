@@ -1,0 +1,300 @@
+#+title: Cost-Based Query Transformation in Oracle
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/cost-based_query_transformation_in_oracle.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+        [[https://orainternals.wordpress.com/wp-content/uploads/2008/04/riyaj_cost_based_query_transformations_ppt.pdf][Related talk]]
+
+* Transformation in Oracle
+
+** Heuristic Transformations
+    Generally, minimizing the number of query blocks proves to be a good heuristic as long as it does not
+    require introducing, replicating or re-positioning of distinct or group-by operator.
+*** Subquery Unnesting
+        #+begin_src sql
+-- Q2
+SELECT
+    d.dept_name,
+    d.budget
+FROM
+    departments d
+WHERE
+    EXISTS (
+        SELECT
+            1
+        FROM
+            employees e
+        WHERE
+            d.dept_id = e.dept_id
+            AND e.salary > 200000);
+        #+end_src
+        is transformed into
+        #+begin_src sql
+-- Q3
+SELECT
+    d.dept_name,
+    d.budget
+FROM
+    departments d,
+    employees e
+WHERE
+    d.dept_id = e.dept_id
+    AND e.salary > 200000;
+        #+end_src
+
+        Oracle's implementation of antijoin and semijoin has the stop-at-the-first-match property. The Oracle
+        execution engine caches the results of antijoin and semijoin for the tuples in the left table; this
+        caching can be quite beneficial, if there are a large number of duplicates in the joining columns of
+        the left table.
+
+        Semijoin, like antijoin and left outerjoin, is a non-commutative join and imposes a partial order on
+        the joining tables; that is, in this example, ~departments~ must precede ~employees~ in the join order.
+        But we can convert this semijoin into an inner join by applying a sort distinct operator on the
+        selected rows of employees and by relaxing the partial join order restriction
+        [[cite:&10.5555/645914.671634]]. This allows both the join orders – (d semijoin e) and (distinct(e)
+        join d) – to be considered by the optimizer. In Oracle, this transformation has been incorporated into
+        the physical optimizer.
+*** Join Elimination
+        Join elimination removes a table from a query, if there are constraints on the join columns of the
+        table, such that the join has no impact on the query results.
+        #+begin_src sql
+-- Q4
+SELECT
+    e.name,
+    e.salary
+FROM
+    employees e,
+    departments d
+WHERE
+    e.dept_id = d.dept_id;
+        #+end_src
+
+        Since ~dept_id~ in employees is a foreign key that references the primary key of departments, the join
+        with departments can be eliminated from Q4.
+
+        In the query Q5, the joining column of the right table in the outerjoin is unique. Since outerjoin
+        retains all the tuples of the left table and an equi-join on unique columns does not generate
+        duplicates, the DEPARTMENTS table can be eliminated.
+
+        #+begin_src sql
+-- Q5
+SELECT
+    e.name,
+    e.salary
+FROM
+    employees e
+    LEFT OUTER JOIN departments d ON e.dept_id = d.dept_id;
+        #+end_src
+
+        Therefore Q4 and Q5 can be transformed into Q6
+        #+begin_src sql
+-- Q6
+SELECT
+    e.name,
+    e.salary
+FROM
+    employees e;
+        #+end_src
+*** Filter Predicate Move Around
+        Filter predicate move around moves inexpensive predicates into view query blocks in order to perform
+        filtering earlier.
+
+        Filter predicates can be pulled up, moved across, and pushed down to any levels.
+        * push filter predicates through the ~PARTITION BY~ of ANSI window functions and ANSI partitioned
+          outerjoin, and through the ~DIMENSION BY~ subclause of the SQL MODEL clause
+        * push predicates through an aggregate of a window function before evaluating the aggregate
+
+        Consider
+        #+begin_src sql
+-- Q7
+SELECT
+    acct-id,
+    time,
+    ravg
+FROM (
+    SELECT
+        acct-id,
+        time,
+        AVG(balance) OVER (PBY acct-id OBY time RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW) ravg
+    FROM accounts)
+WHERE
+    acct-id = ‘ORCL’
+    AND time <= 12;
+        #+end_src
+        In this query predicates on ~acct-id~ and ~time~ can be pushed inside the view
+        #+begin_src sql
+-- Q8
+SELECT
+    acct-id,
+    time,
+    ravg
+FROM (
+    SELECT
+        acct-id,
+        time,
+        AVG(balance) OVER (PBY acc-id OBY time RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW) ravg
+    FROM accounts
+    WHERE acct-id = ’ORCL’
+        AND time <= 12);
+        #+end_src
+        Pushing predicates on ~PARTITION BY~ (~PBY~) clauses can always be done. Pushing through ~ORDER BY~ (~OPBY~)
+        requires analysis of the affected range of the window function.
+*** Group Pruning
+        Removes from views groups not needed in the outer query blocks.
+
+        #+begin_src sql
+-- Q9
+SELECT sum_sal, country_id, state_id, city_id
+FROM (SELECT SUM(e.salary) sum_sal,
+      l.country_id, l.state_id, l.city_id
+      FROM employees e, department d, locations l
+      WHERE d.dept_id = e.dept_id and d.location_id = l.location_id
+      GROUP BY ROLLUP (country_id, state_id, city_id))
+WHERE city_id = 'San Francisco';
+        #+end_src
+** Cost-Based Transformations
+*** Subquery Unnesting
+*** Group-By and Distinct View Merging
+*** Join Predicate Pushdown
+*** Group-By Placement
+*** Join Factorization
+        Join factorization applies to ~UNION/UNION ALL~ queries where the branches of the UNION ALL contain
+        common join tables.
+*** Predicate Pullup
+        Filter predicate pullup transformation pulls expensive filter predicates up from the originating view
+        to the containing query of the view. Currently, a predicate is considered expensive if it contains
+        procedural language functions, user-defined operators, or subqueries.
+
+        The predicate pullup transformation is currently only considered when a rownum predicate is specified
+        in the containing query of the view, and the view contains a blocking operator.
+*** Set Operators Into Join
+        The set operators ~MINUS~ and ~INTERSECT~ are converted into antijoin and inner-join/semijoin respectively
+        thereby allowing various join methods and join orders to apply.
+*** Disjunction Into Union All
+* Framework for Cost-based Transformation
+** Basic Components
+        The cost-based transformation framework comprises the following:
+        * Transformation algorithms that convert a complete or partial query tree into a semantically equivalent form
+        * State spaces for various transformations
+        * State-space search algorithms
+        * Capability for deep copying query blocks and their constituents
+        * Cost estimation technique (physical optimizer)
+        * Transformation directives and cost annotations
+
+        A query tree is traversed in a bottom-up manner during optimization. Various alternatives for applying
+        one or more transformations on the elements in the query tree generate different states in the state
+        space of the transformation. A deep copy of the (partial) query tree is made before applying a
+        particular state and estimating its cost by invoking the physical optimizer. The evaluation of each
+        state generally requires a different copy of the (partial) query tree. The transformation state that
+        generates the most optimal plan (i.e., the best state) is selected and the directives for the best
+        state are transferred to the original query tree, which is transformed according to these directives.
+
+        In Oracle, transformations are generally applied in a sequential manner; that is, each transformation
+        is applied on the entire query tree followed by another transformation, and so on. The sequential
+        order followed for some of the transformations is the following: common sub-expression factorization,
+        SPJ view merging, join elimination, subquery unnesting, group-by (distinct) view merging, group
+        pruning, predicate move around, set operator into join conversion, group-by placement, predicate
+        pullup, join factorization, disjunction into union-all expansion, star transformation, and join
+        predicate pushdown.
+
+        However, there are cases where this sequential ordering of transformation is not followed. A
+        transformation can generate constructs, which may necessitate other transformations to be re-applied;
+        for example, conversion of set operator into join may generate an SPJ view and therefore SPJ view
+        merging and filter predicate pushdown may be applied again. Some transformations interact with one
+        another and need to be considered together so that an accurate cost-based decision can be made;
+** State Space Search Techniques
+        A fundamental question related to cost-based transformation is whether these transformations will lead
+        to a combinatorial explosion of alternatives that need to be evaluated and whether they will provide a
+        trade-off between optimization cost and execution cost.
+
+        The source of multiple alternatives is the various transformations themselves as well as the set of
+        objects (e.g., query blocks, tables, join edges, predicates, etc.) on which each transformation may
+        apply. If there are \(N\) objects on which a transformation \(T\) can apply, then \(2^N\) possible
+        alternative combinations can potentially be generated by the application of \(T\). In general, if
+        there are \(M\) transformations, \(T_1,\dots,T_M\), which may apply on \(N\) objects, then there are
+        \((1+M)^N\) possible alternative combinations.
+
+        #+begin_src sql
+-- Q1
+SELECT e1.employee_name, j.job_title
+FROM employees e1, job_history j
+WHERE e1.emp_id = j.emp_id and
+  j.start_date > '19980101' and
+  e1.salary >
+    (SELECT AVG (e2.salary)
+     FROM employees e2
+     WHERE e2.dept_id = e1.dept_id) and
+  e1.dept_id IN
+    (SELECT dept_id
+     FROM departments d, locations l
+     WHERE d.loc_id = l.loc_id and
+           l.country_id = 'US');
+        #+end_src
+
+        For instance, in query Q1, there are four alternatives to consider: no unnesting, unnesting the first
+        subquery (\(Q_{S1}\)) only, unnesting the second subquery (\(Q_{S2}\)) only, or unnesting both
+        subqueries. We denote a state as an array of bits, where the nth bit represents whether the nth object
+        (e.g., subquery) is transformed (a value of 1) or not transformed (a value of 0). For instance, the
+        state \((0,1)\) refers to unnesting the second subquery only. When there are \(M\) transformations that
+        apply on \(N\) objects, the state is represented by an \(M\times N\) bit matrix.
+
+        To cope with combinatorial explosion problem in the case of join permutations, the use of randomised
+        algorithms, such as Simulated Annealing, Genetic Search, Iterative Improvement, and Tabu Search have
+        been proposed. The common idea behind all these strategies is to perform a quasi-random walk in the
+        state space, starting from an initial state and trying to reach a low cost local minimum. Of course,
+        these strategies do not guarantee that the global minimum – the best transformation – can be attained,
+        since only a small fraction of the state space is visited during the walk. Nevertheless, they are of
+        practical interest, since the quality of the solution generally improves with the length of search.
+
+        The complexity of cost-based transformation is determined by the number of alternative combinations,
+        the state space, which exponentially grows with the number of transformation objects. When the number
+        of transformation objects is small, an enumerative transformation technique with an exhaustive search
+        of the state space may be feasible. In order to limit the potential increase in optimization time, we
+        use several different techniques for enumerating the state space:
+        * Exhaustive
+        * Iterative. Start from an initial state and move to the next neighbouring state by using some method
+          looking for a local minimum by always choosing a downward move; we repeat this search for a local
+          minimum starting with a different initial state in the next iteration. The algorithm stops, if there
+          are no more new states to be found or some terminating condition (i.e., the maximum number of
+          states) has been reached. The number of states enumerated in this technique falls between \(N+1\) and \(2^N\).
+        * Linear. The underlying idea of this search technique is based on a dynamic programming approach,
+          which assumes that for a query consisting of several objects, it suffices to consider only a subset
+          of those objects for transformation and then extend that with additional transformation of another
+          object. In other words, if Cost(1,0) is lower than Cost(0,0), and Cost(1,1) is lower than Cost(1,0),
+          then it is safe to assume that Cost(1,1) is the lowest of the costs of all possible transformations,
+          and thus there is no need to evaluate Cost(0,1). As can be seen, this can significantly cut down the
+          search space. This technique considers \(N+1\) states. Linear search works best when the transformations
+          on different elements are independent of one another.
+        * Two-pass. We compare the cost of not transforming any of the objects (i.e. the state (0,0,…)) versus
+          the cost of transforming all of the objects (i.e. the state (1,1,…)).
+
+        The cost-based transformation framework automatically decides which search technique to use, based on
+        the number of objects to be transformed in the query block, characteristics of the transformation, and
+        the overall complexity of the query.
+** Interaction between Transformations
+*** Interleaving
+        When two (or more) cost-based transformations apply on the same object such that one transformation
+        becomes applicable only after the other has been applied, then these transformations must be
+        interleaved in order for the optimizer to determine the optimal plan.
+
+        For example, unnesting and view merging must be interleaved in some cases, since unnesting might
+        increase the estimated cost of the query; however, the view merging transformation when applied to the
+        view generated in the process of unnesting the subquery may yield an optimal plan indicating that
+        unnesting should be performed on the query and the view so generated must be merged. In query Q10, the
+        aggregate subquery has been unnested into a group-by view. This transformation may be less optimal
+        (that is, Q1 may be cheaper than Q10). However, when view merging is applied on Q10 it yields Q11,
+        which may be less expensive than both Q1 and Q10. In the absence of interleaving of view merging with
+        unnesting, the unnesting transformation will not be applied on Q1 and a sub-optimal plan will be chosen.
+*** Juxtaposition
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

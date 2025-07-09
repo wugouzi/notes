@@ -1,0 +1,276 @@
+#+title: Query Optimization by Predicate Move-Around
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/query_optimization_by_predicate_move_around.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Illustrative Example
+        Consider following tables
+        #+begin_src sql
+calls(FromAC, FromTel, ToAC, ToTel, AccessCode, StartTime, Length)
+customers(AC, Tel, OwnerName, Type, MemLeveL)
+users(AC, Tel, UserName, AccessCode)
+secret(AC, Tel)
+promotion(AC, SponsorName, StartingDate, EndingDate)
+        #+end_src
+        The key of the customers relation is \(\{AC,Tel\}\) and the following functional dependency holds:
+        \begin{equation*}
+        \{AC,Tel\}\to\{OwnerName,Type,MemLevel\}
+        \end{equation*}
+        #+begin_src sql
+-- E1:
+CREATE VIEW fgAccounts(AC, Tel, UserName) AS
+       SELECT DISTINCT c.AC, c.Tel, u.UserName
+       FROM customer c, users u
+       WHERE c.AC = u.AC AND
+             c.Tel = u.Tel AND
+             c.Type = "Govt" AND
+             c.AC = '011' AND
+             NOT EXISTS (SELECT * FROM secret s
+                         WHERE s.AC = c.AC AND s.Tel = c.Tel);
+-- F1:
+CREATE VIEW ptCustomers(AC, Tel, OwnerName, ToAC, MaxLen) AS
+       SELECT DISTINCT c.AC, c.Tel, c.OwnerName, t.ToAC, MAX(t.length)
+       FROM customer c, calls t
+       WHERE t.Length > 2 AND
+             t.FromAC <> t.ToAC AND
+             c.AC = t.FromAC AND
+             c.Tel = t.FromTel AND
+             c.MemLevel = 'Silver'
+       GROUP BY c.AC, c.Tel, c.OwnerName, t.ToAC;
+
+-- Q1:
+SELECT ptc.AC, ptc.Tel, fg.UserName, p.SponsorName
+FROM ptCustomers ptc, fgAccounts fg, promotion p
+WHERE ptc.AC = fg.AC AND
+      ptc.Tel = fg.Tel AND
+      ptc.MaxLen > 50 AND
+      p.AC = ptc.ToAC;
+        #+end_src
+        Our optimization algorithm is capable of the following:
+        * Taking the predicate ~c.Ac="011"~ of the view ~fgAccounts~ and moving it into the view ~ptCustomers~
+        * Taking the predicate ~c.Type="Govt"~ from the view ~ptCustomers~ and moving it into the view
+          ~ptCustomers~ by functional dependency.
+        * Taking the predicate
+          #+begin_src sql
+NOT EXISTS (SELECT * FROM secret s
+            WHERE s.AC = c.AC AND s.Tel = c.Tel)
+          #+end_src
+          from the view ~fgAccounts~ and moving it into the view ~ptCustomers~
+        * Taking the predicate ~c.MemLevel="Silver"~ from the view ~ptCustomers~ and moving it into the view
+          ~fgAccounts~ by functional dependencies
+        * Taking the predicate ~MaxLen>50~ from the query and inferring that ~t.Length>50~ can be introduced in
+          the ~WHERE~ clause of ~ptCustomers~.
+
+        #+begin_src sql
+E1o:
+CREATE VIEW fgAccounts(AC, Tel, UserName) AS
+       SELECT DISTINCT c.AC, c.Tel, u.UserName
+       FROM customer c, users u
+       WHERE c.AC = u.AC AND
+             c.Tel = u.Tel AND
+             c.Type = "Govt" AND
+             c.MemLevel = "Silver" AND      <==== FD横向传递的predicate
+             c.AC = '011' AND
+             NOT EXISTS (SELECT * FROM secret s
+                         WHERE s.AC = c.AC AND s.Tel = c.Tel)
+F1o:
+CREATE VIEW ptCustomers(AC, Tel, OwnerName, ToAC, MaxLen) AS
+       SELECT DISTINCT c.AC, c.Tel, c.OwnerName, t.ToAC, MAX(t.length)
+       FROM customer c, calls t
+       WHERE t.Length > 50 AND              <==== 对聚集列推导出的谓词
+             t.ToAC <> '011' AND            <==== 横向传递+推导的predicate
+             t.FromAC = '011' AND           <==== 横向传递+推导的predicate
+             c.Tel = t.FromTel AND
+             c.MemLevel = 'Silver' AND
+             c.Type = "Govt" AND            <==== FD横向传的predicate
+             c.AC = '011' AND               <==== 横向传递的谓词
+             NOT EXISTS (SELECT * FROM secret s          <==== 横向传递的谓词
+                         WHERE s.AC = c.AC AND s.Tel = c.Tel)
+       GROUP BY c.AC, c.Tel, c.OwnerName, t.ToAC;
+
+Q1o:
+SELECT ptc.AC, ptc.Tel, fg.UserName, p.SponsorName
+FROM ptCustomers ptc, fgAccounts fg, promotion p
+WHERE ptc.AC = fg.AC AND
+      ptc.Tel = fg.Tel AND
+      p.AC = ptc.ToAC;
+        #+end_src
+* Preliminaries: SQL Notation and the Query-Tree Representation
+        The *local* attributes of node \(n\) are those appearing in the operands of the corresponding block.
+
+        The *exported* attributes are those appearing in the result of that block
+
+        In the query tree, each node \(n\) has an associated *label*, denoted \(L(n)\). The label contains
+        predicates that are applicable to attributes of \(n\). Due to functional dependencies, predicates
+        appearing in labels may also contain functional terms. For example, if the attributes \(R.A\)
+        functionally determines the attributes \(r.B\), then the predicate \(f(r.A)=r.B\) is added to nodes
+        having \(r.A\) and \(r.B\) as attributes. A predicate of a label \(L(n)\) is called *local* if all its
+        attributes are local attributes; it is called *exported* if all its attributes are exported attributes
+        of \(n\).
+
+
+        A view definition consisting of a ~GROUPBY~ block is separated into three nodes as in Figure ref:f3
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION:
+        [[../../images/papers/172.png]]
+
+        The set of local attributes in \(n_1\) (denoted by \(L\)) is defined in the same way as it is defined
+        in the same way as it is defined for an ordinary ~SELECT~ node, and is also the set of exported
+        attributes of \(n_1\). Let \(G\) denote the set of grouping attributes and let \(A\) denote the set of
+        aggregate terms used in the ~SELECT~ and ~HAVING~ clauses. The attributes of the set \(L\cup A\) are the
+        local attributes of \(n_2\), whereas \(G\cup A\) is the set of exported attributes of \(n_2\) and the
+        set of local attributes of \(n_3\). The exported attributes of \(n_3\) are \(\{V.A_1,\dots,V.A_1\}\)
+
+        To move predicates around in the query tree, we utilize two kinds of *renamings*. An *internal renaming*
+        for node \(n\) is a mapping from the local attributes of node \(n\) to the exported attributes of
+        \(n\) or vice versa.
+
+        An *external renaming* is a renaming from the exported attributes of a node \(n\) to local attributes
+        referencing them in the parent of \(n\).
+
+* The Move-Around Algorithm
+        #+ATTR_LATEX: :width .9\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION:
+        [[../../images/papers/173.png]]
+
+** The Main Steps of the Algorithm
+        1. Label initialization: Initial labels are created from the predicates in the ~WHERE~ and ~HAVING~
+           clauses and from functional dependencies
+        2. Predicate Pullup: The tree is traversed bottom up. At each node, we infer predicates on the
+           exported attributes from predicates on the local attributes and pull up the inferred predicates
+           into the parent node.
+        3. Predicate pushdown: The tree is traversed top down. At each node, we infer predicates on the local
+           attributes from predicates on the exported attributes and push down the inferred predicates into
+           the children of that node.
+        4. Label minimization: A predicate can be removed from a node if it is already applied at a descendant
+           of that node.
+        5. (Optional:) Convert the query tree into SQL code
+** Label Initialization
+        *\texttt{SELECT} Nodes*:  The initial label of a ~SELECT~ node consists of the predicates appearing in the
+        ~WHERE~ clause.
+
+
+        *\texttt{GROUPBY} Triplets*: In a node triplet for a ~GROUPBY~ block, the initial labels of the bottom and
+         top nodes are the predicates from the ~WHERE~ and ~HAVING~ clauses, respectively. The initial label of
+         the middle node includes predicates stating that the grouping attributes functionally determine the
+         aggregated values.
+
+         For example, in the view ~ptCustomers~, the predicate
+         \begin{equation*}
+        Max(t.Length)=f_3(c.AC,c.Tel,c.OwnerName,t.ToAC)
+         \end{equation*}
+         appears in the ~GROUPBY~ node
+
+         *\texttt{UNION} and \texttt{INTERSECTION} nodes*: The initial label of a ~UNION~ or an ~INTERSECTION~ NODE
+          \(n\) is empty
+
+        *Functional Dependencies*: Suppose that the following functional dependency holds in a base relation
+          \(R\):
+          \begin{equation*}
+        fd:\{A_1,\dots,A_k\}\to\{B_1,\dots,B_p\}
+          \end{equation*}
+        If a ~WHERE~ or a ~HAVING~ clause refers to \(R\), then the predicates \(f_{fd_i}(r.A_1,\dots,r.A_k)=B_i\)
+        (\(1\le i\le p\)) are added to the label created for taht clause. For example, the functional
+        dependency
+        \begin{equation*}
+        \{AC,Tel\}\to\{OwnerName,Type,MemLevel\}
+        \end{equation*}
+        holds in the ~customer~ relation; hence the predicate
+        \begin{equation*}
+        c.Type=f_1(c.AC,c.Tel)
+        \end{equation*}
+        is added to the two ~SELECT~ LEAVES.
+** Predicate Pullup
+*** Predicate pullup through ~SELECT~ nodees
+        The pull up predicates through a ~SELECT~ node \(n\), having a label \(L(n)\), we proceed as follows:
+        * Add \(L(n)\) new predicates that are implied by those already in \(L(n)\)
+
+          For example, if both \(r_1.A<r_2.B\) and \(r_2.B<r_3.C\) are in \(L(n)\), then \(r_1.A<r_3.C\) is
+          added to \(L(n)\).
+
+        * Infer predicates with exported attributes as follows. If \(\alpha\) is in \(L(n)\), then add
+          \(\tau(\alpha)\) to \(L(n)\), where \(\tau\) is the internal renaming from the local attributes to
+          the exported ones.
+
+          For example, in the ~fgAccounts~ node of Figure ref:f5, the predicate ~fgAccounts.AC="011"~ on the
+          exported attributes is inferred from the predicates ~c.AC="011"~ on the local attributes.
+
+        * If \(\alpha\) is an exported predicate of \(L(n)\), then add \(\sigma(\alpha)\) to the label of the
+          parent of \(n\), where \(\sigma\) is the external renaming from the exported attributes of \(n\) to
+          local attributes of its parent.
+*** Predicate pullup through ~GROUPBY~ nodes
+        We need some rules for inferring predicates involving aggregate terms. Following is a (sound but not
+        complete) set of such rules; these rules should be applied to the label, \(L(n)\), of a ~GROUPBY~v
+        node \(n\) (in all these rules, \(\le\) can be replaced with \(<\))
+        1. If \(Min(B)\) is a local attribute of \(n\), then add \(Min(B)\le B\) to \(L(n)\)
+
+           If \((B\ge c)\in L(n)\), where \(c\) is a constant, then add \(Min(B)\ge c\) to \(L(n)\)
+        2. If \(Max(B)\) is an attribute of \(n\), then add \(Max(B)\ge B\) to \(L(n)\). Furthermore, if
+           \((B\le c)\in L(n)\), where \(c\) is a constant, then add \(Max(B)\le c\)
+        3. Consider the following three predicates: \(Max(B)\ge Min(B)\), \(Avg(B)\ge Min(B)\) and
+            \(Max(B)\ge Avg(B)\). Eachof these predicates is added to \(L(n)\) if its aggregate terms are
+           attributes of \(n\).
+        4. If \(Avg(B)\) is an attribute of \(n\) and \((B\le c)\in L(n)\), where \(c\) is a constant, then
+           add \(Avg(B)\le c\) to \(L(n)\). If \((B\ge c)\in L(n)\), then add \((Avg(B)\ge c)\) to \(L(n)\).
+*** Predicate pullup through ~UNION~ and ~INTERSECTION~ nodes
+        We infer new exported predicates of \(L(n)\) as follows. Suppose that node \(n\) has \(m\) children,
+        denoted \(c_1,\dots,c_m\), and let \(\barD_i\) be the conjunction of predicates pushed up from
+        \(c_i\). For \(1\le i\le m\), apply to \(\barD_i\) the internal reming from the attributes in
+        \(\barD_i\) to the exported attributes of \(n\), and denote the result as \(D_i\). If \(n\) is a ~UNION~
+        node, we add the CNF from of \(D_1\vee\dots\vee D_m\) to \(L(n)\); if \(n\) is an ~INTERSECTION~ node,
+        we add the predicates \(D_1,\dots,D_m\) to \(L(n)\). As a ~SELECT~ node, if \(\alpha\) is an exported
+        predicate in \(L(n)\), then add \(\sigma(\alpha)\) to the label of the parent of \(n\), where
+        \(\sigma\) is the external renaming from the exported attributes of \(n\) to local attributes of its parent.
+** Predicate Pushdown
+        In this phase, we traverse the query tree top down, starting from the root.
+*** Predicate pushdown through ~SELECT~ nodes
+        In a ~SELECT~ node \(n\), with label \(L(n)\), we do as follows:
+        * Infer new predicates over the local attributes as follows. For each predicate \(\alpha\) in
+          \(L(n)\), add \(\tau(\alpha)\) to \(L(n)\) if it is not already there, where \(\tau\) is a renaming
+          from the exported attributes of \(n\) to the local ones.
+        * Add to \(L(n)\) new predicates that are logically implied by those already in \(L(n)\)
+        * For each child \(c\) of \(n\), if \(\alpha\) is a predicate in \(L(n)\) that includes only constants
+          and renamings of attributes in \(c\), then add \(\sigma(\alpha)\) to \(L(c)\), where \(\sigma\) is
+          the external renaming from the local attributes of \(n\) to the exported attributes of \(c\).
+*** Predicate pushdown through ~GROUPBY~ nodes
+        * Suppose that \(Max(B)\ge c\) is in \(L(n)\), where \(c\) is a constant. In this case, we only need
+          to look at tuples satisfying \(B\ge c\) in order to compute \(Max(B)\).
+
+          However, if there are other aggregates to compute, we may also have to consider tuples that do not
+          satisfying \(B\ge c\). Therefore, if \(Max(B)\ge c\) is in \(L(n)\), we add \(B\ge c\) to \(L(n)\)
+          provided that \(Max(B)\) is the /only/ aggregate term in \(n\).
+
+        * If \(Min(B)\le c\) is in \(L(n)\), where \(c\) is a constant, and \(Min(B)\) is the /only/ aggregate
+          term in \(n\), then we can add \(B\le c\) to \(L(n)\)
+*** Predicate pushdown through ~UNION~ and ~INTERSECTION~ nodes
+** Label Minimization
+        Redundancies are introduced in two ways:
+        * As a result of renamings between attributes of nodes and the associated pullup, some predicate may
+          appear in a node and in the parent of that node. There is no need to apply a predicate at a node if
+          it has already been applied at a descendant of that node.
+        * Redundancies are introduced at labels when adding predicates that are logically implied by existing
+          ones.
+
+        Redundancies of the first kind are removed as follows. Suppose \(\alpha\) is a local predicate of
+        \(L(n)\) and that \(\sigma(\tau(\alpha))\) is the result of applying to \(\alpha\) the internal
+        renaming followed by the external renaming. Then a predicate \(\beta\) in the parent of \(n\) is
+        redundant if \(\beta\) is logically implied by \(\sigma(\tau(\alpha))\). After removing redundancies
+        in this way, we should also discard all predicates that have some exported attributes.
+
+        Redundancies of the second kind are removed by the known technique of transitive reduction; we
+        repeatedly remove a predicate from a label if it is implied by the rest of the predicates.
+** Translating the Query Tree to SQL
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

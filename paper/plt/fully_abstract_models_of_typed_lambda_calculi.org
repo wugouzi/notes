@@ -1,0 +1,123 @@
+#+title: Fully Abstract Models of Typed Lambda-Calculi
+
+#+AUTHOR: Robin Milner
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/plt/fully_abstract_models_of_typed_lambda_calculi.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/plt/}}
+#+LATEX_HEADER: \newcommand{\CA}[1]{\cala\llbracket #1 \rrbracket}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        A denotational semantic definition of \(L\) consists of a semantic domain \(D\) of meanings, and a
+        semantic interpretation \(\cala:L\to D\). We assume that we are mainly interested in the semantics of
+        programs. Denote by \(\calc[\quad]\) a program context - that is, a program with a hole in it, to be
+        filled by a pharase of some kind.
+
+        One desirable property of \(\cala\) is that for all phrases \(M\) and \(N\) we have
+        \(\cala\llb{\calc[M]}=\cala\llb{\calc[N]}\) whenever \(\cala\llb{M}=\cala\llb{N}\).
+
+        This is not hard to achieve, particularly if \(\cala\) is given as a homomorphism. But it is
+        unfortunate if for some \(M\) and \(N\) s.t. \(\cala\llb{M}\neq\cala\llb{N}\) it nevertheless holds
+        for /all/ program contexts that \(\cala\llb{\calc[M]}=\cala\llb{\calc[N]}\); it means that \(\cala\)
+        distinguishes finely among nonprogram phrases.
+
+        The reason for describing this situation as 'over-generous' is that it typically arises when there are
+        many objects in \(D\) which cannot be realized (i.e., denoted by a phrase). For example,
+        \(\cala\llb{M}\) and \(\cala\llb{N}\) may be functions which only differ at an unrealizable argument,
+        which can never be supplied to the functions in a program context.
+        <<1>>
+
+        So we wish to find \(D\) and \(\cala\) s.t.
+        \begin{equation*}
+        \CA{M}\sqsubseteq\CA{N}\quad\text{ iff }\quad\forall\calc[\cdot].\CA{\calc[M]}\sqsubseteq\CA{\calc[N]}
+        \end{equation*}
+        (we use \(\sqsubseteq\) in place of = since we shall always have a partial order over \(D\)); we call
+        such a semantic definition *fully abstract*
+
+
+* Models of the typed \texorpdfstring{\(\lambda\)}{λ}-calculus
+        Assume a set of ground types and the normal hierarchy of functional types. \(\kappa\) ranges over
+        ground types and \(\rho\), \(\sigma\), \(\tau\) over all types.
+
+        A *model* of the typed \(\lambda\)-calculus consists of:
+        1. A set \(D_\sigma\) for each type \(\sigma\); these are the *domains*
+        2. For each \(\sigma\) and \(\tau\), a two-place application operation \((\cdot\cdot)\) s.t. for
+           \(x\in D_{\sigma\to\tau}\) and \(y\in D_{\sigma}\), \((xy)\in D_{\tau}\)
+        3. A family of elements \(S\) and \(K\) in appropriate \(D_\sigma\) s.t. for all \(x\), \(y\) and
+           \(z\) in appropriate domains, \(Sxyz=xy(yz)\) and \(Kxy=x\), where as usual parantheses are omitted
+           and application is taken to be left associative
+
+        A model \(\calm\) is *extensional* if there is a partial order (po) \(\sqsubseteq\) on each domain s.t.
+        \begin{equation*}
+        \forall z.xz\sqsubseteq yz\quad\Longleftrightarrow\quad x\sqsubseteq y
+        \end{equation*}
+        \(\calm\) is *monotone* if
+        \begin{equation*}
+        x\sqsubseteq y\Longrightarrow zx\sqsubseteq zy
+        \end{equation*}
+        \(\calm\) is *continuous* if it is monotone, each po is a *cpo* - i.e. each directed set \(X\) has a lub
+        \(\sqcup X\) - and moreoever for each such \(X\), \(z(\sqcup X)=\bigsqcup\{zx\mid x\in X\}\)
+
+        An element \(d\) in a cpo is *finite* if for all directed \(X\), \(d\sqsubseteq\sqcup
+        X\Longrightarrow\exists x\in X.d\sqsubseteq x\).
+
+        A cpo is *\(\omega\)-algebraic* if it has at most denumerably many finite elements, and for each
+        \(x\in D\), \(\{d\mid d\text{ finite and }\sqsubseteq x\}\) is directed and has lub \(x\).
+
+        A cpo is *consistently complete* if each pair \(x\), \(y\) ahving an uuper bound has a lub, which we
+        write \(x\sqcup y\)
+
+        \(\calm\) is *\(\omega\)-algebraic* if it is continuous and each domain is \(\omega\)-algebraic
+
+        \(\calm\) is *consistently complete* if each domain is consistently complete
+
+        An *(\(n\)-ary) first order function* over ground domains \(D_{\kappa}\) is one with type of the form
+        \begin{equation*}
+        \kappa^{(1)}\to\kappa^{(2)}\to\cdots\to\kappa^{(n)}\to\kappa^{(n+1)}
+        \end{equation*}
+
+        Given ground domains \(D_\kappa\) and a set \(F\) of first-order functions over the \(D_\kappa\),
+        \(\calm\) is a *model for \(F\)*  if for each \(f\in F\) of type \(\sigma\), \(f\in D_{\sigma}\).
+
+        We are concerned only with extensional models. It is worth remarking that none of the other properties
+        of models (continuity etc.) defined above imply extensionlality. However, to avoid tedious repetition
+        we ask the reader to interpret the phraries “model”, “continuous model” etc. as meaning “extensional
+        model”, “continuous extensional model” etc.; we shall of course always prove extensionality when a
+        modei is constructed.
+
+* Discussion
+        We proceed to construct, for consistenly complete \(\omega\)-algebraic \(D_\kappa\) and a given set
+        \(F\) of continuous first-order functions over the \(D_\kappa\), an \(\omega\)-algebraic model
+        \(\calm\) for \(F\) with the property that under a certain condition on \(F\) every finite element in
+        \(\calm\) is \(\lambda\)-definable in terms of the \(D_\kappa\) and \(F\).
+
+        It is an immediate corollary that \(\calm\) is fully abstract
+
+        The restriction to given *first-order* functions deserves comment. Once the \(D_\kappa\) are fixed, a
+        first-order function may be specified unambiguously. But as long as we have noo settled the membership
+        or structure of the higher-order domains, a higher-order function cannot be so specified; it may only
+        be axiomatized.
+
+        Before embarking on the construction, it may help the reader to consider the example of PCF in more
+        detail. Here the ground types are \(o\) and \(\iota\); \(D_o\) (the truth-values) and \(D_{\iota}\)
+        (the natural numbers) are given, with their structure, in Fig. 1.
+
+
+* Monotone models
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Given partially ordered ground domain \(D_\kappa\) and a set \(F\) of monotonic first-order functions
+        over the \(D_\kappa\), there exists a monotone model for \(F\) s.t. every element is
+        \(\lambda\)-definable in terms of \(F\) and the elements of the \(D_\kappa\)
+        #+END_theorem
+
+
+* Problems
+        1. [[1]]: ?
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
