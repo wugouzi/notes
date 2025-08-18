@@ -1,0 +1,430 @@
+#+title: Graham: Synchronizing Clocks by Leveraging Local Clock Properties
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/engineering/graham_synchronizing_clocks_by_leveraging_local_clock_properties.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/engineering/}}
+#+LATEX_HEADER: \DeclareMathOperator{\df}{\text{d}f}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Clock Generation and Synchronization
+        In this paper, we will use *clock* to mean a counter which is incremented at some frequency and can be
+        used to measure time. Clocks are driven by *clock signals*, which oscillate between low and high logical
+        states. A clock driven by this signal increments on a *clock edge*, which is the transition between two
+        logical states (typically, the rising edge is used). Clock signals are provided by *clock sources*,
+        which are typically quartz crystal oscillators in modern computers.
+
+** A typical Linux Intel x86 clock system
+        An Intel x86 system consists of multiple clocks which are driven by multiple clock sources. Some of
+        the clocks accessible to users include the timestamp counter (TSC), real-time clock (RTC) and the
+        precision time protocol clock (PTP). Each of these clocks run at different frequencies and serves
+        different purposes, and which clock software ultimately can access has been shown to vary
+
+        For the purposes of this paper, we center on the TSC, the clock typically accessed by applications via
+        ~clock_gettime(2)~. This clock is driven by a clock signal known as ~BCLK~ (typically 100MHz). The ~BCLK~ is
+        driven by a phase-locked loop (PLL) which multiplies the frequency of a quartz crystal (48MHz on C620
+        ICC). The ~BCLK~ is an important signal which not only drives the logic in the processor, but the memory
+        controller and other components, depending on the processor model. Adjusting the ~BCLK~ is often done
+        when overclocking by changing PLL parameters, but large adjustments can result in system instability
+        and lockup.
+
+        So far, we have described how Linux enables applications to read a clock. In order to be able to
+        compare one clock to another, clocks must be synchronized. Most Linux distributions rely on ntpd or
+        chrony to synchronize local clocks to a remote server with a reference clock synchronized to wall
+        clock time (UTC) via a time source such as GPS using the NTP protocol. The NTP protocol estimates the
+        network delay between the server to client by dividing the round-trip delay in half and can achieve on
+        the order of 1ms-100ms time synchronization error, with error increasing as the delay becomes more
+        asymmetrical. In addition, since NTP is run in software, synchronization is subject to software jitter
+        such as scheduling and interrupt handling which prevents NTP accuracy below 0.5ms, even in ideal
+        conditions.
+
+        To achieve sub-microsecond accuracy, PTP (IEEE 1588) reduces software jitter. First, instead of acting
+        as a service where clients request the time, a PTP server continuously broadcasts the current time at
+        periodic intervals. Clients estimate the network delay by sending a special message to the server to
+        compute the round trip time and dividing that time in half. Finally, PTP introduces a new hardware
+        clock located on the network card itself. This clock is driven by a different quartz crystal at the
+        network card, usually corresponding to the frequency needed to drive the card’s transceivers (25MHz
+        for 10Gb Ethernet). The network card can capture the synchronization packets as they arrive to
+        synchronize the PTP clock to the server, eliminating the inaccuracy introduced by software jitter. In
+        Linux, ~phc2sys~ synchronizes the TSC clock to the PTP clock.
+
+        The accuracy of PTP is dependent on accurate delay estimation. Recognizing this limitation, Huygens
+        and Tick Tock use coded probes and support vector machines to filter out queued packets from round
+        trip delay estimation. Some commercial PTP implementations use packet delay variation (PDV) filters,
+        and compensate for known latencies in the receive and transmit paths.
+
+        Because of clock drift, synchronization frequency is also important. While most of the latency
+        sensitive paths of PTP are in hardware, it is still software driven, limiting the frequency of PTP
+        synchronization, especially when filters are used that necessarily discard some synchronization data.
+        This can be problematic if clock synchronization requirements are tight and clock drift is high. For
+        instance, Huygens has a default sync interval of 2 seconds. A clock with 200ppm (0.02%) of drift will
+        accumulate up to 400µs of drift between missed synchronizations. If there is a single transient
+        synchronization failure resulting in a 4 second interval, up to 800µs of drift would accumulate, which
+        would be problematic if an application required sub-microsecond clock accuracy. To increase
+        synchronization frequency, most solutions require specialized hardware. For example, DTP modifies the
+        Ethernet physical layer to exchange messages at the frequency of microseconds while reducing network
+        delay nondeterminism. Sundial leverages specialized hardware that synchronizes every 100µs and
+        performs fast failure detection to notify software to recover by finding a backup clock
+
+** Holdover Time
+        Notably, current state-of-the-art systems do not attempt to characterize the *holdover time* of the
+        clock, which refers to the amount of time a clock can remain accurate without a synchronization. For
+        instance, Spanner and Sundial both assume a static 200ppm maximum drift. If the maximum time
+        uncertainty bound (\(\epsilon\)) is 1µs, then a clock with 200ppm drift (200µs/s) will only be able to
+        holdover the clock for 5ms without synchronization before potentially exceeding \(\epsilon\). The
+        formula for holdover time can be given as:
+        \begin{equation*}
+        t_h=\frac{\epsilon}{\text{d}f}
+        \end{equation*}
+        where \(t_h\) is the holding time, \(\epsilon\) is the maximum time uncertainty, and \(\text{d}f\) is
+        the clock drift.
+
+** Characterizing Oscillator Error
+        Oscillators provide the clock signals that ultimately drive the clocks used in computer systems, and
+        are the source of most clock error. The most common oscillator in use in nearly all computers today is
+        a quartz crystal, which uses the pizeoelectric properties of quartz to produce a clock signal at a
+        given frequency.
+
+        Quartz is cut to resonate at a given frequency, however, as the cut is a mechanical process,
+        tolerances in the cut process may result in a resonant frequency which is slightly offset from the
+        advertised frequency, known as the frequency tolerance. Since any error in the cut is usually fixed,
+        this tolerance results in a fixed offset from the advertised frequency. In typical computer crystals,
+        this error is usually in the 50ppm range. Lower tolerances require more accurate (e.g., fine laser)
+        cuts and are significantly more expensive.
+
+        Quartz crystals also age over time as mechanical devices which are constantly vibrating, slowly
+        deviating from their advertised frequency. This error is usually small (5ppm/year), and also results
+        in a slight frequency offset.
+
+        So far, we have described sources of quartz crystal oscillator error which are relatively constant. As
+        physical devices, the frequency of quartz crystals are also affected by environmental changes. The
+        most prominent factor is temperature, which can result in a significant change in frequency over the
+        crystal’s operating temperature range. While temperature can induce variations in the frequency of the
+        crystal, the temperature-frequency response of crystals are quite deterministic: in fact, some crystal
+        manufacturers produce the response curve on the crystal datasheet. Typical crystals produce anywhere
+        from a 30ppm-100ppm change in frequency over their operating temperature ranges.
+
+        In addition to temperature, a variety of other environmental factors will affect the frequency of the
+        oscillator. However, these factors contribute a relatively small amount of frequency error compared to
+        temperature. Changes in supply voltage usually result in a 0.1ppm-5ppb change in frequency. Another
+        factor is variation in the load capacitance: in order for the crystal to resonate at the expected
+        frequency, the correct amount of capacitance is required. Since the capacitors used to provide the
+        load capacitance also have tolerances, the capacitance can vary depending on the properties of the
+        capacitors used. Typically, load capacitance error is specified at 0.1ppm-5ppb. The frequency of
+        quartz crystals are also sensitive to acceleration, depending on the axis it is applied to. For
+        ordinary quartz crystals, this is typically in the range of 0.1-10ppb/G. For a 500G shock, such as
+        that specified in MIL-STD-883H, representative of a device dropping to the floor, frequency error
+        could be as high as 1ppm. Note that the recommendation for operational vibration and shock limits in
+        datacenters is less than 5G which is well below 500G. Finally, crystals are even sensitive to
+        relativity: a crystal closer to the gravitational field of the earth will have a lower frequency than
+        a crystal further away, such as on a mountain or in space. This error is around 0.1ppq/m from sea
+        level, or ≈ 0.9ppt at the top of Mount Everest or ≈ 3ppb from geostationary orbit. These sources of
+        error are a result of the physical properties of quartz, and the data collected in Table 1 are
+        collected from the datasheets of various quartz oscillators used in servers
+
+** Debunking the Myth of Unstable Clocks
+        As we have seen, most of the frequency error in a quartz oscillator is either relatively static or
+        dependent on temperature.
+
+        Static error can be easily corrected if it can be learned: if we learn that our crystal resonates at
+        32.769 KHz instead of 32.768 KHz, we simply need to adjust our accounting of time, perhaps by using
+        32769 as a divider instead of \(2^{15}\). If our synchronization error is minimal and we keep the
+        temperature constant, we can learn this value over several synchronization passes. NTPd and chrony
+        both try to learn the static drift using the *driftfile*.
+
+        Most state-of-the-art systems, however, combine static and dynamic error in their uncertainty
+        calculations, resulting in the assumption of an unstable clock. For instance, Sundial assumes that the
+        clock error of their oscillator is 100ppm, but this number includes the static tolerance error from
+        the cut, which is easily learned. Moreover, even if they had chosen a ±100ppm temperature tolerance
+        crystal, this shift would be over the entire operating range, as in a shift from -30\textdegree C to
+        85\textdegree C. An overheating server moving from 60\textdegree C to 80\textdegree C would experience
+        only about 20ppm change in drift from temperature, an order of magnitude less than the conservative
+        200ppm error used in spanner.
+
+        In practice, most crystals used to generate processor clocks have temperature tolerances in the range
+        of ±20ppm. Intel Chipset Integrated Clock Controllers (ICC), for example, specify "Total of crystal
+        cut accuracy, frequency variations due to temperature, parasitics, load capacitance variations is
+        recommended to be less than 90ppm", and external clock generators such as the common CK420BQ used in
+        Intel systems specify a cut tolerance of ±20ppm and a temperature tolerance of ±20ppm over the entire
+        operating range. If we can filter out the static error, we will be left with 20ppm temperature error.
+        Then this clock will have a 1 µs holdover time of 50ms, a 10× improvement over the 200ppm assumption.
+** Software Temperatur Compensation
+        Once we have corrected the static frequency error, temperature remains as the dominant source of
+        frequency error. This effect is well known, and software compensation techniques are described in the
+        literature. In computers, chrony can correct for temperature errors given the temperature-frequency
+        relationship and a temperature sensor. In wireless networks, where minimizing clock error is critical,
+        environment and temperature aware compensation are used.
+
+        While temperature-frequency curves are sometimes published on the datasheet of a crystal, using them
+        to correct errors on a commodity computer system requires knowing the crystal used. This can be
+        difficult even for an expert given the small markings on most crystal packages. Moreover, the crystal
+        used can be different even across the same model of motherboards, since manufacturers may substitute
+        functionally equivalent parts due to cost or supply-chain reasons. Unless the system was purpose built
+        with temperature correction in mind, temperature sensors are likely located some distance away from
+        the crystal. Therefore, selecting the right temperature sensor may be a challenge. However, correcting
+        for temperature error can effectively reduce the frequency error of the crystal to less than 1ppm,
+        resulting in a 1 µs holdover time of 1s, a 200 × improvement over Spanner’s assumption.
+** Other Oscillators
+* Clocks and Sensors In Servers
+** Clocks
+        The Linux pulse-per-second (PPS) facility provides a mechanism for delivering an accurate reference
+        time. PPS devices are devices that accurately emit a low-jitter puls every second. A PPS driver calls
+        the ~pps_event~ API whenever the pulse is received, and the kernel records the timestamp associated with
+        that pulse. Typically, this pulse is a signal that causes an interrupt, and the PPS API is called by
+        an interrupt service routine (ISR). However, even when using very low jitter PPS devices, such as the
+        ublox ZED-F9T GPS timing module that advertises ±4 ns jitter, we saw jitter over 10µs. As we diagnosed
+        the problem, we saw several sources of jitter throughout the hardware and software stack which made it
+        difficult for our driver to call ~pps_event~ in a timely manner after the pulse interrupt is raised.
+
+        Our initial approach was to use GPS dongles with PPS support over USB2 , which are inexpensive (USD
+        ≈$10), readily available, and usable on nearly every server. The GPS device presents itself as a
+        serial device, and the PPS interrupt is encapsulated as a message over the USB bus. We saw that the
+        polling message-driven nature of USB resulted in high jitter: not only was there a ≈100µs delay (which
+        is easily corrected for), but also ±10µs of jitter that made it difficult to accurately time the
+        pulse. Our next attempt involved using a FPGA to deliver an interrupt over PCIe, since PCIe slots are
+        readily available in most commodity servers. However, while PCIe offered less jitter PCIe interrupts
+        are also message signaled and also saw as much as ±5µs of jitter dependent on device traffic and
+        serial transceiver jitter.
+
+        We needed a low-latency interrupt pin to accurately capture the PPS signal. We ended up resorting to
+        using the legacy serial port, which exposes interrupts pins on the device carrier detect (DCD) and
+        clear to send (CTS) lines. Unlike PCIe and USB, these legacy ports drive an interrupt pin on the
+        low-pin count (LPC) bus and offer much lower jitter, on the order of 1µs. Even with the serial port,
+        we still saw significant “blips” in our PPS signal. To reduce those blips, we made several changes:
+        first, we pinned the serial port interrupt to a single core, disabled power management, disabled all
+        watchdogs, installed a “lowlatency” kernel, turned on interrupt threading and set the serial interrupt
+        priority to realtime. While these changes reduced the number of blips, there was still periodic noise
+        present which made time daemons such as chrony detect as much as 10ppm of drift change over a second.
+        This drift only disappeared when we forced the C-state of the machine to C0, disabling idling. This
+        surprised us: the CPU advertised ~FEATURE_NONSTOP_TSC~, so the TSC should not be affected by C-States.
+        We realized that the most likely scenario was that when idling was enabled, the CPU would take a
+        non-deterministic amount of time to wake up from sleep and fire the ISR that eventually causes
+        ~pps_event~ to be recorded.
+
+        To deal with this scenario, we took advantage of the two time pulse outputs of the ZED-F9T module and
+        connected the second time pulse to the CTS serial line. We configured the second time pulse with a
+        400ns delay from the first one, and modified the kernel PPS serial line discipline driver to only
+        record the second pulse if is 400ns ± 100ns from the first pulse. While this caused some pulses to
+        disappear, it greatly reduced the jitter we observed. To compensate for lost time pulses, we changed
+        the time pulse frequency from 1Hz to 3Hz. Removing this software jitter enabled us to see that the
+        clock was actually fairly stable over long periods of time, only deviating by about .5ppm per hour, as
+        seen in Figure [[ref:f1]]. We suspected most of this deviation was due to the rising ambient temperature.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION:
+        [[../../images/papers/200.png]]
+** Sensors
+        Modern computer systems are littered with sensors for environmental conditions. The original use of
+        these sensors were to monitor alarm conditions: for example, to shut off the system if there are
+        abnormally high temperatures that would cause instability, or if a voltage regulator mal-functions. A
+        more recent use of temperature sensors is for thermal throttling, which reduces the frequency of a
+        processor or GPU based on the temperature. The goal of Graham is to reuse these temperature sensors
+        for the purpose of performing software-based temperature compensation.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t2
+        #+CAPTION:
+        [[../../images/papers/201.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/202.png]]
+
+
+
+        Using these temperature sensors can be challenging because their location relative to the clock
+        crystal is not consistent.
+        * While crystals are usually located near the clock generator, the clock generator can be located in a
+          number of locations, which might not be at all near a temperature sensor.
+        * Systems also have a varying number of sensors, as shown in Table [[ref:t2]]. The server platform we
+          evaluated, for example, has nearly 50 sensors (Figure [[ref:f2]]).
+        * However, even though the platform provides the position of these sensors, it is still of little help
+          to determine which sensor is closest to the crystal.
+        * As an additional challenge, not all temperatures offer the same precision. For instance, some of the
+          sensors in the server platform only reported ±10\textdegree C changes, likely because they were
+          designed only for use as an alarm.
+        * Finally, the response time of the sensors may vary depending on various environmental factors. For
+          instance, a sensor located near the large copper ground plane of the motherboard may respond slower
+          to rising temperatures than a sensor located on a the thinner PCB of a DIMM.
+
+        An ideal sensor has high precision and responds quickly to changes in the same way as the crystal.
+** Establishing the Ground Truth
+        Armed with an accurate timing signal and a number of candidate sensors, our next goal is to attempt to
+        establish the “ground truth”, or the temperature-clock error response curve. If we can determine the
+        clock error given a certain temperature, then we can correct the clock even in the absence of the
+        accurate timing signal.
+
+        Nearly all quartz crystals used in computers today are AT-cut crystals. Their frequency relationship
+        with temperature can be described by a \(3^{rd}\) order equation
+        \begin{equation*}
+        \Delta f_T=k_0+k_1T+k_2T^2+k_3T^3
+        \end{equation*}
+        where \(\Delta f_T\) is the crystal frequency error due to temperature, \(T\) is the crystal
+        temperature and \(k_i\) are coefficients of the frequency versus temperature curve.
+
+        To find the relationship of the clock frequency versus temperature we need to solve for the \(k_i\)
+        parameters using synchronization messages from a reference clock. Unfortunately, since the sensor data
+        is noisy, we may need to obtain many temperature points to “average out” the sensor error. This
+        required designing an experiment which required many passes, and was difficult to perform on a server
+        platform. As a result, we performed most of our ground truth tests on the Raspberry Pi (Pi 3/Pi 4) SoC
+        systems, though we show our full implementation of Graham in action on desktop and server platforms in
+        Section 5. While the Raspberry Pi is an ARM-based SoC, it runs Linux like the x86 system and has a
+        clock driven by a quartz crystal on the underside of the SoC PCB.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION:
+        [[../../images/papers/203.png]]
+
+
+        The Pi, as a bare SoC system, allowed us to easily subject it to various temperatures. The Pi includes
+        a temperature monitor which measures the core SoC temperature. We provided an accurate PPS timing
+        pulse using a uBlox Neo-M8N GPS module to a Pi GPIO and exposed it to various temperatures using
+        either a hair dryer or ice bucket. We used the difference in timing ticks between PPS signals to
+        calculate the estimated frequency error of the crystal, and the result is plotted in Figure [[ref:f3]].
+        The distribution we saw was around ±5 ppm and probably attributable to interrupt delay and sensor
+        error.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION:
+        [[../../images/papers/204.png]]
+
+        Once we saw that we were able to capture the temperature-error relationship, we wanted to ensure that
+        the data we were generating was repeatable, so we collected several traces using varying temperature
+        patterns, all exercising the same temperature range. Figure [[ref:f4]] shows that the curve we generated
+        was similar even with different temperature inputs.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION:
+        [[../../images/papers/205.png]]
+
+
+        Next, we wanted to see if the curves differed across devices. Figure [[ref:f5]] shows that even across
+        devices of the same model, curves are significantly different. Even the same crystal model could be
+        cut slightly differently, resulting in two 25MHz crystals which are for example, 24.997MHz and
+        25.001MHz that meet the tolerance requirement, but yield different curves.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION:
+        [[../../images/papers/206.png]]
+
+        Finally, because age can have an effect on the crystals, we wanted to test if we could observe a
+        change in the curve with age. In Figure [[ref:f6]], we ran two tests with a 7 month time difference,
+        obtaining two slightly different curves, as expected. The 1ppm offset we obtained roughly matches the
+        aging expected by a regular quartz crystal during this time period.
+
+        Now that we have obtained the ground truth using an accurate PPS signal, we use this knowledge to
+        guide us in scaling our solution to many devices. Since each device will have its own unique curve, it
+        became clear to us that we needed to design a way to automatically learn the curve of each device.
+* Graham Design
+        The overall approach of Graham is to learn the temperature-clock error relationship by fitting curves
+        as new data points are learned. Unlike the experiments we designed when trying to learn the ground
+        truth, we cannot expect to be able to point a hair dryer or dump a production server in ice. In
+        addition, since a truly scalable solution should not require a precise PPS timing signal, we need to
+        ensure that we can perform this learning with traditional synchronization protocols such as NTP or
+        PTP. As a result, Graham must fit these curves over time on incomplete and noisy data. Once we
+        determine that the we have observed enough data points, we can use the derived curve to correct the
+        time error. To fit this data on a curve, we begin by formalizing the variables and equations required
+        to solve for the time error.
+** Formulating the Problem
+        We can obtain two timestamps from the clock using a known time interval and calculate  difference to
+        see how much it deviates from the expected difference.
+
+        For example, a clock crystal may have an ideal frequency (\(f_0\)) of 32.768KHz. We would expect two
+        timestamps taken exactly 1 second apart to have a difference of 1 (\(\Delta ts_i\)). But if we
+        actually observe 1.5 seconds (\(\Delta ts_o\)), then we know the actual frequency is 49.152KHz
+        (\(f_1\)), or \(1.5\times f_0\). If we subtract the two frequencies, we obtain 16.384KHz of frequency
+        error (\(\Delta f\)). We can express this as an equation:
+        \begin{equation*}
+        \Delta f\Delta ts_i=\Delta ts_o-\Delta ts_i
+        \end{equation*}
+        where \(\delta f\) is the relative frequency error. If we assume most of the frequency error is from
+        temperature, then we obtain
+        \begin{equation*}
+        (k_0+k_1T+k_2T^2+k_3T^3)\Delta ts_i=\Delta ts_o-\Delta ts_i
+        \end{equation*}
+        If we receive \(N\) synchronization messages then we can build \(N\) linear equations as follows:
+        \begin{equation}
+        \label{eq5}
+        AK=B
+        \end{equation}
+        where
+        \begin{equation*}
+        K=
+        \begin{bmatrix}
+        k_0\\k_1\\k_2\\k_3
+        \end{bmatrix},\quad
+        A=
+        \begin{bmatrix}
+        1&T_1&T_1^2&T_1^3\\
+        1&T_2&T_2^2&T_2^3\\
+        \dots&\dots&\dots&\dots\\
+        1&T_N&T_N^2&T_N^3\\
+        \end{bmatrix}
+        \end{equation*}
+        \begin{equation*}
+        B=
+        \begin{bmatrix}
+        \Delta ts_{o,1}-\Delta ts_{i,1}\\
+        \Delta ts_{o,2}-\Delta ts_{i,2}\\
+        \dots\\
+        \Delta ts_{o,N}-\Delta ts_{i,N}\\
+        \end{bmatrix}
+        \end{equation*}
+        where \(T_N\), \(\Delta ts_{i,N}\) and \(\Delta ts_{o,N}\) are parameters for the \(N^{th}\)
+        synchronization message respecitvely. Graham solves Eq. eqref:eq5 using linear least square methods
+
+        So far, we assume that the temperature is constant for the duration of \(\Delta ts_0\). If the
+        synchronization messages are infrequent, as in the case of a protocol such as NTP, the temperature can
+        change during this period. To solve this problem, Graham records temperatures during this period and
+        when it receives a synchronization message, it aggregates the effects of temperatures. Assume there
+        are \(n\) intervals in which we record temperatures during a period. The equation for the \(j^{th}\)
+        time interval is:
+        \begin{gather*}
+        \Delta f_j\Delta ts_{i,j}=\Delta ts_{o,j}-\Delta ts_{i,j}\\
+        \Delta ts_o=\sum_{j}^n\Delta ts_{o,j}\\
+        \Delta ts_i=\sum_{j}^n\Delta ts_{i,j}\\
+        \sum_{j}^n\Delta f_j\Delta ts_{i,j}=\sum_{j}^n\Delta ts_{o,j}-\sum_{j}^n\Delta ts_{i,j}
+        \end{gather*}
+        Now we get
+        \begin{gather*}
+        k_0\sum_{j}^n\Delta ts_{i,j}+k_1\sum_{j}^nT_j\Delta ts_{i,j}+k_2\sum_{j}^nT_j^2\Delta ts_{i,j}
+        +k_3\sum_{j}^nT_j^3\Delta ts_{i,j}=\Delta ts_o-\Delta ts_i
+        \end{gather*}
+        where \(T_j\) is the temperature at the \(j^{th}\) time interval. \(\Delta ts_{i,j}\) is an unknown
+        parameter, but we can approximate it by \(\alpha\Delta ts_{o,j}\) in  which \(\alpha=\frac{\Delta ts_i}{\Delta ts_o}\)
+        \begin{equation*}
+        k_0\sum_j^n\Delta ts_{o,j}+k_1\sum_{j}^nT_j\Delta ts_{o,j}+k_2\sum_j^nT_j^2\Delta ts_{o,j}+
+        k_3\sum_j^nT_j^3\Delta ts_{o,j}=\frac{\Delta ts_o-\Delta ts_i}{\alpha}
+        \end{equation*}
+** Implementation
+        We implemented a prototype daemon in C which solves for the equations by using temperature sensors
+        exposed through sysfs or a network management interface such as SNMP. We record temperatures with
+        1\textdegree C precision at a configurable frequency, which defaults to 1Hz. For synchronization data,
+        we modified chrony to collect the \(\Delta ts_o\) and \(\Delta ts_i\) necessary from synchronization
+        messages over NTP.
+
+        Graham keeps a FIFO queue of equations with known size for each temperature, bounding the number of
+        equations that need to be solved. Graham assumes an operating temperature range of 40-80\textdegree C
+        and does not start applying corrections until the curve errors are within 20ppm. Graham constantly
+        collects temperature data to learn the curve before correction are applied.
+** Addressing practical issues
+*** Timestamp Error
+*** Temperature Sensor Challenges
+*** Computation Accuracy
+* Evaluation
+** Learning over PPS
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

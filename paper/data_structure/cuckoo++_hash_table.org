@@ -6,7 +6,163 @@
 #+LATEX_HEADER: \graphicspath{{../../../paper/data_structure/}}
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
+* Introduction
+        In network, High-performance hash tables often rely on bucketized cuckoo hash-table for they feature
+        excellent read performance by guaranteeing that the state associated to some connection can be found
+        in less than three memory accesses. Two implementation choices are possible regarding these
+        prefetches:
+        1. optimistically assume that the data will be in the primary bucket and prefetch only this bucket as
+           done in Cuckoo Switch
+        2. pessimistically assume that both buckets need to be searched and prefetch both to avoid too late
+           prefetching and mis-predicted branches as done in DPDK
+* Background
+        In share-nothing architecture, the network interface card (NIC) steers the packets to several queues.
+        Each core reads and sends through its own set of queues; it shares no data-structure with other cores
+        to avoid sharing and synchronization (even implicit) which reduces performance.
 
+        In high-performance networking, a desirable feature is batched lookups as supported by CuckooSwitch
+        and DPDK.
+
+        In bucketized cuckoo hash table, the memory is divided in buckets of fixed size (4 or 8 slots): each
+        bucket is sized to fit a cacheline. Each key hashes to a primary bucket and a secondary bucket. The
+        value associated to a key must be stored in one of the slots of these two buckets. Two implementations
+        choices are possible for storing the values:
+        1. if the key and values are small enough (e.g., less than 64 bit total), they can be stored directly
+           into the bucket
+        2. larger keys and values do not allow the bucket to remain on a single cacheline, the solution is
+           thus to store only the hashes and an index/pointer in the bucket
+
+        As our focus is on data structures for connection tracking (128 bit keys), we do not consider the
+        restricted case of small keys and values and thus adopt the second approach.
+* Implementing Cuckoo Tables
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/178.png]]
+
+        For super-scalar out-of-order CPUs (e.g., Intel Xeon), the performance of implementations of cuckoo
+        hash tables that support batched lookups highly depends on the effectiveness of prefetches[fn:1] that
+        hide the memory latency.
+        Two prefetching strategies are possible for implementing cuckoo hash tables:
+        1. The /optimistic/ approach assumes that the key is stored in the hash table and that it will be in the
+           primary bucket: thus only the primary bucket is prefetched, the secondary bucket will be prefetched
+           later only if the data is not found in the primary bucket. This optimistic approach is adopted by
+           CuckooSwitch, MemC3, Mega-KV. This approach is supported by the previous observation
+           that less 20% positive lookups need to access the secondary bucket. This saves resources at the
+           price of a few non-prefetched memory accesses.
+        2. The /pessimistic/ approach assumes that the key is not in the hash table or that it could be in the
+           secondary bucket: thus both the primary and the secondary bucket are prefetched. Beside hiding
+           memory latency, this approach also avoids branch mispredictions, which are detrimental to
+           performance in out-of-order CPUs. This pessimistic approach is adopted in DPDK
+
+        Intuitively, one can observe that this choice is highly dependent on the workload: the optimistic
+        choice should be favored for mostly-positive lookups, and the pessimistic choice should be favored for
+        mostly-negative lookups.
+
+        Figure [[ref:f3]] plots the number of lookups per second achieved for batched lookups on a hash table with
+        a capacity of 32M entries using CityHash 64.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION:
+        [[../../images/papers/179.png]]
+
+
+        We propose algorithmic changes to bucketized cuckoo hash tables  enable implementations offering a
+        high performance in cases
+* Cuckoo++ Hash Tables
+** Avoid accesses to the secondary bucket
+        #+ATTR_LATEX: :width .\textwidth :float nil
+        #+NAME: 4
+        #+CAPTION:
+        [[../../images/papers/180.png]]
+
+        Cuckoo and Cuckoo++ differ in negative lookup. Before fetching the secondary bucket from memory, the
+        searched key is searched in the bloom filter.
+
+        When deleting a key from the hash table, the usual cuckoo procedure applies. When the key was stored
+        into its secondary bucket, the bloom filter of the corresponding primary bucket should be updated.
+        Yet, bloom filters are append-only structures. To deal with this constraint, we leverage the counter
+        associated to each bloom filter. The counter is decremented for each deletion of a value stored in its
+        secondary bucket. Whenever the counter reach zero, we can reset the bloom filter to its empty state
+
+        When collisions must be resolved during an insertion, a chain of swaps (i.e., a cuckoo path) is
+        computed. Key/values moved from their primary bucket to their secondary bucket modify the bloom filter
+        similarly to an insertion, whereas keys/values moved from their secondary bucket to their primary
+        bucket modify the bloom filter similarly to a deletion.
+
+        In practice, most entries are stored in their primary position, it implies that occupancy of bloom
+        filters remains low and that moved counter values remain low. As a consequence, over the lifetime of
+        the hash table, the counter is often equal to zero, ensuring that the bloom filter is often reset and
+        remains useful. Note that even for high load factor (0.95) more than 50% of buckets have a moved
+        counter value equal to zero.
+
+        Regarding the efficiency of the bloom filter for avoiding accesses to the secondary bucket, we use a
+        bloom filter of 64 bits, with two hash functions. For such a bloom filter, given the number of entries
+        inserted in the bloom filter (see Figure [[ref:5]]), the false positive rate of the bloom filter remains
+        very low even for high load factor
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 5
+        #+CAPTION:
+        [[../../images/papers/181.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t2
+        #+CAPTION:
+        [[../../images/papers/182.png]]
+** Timer management
+        Applications such as connection tracking that dynamically create entries require these entries to
+        expire after some time. For example, for connection tracking, an entry is created for the flow after a
+        TCP SYN or an UDP packet is seen. If after a few hours (for TCP) or after a few seconds (for UDP) no
+        packet has been seen on this flow/connection, the connection is assumed to be expired and closed. All
+        entries related to this connection should be deleted.
+
+        The strawman approach could rely on a timer, handled by a dedicated component in the system. Whenever
+        the timer expires, a callback is called, which accesses the hash table and deletes the corresponding
+        entry. This approach has several drawbacks:
+        1. the key to pass as a parameter to the callback must be duplicated in the timer data structure, thus
+           increasing memory usage
+        2. the timer must be updated/reset every time a new packet goes through a given connection thus
+           increasing code complexity and computational cost
+        3. on timer expiration, the callback searches the corresponding key in the hash table to delete it,
+           thus generating memory accesses and consuming memory bandwidth.
+
+        As our goal is to eliminate all unnecessary memory accesses, we integrate entry expiration in the hash
+        table rather than using an external timer component. We attach to each entry of the hash table an
+        expiration time. We extend the API of the hash table to support setting/updating the expiration time
+        when inserting or looking up a key. When looking up, only non-expired entries are considered. When
+        inserting, expired entries are overwritten as if the slot was free. Thus, expired entries are lazily
+        deleted by the next insertion thus avoiding unnecessary memory accesses and the computational overhead
+        of executing callbacks.
+
+        The main issue with the integration of expiration times in the hash table is that memory is very
+        constrained. Using 16-bit timestamps comes with several problems
+        1. the maximum expiration time is short, and
+        2. overflows, which can revive expired entries, cannot be ignored.
+
+        To solve the first issue, we don’t manage time is seconds or milliseconds but we quantize it at a
+        larger granularity. For example, for connection tracking, where connections should expire after some
+        minutes of inactivity, we use a basic time unit of 30 seconds
+
+        To solve the second issue, we don’t allow expiration times to take any value between t 0 and
+        \(t_0+65536\) but restrict them to the range \(t_0\) to \(t_0+1024\).
+** Memory Layout
+        We organize our structures so that all fields accessed when looking up a bucket are in the same
+        cacheline.
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 6
+        #+CAPTION:
+        [[../../images/papers/183.png]]
+
+        Each bucket stores 8 entries. We store 8 16-bits tags derived from the main hashes, 8 16-bit values
+        corresponding to the expiration time, a bloom filter with a counter, a few 8-bit masks that are used
+        to mark an entry as free or busy, or that are used temporarily when searching for a cuckoo path during
+        insertion.
+
+        When timers are used, the alternative hashes cannot all be stored on the same cacheline. Yet, these
+        hashes are seldomly used. They are needed only for inserts when the primary and the secondary bucket
+        are full, to search a cuckoo path that can free space in buckets. Thus this has no impact on lookup
+        performance.
 * Problems
 
 
@@ -15,3 +171,9 @@
 bibliographystyle:alpha
 
 \bibliography{/Users/wu/notes/notes/references.bib}
+
+* Footnotes
+
+[fn:1] Prefetch is an instruction that can be issued to inform the processor that some memory location will be
+accessed in the future. It allows the processor to "pre-load" a specific memory location into its cache thus
+avoiding long memory latencies.

@@ -1,0 +1,101 @@
+#+title: TXSQL: Lock Optimizations Towards High Contented Workloads
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/txsql_lock_optimizations_towards_high_contented_workloads.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+
+* Preliminary
+
+** Two-Phase Locking (2PL)
+
+** Transaction Execution Workflow
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: The core architecture of TXSQL
+        [[../../images/papers/197.png]]
+
+        When a transaction initiates a row update in the transaction manager, the specific row can be uniquely
+        identified by locating the record’s associated tablespace through the ~space_id~, identifying the page
+        containing the record via the ~page_no~, and pinpointing the exact position of the record within a page
+        using the ~heap_no~. Therefore, the combination of  ~<space_id,page_no,heap_no>~ serves as a unique
+        identifier for a row. Once the corresponding record is located, the system first checks the lock
+        manager whether any active transactions conflict with the lock that the current transaction intends to
+        acquire. Locks created by all active transactions are managed by a hash lock table, where the key is
+        generated from the record’s ~<space_id,page_no>~, and the value is the lock object (~lock_t*~). If no
+        conflict exists, the lock is successfully acquired, its status is set to SUCCESS, and it is inserted
+        into the hash table ~lock_sys~. If a conflict is detected, the transaction is placed in a waiting state
+        and added to a wait queue in ~lock_sys~. Once the transaction holding the lock commits and releases the
+        lock, it will awaken the waiting transactions in ~lock_sys~, allowing the awakened transaction to
+        acquire the lock.
+
+** Typical Applications at Tencent
+        * WeChat Red Envelope
+* Motivation and Design
+** General Lock Optimization
+*** Lightweight Locking
+
+        Vanilla InnoDB lock system has two significant shortcomings:
+        1. It created a large number of row locks. For instance, 100 concurrent transactions, each updating 10
+           rows, create up to 1,000 lock records for low- or non-contented workloads.
+        2. In high-contented workloads, even with partitioning optimizations applied, acquiring the sharded
+           mutex for the corresponding page still incurs a substantial amount of lock wait time
+
+
+        We introduced a variable named ~trx_lock_wait~ to manage transactions waiting for locks. This variable
+        utlizes a lock-free hash design implemented with a map container, where the record ID serves as the
+        key and the record value is a queue of waiting transactions. By recording transaction IDs, we can
+        swiftly identify conflicts, creating locks only when necessary, thereby effectively reducing lock
+        overhead.
+*** Copy-Free Active Transaction list
+        During concurrent transaction execution, it checks the transaction IDs of all active transactions to
+        determine which version of the data should be read in MVCC . Directly accessing the active transaction
+        list can lead to performance issues, as it necessitates locking the list each time data is read. To
+        mitigate this problem, one intuitive solution is to create a copy of the active transaction list
+        during data reads, allowing checks on the copied list without locking the original. However, when
+        read-write conflicts are substantial, the overhead associated with maintaining these copies can still
+        be considerable.
+
+        To address this, we leverage snapshots in MVCC to avoid direct copying and locking of the active
+        transaction list. Specifically, we aim to determine which data is visible by comparing the transaction
+        ID with the version information of the data. We introduce a new attribute, ~del_ts~, for each
+        transaction ID, which indicates the deletion timestamp of each transaction. This attribute aids in
+        assessing the transaction’s status, and now visibility can be determined by snapshot information and
+        the ~del_ts~ attribute without acquiring the active transaction list, thus improving concurrency.
+** Queue Locking for Hotspot Access
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 2
+        #+CAPTION: Motivation of hotspot optimization
+        [[../../images/papers/198.png]]
+** Group Locking for hotspot Access
+        This mechanism logically groups a set of updates on a conflicting hotspot data row, allowing these
+        updates to be executed sequentially within the group without locking.
+* Implementation
+** Management of Hotspots
+        We define a row as a *hotspot* when the number of waiting transactions exceeds a threshold (e.g., 32,
+        which is a rule of thumb). Once identified, the hotspot is added to a hotspot hash table, denoted as
+        ~hot_row_hash~, and subsequent update transactions for this row must wait in the queue. To manage these
+        entries effectively, a background thread periodically monitors the ~hot_row_hash~. If an entry is no
+        longer a hotspot (e.g., no waiting transactions), it is removed from the ~hot_row_hash~, and future
+        updates revert to the standard 2PL protocol. This simple yet effective mechanism enables us to
+        identify and manage hotspot data with minimal overhead.
+** Transaction Processing
+        The concurrently arriving transactions on a hotspot row are automatically organized into groups
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: a1
+        #+CAPTION:
+        [[../../images/papers/199.png]]
+** Commit Order Guarantee
+** Other Optimization
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

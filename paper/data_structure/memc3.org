@@ -91,7 +91,7 @@
         #+ATTR_LATEX: :width .7\textwidth :float nil
         #+NAME: 3
         #+CAPTION: Cuckoo path. \(\emptyset\) represents an empty slot
-        [[../../images/papers/.png]]
+        [[../../images/papers/176.png]]
 
         Define a *cuckoo path* as the sequence of displaced keys in an ~Insert~ operation. In Figure [[ref:3]],
         \(a\Rightarrow b\Rightarrow c\) is one cuckoo path to make one bucket available to insert key \(x\).
@@ -174,7 +174,36 @@
 
         CLOCK approximates LRU with improved concurrency and space efficiency. For each slab class, we
         maintain a *circular buffer* and a *virtual hand*; each bit in the buffer represents the recency of a
-        differen key-value object: 1 for "recently used" and 0 otherwise.
+        differen key-value object: 1 for "recently used" and 0 otherwise. Each ~Update~ simply sets the recency
+        bit to 1 on each key access; each ~Evict~ checks the bit currently pointed by the hand. If the current
+        bit is 0, ~Evict~ selects the corresponding key-value object; otherwise we reset this bit to 0 and
+        advance the hand in the circular buffer until we see a bit of 0.
+
+        *Integration with Optimisitc Cuckoo Hashing*: The ~Evict~ process must coordinate with reader threads to
+        ensure the eviction is safe. Otherwise, a key-value entry may be overwritten by a new key-value pair
+        after eviction, but threads still accessing the entry for the evicted key may read dirty data. To
+        this end, the original Memcached adds to each entry a 2-Byte reference counter to avoid this rare
+        case. Reading this per-entry counter, the ~Evict~ process knows how many other threads are accessing
+        this entry concurrently and avoid evicting those busy entries.
+
+        Our cache integrates cache eviction with our optimistic locking scheme for cuckoo hashing. When ~Evict~
+        selects a victim key \(x\) by CLOCK, it first increases key \(x\)’s version counter to inform other
+        threads currently reading \(x\) to retry; it then deletes \(x\) from the hash table to make \(x\)
+        unreachable for later readers, including those retries; and finally it increases key \(x\)’s version
+        counter again to complete the change for \(x\). Note that ~Evict~ and the hash table ~Insert~ are both
+        serialized (using locks) so when updating the counters they can not affect each other.
+
+        With Evict as above, our cache ensures consistent \texttt{GET}s by version checking. Each ~GET~ first
+        snapshots the version of the key before accessing the hash table; if the hash table returns a valid
+        pointer, it follows the pointer and reads the value assoicated. Afterwards, ~GET~ compares the latest
+        key version with the snapshot. If the verions differ, then ~GET~ may have observed an inconsistent
+        intermediate state and must retry.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: a1
+        #+CAPTION:
+        [[../../images/papers/177.png]]
+
 * Problemsp
 
 

@@ -1,0 +1,192 @@
+#+title: Datacenter RPCs can be General and Fast
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/network/datacenter_rpcs_can_be_general_and_fast.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/network/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        eRPC is /not/ an RDMA-based system: it works well with only UDP packets over lossy Ethernet without
+        Priority Flow Control (PFC), although it also supports InfiniBand.
+
+        We use as test-cases two existing systems: a production-grade implementation of Raft that is used in
+        Intel’s distributed object store, and Masstree
+
+        The existing options offer an undesirable trade-off between performance and generality. Low-level
+        interfaces such as DPDK are fast, but lack features required by general applications (e.g., DPDK
+        provides only unreliable packet I/O.) On the other hand, full-fledged networking stacks such as mTCP
+        leave significant performance on the table.
+
+        Goal: Can a general-purpose RPC library provide performance comparable to specialized systems?
+
+        Two insights:
+        1. we optimize for the common case, i.e., when messages are small, the network is congestion-free, and
+           RPC handlers are short.
+        2. restricting each flow to at most one bandwidth-delay product (BDP) of outstanding data effectively
+           prevents packet loss caused by switch buffer overflow for common traffic patterns.
+
+* Background and motivation
+
+** High-speed datacenter networking
+        *Lossless fabrics*. Lossless packet delivery is a link-level feature that prevents congestion-based
+        packet drops. For example, PFC for Ethernet prevents a link’s sender from over-flowing the receiver’s
+        buffer by using pause frames. Some datacenter operators, including Microsoft, have deployed PFC at
+        scale. This was done primarily to support RDMA, since existing RDMA NICs perform poorly in the
+        presence of packet loss. Lossless fabrics are useful even without RDMA: Some systems that do not use
+        remote CPU bypass leverage losslessness to avoid the complexity and overhead of handling packet loss
+        in software
+
+        Unfortunately, PFC comes with a host of problems, in- cluding head-of-line blocking, deadlocks due to
+        cyclic buffer dependencies, and complex switch configuration;
+
+        *Switch buffer \(\gg\) BDP*. The increase in datacenter bandwidth has been accompanied by a
+        corresponding decrease in round-trip time (RTT), resulting in a small BDP. Switch buffers have grown
+        in size, to the point where “shallow-buffered” switches that use SRAM for buffering now provide tens
+        of megabytes of shared buffer. Much of this buffer is dynamic, i.e., it can be dedicated to an
+        incast’s target port, preventing packet drops from buffer overflow. For example, in our two-layer 25
+        GbE testbed that resembles real datacenters (Table [[ref:t1]]), the RTT between two nodes connected to
+        different top-of-rack (ToR) switches is 6 µs, so the BDP is 19 kB. This is unsurprising: for example,
+        the BDP of the two-tier 10 GbE datacenter used in pFabric is 18 kB
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION:
+        [[../../images/papers/188.png]]
+
+        In contrast to the small BDP, the Mellanox Spectrum switches in our cluster have 12 MB in their
+        dynamic buffer pool. Therefore, the switch can ideally tolerate a 640-way incast. The popular Broadcom
+        Trident-II chip used in datacenters at Microsoft and Facebook has a 9 MB dynamic buffer.
+
+        In practice, we wish to support approximately 50-way incasts: congestion control protocols deployed in
+        real datacenters are tested against comparable incast degrees. For example, DCQCN and Timely use up to
+        20- and 40-way incasts, respectively. This is much smaller than 640, allowing substantial tolerance to
+        technology variations, i.e., we expect the switch buffer to be large enough to prevent most packet
+        drops in datacenters with different BDPs and switch buffer sizes. Nevertheless, it is unlikely that
+        the BDP-to-buffer ratio will grow substantially in the near future: newer 100 GbE switches have even
+        larger buffers (42 MB in Mellanox’s Spectrum-2 and 32 MB in Broadcom’s Trident-III), and NIC-added
+        latency is continuously decreasing.
+
+** Limitations of existing options
+        Two reasons underlie our choice to design a new general-purpose RPC system for datacenter networks:
+        1. existing datacenter networking software options sacrifice performance or generality, preventing
+           unmodified applications from using the network efficiently
+        2. co-designing storage software with the network is increasingly popular, and is largely seen as
+           necessary to achieve maximum performance.
+
+        However, such specialization has well-known drawbacks, which can be avoided with a general-purpose
+        communication layer that also provides high performance. We describe a representative set of currently
+        available op- tions and their limitations below, roughly in order of increasing performance and
+        decreasing generality.
+
+        Fully-general networking stacks such as mTCP and IX allow legacy sockets-based applications to run
+        unmodified. Unfortunately, they leave substantial performance on the table, especially for small
+        messages. For example, one server core can handle around 1.5 million and 10 million 64B RPC requests
+        per second with IX and eRPC, respectively.
+
+        Some recent RPC systems can perform better, but are designed for specific use cases. For example,
+        RAMCloud RPCs are designed for low latency, but not high throughput. In RAMCloud, a single dispatch
+        thread handles all network I/O, and request processing is done by other worker threads. This requires
+        inter-thread communication for every request, and limits the system’s network throughput to one core.
+        FaRM RPCs use RDMA writes over connection-based hardware transports, which limits scalability and
+        prevents use in non-RDMA environments.
+
+        Like eRPC, our prior work on FaSST RPCs uses only datagram packet I/O, but requires a lossless fabric.
+        FaSST RPCs do not handle packet loss, large messages, congestion, long-running request handlers, or
+        node failure; researchers have believed that supporting these features in software (instead of NIC
+        hardware) would substantially degrade performance. We show that with careful design, we can support
+        all these features and still match FaSST's performance, while running on a lossy network. This upends
+        conventional wisdom that losslessness or NIC support is necessary for high performance.
+
+** Drawbacks of specialization
+
+* eRPC overview
+        eRPC is similar to existing high-performance RPC systems like Mellanox’s Accelio and FaRM. eRPC’s
+        threading model differs in how we sometimes run long-running RPC handlers in “worker” threads
+** RPC API
+        RPCs execute at most once, and are asynchronous to avoid stalling on network round trips; intra-thread
+        concurrency is provided using an event loop. RPC servers register request handler functions with
+        unique request types; clients use these request types when issuing RPCs, and get continuation
+        callbacks on RPC completion. Users store RPC messages in opaque, DMA-capable buffers provided by eRPC,
+        called msgbufs; a library that provides marshalling and unmarshalling can be used as a layer on top of
+        eRPC.
+
+        Each user thread that sends or receives RPCs creates an exclusive ~Rpc~ endpoint (a C++ object). Each
+        ~Rpc~ endpoint contains an RX and TX queue for packet I/O, an event loop, and several sessions. A
+        session is a one-to-one connection between two ~Rpc~ endpoints, i.e., two user threads. The client
+        endpoint of a session is used to send requests to the user thread at the other end. A user thread may
+        participate in multiple sessions, possibly playing different roles (i.e., client or server) in
+        different sessions.
+
+        User threads act as “dispatch” threads: they must periodically run their ~Rpc~ endpoint’s event loop to
+        make progress. The event loop performs the bulk of eRPC’s work, including packet I/O, congestion
+        control, and management functions. It invokes request handlers and continuations, and dispatches
+        long-running request handlers to worker threads
+
+        *Client control flow*: ~rpc->enqueue_request()~ queues a request msgbuf on a session, which is transmitted
+        when the user runs rpc’s event loop. On receiving the response, the event loop copies it to the
+        client’s response msgbuf and invokes the continuation callback.
+
+        *Server control flow*: The event loop of the ~Rpc~ that owns the server session invokes (or dispatches) a
+        request handler on receiving a request. We allow nested RPCs, i.e., the handler need not enqueue a
+        response before returning. It may issue its own RPCs and call ~enqueue_response()~ for the first request
+        later when all dependencies complete.
+** Worker threads
+        A key design decision for an RPC system is which thread runs an RPC handler. Some RPC systems such as
+        RAMCloud use dispatch threads for only network I/O. RAMCloud’s dispatch threads communicate with
+        worker threads that run request handlers. At datacenter network speeds, however, inter-thread
+        communication is expensive: it reduces throughput and adds up to 400 ns to request latency. Other RPC
+        systems such as Accelio and FaRM avoid this overhead by running all request handlers directly in
+        dispatch threads. This latter approach suffers from two drawbacks when executing long request
+        handlers: First, such handlers block other dispatch processing, increasing tail latency. Second, they
+        prevent rapid server-to-client congestion feedback, since the server might not send packets while
+        running user code.
+
+        Striking a balance, eRPC allows running request handlers in both dispatch threads
+        and worker threads: When registering a request handler, the programmer specifies whether the handler
+        should run in a dispatch thread. This is the only additional user input required in eRPC. In typical
+        use cases, handlers that require up to a few hundred nanoseconds use dispatch threads, and longer
+        handlers use worker threads.
+        #+LATEX: \wu{
+        For Blade, only worker threads is feasiable.
+        #+LATEX: }
+** Evaluation clusters
+* eRPC design
+** Scalability considerations
+        We chose plain packet I/O instead of RDMA writes to send messages in eRPC. This decision is based on
+        prior insights from our design of FaSST:
+        1. packet I/O provides completion queues that can scalably detect received packets.
+        2. RDMA caches connection state in NICs, which does not scale to large clusters.
+
+        We next discuss new observations about NIC hardware trends that support this design.
+*** Packet I/O scales well
+        RPC systems that use RDMA writes have a /fundamental/ scalability limitation. In these systems, clients
+        write requests directly to per-client circular buffers in the server’s memory; the server must poll
+        these buffers to detect new requests. The number of circular buffers grows with the number of clients,
+        limiting scalability.
+
+        With traditional userspace packet I/O, the NIC writes an incoming packet’s payload to a buffer
+        specified by a descriptor pre-posted to the NIC’s RX queue (RQ) by the receiver host; the packet is
+        dropped if the RQ is empty. Then, the NIC writes an entry to the host’s RX completion queue. The
+        receiver host can then check for received packets in constant time by examining the head of the
+        completion queue.
+
+        To avoid dropping packets due to an empty RQ with no descriptors, RQs must be sized proportionally to
+        the number of independent connected RPC endpoints. Older NICs experience cache thrashing with large
+        RQs, thus limiting scalability, but we find that newer NICs fare better: While a Connect-IB NIC could
+        support only 14 2K-entry RQs before thrashing, we find that ConnectX-5 NICs do not thrash even with 28
+        64K-entry RQs. This improvement is due to more intelligent prefetching and caching of RQ descriptors,
+        instead of a massive 64x increase in NIC cache.
+*** Scalability limits of RDMA
+        RDMA requires NIC-managed connection state. This limits scalability because NICs have limited SRAM to
+        cache connection state. The number of in-NIC connections may be reduced by sharing them among CPU
+        cores, but doing so reduces performance by up to 80%.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

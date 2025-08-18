@@ -1,0 +1,127 @@
+#+title: Adaptive Query Processing in the Looking Glass
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/adaptive_query_processing_in_the_looking_glass.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Motivations for AQP
+        1. Correcting Optimizer Mistakes: attribute correlations, skewed attribute, outdated statistics
+        2. Coping with Unknown Statistics
+        3. Reacting to Changes in Input Characteristics and System Conditions
+* Adaptive Query Processing Families
+** Plan-based Systems
+        Plan-based AQP systems extend the plan-first execute-next approach by monitoring the execution of the
+        current plan and re-optimizing whenever observed plan properties (e.g., intermediate result sizes) or
+        system conditions (e.g., available memory) differ significantly from the estimates made by the
+        optimizer while choosing the plan.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 3
+        #+CAPTION: AQP in plan-based systems
+        [[../../images/papers/191.png]]
+** Routing-based Systems
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 4
+        #+CAPTION: AQP in routing-based systems
+        [[../../images/papers/192.png]]
+
+        Routing-based systems process queries by routing tuples through a pool of operators, ensuring that
+        most tuples follow the most efficient routes. As shown in Figure [[ref:4]], the tuple router integrates
+        both optimization and statistics tracking using the single primitive of selective routing of tuples
+        along alternate routes. Most tuples exploit the route that is most efficient currently, while the rest
+        explore other routes.
+** CQ-based Systems
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 5
+        #+CAPTION: AQP in CQ-based systems
+        [[../../images/papers/193.png]]
+
+        Continuous-Query-based, or CQ-based, AQP systems support AQP for continuous queries, prevalent in data
+        stream systems. (Routing-based systems also support continuous queries). AQP in CQ-based systems is
+        shown in Figure [[ref:5]]. Like plan-based systems, CQ-based systems use query plans and an optimizer.
+        However, their focus is on arbitrary changes in stream characteristics and system conditions during
+        the running time of a continuous query, rather than mistakes in statistics for a given query plan. For
+        example, the optimizer may inform the statistics tracker about all statistics that it used when
+        considering alternative plans, and the tracker monitors for changes in these statistic. To minimize
+        the run-time overhead, CQ-based systems use sampling-based techniques for statistics tracking, and
+        combine statistics tracking with query execution whenever possible
+** Summary
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t2
+        #+CAPTION: Models, goals, assumptions, and approach of the three system families
+        [[../../images/papers/194.png]]
+* Comparison of the System Families
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t3
+        #+CAPTION:
+        [[../../images/papers/195.png]]
+** Pros and Cons of Using an Optimizer
+** Tracking Statistics
+        1. Observation: Observation is used commonly in plan-based systems where statistics (e.g.,
+           cardinalities, random samples, histograms) are collected on tuples that pass through selected points in a query plan.
+        2. Exploration: Exploration is used in routing-based systems where a fraction of input tuples are
+           routed along routes different from the current best route to track operator selectivities and costs
+           along these routes.
+        3. Competition: Competition is similar to exploration, but it routes the same set of tuples along
+           multiple competing routes (or plans) in order to track operator selectivities and costs using the same input data.
+        4. Profiling: Profiling differs from exploration and competition in that a fraction of tuples are
+           processed by all operators solely to collect statistics.
+** Re-optimization
+        Three questions:
+        1. choosing when to re-optimize,
+        2. finding the new best plan or route,
+        3. switching to the new plan or route if it is different from the current one.
+*** When and How to Re-optimize
+        During execution, plan-based and CQ-based systems track some or all of the statistics that the
+        optimizer estimated while picking the current plan. The op- timizer is re-invoked whenever an observed
+        value is found to be either significantly different from the optimizer’s estimate or outside the range
+        of values for which the current plan is optimal
+
+        When invoked for re-optimization, the optimizer is given the new set of statistics which includes
+        those tracked by the current plan. In a routing-based system, the scheme used to route tuples to
+        operators is based on current statistics. For example, most tuples may be routed first to the
+        operator with the current lowest selectivity. Thus, re-optimization happens automatically when
+        statistics change
+*** Plan Switching
+        Re-optimization in a plan-based or CQ-based system may decide a new plan is better than the current
+        one. In that case, some important issues need to be dealt with when switching between plans:
+        * Correctness: The new plan must not output result tuples that have already been output by previous
+          plans (or miss tuples), particularly in pipelined plans.
+        * Reuse of work: The current plan and plans before it may have processed a substantial part of the
+          query. It is important to consider whether the new plan can reuse this work instead of restarting
+          query processing from scratch. However, it may not always be benefi- cial to reuse work, so reuse
+          must be considered in a cost-based manner.
+        * Plan state: Techniques for switching between plans must account for the state captured by a plan,
+          which has four components:
+** Performance Issues
+*** Quality of Re-optimization
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: t6
+        #+CAPTION:
+        [[../../images/papers/196.png]]
+*** Run-time Overhead
+        An AQP system incurs run-time overhead to ensure adaptivity, compared to a traditional plan-first
+        execute next approach. The main contributors to this overhead are tracking statistics, invoking the
+        optimizer for re-optimization, and switching between plans.
+*** Thrashing
+        We say that an AQP system is thrashing if it is spending most of its resources in adaptivity-related
+        overhead, e.g., plan switching, and is not making enough progress in query execution.
+        1. Limiting re-optimization points, e.g., only reoptimizing at blocking operators in plans
+        2. Limiting the number of times re-optimization can be invoked during query execution
+        3. Setting a minimum number of tuples processed or time interval between any two invocations of
+           reoptimization
+*** Scalability
+* New Approaches to AQP
+** Proactive Re-optimization
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
