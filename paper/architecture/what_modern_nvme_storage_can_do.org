@@ -1,0 +1,138 @@
+#+title: What Modern Nvme Storage Can Do, And How To Exploit It: High-Performance I/O for High-Performance Storage Engines
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/architecture/what_modern_nvme_storage_can_do.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/architecture/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        * Q1: Can arrays of NVMe SSDs achieve the performance promised in the hardware specifications?
+        * Q2: Which I/O API (pread/pwrite, libaio, io_uring) should be used? Is it necessary to rely on kernel-bypassing (SPDK)?
+        * Q3: Which page size should storage engines use to get good performance while minimizing I/O amplification?
+        * Q4: How to manage the parallelism required for high SSD throughput?
+        * Q5: How to make a storage engine fast enough to be able to manage tens of millions of IOPS?
+        * Q6: Should I/O be performed by dedicated I/O threads or by each worker thread?
+* What Modern NVME Storage Can Do?
+** Drive Scalability
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION:
+        [[../../images/papers/209.png]]
+
+        *Drive scalability*. According to the hardware specification sheet, our Samsung PM1733 SSDs are capable
+        of performing 1.5 M I/O operations per second (IOPS) for random 4 KB reads. Hence, with 8 drives, we
+        should achieve the remarkable number of 12 M IOPS. Figure [[ref:f2]] shows that the throughput indeed
+        scales perfectly with the number of drives used. We actually achieve slightly more than expected,
+        namely 12.5 M IOPS or 1.56 M IOPS per SSD.
+
+        *Read/write mix*. Transactional workloads are often write-intensive, and it is well known that SSDs have
+        asymmetric read/write speed. As Figure [[ref:f2]]b shows, with random writes on an empty SSD our hardware
+        setup achieves 4.7 M IOPS. Note that SSD write performance depends on the internal state of the SSD
+        and the write duration. In the worst case of a full SSD and prolonged writing, the throughput will be
+        lower; the data sheet specifies the worst-case, per-drive random write throughput at 135 k IOPS. For
+        OLTP systems, mixed read/write workloads are more common. As Figure [[ref:f2]]b shows, with 10% (25%)
+        writes we measured 8.9 M (7.0 M) IOPS. These microbenchmarks show that modern NVMe storage provides an
+        excellent foundation for transactional systems, which often require many random I/O operations.
+** The Case for 4KB Pages
+        *Page size tradeoffs*. In contrast to byte-addressable persistent memory, access to flash happens at
+        page granularity. Many database systems use larger pages sizes such as 8 KB (PostgreSQL, SQL Server,
+        Shore-MT), 16 KB (MySQL, LeanStore), or even 32 KB (WiredTiger) as their default. In LeanStore, we
+        observed that for in-memory workloads, larger page sizes generally improve performance, which is why
+        we originally chose 16 KB. A second benefit of a larger page size is that it reduces the number of
+        distinct entries in the buffer pool and therefore leads to less cache management overhead. However,
+        the big downside of larger pages is I/O amplification on out-of-memory workloads. With 16 KB pages,
+        for example, reading or writing 100 Byte records results in an I/O amplification of 160×. A smaller
+        page size of 4 KB would reduce amplification by 40×.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION:
+        [[../../images/papers/210.png]]
+
+        *Better go small (but not too small)*. For data center grade SSDs, we found that the sweet spot for the
+        page size is 4 KB, as it allows for the highest random-read performance and lowest latency. Figure [[ref:f3]]
+        shows that it is possible to achieve almost the full bandwidth (6 GB/s) with 4 KB pages and random
+        reads. This is only 8% slower than the maximum bandwidth of 6.5 GB/s that can be achieved with larger
+        pages (or sequential access). Looking at the latency for different page sizes in Figure [[ref:f3]], one
+        can observe that the latency generally increases with page size and has its minimum at 4 KB.
+        Technically, NVMe allows even smaller pages – down to 512 bytes. For write amplification this would be
+        even better, but our results show that using smaller pages than 4 KB significantly decreases
+        performance. In fact, a smaller page size actually results in worse IOPS and latency on our SSDs, as
+        can be seen in Figure [[ref:f3]]. This is due to higher overhead in the flash translation layer, together
+        with the fact that the flash hardware internally is not optimized for 512 byte pages . We argue that
+        the gains from lower latency and I/O amplification make 4 KB pages the best choice for systems that
+        optimize for out-of-memory performance. However, to benefit from such a small page size in terms of
+        performance, the DBMS must be able to deal with the resulting high buffer pool and I/O management
+        work. In fact, most DBMS will not benefit just from using smaller pages because I/O throughput is not
+        the limiting factor.
+** SSD Parallelism
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION:
+        [[../../images/papers/211.png]]
+
+        *SSD Parallelism*. Internally, SSDs are highly parallel devices, with multiple channels connecting to
+        independent flash dies. Getting enough I/O requests to the SSD can be difficult, as it requires a
+        large number of simultaneous requests for high performance. Flash random read latency is on the order
+        of 100 microseconds, which is 100× faster than disk, but still 1000× slower than DRAM. With
+        synchronous accesses (i.e., sending a new I/O request only after the previous one is completed) this
+        would result in a meager 10k IOPS (or 40 MB/s). Thus, to get good throughput from SSDs, one has to
+        exploit their internal parallelism by asynchronously scheduling many concurrent I/O requests. Figure
+        [[ref:f4]] shows the relation between IO-depth, i.e., the number of simultaneously outstanding I/O
+        requests on all 8 SSDs, and overall throughput. We can see that around 1000 concurrent I/O requests,
+        i.e., more than 100 per device, are necessary to get decent performance, and 3000 to fully saturate
+        the system. One of the main challenges for a database system exploiting NVMe arrays is managing these
+        high numbers of I/O requests.
+** I/O Interfaces
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION:
+        [[../../images/papers/212.png]]
+
+        *Blocking POSIX interface*. The classic and most common way of doing I/O on Linux is by using POSIX
+        system calls like ~pread~ and ~pwrite~. POSIX calls for file operations are usually used in a blocking
+        fashion, where a single I/O request is submitted at a time. The kernel will then block the user thread
+        until the request is handled by the drive. This is shown in Figure [[ref:f5]]a.
+
+        *libaio*: traditional asynchronous interface. libaio is an asynchronous I/O interface that allows the
+        submission of multiple requests with one system call. This saves context switches between user and
+        kernel mode, and allows a single thread to perform multiple I/O operations simultaneously. As Figure
+        [[ref:f5]]b illustrates, I/O requests are submitted in a non-blocking fashion through ~io_submit()~, which
+        immediately returns, and the program has to poll for completions with ~get_events()~.
+
+        *io_uring*: modern asynchronous interface. io_uring is the designated successor to libaio. io_uring
+        implements a new generic asynchronous interface to the kernel that can be used for storage, but also
+        for networking. As Figure [[ref:f5]]c shows, it is based on shared queues between kernel and user-space.
+        Multiple requests can be added to the submission queue, and with a single ~io_uring_enter()~ system call
+        the kernel can be notified of the available requests. Inside the kernel, an I/O request will
+        essentially go through the same abstraction layers (file system, cache, block device layer, etc.) as
+        with the other kernel interfaces. After going through all these kernel layers, the request will end up
+        in an NVMe submission queue. Linux also implements a submission queue polling mode (~SQPOLL~) where the
+        kernel spawns kernel-worker threads (marked with * in the figure) to poll the submission queue. In
+        this mode, at the cost of additional kernel worker threads, no system calls are required.
+
+        *Polling I/O completions*. For all interfaces discussed so far, the default way of notifying the host
+        about completed I/O events is hardware interrupts. With io_uring, it is possible to disable interrupts
+        (~IOPOLL~). Using this mode, the application must poll completion events (marked with ** in the figure)
+        from the completion queue. Avoiding interrupts can reduce latency and CPU overhead in situations with
+        high IOPS. With I/O polling, the ~io_uring_enter()~ system call is also used to poll on the NVMe
+        completion queue. When ~SQPOLL~ is set, I/O polling is handled by a kernel worker thread and completions
+        can be reaped directly from user space without requiring a system call.
+
+        *User-space I/O with SPDK*. Intel’s Storage Performance Development Kit (SPDK) is a set of libraries and
+        tools used for highperformance storage applications. Specifically, the SPDK NVMe driver, which is the
+        user-space driver for NVMe SSDs, is relevant for us. As Figure [[ref:f5]]d illustrates, to communicate
+        with an NVMe SSD, SPDK directly allocates the NVMe queue pairs (for submission and completion) in the
+        user space. Submitting I/O requests is therefore as simple as writing a request into a ring buffer in
+        memory and notifying the SSD that there are new requests available through another write. SPDK does
+        not support interrupt-driven I/O and completions always have to be polled from the NVMe completion
+        queue. SPDK completely bypasses the operating system kernel, including the block device layer, file
+        systems, and the page cache.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

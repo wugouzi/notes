@@ -1,0 +1,223 @@
+#+title: MegaPipe: A New Programming Interface for Scalable Network I/O
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/network/megapipe.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/network/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Existing network APIs on multi-core systems have difﬁculties scaling to high connection rates and are
+        inefﬁcient for “message-oriented” workloads, by which we mean workloads with short connections
+        (connection with a small number of messages exchanged) /and|or/ small messages. Such message-oriented
+        workloads include HTTP, RPC, key-value stores with small objects
+
+        Several research efforts have addressed aspects of these performance problems, proposing new
+        techniques that offer valuable performance improvements. However, they all innovate within the conﬁnes
+        of the traditional socket-based networking APIs, by either
+        1. modifying the internal implementation but leaving the APIs untouched
+        2. adding new APIs to complement the existing APIs
+        While these approaches have the beneﬁt of maintaining backward compatibility for existing
+        applications, the need to maintain the /generality/ of the existing API – e.g., its reliance on ﬁle
+        descriptors, support for blocking and nonblocking communication, asynchronous I/O, event polling, and
+        so forth – limits the extent to which it can be optimized for performance. In contrast, a clean-slate
+        redesign offers the opportunity to present an API that is specialized for high performance network
+        I/O.
+
+        An ideal network API must offer not only high performance but also a simple and intuitive programming
+        abstraction. In modern network servers, achieving high performance requires efﬁcient support for
+        concurrent I/O so as to enable scaling to large numbers of connections per thread, multiple cores,
+        etc. The original socket API was not designed to support such concurrency. Consequently, a number of
+        new programming abstractions (e.g., ~epoll~, ~kqueue~, etc.) have been introduced to support concurrent
+        operation without overhauling the socket API. Thus, even though the basic socket API is simple and
+        easy to use, programmers face the unavoidable and tedious burden of layering several abstractions for
+        the sake of concurrency. Once again, a clean-slate design of network APIs offers the opportunity to
+        design a network API from the ground up with support for concurrent I/O.
+
+        In this paper we present MegaPipe, a new API for efﬁcient, scalable network I/O. The core abstraction
+        MegaPipe introduces is that of a *channel* – a per-core, bi-directional pipe between the kernel and user
+        space that is used to exchange both asynchronous I/O requests and completion notiﬁcations. Using
+        channels, MegaPipe achieves high performance through three design contributions under the roof of a
+        single uniﬁed abstraction:
+        * *Partitioned listening sockets*
+        * *Lightweight sockets*: Sockets are represented by ﬁle descriptors and hence inherit some unnecessary
+          ﬁle-related overheads.
+        * *System Call Batching*
+
+
+* Motivation
+** Performance Limitations
+        In what follows, we discuss known sources of inefﬁciency in the BSD socket API.
+
+        * *Contention on Accept Queue*: a single listening socket (with its ~accept()~ backlog queue and exclusive
+          lock) forces CPU cores to serialize queue access requests; this hotspot negatively impacts the
+          performance of both producers (kernel threads) enqueueing new connections and consumers (application
+          threads) accepting new connections. It also causes CPU cache contention on the shared listen- ing socket.
+        * *Lack of Connection Affinity*: In Linux, incoming packets are distributed across CPU cores on a ﬂow
+          basis (hash over the 5-tuple), either by hardware (RSS) or software (RPS); all receive-side
+          processing for the ﬂow is done on a core. On the other hand, the transmit-side processing happens on
+          the core at which the application thread for the flow resides. Because of the serialization in the
+          listening socket, an application thread calling ~accept()~ may accept a new connection that came
+          through a remote core; RX/TX (receive/transmit) for the flow occurs on two different cores, causing
+          expensive cache bouncing on the TCP control block (TCB) between those cores. While the per-flow
+          redirection mechanism in NICs eventually resolves this core disparity, short connections cannot
+          benefit since the mechanism is based on packet sampling.
+        * *File Descriptor*: The POSIX standard requires that a newly allocated file descriptor be the lowest
+          integer not currently used by the process which is expensive.
+        * *VFS*: In UNIX-like operating systems, network sockets are abstracted in the same way as other file
+          types in the kernel; the Virtual File System (VFS) associates each socket with corresponding file
+          instance, inode, and dentry data structures. For message-oriented workloads with short connections,
+          where sockets. For message-oriented workloads with short connections arrive, servers quickly become
+          overloaded since those globally visible objects cause system-wide synchronization cost
+        * *System Calls*
+** Performance of Message-Oriented Workloads
+        While it would be ideal to separate the aforementioned inefﬁciencies and quantify the cost of each,
+        tight coupling in semantics between those issues and complex dynamics of synchronization/cache make it
+        challenging to isolate indiidual costs.
+
+        Rather, we quantify their /compound/ performance impact with a series of microbenchmarks in this work.
+        As we noted, the inefﬁciencies manifest themselves primarily in workloads that involve short
+        connections or small-sized messages, particularly with increasing numbers of CPU cores. Our
+        microbenchmark tests thus focus on these problematic scenarios.
+
+        *Experimental Setup*: For our tests, we wrote a pair of client and server microbenchmark tools that
+        emulate RPC-like workloads. The client initiates a TCP connection, exchanges multiple request and
+        response messages with the server and then closes the connection We refer to a single request-response
+        exchange as a *transaction*. Default parameters are 64B per message and 10 transactions per connection,
+        unless otherwise stated. Each client maintains 256 concurrent connections, and we conﬁrmed that the
+        client is never the bottleneck. The server creates a single listening socket shared by eight threads,
+        with each thread pinned to one CPU core. Each event-driven thread is implemented with epoll  and the
+        non-blocking socket API.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/213.png]]
+
+        *Performance with Short Connections*: TCP connection establishment involves a series of time-consuming
+        steps: the 3-way handshake, socket allocation, and interaction with the user-space application. For
+        workloads with short connections, the costs of connection establishment are not amortized by sufﬁcient
+        data transfer and hence this workload serves to highlight the overhead due to costly connection
+        establishment.
+
+        *Performance with Small Messages*: Small messages result in greater relative network I/O overhead. In
+        fact, the per-message overhead remains roughly constant and thus, independent of message size; in
+        comparison with a 64 B message, a 1 KiB message adds only about 2% overhead due to the copying between
+        user and kernel on our system, despite the large size difference.
+
+        *Performance Scaling with Multiple Cores*: Ideally, throughput for a CPU-intensive system should scale
+        linearly with CPU cores. In reality, throughput is limited by shared hardware (e.g., cache, memory
+        buses) and/or software implementation (e.g., cache locality, serialization). To constrain the number
+        of cores, we adjust the number of server threads and RX/TX queues of the NIC. The lines labeled
+        “Efﬁciency” represent the measured per-core throughput, normalized to the case of perfect scaling,
+        where \(N\) cores yield a speedup of \(N\).
+* MegaPipe Design
+** Scope and Design Goals
+** Completion Notification Model
+        The current best practice for event-driven server programming is based on the readiness model.
+        Applications poll the readiness of interested sockets with ~select~ / ~poll~ / ~epoll~ and issue
+        non-blocking I/O commands on the those sockets. The alternative is the completion notiﬁcation model.
+        In this model, applications issue asynchronous I/O commands, and the kernel notiﬁes the applications
+        when the commands are complete. This model has rarely been used for network servers in practice,
+        though, mainly because of the lack of socket-speciﬁc operations such as accept/connect/shutdown (e.g.,
+        POSIX AIO) or poor mechanisms for notiﬁcation delivery (e.g., SIGIO signals).
+
+        MegaPipe adopts the completion notiﬁcation model over the readiness model for three reasons.
+        1. it allows transparent batching of I/O commands and their notiﬁcations. Batching of non-blocking I/O
+           commands in the readiness model is very difﬁcult without the explicit assistance from applications.
+        2. it is compatible with not only sockets but also disk ﬁles, allowing a uniﬁed interface for any type
+           of I/O.
+        3. it greatly simpliﬁes the complexity of I/O multiplexing. Since the kernel controls the rate of I/O
+           with completion events, applications can blindly issue I/O operations without tracking the
+           readiness of sockets.
+** Architecture Overview
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/214.png]]
+
+        The left side of the ﬁgure shows how a multi-threaded application interacts with the kernel via
+        MegaPipe *channels*. With MegaPipe, an application thread running on each core opens a separate channel
+        for communication between the kernel and user-space. The application thread registers a *handle* (socket
+        or other ﬁle type) to the channel, and each channel multiplexes its own set of handles for their
+        asynchronous I/O requests and completion notiﬁcation events.
+
+        When a listening socket is registered, MegaPipe internally spawns an independent accept queue for the
+        channel, which is responsible for incoming connections to the core. In this way, the listening socket
+        is not shared by all threads, but partitioned to avoid serialization and remote cache access.
+
+        A handle can be either a regular ﬁle descriptor or a lightweight socket, *lwsocket*. lwsocket provides a
+        direct shortcut to the TCB in the kernel, to avoid the VFS overhead of traditional sockets; thus
+        lwsockets are only visible within the associated channel.
+
+        Each channel is composed of two message streams: a request stream and a completion stream. User-level
+        applications issue asynchronous I/O requests to the kernel via the request stream. Once the
+        asynchronous I/O request is done, the completion notiﬁcation of the request is delivered to user-space
+        via the completion stream. This process is done in a batched manner, to minimize the context switch
+        between user and kernel. The MegaPipe user-level library is fully responsible for transparent
+        batching; MegaPipe does not need to be aware of batching.
+** Design Components
+*** Listening Socket Partitioning
+        Two issue:
+        1. contention on the accept queue
+        2. cache bouncing between RX and TX cores for a ﬂow.
+
+        Afﬁnity-Accept proposes two key ideas to solve these issues.
+        1. a listening socket has per-core accept queues instead of the shared one.
+        2. application threads that call ~accept()~ prioritize their local accept queue.
+
+        In MegaPipe, we achieve essentially the same goals but with a more controlled approach. When an
+        application thread associates a listening socket to a channel, MegaPipe spawns a separate listening
+        socket. The new listening socket has its own accept queue which is only responsible for connections
+        established on a particular subset of cores that are explicitly speciﬁed by an optional ~cpu_mask~
+        parameter. After a shared listening socket is registered to MegaPipe channels with disjoint ~cpu_mask~
+        parameters, all channels (and thus cores) have completely partitioned backlog queues. Upon receipt of
+        an incoming TCP handshaking packet, which is distributed across cores either by RSS or RPS, the kernel
+        ﬁnds a “local” accept queue among the partitioned set, whose ~cpu_mask~ includes the current core. On
+        the application side, an application thread accepts pending connections from its local queue. In this
+        way, cores no longer contend for the shared accept queue, and connection establishment is vertically
+        partitioned (from the TCP/IP stack up to the application layer).
+
+        Our technique requires user-level applications to partition a listening socket explicitly, rather than
+        transparently. The downside is that legacy applications do not beneﬁt.
+
+        Partitioning of a listening socket may cause potential load imbalance between cores. Afﬁnity-Accept
+        solves two cases of load imbalance. For a short-term load imbalance, a non-busy core running ~accept()~
+        may steal a connection from the remote accept queue on a busy CPU core. For a long-term load
+        imbalance, the ﬂow group migration mechanism lets the NIC to distribute more ﬂows to non-busy cores.
+*** lwsocket: Lightweight Socket
+        ~accept()~ ing an established connection is an expensive process in the context of the VFS layer. In
+        Unix-like operating systems, many different types of open ﬁles (disk ﬁles, sockets, pipes, devices,
+        etc.) are identiﬁed by a *ﬁle descriptor*. A ﬁle descriptor is an integer identiﬁer used as an indirect
+        reference to an opened *ﬁle instance*, which maintains the status (e.g., access mode, offset, and ﬂags
+        such as ~O_DIRECT~ and ~O_SYNC~) of the opened ﬁle. Multiple ﬁle instances may point to the same *inode*,
+        which represents a unique, permanent ﬁle object. An inode points to an actual type-speciﬁc kernel
+        object, such as TCB.
+
+        For network sockets we claim that these layers of abstraction could be overkill for the following
+        reasons:
+        1. *Sockets are rarely shared*
+        2. *Sockets are ephemeral*
+
+        A lwsocket is identified by an arbitrary integer within the channel, not the lowest possible integer
+        within the process. It does not create a corresponding file instance, inode, or entry, but provides a
+        straight shortcut to the TCB in the kernel. A lwsocket is only locally visible within the associated
+        MegaPipe channel, which avoids global synchronization between cores.
+*** System Call Batching
+        Recent research efforts report that system calls are expensive not only due to the cost of mode
+        switching, but also because of the negative effect on cache locality in both user and kernel space
+*** API
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/215.png]]
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

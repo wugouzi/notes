@@ -1,0 +1,77 @@
+#+title: An Optimal and Progressive Algorithm for Skyline Queries
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/optimal_and_progressive_algorithm_for_skyline_queries.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f11
+        #+CAPTION:
+        [[../../images/papers/207.png]]
+
+        GIven a set of objects \(p_1,\dots,p_N\), the operator returns all objects \(p_i\) such that \(p_i\)
+        is not dominated by another object \(p_j\). Using the common example in the literature, assume in
+        Figure ref:f11 that we have a set of hotels and for each hotel we store its distance from the beach (\(x\)
+        axis) and its price (\(y\) axis). The most interesting hotels are the ones \((a,i,k)\) for which there
+        is no point that is better on both dimensions.
+
+        Borzsonyi et al.  propose an SQL syntax for the skyline operator, according to which the above query
+        would be expressed as: ~[Select *, From Hotels, Skyline of Price min, Distance min]~, where ~min~
+        indicates that the price and the distance attributes should be minimized. The syntax can also capture
+        different conditions (such as max), joins, group-by and so on. For simplicity, we assume that skylines
+        are computed with respect to min conditions on all dimensions; however, all methods discussed can be
+        applied with any combination of conditions.
+
+        Using the min condition, a point \(p_i\) dominates another point \(p_j\) iff the coordinate of \(p_i\)
+        on any axis is not larger than the corresponding of \(p_j\).
+
+* Related Work
+
+** Nearest Neighbor (NN)
+        W.L.O.G., we assume that distances are computed according to \(L_1\) norm. It can be shown that the
+        first nearest neighbor is part of the skyline (point \(i\)). On the other hand, all the points in the
+        dominance region of \(i\) (shaded area in Figure [[ref:f22]](a)) can be pruned from further consideration.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f22
+        #+CAPTION:
+        [[../../images/papers/208.png]]
+
+        The set of partitions resulting after the discovery of a skyline point are inserted in a to-do list.
+        While the to-do list is not empty, NN removes one of the partitions from the list and recursively
+        repeats the same process. For instance, point \(a\) is the nearest neighbor in partition \([0,i_x)\)
+        \([0,\infty)\), which causes the insertion of partitions \([0,a_x)\) \([0,\infty)\) (subdivisions 1
+        and 3 in Figure [[ref:f22]]b) and \([0,i_x)\) \([0,a_y)\) (subdivisions 1 and 2 in Figure [[ref:f22]]b) in the
+        to-do list. If a partition is empty, it is not subdivided further. In general, if \(d\) is the
+        dimensionality of the data-space, each skyline point discovered causes \(d\) recursive applications of
+        NN:
+
+        Given the first NN \((a_1,\dots,a_n)\), we need to consider
+        \begin{alignat*}{4}
+        &[0,a_1)\quad&&[0,\infty)\quad&&\dots\quad&&[0,\infty)\\
+        &[0,\infty)&&[0,a_2)&&\dots&&[0,\infty)\\
+        &\dots&&\dots&&\dots&&\dots\\
+        &[0,\infty)&&[0,\infty)&&\dots&&[0,a_n)
+        \end{alignat*}
+
+        Elimination of search space:
+        * Laisser-faire: When a point \(p\) is discovered, it is probed and if it already exists, \(p\) is discarded.
+        * Merge: Merge partitions in the to-do, thus reducing the number of queries that have to be performed.
+        * Fine-grained Partitioning: It is possible that points in one subdivision (e.g., 4) are dominated by
+          points in another (e.g., 2) and should be eliminated.
+* Branch and Bound Skyline Algorithm
+
+** Motivation
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

@@ -1,0 +1,73 @@
+#+title: mTCP: A Highly Scalable User-level TCP Stack for Multicore Systems
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/network/mtcp.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/network/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+Scaling the performance of short TCP connections on multicore systems is fundamentally challenging.
+
+* Introduction
+        To this end, we build a user-level TCP stack from the ground up by leveraging high-performance packet
+        I/O libraries that allow applications to directly access the packets.
+
+        Our key approach is to amortize the context-switch overhead over a batch of packet-level and
+        socket-level events.
+
+        1. we demonstrate that significant performance gain can be obtained by integrating packet- and
+           socket-level batching.
+        2. such integration can be done purely at the user level in a way that ensures ease of porting without
+           requiring significant modifications to the kernel.
+
+* Background and Motivation
+
+** Limitations of the Kernel's TCP Stack
+        * Lack of connection locality: Multiple threads share a listen socket.
+          Also, the core that executes the kernel code for handling a TCP connection may be different from the
+          one that runs the application code that actually send and receives data.
+        * Shared file descriptor space:
+        * Inefficient per-packet processing: per-packet memory (de)allocation and DMA overhead, NUMA-unaware
+          memory access, and heavy data structures (e.g., ~sk_buff~) are main bottlenecks in processing small
+          packets. We can batch to amortize the overhead
+        * System call overhead
+
+** Why User-level TCP?
+        MegaPipe spends a dominant portion of CPU cycles (∼80%) inside the kernel.
+
+        We profile the server’s CPU usage when it is handling a large number of concurrent TCP transactions
+        (8K to 48K concurrent  connections).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/216.png]]
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/217.png]]
+
+
+* Design
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME:
+        #+CAPTION:
+        [[../../images/papers/218.png]]
+
+        Our user-level TCP implementation runs as a thread on each CPU core within the same application
+        process. The mTCP thread directly transmits and receives packets to and from the NIC using our custom
+        packet I/O library. Existing user-level packet libraries only allow one application to access an NIC
+        port. Thus, mTCP can only support one application per NIC port.
+
+** User-level Packet I/O Library
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

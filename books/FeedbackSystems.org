@@ -1,0 +1,142 @@
+#+title: Feedback Systems: An Introduction to Scientists and Engineers
+
+#+AUTHOR: Karl Johan Åström & Richard M. Murray
+#+EXPORT_FILE_NAME: ../latex/FeedbackSystems/FeedbackSystems.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+#+LATEX_HEADER: \def \dx {\dot{x}}
+#+LATEX_HEADER: \def \ddx {\ddot{x}}
+
+* Notation
+        \(\dx\), \(\ddx\), \(\dots\), \(x^{(n)}\). We use the shorthand \(\dx\) to represent the time
+        derivative of \(x\), \(\ddx\) for the second derivative w.r.t. time.
+
+        \(\norm{\cdot}\)
+
+
+* Introduction
+
+** What is Feedback
+        The term *feedback* is used to refer to a situation in which two (or more) dynamical systems are
+        connected together such that each system influences the other and their dynamics are thus strongly
+        coupled.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.1
+        #+CAPTION:
+        [[../images/Misc/20.png]]
+
+
+        Figure ref:f1.1 illustrates in block diagram form the idea of feedback. We often use the terms open
+        loop and closed loop when referring to such  A system is said to be a closed loop system if the
+        systems are interconnected in a cycle.
+
+** What is Control?
+        A modern controller senses the operation of a system, compares that against the desired behavior,
+        computes corrective actions based on a  of the system’s response to external inputs, and actuates the
+        system to effect the desired change.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1.3
+        #+CAPTION: Components of a computer controlled system
+        [[../images/Misc/21.png]]
+
+** Feedback Examples
+
+* System Modeling
+
+** Modeling Concepts
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2.1
+        #+CAPTION:
+        [[../images/Misc/22.png]]
+
+        A common class of mathematical models for dynamical systems is ordinary differential equations. In
+        mechanics, one of the simplest such differential equation is that of a mass and spring system, with
+        damping:
+        \begin{equation}
+        \label{q1}
+        m\ddot{q}+c(\dot{q})+kq=0
+        \end{equation}
+        as illustrated in Figure ref:f2.1. The variable \(q\in\R\) represents the position of the mass \(m\)
+        w.r.t. its rest position. The spring is assumed to satisfy Hooke's law, which says that the force is
+        proportional to the displacement.
+        #+LATEX: \wu{
+        \(\dot{q}\) is the velocity and \(\ddot{q}\) is the acceleration
+        #+LATEX: }
+
+        The differential equation eqref:q1 is called an autonomous system because there are no external
+        influences. In many examples, it is useful to model the effects of external disturbances or controlled
+        forces on the system. One way to capture this is to replace equation eqref:q1 by
+        \begin{equation}
+        \label{q2}
+        m\ddot{q}+c(\dot{q})+kq=u
+        \end{equation}
+        where \(u\) represents the effect of external influences. The model eqref:q2 is called a *forced* or
+        *controlled differential equation*. The model implies that the rate of change of the state can be
+        influenced by the input \(u(t)\).
+
+** State Space Models
+        This section introduce the two primary forms of models that we use in this context.
+
+*** Ordinary Differential Equations
+        The state variables are gathered in a vector \(x\in\R^n\), called the *state vector*. The control
+        variables are represented by another vector \(u\in\R^p\) and the measured signal by the vector
+        \(y\in\R^d\). A system can then be represented by the differential equation
+        \begin{align*}
+        \frac{dx}{dt}&=f(x,u)\\
+        y&=h(x,u),
+        \end{align*}
+        where \(f:\R^n\times\R^p\to\R^n\) and \(h:\R^n\times\R^p\to\R^q\) are smooth mappings. We call a model
+        of this form a *state space model*.
+
+        The dimension of the state vector is called the order of the system. The system is called
+        time-invariant because the functions \(f\) and \(g\) do not depend explicitly on time \(t\). The model
+        thus consists of two functions: the function \(f\) gives the velocity of the state vector as a
+        function of state \(x\) and control \(u\), and the function \(g\) gives the measured values as
+        functions of state \(x\) and control \(u\).
+
+        A system is called linear if the functions \(f\) and \(g\) are linear in \(x\) and \(u\). A linear
+        state space system can thus be represented by
+        \begin{align*}
+        \frac{dx}{dt}&=Ax+Bu\\
+        y&=Cx+Du
+        \end{align*}
+        where \(A\), \(B\), \(C\) and \(D\) are constant matrices. Such a system is said to be *linear and
+        time-invariant*, or *LTI* for short. \(A\) is called the *dynamics matrix*, \(B\) is called the *control
+        matrix*, \(C\) is called the *sensor matrix* and \(D\) is called the *direct term*
+
+        A different form of linear differential equations, generalizing the second order dynamics from
+        mechanics, is an equation of the form
+        \begin{equation}
+        \label{q2.6}
+        \frac{d^nq}{dt^n}+a_1\frac{d^{n-1}q}{dt^{n-1}}+\dots+a_nq=u
+        \end{equation}
+        where \(t\) is the independent (time) variable, \(q(t)\) is the dependent (output) variable, and
+        \(u(t)\) is the input. This system is said to be an \(n\)th order system.
+
+        The system can be converted into state space from by defining
+        \begin{equation*}
+        x=
+        \begin{pmatrix}
+        x_1\\x_2\\\vdots\\x_n
+        \end{pmatrix}=
+        \begin{pmatrix}
+        d^{n-1}q/dt^{n-1}\\\vdots\\dq/dt\\q
+        \end{pmatrix}
+        \end{equation*}
+        and the state space equations become
+        \begin{align*}
+        \frac{dx}{dt}
+        &=
+        \begin{pmatrix}
+        -a_1x_1-\dots-a_xx_n\\
+        x_1\\\vdots\\x_{n-1}
+        \end{pmatrix}+
+        \begin{pmatrix}
+        1\\0\\\vdots\\0
+        \end{pmatrix}\\
+        y&=x_n
+        \end{align*}
