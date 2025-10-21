@@ -1,0 +1,54 @@
+#+title: Specifying Systems
+
+#+AUTHOR:
+#+EXPORT_FILE_NAME: ../latex/SpecifyingSystems/SpecifyingSystems.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+
+* Liveness and Fairness
+
+** Temporal Formulas
+        * a temporal formula $F$ assigns a Boolean value, which we write $\sigma\models F$, to a behaviour
+          \(\sigma\)
+        * \(\sigma\models(F\wedge G)\equiv(\sigma\models F)\wedge(\sigma\models G)\)
+        * \(\sigma\models\neg F\equiv\neg(\sigma\models F)\)
+        * \(\sigma\models(\exists r:F)\equiv\exists r:(\sigma\models F)\)
+        * \(\sigma\models(\forall r\in S:F)\equiv\forall r\in S:(\sigma\models F)\)
+        * A state predicate, viewed as a temporal formula, is true of a behavior iff it is true in the first state of the behavior
+
+A formula , where  is a state predicate, is true of a behaviour iff  is true in every state of the behaviour
+
+A formula , where  is an action and  is a state function, is true of a behaviour iff every successive pair of steps in the behaviour is a  step ()
+
+Let  denote the  state of the behaviour , for any natural number , so  is the behaviour
+
+We interpret an arbitrary action  as a temporal formula by defining  to be true iff the first two states of  are an  step. That is, we define  to be true iff  is an A step. In the special case when  is a state predicate,  is an  step iff  is true in state
+
+We have already seen that  is true of a behavior iff each step is a  step. This leads us to define  to be true iff  is an  step, for all natural numbers .
+
+We now generalize from the definition of  for an action  to the definition of  for an arbitrary temporal formula . Let's define  to be the suffix of σ obtained by deleting its first n states:
+
+
+        \begin{equation*}
+        \sigma\models\Box F\equiv\forall n\in\N:\sigma^{+n}\models F
+        \end{equation*}
+
+        Example:
+        \begin{align*}
+        \sigma\models&\Box((x=1)\Rightarrow\Box(y>0))\\
+        &\equiv\forall n\in\mathbb{N}:\sigma^{+n}\models((x=1)\Rightarrow\Box(y>0))\\
+        &\equiv\forall n\in\mathbb{N}:(\sigma^{+n}\models(x=1))\Rightarrow(\sigma^{+n}\models\Box(y>0))\\
+        &\equiv\forall n\in\mathbb{N}:(\sigma^{+n}\models(x=1))\Rightarrow(\forall m\in\mathbb{N}:(\sigma^{+n})^{+m}\models(y>0))\\
+        \end{align*}
+        To understand temporal formulas intuitively, think of \(\sigma_n\) as the state of the universe at
+        time instant \(n\) during the behaviour. For any state predicate \(P\), the expression
+        \(\sigma^{+n}\models P\) asserts that \(P\) is true at time \(n\). Thus
+        \(\Box((x=1)\Rightarrow\Box(y>0))\) asserts that, any time \(x=1\) is true, \(y>0\) is true from then on.
+
+        For an arbitrary temporal formula \(F\), we also interpret \(\sigma^{+n}\models F\) as the assertion
+        that \(F\) is true at time instant \(n\). The formula \(\Box F\) then asserts that \(F\) is true at
+        all times. We can therefore read \(\Box\) as *always* or *from then on*.
+
+        \(\bm{\exists}\kern-0.6em\bm{\exists}\)

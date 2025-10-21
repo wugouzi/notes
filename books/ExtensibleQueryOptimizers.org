@@ -278,3 +278,122 @@ GROUP BY student
 * Cost Estimation
 
 ** Overview
+
+** Statistics
+*** Histograms
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f5.3
+        #+CAPTION: Data distribution and histograms
+        [[../images/Misc/23.png]]
+
+        *Equi-width histogram*
+
+        *Equi-depth histogram*: try to ensure that the height is the same
+
+        *End-biased histogram*: in an end-biased histogram with \(N\) buckets, \(N-1\) buckets are used to
+        store the frequency of the values with the highest frequencies, and the remaining bucket stores the
+        average frequency of all remaining values. When estimating the selectivity of an equality predicate,
+        the estimation is accurate if the value referenced in the predicate is one of the \(N − 1\) values with
+        the highest frequencies, whereas for other values the uniformity assumption must be made.
+
+        We note that equi-depth histograms and end-biased histograms have been used in commercial DBMSs such
+        as Oracle, IBM DB2, Microsoft SQL Server 7.0, and PostgreSQL. More recent versions of Microsoft SQL
+        Server use Max-Diff histograms.
+*** Sketches
+        A sketch is a summary of the rows of a relation belonging to a domain \(D=\{1,2,\dots,M\}\), stored as
+        a set of values of a much smaller domain \(S=\{1,2,\dots,w\}\) called *sketch counters*.
+
+        Scenarios:
+        1. frequency of any given item
+        2. heavy hitters, i.e., given a parameter \(k\), finding all items that occur at least \(N/k\) times
+           where \(N\) is the total number of rows
+        3. number of distinct values in the relation
+
+        Count-Min sketch for 1,2. Hyperloglog sketch for 3.
+
+        *Count-Min sketch*: Two parameter \((\epsilon, \delta)\). The error is within a factor of \(\epsilon\)
+        with a probability \((1-\delta)\). The algorithm uses these parameters to set
+        \(w=\ceil{\frac{e}{\epsilon}}\) and \(d=\ceil{\ln\frac{1}{\delta}}\), where \(d\) is the number of
+        independent hash functions used by the algorithm, and each hash function
+        \(h_j:\{1,\dots,n\}\to\{1,\dots,w\}\). The data structure used for Count-Min sketch is a
+        two-dimensional array \(C\), shown in Figure ref:f5.4. In each cell the algorithm stores a counter
+        (initialized to 0)
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f5.4
+        #+CAPTION:
+        [[../images/Misc/24.png]]
+
+        The sketch supports two methods: /increment(x)/, which is called when building the sketch on a column of
+        the row with item \(x\), and /estimate(x)/, which estimates the frequency of item \(x\). In the
+        increment method, \(\forall j\in[1,\dots,d]\), the algorithm increments the array entry
+        \(C[j,h_j(x)]\). To find the estimated frequency of an element \(x\), the algorithm returns
+        \(\hat{f}_x=\min_{j\in[1,\dots,d]}C[j,h_j(x)]\). The intuition for using the smallest value as the
+        estimate of frequency is that it has the least "noise" due to collisions from other items in the data.
+        Thus, the error is the smallest error among all the counters.
+
+        *Hyperloglog*. The Hyperloglog (HLL) sketch is used to estimate the number of distinct values in a
+        relation. HLL uses a hash function that hashes a value in a domain \(D\) to the binary domain,
+        \(h:D\to\{0,1\}^L\). The intuition behind HLL is that if the bit pattern \(0^\rho1\) is observed at
+        the beginning of a hash value, then a good estimate of the number of distinct values is \(2^\rho\) ,
+        assuming the hash function produces uniform hash values.
+
+        To reduce the large variance that such a single estimate has, a technique known as stochastic
+        averaging is used. Specifically, the input rows are logically divided into \(m\) partitions of roughly
+        equal size, using the first \(p\) bits of the hash values, where \(m=2^p\). In each partition, the
+        maximum number of leading zeros, after the initial \(p\) bits that are used to determine the
+        partition, is measured independently. These numbers are kept in an array \(M\), where \(M[i]\) stores
+        the maximum number of leading zeros plus one for the \(i\)th partition. The above approach emulates
+        the effect of \(m\) experiments and thereby significantly improves accuracy, while using only a single
+        hash function and therefore does not increase the cost of hashing.
+
+        The algorithm initializes a collection of \(m\) counters, \(M[1],\dots,M[m]\) to \(-\infty\). As the
+        data from the relation is streamed by, for each value \(x\), it computes \(y = h(x)\). The first \(p\)
+        bits of the hash value
+        (say \(j\)) are used as an index into the array \(M\) . From the rest of the bits (say \(k\)), it
+        computes\(\rho(k)=\) the position of the leftmost 1-bit in \(k\). The algorithm updates
+        \(M[j]=\max(M[j],\rho(k))\). To compute the estimate of the number of distinct values, the algorithm
+        takes the harmonic mean of the \(m\) estimations on the partitions as follows:
+        \begin{equation*}
+        \frac{\alpha_mm^2}{\sum_{j=1}^m\frac{1}{2^{M[j]}}}
+        \end{equation*}
+        where \(\alpha_m\) is introduced to correct a bias present in the estimation
+
+        Both Count-Min sketch and HLL sketch is mergeable.
+*** Sampling
+        Unlike statistical summaries such as histograms, wavelets, and sketches, one of the key advantages of
+        using the sample of a table for CE is its broad coverage of multiple kinds of predicates.
+
+        Sampling can be used to estimate the cardinality of the predicates that can be difficult or impossible
+        to estimate using histograms and sketches, such as LIKE predicates, predicates on user-defined
+        functions (UDFs), and inequality predicates.
+** Cardinality Estimation
+        Challenge:
+        1. Efficiency
+        2. Correlation and skew
+        3. complex sql
+
+
+        Estimating the cardinality of a join using histograms on the join columns involves three steps. First,
+        the buckets of the histogram are aligned so that their boundaries agree, which might require splitting
+        some buckets. Second, there is a per bucket estimation of join sizes. A common assumption made in the
+        context of estimating join size is *containment*. Let \(R\) and \(S\) be two relations, where each of
+        them is grouped by the values of the join column(s) respectively, and \(R\) has a smaller number of
+        groups than that of \(S\). Then the containment assumes that for each group \(g_R\) of rows in \(R\),
+        it has a corresponding group \(g_S\) in \(S\), where each row from \(g_R\) joins with the rows from
+        \(g_S\) in \(S\). Thus, the groups in \(S\) contain those from \(R\).
+
+        Consider
+        #+begin_src sql
+SELECT s_store_sk
+FROM store, store_sales
+WHERE s_store_sk = ss_store_sk
+        #+end_src
+
+        Suppose a bucket in the histogram of ~store~ has 10 rows with 5 distinct values, and the corresponding
+        bucket from ~store_sales~ has 200 rows with 2 distinct values. Then, each group of the bucket in
+        ~store_sales~ (with 200/2 = 100 rows each) is assumed to join with a group of rows from ~store~ (with 10/5
+        = 2 rows each). Hence, the total number of rows joining between these buckets would be 2×100×2 = 400
+        rows. More generally, if \(n_1\) and \(n_2\) are the frequencies of the two buckets, and \(d_1\) and
+        \(d_2\) are the number of distinct values in each bucket, then \(\frac{n_1\times n_2}{\max(d_1,d_2)}\)
+        can be used to calculate the join size under the containment assumption.

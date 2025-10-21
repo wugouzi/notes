@@ -1,0 +1,188 @@
+#+title: WinMagic: Subquery Elimination Using Window Aggregation
+
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/winmagic.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+
+* Introduction
+        Q1
+        #+begin_src sql
+SELECT
+    emp_id,
+    emp_name,
+    dept_name
+FROM
+    employee E,
+    department D
+WHERE
+    E.dept_num = D.dept_num
+    AND E.state = ‘CALIFORNIA’
+    AND E.salary > (
+        SELECT
+            AVG(salary)
+        FROM
+            employee E1
+        WHERE
+            E1.dept_num = D.dept_num);
+        #+end_src
+
+        Q2
+        #+begin_src sql
+SELECT
+    *
+FROM
+    empl E1
+WHERE
+    eff_date = (
+        SELECT
+            MAX(eff_date)
+        FROM
+            empl E2
+        WHERE
+            E1.emplid = E2.emplid)
+    AND seq = (
+        SELECT
+            MAX(seq)
+        FROM
+            empl E3
+        WHERE
+            E1.emplid = E3.emplid
+            AND E1.eff_date = E3.eff_date)
+        #+end_src
+
+* WinMagic
+
+** Window aggregate functions
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/226.png]]
+
+        The OVER clause specifies the three primary attributes of the function. These three attributes are
+        optional. The order-clause is like an ORDER BY clause of a statement except that the order is only
+        relevant in the context of the function. The partition-clause is similar to the commonly used GROUP BY
+        clause but again is relevant only in the context of the function. The window-agg-group clause allows
+        the specification of a window of rows to which the aggregation is applied.
+
+        Q3
+        #+begin_src sql
+SELECT
+    empnum,
+    dept,
+    salary,
+    SUM(salary) OVER (PARTITION BY dept) AS deptsum,
+    DECIMAL(salary, 17, 0) * 100 / SUM(salary) OVER (PARTITION BY dept) AS salratio
+FROM
+    employee;
+        #+end_src
+** WinMagic Transformation
+        Q4
+        #+begin_src sql
+SELECT
+    SUM(l_extendedprice) / 7.0 AS avg_yearly
+FROM
+    tpcd.lineitem,
+    tpcd.part
+WHERE
+    p_partkey = l_partkey
+    AND p_brand = 'Brand#23'
+    AND p_container = 'MED BOX'
+    AND l_quantity < (
+        SELECT
+            0.2 * avg(l_quantity)
+        FROM
+            tpcd.lineitem
+        WHERE
+            l_partkey = p_partkey);
+        #+end_src
+        First 
+        1. Check the outer block to ensure that
+           a. it contains a subquery with aggregation
+           b. we have no conditions that prevent breaking up the main query block such as functions with side effects.
+        2. Check the subquery block to ensure that
+           a. there are no odd functions
+           b. there are no constructs such as ORDER BY and “fetch first n rows”
+           c. the subquery is not used as a common sub-expression
+        3. Check the aggregation function to ensure that
+           a. it has an equivalent window aggregation function
+           b. there is no DISTINCT within the aggregation function
+        4.  Match the subquery to the outer block. A temporary supplementary query block is constructed with
+           candidate tables from the outer block including common tables, those involved in the correlation.
+           This is done to be able to call the matching routines used for matching materialized views.
+           Once this is done, we can get rid of this supplementary query block
+
+        The main steps used to rewrite the query are:
+        1. Replace the aggregation by the window aggregation function as an extra column in the subquery. The
+           partition-clause in the window aggregation function is used to define the grouping.
+        2. Pull down the tables involved in the correlation from the outer query block to the subquery. No
+           costing is required if the tables being joined in the outer query block are primary key or unique
+           column joins. If this is the case, then we do not multiply the number of rows that go into the
+           aggregation. If this is not the case, then we need to cost the transformation and compensate within
+           the aggregation by adding a key. 
+        3. Finally redirect all the columns required in the outer query to those flowing through the subquery
+           and get rid of the useless unreferenced tables in the outer query block.
+
+        The resulting query can be written as follows:
+        #+begin_src sql
+WITH WinMagic AS (
+    SELECT
+        l_extendedprice,
+        l_quantity,
+        avg(l_quantity) OVER (PARTITION BY p_partkey) AS avg_l_quantity
+    FROM
+        tpcd.lineitem,
+        tpcd.part
+    WHERE
+        p_partkey = l_partkey
+        AND p_brand = 'Brand#23'
+        AND p_container = 'MED BOX'
+)
+SELECT
+    SUM(l_extendedprice) / 7.0 AS avg_yearly
+FROM
+    WinMagic
+WHERE
+    l_quantity < 0.2 * avg_l_quantity;
+        #+end_src
+** General considerations for WinMagic
+        We have seen the simple case based on the following structure where the dotted line shows correlation:
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: Representation of Q4
+        [[../../images/papers/227.png]]
+
+        More complex scenarios can be handled within DB2. A generalized representation is shown below:
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: Query with correlated subquery
+        [[../../images/papers/228.png]]
+        where
+        * T1, T2, T3, T4 could be a set of one or more tables or views
+        * T1 in the subquery is a lossless join.
+        * T2 appears in the main query but is not joined to T4.
+
+        By using materialized view, DB2 achieves
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: Internal query after WinMagic
+        [[../../images/papers/228.png]]
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

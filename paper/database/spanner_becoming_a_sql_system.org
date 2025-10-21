@@ -1,0 +1,91 @@
+#+title: Spanner: Becoming a SQL System
+#+AUTHOR:
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/spanner_becoming_a_sql_system.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+LATEX_HEADER: \newcommand{\sf}[1] {\textsf{#1}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+* Query Distribution
+** Distributed query compilation
+        \begin{equation*}
+        \sf{Scan}(\sfT)\Rightarrow\sf{DistributedUnion}[\sf{shard}\subseteq\sfT](\sf{Scan}(\sf{shard}))
+        \end{equation*}
+
+
+        Where possible, query tree transformations pull Distributed Union up the tree to push the maximum
+        amount of computation down to the servers responsible for the data shards. In order for these operator
+        tree transformations to be equivalent, the following property that we call partitionability must be
+        satisfied for any relational operation \(F\) that we want to push down.
+        Assuming that the shards are enumerated in the order of table keys, partitionality requires:
+        \begin{equation*}
+        \sfF(\sf{Scan}(\sfT))=\sfT{OrderedUnionAll}[\sf{shard}\subseteq\sfT](\sfF(\sf{Scan}(\sf{shard})))
+        \end{equation*}
+
+        Spanner pushes down such basic operations as projection and filtering below Distributed Union.
+
+        Recall that Spanner supports table interleaving, which is a mechanism of co-locating rows from
+        multiple tables sharing a prefix of primary keys. Joins between such tables are pushed down below
+        Distributed Union for the common sharding keys and are executed locally on each shard. Semantically,
+        these are usually ancestor-descendant joins in the table hierarchy and they are executed as local
+        joins on table shards. Distributed Unions on the same table that are pulled up through Inner/Semi Join
+        are merged when all sharding keys are in the equi-join condition.
+
+        Spanner also pushes down operations that potentially take as input rows from multiple shards. Examples
+        of such operations are Top (the general case when the sorting columns are not prefixed by the sharding
+        columns with matching ordering) and GroupBy (the general case when the grouping columns do not contain
+        the shard- ing columns). Spanner does that using well-known multi-stage processing – partial local Top
+        or local aggregation are pushed to table shards below Distributed Union while results from shards are
+        further merged or grouped on the machine executing the Distributed Union. Let
+        \(\sf{Op}=\sf{OpFinal}\circ\sf{OpLocal}\) be an algebraic aggregate expressed as a composition of a
+        local and final computation. Then, the partitionability criterion that ensures the equivalence of
+        operator tree rewrites becomes:
+        \begin{equation*}
+        \sf{Op}(\sf{DistributedUnion}[\sf{shard}\subseteq\sfT])(\sfF(\sf{Scan}(\sf{shard})))=
+        \sf{OpFinal}(\sf{DistributedUnion}[\sf{shard}\subseteq\sfT])(\sf{OpLocal}(\sfF(\sf{Scan}(\sf{shard}))))
+        \end{equation*}
+
+        Consider
+        #+begin_src sql
+FROM
+    Customer c
+    JOIN Sales s ON c.ckey = s.ckey
+WHERE
+    s.type = ’global’
+    AND c.ckey IN UNNEST(@customer_key_arr)
+GROUP BY
+    c.ckey
+ORDER BY
+    total DESC
+LIMIT 5
+        #+end_src
+        Here ~Customer~ table is sharded on ~ckey~ and ~Sales~ table is interleaved in ~Customer~ and thus shares the
+        sharding key.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION:
+        [[../../images/papers/222.png]]
+
+        The final plan executes all logic on the shards except for selecting TOP 5 from multiple sets of TOP 5
+        rows preselected on each shard. The dotted lines show how Distributed Union operators are pulled up the
+        tree using rewriting rules. When Distributed Union is being pulled up through Filter operators, it
+        collects filter expressions involving sharding keys. These filter ex- pressions are merged into a
+        single one which is then pruned to only restrict sharding keys of the distribution table. The
+        resulting expression is called a sharding key filter expression and is added to Distributed Union during query compilation.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
