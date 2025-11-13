@@ -1,0 +1,226 @@
+#+title: Understanding Inconsistency in Azure Cosmos DB with TLA+
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/transaction/understanding_inconsistency_in_azure_cosmosdb_with_tla.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/transaction/}}
+#+LATEX_HEADER: \def \unchanged {\text{UNCHANGED}\;}
+#+LATEX_HEADER: \def \tlet {\text{LET}\;}
+#+LATEX_HEADER: \def \tin {\text{IN}\;}
+#+LATEX_HEADER: \def \tif {\text{IF}\;}
+#+LATEX_HEADER: \def \tthen {\text{THEN}\;}
+#+LATEX_HEADER: \def \telse {\text{ELSE}\;}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* A Simple Model of Cosmos DB
+** Consistency Levels
+        * *Strong consistency*. Reads and writes are linearizable, as long as the operation does not fail.
+        * *Bounded staleness*. Writes older than a given time bound are durable and consistently readable,
+          whereas writes younger than the given bound are not. The time bound is defined two ways: a bound in
+          wall-clock time, and a maximum bound on the number of eventually-consistent writes allowed at once.
+
+          If the bounds are in danger of being exceeded, additional writes will be refused for replication to
+          catch up. For modeling  simplicity, we ignore the wall-clock temporal aspect of this mode’s
+          semantics, and consider only operation count.
+        * *Session consistency*. Reads and writes are tagged with session tokens. Operations with the same
+          session token are linearizable relative to one another, but no guarantees are provided across
+          different session tokens. Session consistency writes are not guaranteed durable, and tokens may be
+          invalidated by data loss.
+        * *Consistent prefix*. Reads are monotonic: a client may only read newer values than it has already read.
+        * *Eventual consistency*. This level offers no ordering guarantees, but does provide a notion of
+          eventual convergence over an arbitrary period of time.
+** Data Definitions
+        *log*. The ~log~ is a sequence of writes, represented as key-value pairs. For example,
+        ~[key|->k1, value|->v1]~ pairs key ~k1~ with value ~v1~. The sequence lists all writes that are stored
+        anywhere in Cosmos DB’s implementation, irrespective of replication or durability.
+        
+        *readIndex*. The ~readIndex~ marks either a position in the log or 0. For any element of the log, if its
+        index is less than or equal to ~readIndex~, then it is replicated universally across the current Cosmos
+        DB deployment. Representing eventually-complete propagation of writes, the log prefix defined by
+        ~readIndex~ behaves identically to a single key-value store.
+        
+        *commitIndex*. The “commit index” marks a position in the log or 0. For any element of the log, if its
+        index is less than or equal to ~commitIndex~, then it is replicated at a global majority of replicas,
+        and is therefore durable due to consensus. It follows from this definition that ~readIndex<=commitIndex~
+        must always hold.
+        
+        *epoch*. The ~epoch~ is a monotonically increasing counter of fail-overs. If epoch remains constant,
+         fail-overs behavior such as data loss may not be observed. If it increases, some data loss may be
+         observed at the point of increase
+
+         The specification has six constants: ~Keys~ and ~Values~, which are the sets of keys and values
+         respectively. ~NoValue~ is a constant indicating the absence of a value. ~VersionBound~ and
+         ~StalenessBound~ are natural numbers that affect when writes are allowed. ~WriteConsistencyLevel~
+         represents the currently configured consistency level for write operations, one of the 5 consistency
+         levels.
+
+         \begin{align*}
+        &IncreaseReadIndexAndOrCommitIndex :=\\
+        &\quad \wedge commitIndex'∈ commitIndex \dots Len(log)\\
+        &\quad \wedge readIndex' ∈ readIndex \dots commitIndex '\\
+        &\quad\wedge\unchanged\la log, epoch\ra
+         \end{align*}
+
+         \begin{align*}
+        &TruncateLog:=\\
+        &\quad\exists i\in(commitIndex+1)\dots Len(log):\\
+        &\quad\quad\wedge log'=SubSeq(log,1,i-1)\\
+        &\quad\quad\wedge epoch'=epoch+1\\
+        &\quad\quad\wedge\unchanged\la readIndex,commitIndex\ra
+         \end{align*}
+
+         /TruncateLog/ models the concept of data loss
+** Write Operations
+        In Cosmos DB, write operations are not atomic. As a consequence of writes’ multi-step nature, we need
+        to record the state of in-progress writes. For portability, we don’t require any particular state
+        retention mechanism, as the specifics might vary depending on how our core specification is used.
+        Instead, we break up the two conceptual stages of a Cosmos DB write into re-usable parts that we
+        describe individually.
+
+        \begin{align*}
+        &WritesAccepted:=\\
+        &\quad\wedge Len(log)-readIndex<VersionBound\\
+        &\quad\wedge((WriteConsistencyLevel=BoundedStaleness)\Rightarrow Len(log)-commitIndex<StalenessBound)
+        \end{align*}
+
+        *Beginning a Write Operation*: /WritesAccepted/ determines whether a write may be attempted at all.
+        ~VersionBound~ is a global limit on how many partially-replicated writes may exist in a Cosmos DB
+        instance at any one time. ~StalenessBound~ is a global limit on how many non-durable writes may exist in
+        a Cosmos DB instance at any one time, used to enforce bounded staleness consistency.
+
+        \begin{align*}
+        &WriteInit(key,value):=\\
+        &\quad log'=Append(log,[key\mapsto key,value\mapsto value])
+        \end{align*}
+
+        \begin{align*}
+        &WriteInitToken:=\\
+        &\quad[epoch\mapsto epoch,checkpoint\mapsto Len(log)+1]
+        \end{align*}
+
+        /WriteInitToken/ defines a unique identifier, or token, with which we can keep track of a write’s
+        progress. This token is structurally identical to a session token, the data used to identify a
+        client’s session at session consistency. Note that in practice, these tokens represent the flow of a
+        request from client to server and back. We use this abstraction to concisely summarize an otherwise
+        complex mix of network semantics and client-server interaction.
+
+        *Completing a Write Operation*: Once it has begun, a write operation may complete /at any time that it is/
+        /allowed to/. An in-progress write may also non-deterministically fail at any time, due to timeouts,
+        spurious network failures, and so forth.
+
+        \begin{align*}
+        &WriteCanSucceed(token):=\\
+        &\quad\wedge SessionTokenIsValid(token)\\
+        &\quad\wedge(WriteConsistencyLevel=StrongConsistency\Rightarrow token.epoch=epoch)
+        \end{align*}
+        where
+        \begin{align*}
+        &SessionTokenIsValid(token):=\\
+        &\quad\wedge token.checkpoint\le Len(log)\\
+        &\quad\wedge token.epoch=epoch
+        \end{align*}
+** Read Operations
+        \begin{align*}
+        &GeneralRead(key,index,allowDirty):=\\
+        &\quad\tlet maxCandidateIndices:=\{i\in\dom(log):\\
+        &\quad\quad\quad\wedge log[i].key=key\\
+        &\quad\quad\quad\wedge i\le index\}\\
+        &\quad\quad allIndices:=\{i\in\dom(log):\\
+        &\quad\quad\quad\wedge allowDirty\\
+        &\quad\quad\quad\wedge log[i].key=key\\
+        &\quad\quad\quad\wedge i>index\}\\
+        &\quad\tin\{[logIndex\mapsto i,value\mapsto log[i].value]\\
+        &\quad\quad\quad:i\in allIndices\cup(\\
+        &\quad\quad\quad\tif maxCandidateIndices\neq\{\}\\
+        &\quad\quad\quad\tthen\{Max(maxCandidateIndices)\}\\
+        &\quad\quad\quad\telse\{\})\}\cup\\
+        &\quad\quad(\tif maxCandicatesIndices=\{\}\\
+        &\quad\quad\tthen\{NotFoundReadResult\}\\
+        &\quad\quad\telse\{\})
+        \end{align*}
+
+        \begin{align*}
+        &StrongConsistencyRead(key):=\\
+        &\quad GeneralRead(key,commitIndex,FALSE)
+        \end{align*}
+
+        \begin{align*}
+        &BoundedStalenessRead(key):=\\
+        &\quad GeneralRead(key,commitIndex,TRUE)
+        \end{align*}
+        
+
+        \begin{align*}
+        &SessionConsistencyRead(token,key):=\\
+        &\quad\tif\vee epoch=token.epoch\\
+        &\quad\quad\vee token=NoSessionToken\\
+        &\quad\tthen\tlet sessionIndex :=Max(\{token.checkpoint,readIndex\})\\
+        &\quad\quad\tin GeneralRead(key,sessionIndex,True)\\
+        &\quad\telse\{\}
+        \end{align*}
+        Why does ~sessionIndex<readIndex~ leads to unsoundness<<1>>
+
+        /NoSessionToken/ corresponds to ~[epoch|->0,checkpoint|->0]~.
+        \begin{align*}
+        &UpdateTokenFromRead(origToken,read):=[\\
+        &\quad epoch\mapsto epoch,\\
+        &\quad checkpoint\mapsto Max(\{origToken.checkpoint,read.logIndex\})]\\
+        &]
+        \end{align*}
+
+        Once aread is performed with a given token, a client must update its session token.
+        
+        \begin{align*}
+        &EventualConsistencyRead(key):=\\
+        &\quad GeneralRead(key,readIndex,TRUE)
+        \end{align*}
+
+** Validation
+        To aid in our verification process, we extend our base behavior specification with an auxiliary
+        ~writeHistory~ state variable. ~writeHistory~ provides a history of all attempted writes, including which
+        key, which value, a write token indicating at which epoch and log index the write began, and a state
+        that will transition at most once from WriteInitState to either ~WriteSucceededState~ or
+        ~WriteFailedState~.
+
+        Using this extended specification, we verify a total of 10 liveness properties and 14 safety
+        properties across the 4 distinct data consistency levels offered by Cosmos DB.
+
+        Our verification process is based on model checking, using a combination of exhaustive state space
+        exploration of logs up to length 6, and depth-first random simulation of execution traces exploring up
+        to 100 steps.
+
+        \begin{align*}
+        &PointsValid:=\\
+        &\quad\Box[\wedge readIndex\le commitIndex\\
+        &\quad\quad\wedge readIndex\le readIndex'\\
+        &\quad\quad\wedge commitIndex\le commitIndex']_{vars}
+        \end{align*}
+
+
+        *Read your writes*. For strong consistency and session consistency with the same token, after any write,
+        only the written value or some later write may be read.
+        
+        *Read after write*. It is similar to read your writes at this level of abstraction, changing from global
+        to client perspective.
+
+        *Monotonic reads*. For strong consistency and session con-
+sistency with the same token, reads may only make visible
+later writes, and will never return older data than they already
+have.
+Bounded staleness. Bounded staleness consistency should
+never accept more than StalenessBound uncommitted
+writes at once.
+Session token lifetime. For any arbitrary session token that
+is valid, it will either remain valid or become invalid, in which
+case it will never become valid again.
+
+* Problems
+        1. [[1]]: Why? Session has a read with token.checkpoint. Then reading again with smaller index is
+           obviously an inconsistency
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

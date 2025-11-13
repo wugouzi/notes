@@ -1,0 +1,276 @@
+#+title: Fast Approximate Nearest Neighbor Search With The Navigating Spreading-out Graph
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/data_structure/fast_approximate_neareast_neighbor_search.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/data_structure/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: a1
+        #+CAPTION: 
+        [[../../images/papers/230.png]]
+
+* Preliminaries
+        \(E^d\): Euclidean space under the \(l_2\) norm. The closeness of any two points \(p\), \(q\) is
+        defined as the \(l_2\) distance \(\delta(p,q)\)
+** Problem Setting
+        #+ATTR_LATEX: :options [Nearest Neighbor Search]
+        #+BEGIN_definition
+        Given a finite point set \(S\) of \(n\) points in space \(E^d\), preprocess \(S\) to efficiently
+        return a point \(p\in S\) which is closest to a given query point \(q\)
+        #+END_definition
+
+        #+ATTR_LATEX: :options [\(\epsilon\)-Nearest Neighbor Search]
+        #+BEGIN_definition
+        Given a finite point set \(S\) of \(n\) points in space \(E^d\), preprocess \(S\) to efficiently
+        answer queries that return a point \(p\) in \(S\) s.t. \(\delta(p,q)\le(1+\epsilon)\delta(r,q)\) where
+        \(r\) is the neareast neighbor of \(q\in S\)
+        #+END_definition
+
+        Suppose the point set returned by an AKNNS algorithm of a given query \(q\) is \(R'\) and the correct
+        \(k\) nearest neighbor set of \(q\) is \(R\), then the precision (accuracy) is defined as below
+        \begin{equation*}
+        precision(R')=\frac{\abs{R'\cap R}}{\abs{R'}}=\frac{\abs{R'\cap R}}{K}
+        \end{equation*}
+* Algorithms and Analysis
+** Graph Monotonicity and Path Length
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given \(S\subseteq E^d\), \(p,q\in S\). Let \(B(p,r)\) denote an *open sphere* s.t.
+        \(B(p,r)=\{x\mid\delta(x,p)<r\}\). Let \(\overrightarrow{pq}\) denote a directed edge from \(p\) to \(q\).
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Monotonic Path]
+        #+BEGIN_definition
+        Given \(S\subseteq E^d\) with \(\abs{S}=n\), \(p, q\in S\) and \(G\) denotes a graph defined on \(S\).
+        Let \(p=v_1,v_2,\dots,v_k=q\) denote a path from \(p\) to \(q\) in \(G\). This path is a *monotonic
+        path* iff
+        \begin{equation*}
+        \forall i\in\{1,\dots,k-1\}, \delta(v_i,q)>\delta(v_{i+1},q)
+        \end{equation*}
+        #+END_definition
+
+        #+ATTR_LATEX: :options [Monotonic Search Network]
+        #+BEGIN_definition
+        [[label:MSNET]]
+        Given a finite point set \(S\) of \(n\) points in space \(E^d\) , a graph defined on \(S\) is a
+        *monotonic search network* if and only if there exists at least one monotonic path from \(p\) to \(q\)
+        for any two nodes \(p,q\in S\)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Given a finite point set \(S\) of \(n\) points, randomly distributed in space \(E^d\) and a monotonic
+        search network \(G\) constructed on \(S\), a monotonic path between any two nodes \(p,q\in G\) can be
+        found by Algorithm 1 without backtracking
+        #+END_theorem
+
+        Backtracking means, when the algorithm cannot find a closer neighbor to the query (i.e., a local
+        optimal), we need to go back to the visited nodes and find an alternative direction to move on.
+
+        #+BEGIN_proof
+        We can convert this problem into proving the following proposition.
+
+        For any two points \(p,q\in S\), we treat \(q\) as the query and \(p\) as the search starting point.
+        For any \(0<t<n\), after \(t\) iterations of Algorithm 1 on the MSNET without back-tracing, the
+        current subpath \(p=v_1,\dots,v_t\) found by the algorithm is monotonic about \(q\),
+        
+        If this proposition is true, then we can reach \(q\) from \(p\) after at most \(n-1\) iterations of
+        Algorithm 1. 
+
+        Now we will prove the new proposition with induction.
+        1. Suppose \(t=1\). There must exist at least one monotonic path between \(v_1\) and \(q\) in the
+           MSNET. We select one monotonic path from \(v_1\) to \(q\), there must be a node \(r\) on the
+           monotonic path such that \(r\) is the neighbor of \(v_1\) and \(\delta(r,q)<\delta(v_1,q)\). If
+           \(r=v_2\), then it’s monotonic from \(v_1\) to \(v_2\) about \(q\). Otherwise, because \(v_2\) is
+           found by Algorithm 1 without back-tracing, \(v_2\) is the closest node to \(q\) amongst \(v_1\)’s
+           neighbors. Therefore, \(\delta(v_2,q)\le\delta(r,q)<\delta(v_1,q)\). It’s monotonic from \(v_1\) to
+           \(v_2\) about \(q\).
+        2. Suppose the proposition is true when \(t=m\), the path \(v_1,\dots,v_m\) found by the algorithm
+           without back-tracing is monotonic about \(q\). When \(t=m+1\), we select one monotonic path from
+           \(v_m\) to \(q\), there must be a node \(s\) on the monotonic path such that \(s\) is the neighbor
+           of \(v_m\) and \(\delta(v_m,q)>\delta(s,q)\). If \(s=v_{m+1}\), then it’s monotonic from \(v_1\) to
+           \(v_{m+1}\) about \(q\). Otherwise, because \(v_{m+1}\) is found by Algorithm 1 without
+           back-tracing, \(v_{m+1}\) is the closest node to \(q\) amongst \(v_m\)’s neighbors. Same story
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Given a graph \(G\) on a set \(S\) of \(n\) points in \(E^d\), \(G\) is an MSNET iff for any two nodes
+        \(p,q\), there is at least one edge \(\overrightarrow{pr}\) s.t. \(r\in B(q,\delta(p,q))\)
+        #+END_lemma
+
+        #+BEGIN_proof
+        \(\Rightarrow\): If \(\overrightarrow{pq}\in G\), we have \(q\in B(q,\delta(p,q))\).
+        If not, because \(G\) is an MSNET, for any two nodes \(p,q\), there exists a monotonic path from \(p\)
+        to \(q\), denoted as \(p=v_1,\dots,v_k=q\). We have \(\delta(v_1,q)>\delta(v_2,q)\).Therefore \(v_2\in
+        B(q,\delta(v_1,q))\)
+
+        \(\Leftarrow\): If \(\overrightarrow{pq}\in G\), there is a monotonic path between \(p\), \(q\) with
+        only one edge. Otherwise, we prove by induction.
+
+        We prove that for any \(k\le n\), there is a monotonic path\(p=v_1,\dots,v_k\) about \(q\).
+
+        \(k=2\). By IH
+
+        For \(k=m+1\), as there is at least one edge \(\overrightarrow{v_mv_{m+1}}\) s.t. \(v_{m+1}\in
+        B(q,\delta(v_m,q))\), we have \(\delta(v_{m+1},q)<\delta(v_m,q)\)
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(S\) be a finite point set of \(n\) points uniformly distributed in a finite subspace in \(E^d\).
+        Suppose the volume of the minimal convex hull containing \(S\) is \(V_S\). The maximal distance
+        between any two points in \(S\) is \(R\). We impose a constraint on \(V_S\) s.t. when \(d\) is fixed,
+        tehre is \(\kappa\) s.t. \(\kappa V_S\ge V_B(R)\), where \(\kappa\) is a constant independent of \(n\)
+        and \(V_B(R)\) is the volume of the sphere with radius \(R\). Define
+        \(\Delta
+        r:=\min\{\abs{\delta(a,b)-\delta(a,c)},\abs{\delta(a,b)-\delta(b,c)},\abs{\delta(a,c)-\delta(b,c)}\}\)
+        for all possible non-isosceles triangles \(abc\) on \(S\). \(\Delta r\) is a decreasing function of
+        \(n\).
+
+        For a given MSNET defined on such \(S\), the length expectation of a monotonic path from \(p\) to
+        \(q\), for any \(p,q\in S\), is \(O(n^{1/d}\log(n^{1/d})/\Delta r)\)
+        #+END_theorem
+** Monotonic Relative Neighorhood Graph
+        Relative neighborhood graph (RNG) is an undirected graph defined on a set of points in the Euclidean
+        plane by connecting two points  \(p\) and \(q\) by an edge whenever there does not exist a third point
+        \(r\) that is closer to both \(p\) and \(q\) than they are to each other
+
+        In this section, we describe a new graph structure for ANNS called as MRNG, which belongs to the MSNET
+        family.
+
+        Define \(lune_{pq}:=B(p,\delta(p,q))\cap B(q,\delta(p,q))\)
+
+        #+ATTR_LATEX: :options [MRNG]
+        #+BEGIN_definition
+        [[label:mrng]]
+        Given a finite point set \(S\) of \(n\) points in \(E^d\), an *monotonic relative neighborhood graph*
+        (MRNG) is a directed graph with the set of edges satisfying: for any edge \(\overrightarrow{pq}\),
+        \(\overrightarrow{pq}\in MRNG\) iff \(lune_{pq}\cap S=\emptyset\) or \(\forall r\in(lune_{pq}\cap
+        S)\), \(\overrightarrow{pr}\notin MRNG\)
+        #+END_definition
+
+        We avoid ambiguity in the following way when isosceles triangles appear. If
+        \(\delta(p,q)=\delta(p,r)\)  and \(qr\) is the shortest edge in triangle \(pqr\), we select the edge
+        according to a predefined index, i.e., we select \(\overrightarrow{pq}\) if \(index(q)<index(r)\). We
+        can see that the MRNG is defined in a recursive way. In other words, Definition ref:mrng implies that
+        for any node \(p\), we should select its neighbors from the closest to the farthest. 
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Given a finite point set \(S\) of \(n\) points. An MRNG defined on \(S\) is an MSNET
+        #+END_theorem
+
+        #+BEGIN_proof
+        For any \(p,q\in S\). If \(\overrightarrow{pq}\in MRNG\), we are done. Otherwise, there is
+        \(r\in lune_{pq}\in S\) s.t. \(\overrightarrow{pr}\in MRNG\). And we are done
+        #+END_proof
+
+        #+ATTR_LATEX: :options [NNG]
+        #+BEGIN_definition
+        [[label:NNG]]
+        Given a finite point set \(S\) of \(n\) points in space \(E^d\), an Nearest Neighbor Graph (NNG) is the set of edges s.t., for
+        any edge \(\overrightarrow{pq}\), \(\overrightarrow{pq}\in NNG\) iff \(q\) is the closest neighbor of
+        \(p\) in \(S\)
+        #+END_definition
+
+        Similarly, we can remove the ambiguity in the NNG by assigning a unique index for each node and
+        linking the node to its nearest neighbor with the smallest index.
+
+        We have \(MRNG\cap RNG\supset NNG\)
+
+        Now we need to show MRNG is indeed an MSNET
+        
+        \(MRNG\supset NNG\) implies the MRNG is a MSNET
+
+        If we apply MRNG’s edge selection strategy on some non-NNG graph \(G\), then 
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../../images/papers/231.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Given an MRNG in \(E^d\), the max degree of the MRNG is a constant and independent of \(n\).
+        #+END_lemma
+** MRNG Construction
+        1. For each node \(p\), we denote the set of reset nodes in \(S\) as \(R=S\setminus\{p\}\).
+        2. We calculate the distance between each node in \(R\) and \(p\), then rank them in ascending order
+           according to the distance. 
+        3. Denote the selected node set as \(L\). Add the closest node in \(R\) to \(L\) to ensure
+           \(NNG\subset MRNG\).
+        4. Fetch a node \(q\) from \(R\) and a node \(r\) from \(L\) in order to check whether \(pq\) is the
+           longest edge in triangle \(pqr\).
+           If \(pq\) is not the longest edge in triangle \(pqr\) for all \(r\in L\), we add \(q\) to \(L\).
+        5. Repeat until all the nodes in \(R\) are checked.
+
+        Take \(O(n^2\log n+n^2c)\) time, where \(c\) is the average out-degree of MRNG.
+        MSNET has \(O(n^{2-\frac{2}{1+d}+\epsilon}+n^2\log n+n^3)\)
+* NSG: A Practical Approximation for MRNG
+        We can approximate MRNG to accelerate the computing.
+
+        *Navigating Spreading-out Graph*:
+        1. Build an approximate kNN graph with the current SOTA method
+        2. Find the approximate medoid of the dataset.
+           1. Calculate the centroid of the dataset
+           2. Treat the centroid as the query, search on the kNN graph with Algorithm 1, and take the returned
+              nearest neighbor as the approximate medoid.
+        This node is named as the *Navigating Node* because all the search will start with this fixed node.
+        3. For each node, we generate a candidate neighbor set and select neighbors for it from the candidate
+           sets. This can be achieved by the following steps. For a given node \(p\),
+           1. we treat it as a query and perform Algorithm 1 starting from the Navigating Node on the prebuilt
+              kNN graph.
+           2. During the search, each visited node \(q\) (i.e., the distance between \(p\) and \(q\) is
+              calculated) will be added to the candidate set (the distance is also recorded).
+           3. Select at most \(m\) neighbors for \(p\) from the candidate set with the edge selection strategy
+              of MRNG.
+        4. We span a Depth-First-Search tree on the graph produced in previous steps. We treat the Navigating
+           Node as the root. When the DFS terminates, and there are nodes which are not linked to the tree, we
+           link them to their approximate nearest neighbors (from Algorithm 1) and continue the DFS.
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/232.png]]
+
+        Motivation:
+        1. MRNG ensures there exists at least one monotonic path between any two nodes, however, it is not an
+           easy task. Instead, we just pick one node out and try to guarantee the existence of monotonic paths
+           from this node to all the others. We name this node as the Navigating Node. When we perform the
+           search, we always start from the Navigating Node, which makes the search on an NSG almost as efficient as on an MRNG.
+        2. The edge selection strategy of the MRNG treats all the other nodes as candidate neighbors of the
+           current node, which causes a high time complexity. To speed up this process, we want to generate a
+           small subset of candidates for each node. These candidates contain two parts:
+           1. As discussed above, the NNG is essential for monotonicity<<1>>. Because it is very time-consuming to
+              get the exact NNG, we turn to the approximate kNN graph. A high quality approximate kNN graph
+              usually contains a high quality approximate NNG. It is acceptable when only a few nodes are not
+              linked to their nearest neighbors.
+           2. Because the search on the NSG always starts from the Navigating Node \(p_n\) , for a given node
+              \(p\), we only need to consider those nodes which are on the search path from the \(p_n\) to
+              \(p\). Therefore we treat \(p\) as the query and perform Algorithm 1 on the prebuilt kNN graph.
+              The nodes visited by the search and \(p\)’s nearest neighbor in the approximate NNG are recorded
+              as candidates. The nodes forming the monotonic path from the Navigating Node to \(p\) are very
+              likely included in the candidates. When we perform MRNG’s edge selection strategy on these
+              candidates, it’s very likely that the NSG inherits the monotonic path in the MRNG from the
+              Navigating Node to \(p\). 
+        3. A possible problem in the above approach is the degree explosion problem for some nodes.
+           Especially, the Navigating Node and nodes in dense areas will act as the “traffic hubs” and have
+           high out-degrees. This problem is also discussed in HNSW. They introduced a multi-layer graph
+           structure to solve this problem, but their solution increased the memory usage significantly. Our
+           solution is to limit the out-degrees of all the nodes to a small value \(m\ll n\) by abandoning the
+           longer edges. The consequence is the connectivity of the graph is no longer guaranteed due to the
+           edge elimination.
+        
+* Problems
+        1. [[1]]: Why?
+        2. 
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

@@ -1,0 +1,172 @@
+#+title: DiskANN: Fast Accurate Billion-point Nearest Neighbor Search on a Single Node
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/data_structure/diskann.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/data_structure/}}
+#+LATEX_HEADER: \def \nout {N_{\text{out}}}
+#+LATEX_HEADER: \def \robust {\text{RobustPrune}}
+#+LATEX_HEADER: \def \greedy {\text{GreedySearch}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        In the nearest neighbor search problem, we are given a dataset \(P\) of points in some space. The goal
+        is to design a data structure of small size, such that, for any query \(q\) in the same metric space,
+        and target \(k\), we can retrieve the \(k\) nearest neighbors of \(q\) from the dataset \(P\) quickly.
+
+        Approximation version: consider a query \(q\), and suppose the algorithm outputs a set \(X\) of \(k\)
+        candidate near neighbors, and suppose \(G\) is the ground-truth set of the \(k\) closest neighbors to
+        \(q\) from among the points of the base dataset. Then, we define the \(k\)-recall@\(k\) of this set X
+        to be \(\frac{X\cap G}{k}\). The goal of an ANN algorithm then is to maximize \(k\) recall while
+        retrieving the results as quickly as possible, which results in the recall-vs-latency tradeoff.
+
+        Two high-level approach:
+        1. Inverted Index + Data Compression: These methods cluster the dataset into \(M\) partitions, and
+           compare the query to only the points in a few, say, \(m\ll M\) partitions closest to the query.
+           Moreover, since the full-precision vectors cannot fit in main memory, the points are compressed
+           using a quantization scheme such as /Product Quantization/. While these schemes have a small memory
+           footprint – less than 64 GB for storing an index on billion points in 128 dimensions – and can
+           retrieve results in < 5 ms using GPUs or other hardware accelerators, their 1-recall@1 is rather
+           low (around 0.5)  
+        2. The second approach is to divide the dataset into disjoint shards, and build an in-memory index for
+           each shard. However, since these indices store both the index and the uncompressed data points,
+           they have a larger memory footprint than the first approach. For example, an NSG index for 100M
+           floating-point vectors in 128 dimensions would have a memory footprint of around 75GB
+
+
+        
+** Notation
+        Let \(P\) denote the dataset with \(\abs{P}=n\). We consider directed graphs with vertices
+        corresponding to points in \(P\), and edges between them. With slight notation overload, we refer to
+        such graphs as \(G=(P,E)\) by letting \(P\) also denote the vertex set. Given a point \(p\in P\) in a
+        directed graph, we let \(\nout(p)\) to denote the set of out-edges incident on \(p\). Finally, we let
+        \(\sfx_p\) denote the vector data corresponding to \(p\), and let \(d(p,q)=\norm{\sfx_p-\sfx_q}\)
+        denote the metric distance between two points \(p\) and \(q\). All experiments presented in this paper
+        used Euclidean metric. 
+
+* The Vamana Graph Construction Algorithm
+** Relatice Neighborhood Graphs and the GreedySearch Algorithm
+        Most graph-based ANNS algorithms work in the following manner: during index construction, they build a
+        graph \(G=(P,E)\) based on the geometric properties of the dataset \(P\). At search time, for a query
+        vector \(\sfx_q\) , search employs a natural greedy or best-first traversal, such as in Algorithm 1,
+        on \(G\). Starting at some designated point \(s\in P\), they traverse the graph to get progressively
+        closer to \(\sfx_q\).
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/233.png]]
+
+        There has been much work on understanding how to construct sparse graphs for which the
+        \(\text{GreedySearch}(s,\sfx_q,k,L)\) converges quickly to the (approximate) nearest neighbors for any
+        query. A sufficient condition for this to happen, at least when the queries are close to the dataset
+        points, is the so-called *sparse neighborhood graph* (SNG). In an SNG, the out-neighbors of each point
+        \(p\) are determined as follows: initialize a set \(S\setminus\{p\}\). As long as \(S\neq\emptyset\),
+        add a directed edge from \(p\) to \(p^*\) , where \(p^*\) is the closest point to \(p\) from \(S\),
+        and remove from \(S\) all points \(p'\) such that \(d(p,p')>d(p^*,p')\). It is then easy to see that
+        \(\text{GreedySearch}(s,\sfx_p,1,1)\) starting at any \(s\in P\) would converge to \(p\) for all base
+        points \(p\in P\).
+
+        While this construction is ideal in principle, it is infeasible to construct such graphs for even
+        moderately sized datasets, as the running time is \(\tilde{O}(n^2)\). Building on this intuition,
+        there have been a series of works that design more practical algorithms that generate good
+        approximations of SNGs. However, since they all essentially try to approximate the SNG property, there
+        is very little flexibility in controlling the diameter and the density of the graphs output by these
+        algorithms. 
+** The Robust Pruning Procedure
+        As mentioned earlier, graphs which satisfy the SNG property are all good candidates for the
+        GreedySearch search procedure. However, it is possible that the diameter of the graphs can be quite
+        large. For example, if the points are linearly arranged on the real line in one dimension, the
+        \(O(n)\) diamater line graph, where each point connects to its two neighbors (one at the end), is the
+        one that satisfies the SNG property. Searching such graphs stored in disks would incur many sequential
+        reads to the disk at to fetch the neighbors of the vertices visited on the search path in Algorithm 1.
+        
+        To overcome this, we would like to ensure that the distance to the query decreases by a multiplicative
+        factor of \(\alpha>1\) at every node along the search path, instead of merely decreasing as in the SNG
+        property. Consider the directed graph where the out-neighbors of every point \(p\) are determined by
+        the \(\robust(p,\calv,\alpha,R)\) procedure in Algorithm 2. Note that if the out-neighbors of every
+        \(p\in P\) are determined by \(\robust(p,P\setminus\{p\},\alpha,n-1)\), then
+        \(\text{GreedySearch}(s,p,1,1)\), starting at any \(s\), would converge to \(p\in P\) in
+        logarithmically many steps, if \(\alpha>1\). However, this would result in a running time of
+        \(\tilde{O}(n^2)\) for index construction. Hence, building on the ideas of [21, 13], Vamana invokes
+        \(\robust(p, V, \alpha, R)\) for a carefully selected \(V\) with far fewer than \(n-1\) nodes, to improve index construction time.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/234.png]]
+** The Vamana Indexing Algorithm
+        Vamana constructs a directed graph \(G\) in an iterative manner. The graph \(G\) is initialized so
+        that each vertex has \(R\) randomly chosen out-neighbors. Note that while the graph is well connected
+        when \(R>\log n\), random connections do not ensure convergence of the GreedySearch algorithm to good
+        results.
+
+        Next, we let \(s\) denote the medoid of the dataset \(P\) , which will be the starting node for the
+        search algorithm. The algorithm then iterates through all the points in \(p\in P\) in a random order,
+        and in each step, updates the graph to make it more suitable for
+        \(\text{GreedySearch}(s,\sfx_p, 1, L)\) to converge to \(p\). Indeed, in the iteration corresponding
+        to point \(p\), Vamana first runs \(\greedy(s,\sfx_p, 1, L)\) on the current graph \(G\), and sets
+        \(\calv_p\) to the set of all points visited by \(\greedy(s,\sfx_p, 1, L)\). Then, the algorithm
+        updates \(G\) by running \(\robust(p,\calv_p,\alpha, R)\) to determine \(p\)’s new out-neighbors. 
+
+        Then, Vamana updates the graph \(G\) by adding backward edges \((p',p)\) for all \(p'\in\nout(p)\).
+        This ensures that there are connections between the vertices visited on the search path and \(p\),
+        thereby ensuring that the updated graph will be better suited for \(\greedy(s,\sfx_p, 1, L)\) to
+        converge to \(p\). <<1>>
+
+        However, adding backward edges of the form \((p',p)\) might lead to a degree violation of \(p'\), and
+        so whenever any vertex \(p'\) has an out-degree which exceeds the degree threshold of \(R\), the graph
+        is modified by running \(\robust(p',\nout(p'),\alpha,R)\) where \(\nout(p')\) is the set of existing
+        out-neighbors of \(p'\) .
+
+        As the algorithm proceeds, the graph becomes consistently better and faster for GreedySearch. Our
+        overall algorithm makes two passes over the dataset, the first pass with \(\alpha=1\), and the second
+        with a user-defined \(\alpha\ge 1\). We observed that a second pass results in better graphs, and that
+        running both passes with the user-defined \(\alpha\) makes the indexing algorithm slower as the first
+        pass computes a graph with higher average degree which takes longer.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/235.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/236.png]]
+** Comparison of Vamana with HNSW and NSG
+        At a high level, Vamana is rather similar to HNSW and NSG. All three algorithms iterate over the
+        dataset \(P\), and use the results of the \(\greedy(s,\sfx_p, 1, L)\) and
+        \(\robust(p,\calv,\alpha,R)\) to determine \(p\)’s neighbors. However, there are some important
+        differences between these algorithms.
+
+        Most crucially, both HNSW and NSG have no tunable parameter \(\alpha\) and implicitly use
+        \(\alpha=1\). This is the main factor which lets Vamana achieve a better trade-off between graph
+        degree and diameter.
+
+        Next, while HNSW sets the candidate set \(\calv\) for the pruning procedure to be the final result-set
+        of \(L\) candidates output by \(\greedy(s, p, 1, L)\), Vamana and NSG let \(\calv\) be the entire set
+        of vertices visited by \(\greedy(s, p, 1, L)\). Intuitively, this feature helps Vamana and NSG add
+        long-range edges, while HNSW, by virtue of adding only local edges to nearby points, has an additional
+        step of constructing a hierarchy of graphs over a nested sequence of samples of the dataset.
+
+        The next difference pertains to the initial graph: while NSG sets the starting graph to be an
+        approximate \(K\)-nearest neighbor graph over the dataset, which is a time and memory intensive step,
+        HNSW and Vamana have simpler initializations, with the former beginning with an empty graph and Vamana
+        beginning with a random graph. We have observed that starting with a random graph results in better
+        quality graphs than beginning with the empty graph.
+
+        Finally, Vamana makes two passes over the dataset, whereas both HNSW and NSG make only one pass,
+        motivated by our observation that the second pass improves the graph quality.
+* DiskANN: Constructing SSD-Resident Indices
+** The DiskANN Index Design
+        
+* Problems
+        1. [[1]]: Why?
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
