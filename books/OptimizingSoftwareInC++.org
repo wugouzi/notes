@@ -1,0 +1,186 @@
+#+title: Optimizing Software in C++
+#+AUTHOR: Agner Fog
+#+EXPORT_FILE_NAME: ../latex/OptimizingSoftwareInC++/OptimizingSoftwareInC++.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+* Choosing the optimal platform
+        64-bit systems have several advantages over 32 bit systems:
+        * The number of registers is doubled.
+        * Function parameters are transferred in registers rather than on the stack
+        * The size of the integer registers is extended to 64 bits
+        * The allocation and deallocation of big memory blocks is more efficient
+        * The SSE2 instruction set is supported on all 64-bit CPUs and operating systems
+        * The 64 bit instruction set supports self-relativbe addressing of data. This makes
+          position-independent code more efficient
+
+        Disadvantages:
+        * Pointers, references, and stack entries use 64 bits rather than 32 bits.
+        * Access to static or global arrays require a few extra instructions for address calculation in 64 bit
+          mode if the image base is not guaranteed to be less than \(2^{31}\)
+        * Address calculation is more complicated in a large memory model where the combined size of code and
+          data can exceed 2 Gbytes. 
+        * Some instructions are one byte longer in 64 bit mode than in 32 bit mode.
+
+
+
+
+        
+* Finding the biggest time consumers
+** How much is a clock cycle?
+        The length of a clock cycle is the reciprocal of the clock frequency. If the clock frequency is 4GHz,
+        then the length of a clock cycle is
+        \begin{equation*}
+        \frac{1}{4\;\text{GHz}}=0.25\;\text{ns}
+        \end{equation*}
+** Use a profiler to find hot spots
+        AQtime, VTune, AMD CodeAnalyst
+
+        ~sched_setaffinity~
+* The efficiency of different C++ constructs
+** Different kinds of variable storage
+        The stack is the most efficient memory space to store data in because the same range of memory
+        addresses is reused again and again. It is almost certain that this part of the memory is mirrored in
+        the level-1 data cache if there are no big arrays.
+
+        The lesson we can learn from this is that all variables and objects should preferably be declared
+        inside the function in which they are used.
+
+        Variables that are declared outside of any function are called global variables. They can be accessed
+        from any function. Global variables are stored in a static part of the memory. The static memory is
+        also used for variables declared with the ~static~ keyword, for floating point constants, string
+        constants, array initializer lists, ~switch~ statement jump tables, and virtual function tables.
+
+        The static data area is usually divided into three parts: one for constants that are never modified by
+        the program, one for initialized variables that may be modified by the program, and one for
+        uninitialized variables that may be modified by the program.
+
+        The advantage of static data is that it can be initialized to desired values before the program
+        starts. The disadvantage is that the memory space is occupied throughout the whole program execution,
+        even if the variable is only used in a small part of the program. This makes data caching less
+        efficient because the memory space cannot be reused for another purpose.
+
+        It is preferable to declare a lookup table static and constant. Example:
+        #+begin_src c++
+// Example 7.1
+float SomeFunction (int x) {
+  static const float list[] = {1.1, 0.3, -2.0, 4.4, 2.5};
+  return list[x];
+}
+        #+end_src
+
+        * The ~static~ declaration helps the compiler decide that the table can be reused from one call to the
+          next.
+        * The ~const~ declaration helps the compiler see that the table never changes.
+        * A ~static~ declaration on an initialized variable inside a function means that the variable has to be
+          initialized the first time the function is called, but not on subsequent calls. This is inefficient
+          because the function needs extra overhead to check whether it called for the first time or it has
+          been called before.
+        * The ~const~ declaration helps the compiler decide that the check for first call is not needed.
+** Floating point variables and operators
+        Modern microprocessors in the x86 family have two different types of floating point registers and
+        correspondingly two different types of floating point instructions. Each type has advantages and
+        disadvantages.
+
+        The original method of doing floating point operations involves eight floating point registers
+        organized as a register stack, called x87 registers. These registers have long double precision (80
+        bits). The advantages of using the register stack are:
+        * All calculations are done with long double precision.
+        * Conversions between different precisions take no extra time.
+        * There are intrinsic instructions for mathematical functions such as logarithms and trigonometric functions.
+        * The code is compact and takes little space in the code cache.
+
+        Disadvantages:
+        * It is difficult for the compiler to make register variables because of the way the register stack is organized.
+        * Floating point comparisons are slow.
+        * Conversions between integers and floating point numbers is inefficient.
+        * Division, square root and mathematical functions take more time to calculate when long double
+          precision is used.
+
+        A newer method of doing floating point operations involves vector registers (XMM, YMM, or ZMM) which
+        can be used for multiple purposes. Floating point operations are done with single or double precision,
+        and intermediate results are always calculated with the same precision as the operands.
+
+        Advantages:
+        * It is easy to make floating point register variables.
+        * Vector operations are available for doing parallel calculations on multiple variables in vector
+          registers
+
+        Disadvantages:
+        * Long double precision is not supported.
+        * The calculation of expressions where operands have mixed precision require precision conversion
+          instructions which can be quite time-consuming 
+        * Mathematical functions must use a function library, but this is often faster than the intrinsic
+          hardware functions.
+
+        Modern compilers will use vector registers for floating point calculations whenever they are
+        available, i.e. in 64-bit mode or when the SSE or higher instruction set is enabled. Few compilers are
+        able to mix the two types of floating point operations and choose the type that is optimal for each
+        calculation.
+
+        In most cases, double precision calculations take no more time than single precision as long as they
+        are not joined into vectors. Single precision division, square root, and mathematical functions are
+        calculated faster than double precision when the XMM registers are used, while the speed of addition,
+        subtraction, multiplication, etc. is still the same regardless of precision on most processors when
+        vector operations are not used.
+
+        Floating point addition takes 2 - 6 clock cycles, depending on the microprocessor. Multiplication
+        takes 3 - 8 clock cycles. Division takes 14 - 45 clock cycles. Floating point comparisons and floating
+        point to integer conversions are inefficient when the old x87 floating point registers are used.
+
+        Do not mix single and double precision in the same expression.
+
+        Avoid conversions between integers and floating point variables, if possible.
+
+        Applications that generate floating point underflow in vector registers can benefit from setting the
+        flush-to-zero mode rather than generating subnormal numbers in case of underflow:
+        #+begin_src c++
+// Example 7.5. Set flush-to-zero mode (SSE):
+#include <xmmintrin.h>
+_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+        #+end_src
+
+        You may, in addition, set the denormals-are-zero mode if vector regsiters are available:
+        #+begin_src c++
+// Example 7.6. Set flush-to-zero and denormals-are-zero mode (SSE2):
+#include <xmmintrin.h>
+_mm_setcsr(_mm_getcsr() | 0x8040);
+        #+end_src
+** Pointers and references
+** Branches and switch statements
+        A branch instruction takes typically 0 - 2 clock cycles in the case that the microprocessor has made
+        the right prediction. The time it takes to recover from a branch misprediction is approximately 15 -
+        25 clock cycles, depending on the processor. This is called the branch misprediction penalty.
+
+        The target of branches and function calls are saved in a special cache called the branch target
+        buffer. Contentions in the branch target buffer can occur if a program has many branches or function
+        calls. The consequence of such contentions is that branches can be mispredicted even if they otherwise
+        would be predicted well.
+
+        In some cases it is possible to replace a poorly predictable branch by a table lookup. For example:
+        #+begin_src c++
+// Example 7.29a
+float a; bool b;
+a = b ? 1.5f : 2.6f;
+        #+end_src
+        The ~?:~ operator here is a branch. If it is poorly predictable then replace it by a table lookup:
+        #+begin_src c++
+// Example 7.29b
+float a; bool b = 0;
+const float lookup[2] = {2.6f, 1.5f};
+a = lookup[b];
+        #+end_src
+** Virtual member functions
+        The time it takes to call a virtual member function is a few clock cycles more than it takes to call a
+        non-virtual member function, provided that the function call statement always calls the same version
+        of the virtual function. If the version changes then you may get a misprediction penalty of 10 - 20
+        clock cycles. 

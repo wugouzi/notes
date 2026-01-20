@@ -1,0 +1,170 @@
+#+title: io_uring for High Performance DBMSs: When and How to Use It
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/engineering/io_uring_for_high_performance_dbms.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/engineering/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        *Challenges of user-space I/O*. User-space I/O frameworks such as DPDK, SPDK, and RDMA bypass the kernel
+        and can deliver high performance on dedicated hardware. However, operating entirely in user space
+        removes OS abstractions such as file systems and TCP networking, making integration difficult for
+        production databases that rely on them. These stacks also require exclusive control of SSDs or NICs,
+        which may conflict with deployments where devices must be shared. Consequently, user-space I/O,
+        despite its advantages, has not seen wide adoption and is used mainly in specialized, tightly
+        controlled environments rather than general-purpose systems
+
+        *io_uring features for efficient I/O*. The Linux io_uring interface is a promising candidate for
+        bridging the gap between efficient I/O and the preservation of common kernel abstractions. It combines
+        three key features, distinguishing it from earlier kernel I/O interfaces:
+        1. a unified interface integrates storage, network, and other system calls into one framework.
+        2. fully asynchronous execution overcomes limitations of existing asynchronous interfaces, allowing
+           applications to perform useful work while I/O operations complete in the background.
+        3. batched submission and completion process multiple operations with a single system call, amortizing
+           system call overhead and context switches.
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../../images/papers/258.png]]
+        
+        *Low-overhead I/O with io_uring*? However, io_uring is not a panacea. Simply replacing traditional I/O
+        interfaces with io_uring does not necessarily yield substantial performance benefits. As Figure [[ref:f1]]
+        shows, using io_uring off the shelf instead of ~libaio~ for storage I/O in a buffer manager, or instead
+        of epoll for a network shuffle, only modestly improves performance (by 1.06× and 1.10×, respectively).
+        In contrast, when the system is explicitly designed around io_uring’s capabilities (e.g., batching)
+        and uses appropriate optimizations (e.g., registered buffers), the end-to-end performance improvements
+        become much more pronounced: 2.05× for the buffer manager and 2.31× for the network shuffle.
+
+* Background: Understanding io_uring
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../../images/papers/257.png]]
+
+
+** Interface of io_uring
+        *Unification of I/O with io_uring.* Traditional DBMSs rely on synchronous system calls such as ~read()~
+        and ~write()~, which provide a simple, uniform abstraction but scale poorly due to their blocking
+        behavior. To enable non-blocking network I/O, Linux introduced ~epoll~, which allows applications to
+        monitor multiple sockets for readiness. For storage, ~libaio~ provided a separate API that in practice
+        was mostly restricted to direct block I/O and often lacked true asynchronous execution. This
+        fragmentation of asynchronous I/O interfaces forced developers to combine ~epoll~ and ~libaio~, leading to
+        duplicated code paths and limited concurrency between storage and network operations.
+
+        Asynchronous architecture. At a high level, io_uring serves as a unified asynchronous layer atop
+        existing kernel I/O subsystems, such as the block layer for storage devices and the TCP/IP stack for
+        networking. It is implemented in the Linux kernel (Figure [[ref:f2]], right) and typically accessed
+        through the ~liburing~ user-space library. In contrast to epoll’s readiness-based polling approach,
+        io_uring employs a completion-based model, notifying applications after operations complete rather
+        than when they become possible.
+        
+        It implements this model using two memory-mapped ring buffers with configurable capacity: the
+        *Submission Queue* (SQ) and the *Completion Queue* (CQ). These queues are shared between user space and
+        the kernel, avoiding additional data copies when submitting and completing requests. Applications
+        enqueue I/O requests in the SQ, and their corresponding completions later appear in the CQ. Because
+        completions may arrive out of order, each request carries a user-defined identifier to match
+        submissions and completions. io_uring further supports request linking to enforce operation ordering
+        for multiple elements in the SQ.
+
+        *Batch processing*. While epoll can report multiple readiness events, each I/O operation, such as
+        ~read()~, still requires its own syscall. In contrast, io_uring enables applications to enqueue multiple
+        I/O requests in the SQ before triggering their submission with a single ~io_uring_enter~ syscall.
+        Similarly, multiple completions can be retrieved from the CQ in one step. This batching capability
+        amortizes syscall overhead and reduces context switches, allowing the kernel to process operations in
+        bulk.
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/259.png]]
+
+
+** Inner Workings of io_uring
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../../images/papers/260.png]]
+
+        *Issuing I/O requests*. io_uring supports two ways to issue I/O in the kernel (step (1) in Figure
+        [[ref:f3]]):
+        1. In the default mode, the application thread (top left) calls ~io_uring_enter~ and transitions into
+           kernel mode, where it processes submissions and completions. The syscall can either block until a
+           specified number of completions are available or return immediately. 
+        2. In contrast, when applications set up io_uring with the ~SQPoll~ mode, they avoid user–kernel
+           transitions (syscalls) on the submission path by decoupling submission from execution. A dedicated
+           kernel thread (cf. Figure [[ref:f3]], bottom left) continuously polls the SQ, issues I/O on behalf of
+           the application, and posts results to the CQ. When no new requests are submitted, the ~SQPoll~ thread
+           enters a sleep state after a configurable timeout. In a dedicated microbenchmark, we measured that
+           waking this thread introduces a non-trivial latency of roughly 30 microseconds.
+
+        *Execution paths in io_uring*. I/O in io_uring can follow three main paths as shown in Figure [[ref:f3]]
+        1. *inline execution*: When processing submissions, io_uring first attempts to complete requests inline,
+           for example, when reading from a socket that has data already available. Such operations execute
+           immediately and their completion is posted to the CQ. 
+        2. *Non-blocking execution*. If an operation cannot be completed inline, its handling depends on its
+           type. For pollable operations, such as non-blocking socket reads, io_uring installs an internal
+           event handler (~io_async_wake()~) that is executed when the socket becomes readable. By default,
+           io_uring waits indefinitely for the operation unless a timeout via ~OP_LINK_TIMEOUT~ is set.
+        3. *Blocking execution*. Certain operations cannot be executed asynchronously; for instance, blocking
+           filesystem calls, such as ~fsync~, or large storage reads. In such cases, io_uring delegates
+           execution to worker threads (~io_worker~). This fallback is slower and incurs higher overhead than
+           the native asynchronous paths. Applications can explicitly request this behavior using the
+           ~IOSQE_ASYNC~ flag, which forces execution in a worker thread. In a dedicated microbenchmark, issuing
+           NOPs that were handled by ~io_worker~ threads added an average overhead of 7.3 microseconds compared
+           to inline execution.
+
+
+        *Avoiding preemptions for completion-handling*. When an asynchronous operation finishes, io_uring must
+        run ~task_work~ in the kernel to place the completion entry into the CQ (step 3 in Figure [[ref:f3]]). By
+        default, this ~task_work~ runs whenever the application transitions from user to kernel space. If the
+        thread is busy (for example, during a join or scan), the kernel may issue an inter-processor interrupt
+        (IPI) to process pending completions. This effectively preempts the application, disrupts cache
+        locality, increases jitter, and reduces batching efficiency.
+
+        To mitigate these effects, io_uring offers the ~COOP_TASKRUN~ flag (CoopTR), which reduces IPIs and
+        allows applications to delay ~task_work~. However, completions are still processed on any kernel-user
+        transition, including unrelated syscalls such as ~malloc()~. Because preemptions have side effects, both
+        the default and cooperative modes are ill-suited for modern high-performance DBMSs. The ~DEFER_TASKRUN~
+        flag (DeferTR) only runs ~task_work~ on ~io_uring_enter~ calls, making it the recommended mode since it
+        gives applications more control and eliminates unwanted preemptions. We therefore use it for the
+        remainder of the paper unless stated otherwise.
+
+* Efficient Storage I/O with io_uring
+** Use Case: Buffer-Managed Storage Engine
+        *Buffer manager overview*. A buffer manager caches frequently accessed pages and loads or evicts them as
+        needed. When a re- quested page is not present in the buffer pool, a page fault triggers a read I/O to
+        retrieve it from storage. If the buffer pool is full, the buffer manager must select a page for
+        eviction; if it is dirty, it is written back before its buffer frame is reused.
+
+        *Buffer manager architecture*. The buffer manager maintains a preallocated pool of buffer frames and a
+        page table mapping logical page identifiers to frames, along with metadata such as reference bits and
+        dirty flags. It exposes two primitives:
+        * ~fix(page_id)~: checks whether the requested page resides in the buffer pool and loads it from
+          storage; if not, evicting another page if necessary
+        * ~unfix(page_id)~ releases the page and marks it dirty if modified.
+
+        When the pool is full, a replacement policy selects victims. In this paper, we use clock-sweep, a
+        common algorithm in DBMS: pages are marked during the first pass and, if still unreferenced on the
+        second pass, dirty pages are written back before the frame is reused.
+** Workload & System Conditions
+        * Single-statement, I/O-intensive YCSB-like transactions, 70% page fault probability
+        * complex, compute-bound TPC-C
+
+        1GB buffer pool.
+** Using io_uring in the Storage Engine
+        As a performance baseline, we implement a synchronous buffer manager on top of io_uring by submitting
+        one request at a time and waiting for its completion, ensuring that the DBMS thread has at most one
+        outstanding I/O.
+
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

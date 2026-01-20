@@ -1,0 +1,81 @@
+#+title: STHoles: A Multidimensional Workload-Aware Histogram
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query optimization/stholes.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        An alternative to assuming attribute value independence is to use histograms over multiple attributes,
+        which are generally referred to as multidimensional histograms. Ideally, multidimensional histograms
+        should consist of buckets that enclose regions of the data domain with close-to-uniform tuple density,
+        so they can accurately estimate the selectivity of range queries. At the same time, multidimensional
+        histograms should be sufficiently compact and efficiently computable.
+
+        A key observation that we exploit in this paper is that we can build good quality histograms by
+        exploiting workload information and query feedback.
+* STHoles Histograms
+** Histogram Definition
+        Each bucket \(b\) in an STHoles histogram is composed of a rectangular bounding box, denoted
+        \(box(b)\), and a real valued frequency, denoted \(f(b)\), which indicates the number of tuples
+        enclosed by bucket \(b\). An STHoles histogram identifies sub-regions of \(b\) with different tuple
+        density and “pulls” them out from \(b\). Hence a bucket \(b\) can have holes, which are themselves
+        first-class histogram buckets. These holes are bucket \(b\)’s children, and their bounding boxes are
+        disjoint and completely enclosed in \(b\)’s bounding box. Therefore, an STHoles histogram can be
+        conceptually seen as a tree structure, where each node represents a bucket.
+
+        The volumeof bucket \(b\) is defined as \(v(b)=vBox(b)-\sum_{b'\in children(b)}vBox(b')\), where
+        \(vBox(b)\) is the volume of \(box(b)\). Given a histogram \(H\) over a dataset \(D\), and a range
+        query \(q\), the estimated number of \(D\) tuples that lie inside \(q\) is
+        \begin{equation*}
+        est(H,q)=\sum_{b\in H}f(b)\frac{v(q\cap b)}{v(b)}
+        \end{equation*}
+        where \(v(q\cap b)\) denotes the volume of the intersection of \(q\) and \(b\).
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../../images/papers/255.png]]
+** Histogram Construction
+        A key idea for building STHoles histograms is to intercept the result of queries in the workload and
+        efficiently gather some simple statistics over them to progressively refine the layout and frequency
+        of the existing buckets.
+
+        To build an STHoles histogram, we start with an empty histogram that contains no buckets.
+        Alternatively, if we have more information about the data distribution, e.g., the total number of
+        tuples in the data set and the maximum and minimum value for each attribute, we can start with a
+        single-bucket histogram. More generally, we can use an existing histogram and start with a more
+        accurate model of the data set
+
+        After we set up the initial histogram, for each query \(q\) in the workload we intercept the result stream
+        and count how many tuples lie inside each bucket of the current histogram. If the current query \(q\)
+        extends beyond the boundaries of the root bucket (or when considering the first query) we expand the
+        bounding box of the root bucket so that it covers \(q\).
+
+        Then we determine which regions in the data domain can benefit from using this new information, and
+        refine the histogram by “drilling holes,” or zooming into the buckets that cover the query region.
+
+        Finally, we consolidate the resulting histogram by merging similar buckets so that we do not exceed
+        our fixed storage budget. These high level steps are summarized below:
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/256.png]]
+*** Identifying Candidate Holes
+        In general, a query \(q\) intersects some buckets only partially. For each such bucket \(b_i\), we
+        know the exact number of tuples in \(q\cap b_i\) by inspecting the results for \(q\). Intuitively, if
+        \(q\cap b_i\) has a disproportionately large or small fraction of the tuples in \(b_i\), then
+        \(q\cap b_i\) is a candidate to become a hole of bucket \(b_i\) . Hence, each partial intersection of \(q\)
+        and a histogram bucket could in principle be used to improve the quality of our histogram, as
+        illustrated in the example below. 
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

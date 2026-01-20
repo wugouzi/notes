@@ -1,0 +1,258 @@
+#+title: CloudJump: Optimizing Cloud Databases for Cloud Storages
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/database/cloudjump.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/database/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Background and Motivation
+
+** CloudStorage
+        We refer to cloud storage as an elastic and distributed block-based storage that is able to serve as a
+        shared-everything storage tier for multiple database (a.k.a. computation) nodes. Table 1 lists the
+        specifications of selected block-based storage in the cloud, including Amazon Elastic Block Store,
+        Alibaba Cloud Enhanced SSDs and other distributed shared storages
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/237.png]]
+
+        challenges:
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/238.png]]
+
+        Database designs optimized for local disks are neither sufficient to address the prolonged latency nor
+        efficient at utilizing (or saturating) the high aggregated bandwidth.
+
+        Other challenges:
+        1. there is an expensive overhead caused by maintaining consistent caches or buffers for all database
+           nodes.
+        2. I/O stragglers in a cluster may cause the database to respond to queries with unacceptable
+           latencies. To address it, we highlight the importance of isolating I/O tasks and scheduling I/Os
+           accordingly.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/239.png]]
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/240.png]]
+
+        The cloud storage has higher latencies (up to 3.3x in the worst case) and throughput (up to 3.8x in
+        the base case) than local SSDs in general. With multiple threads scattering their I/Os across multiple
+        nodes, the latencies observed only suffer from a marginal slowdown compared with local SSDs. This
+        shows that it is very likely to achieve a higher level of performance on the cloud storage with
+        necessary optimizations on the level of concurrency, compared with local SSDs.
+
+        In Figure 3, we have done a simple experiment mixing a constant level of insert queries with a single
+        batch of flushing dirty pages, at around 20 seconds into the experiment, on the cloud storage. The
+        flushing I/O almost immediately consumed 80% of the total bandwidth, leaving the rest for insert
+        queries to compete for and raising the latency of which by 311%.
+
+** Update-in-place and append-only storage engines
+        Update-in-place and append-only are two major methods for updating a record or an entry in a data
+        structure.
+
+        In a B-tree, the target data page has to be retrieved synchronously for updates, and inserts, which
+        may block other simultaneous operations to avoid conflicts. While looking up a key, we only know which
+        page to load from the storage after looking up the key in the current page. Such data and logical
+        dependencies expose the access latency in the query response time. And, because records that are
+        adjacent logically are stored together physically in the update-in-place method, queries and
+        transactions tend to have a strong spatial locality.
+
+* Design Considerations
+
+** Thread-level Parallelism
+        In single-machine storage engines, e.g., the conventional InnoDB, changes from multiple small
+        transactions are usually merged to- gether in a global buffer before they are flushed to the disk, to
+        achieve higher I/O performance by writing a larger chunk of data sequentially. Such a global buffer
+        creates a synchronization point in the log flushing process that hinders the opportunity of applying
+        thread-level parallelism (TLP).
+
+        In CloudJump, we emphasize the importance of partitioning such global log buffers by page IDs for
+        B-tree-based databases, so that TLP can be applied at the partition level and sequential writes are
+        still achieved for each page in the cloud storage.
+
+        For LSM-tree-based RocksDB, log buffers can be partitioned by sub-tables (part of a relational table
+        materialized as an LSM-tree) on which the changes they carry are supposed to be applied, or their
+        corresponding log sequence numbers.
+
+        For both types of systems, there is very likely a gap between their own partitioning granularity and
+        the optimal I/O job size for better latency and throughput. Moreover, these I/O jobs into and out of
+        the cloud storage need to be aligned with the block sizes to reduce read/write amplification and avoid
+        the need for padding.
+
+        To address this, we have proposed a two-level design of log flushing.
+        * The first level, as introduced above, partitions logs in the main memory
+        * the second level, the log writer, further tunes the I/O job size by slicing each log partition (if
+          needed), and aligns I/O writes with the block size of the cloud storage (with padding if needed). It
+          further adjusts the number of asynchronous thread workers that write these slices to the cloud
+          storage, to achieve a reasonably high level of latency and throughput, as illustrated in Figure 5.
+** Task-level Parallelism
+        In addition to the thread-level parallelism that parallelizes the writing of WALs, we also introduce
+        task-level parallelism that further increases the level of concurrency. For example in B-tree-based
+        InnoDB, the recovery process needs to apply logs to pages from various tables, causing flushes of
+        dirty pages. All of them need to be finished before the database can resume its services. The same
+        applies to LSM-tree-based RocksDB, where logs need to be replayed for all sub-tables, often resulting
+        in flushes of memtables. By executing multiple table-level tasks, the system is able to read from
+        and write to a larger number of nodes for higher throughput, compared with only exploiting
+        thread-level parallelism. 
+
+** Prefetching
+        Prefetching techniques can potentially achieve larger performance gains on the cloud storage compared
+        with those on local SSDs
+
+        With update-in-place or B-tree in general, once the first page that satisfies the predicate has been
+        located, its following siblings will be prefetched to the database nodes with a very high probability
+        because records are well sorted in such data structures. With append-only or LSM- tree in general,
+        prefetching also helps when multiple extents (data blocks) from the storage are retrieved and merged
+        for either range queries or compactions.
+
+** Fine-grained Locking and Lock-free Data Structures
+        The synchronization overheads are amplified by the longer I/O latencies in the cloud storage.
+        Therefore, there are stronger needs for fine-grained locking, or even lock-free indexes, that lock
+        data as little as possible to minimize the chances of contention between simultaneous operations.
+
+** Scattering among Distributed Nodes
+        Assuming the cloud storage manages data at a chunk level, there are at least two strategies for such placement:
+        * *Compacted*: allocate a new chunk on the same node with the previous allocation as long as there is sufficient space on that node.
+        * *Balanced*: allocate a new chunk in the node with the largest free space.
+        The compacted strategy uses fewer machines for the same capacity and offers less aggregated bandwidth
+        at the same time. We have observed that many cloud storage services apply a hybrid approach combining
+        both of these two strategies: use the compacted strategy for small-size allocations and use the
+        balanced strategy as the size of requested spaces increases.
+
+        With this in mind, the log write we introduced in Section 3.1 has been designed to be able to flush
+        slices of a single log file into multiple physical files, in an attempt to trigger more chunk
+        allocations in the cloud storage and utilize the resources of multiple nodes for higher bandwidth utilization.
+
+** Bypassing Caches
+
+** Scheduling Prioritized I/O Tasks
+        There are four major types of I/O tasks in a database: writing and reading of logs, writing and
+        reading of data pages. Among these, writing logs is critical for committing an incoming transaction,
+        while the logs are only read for replications or recoveries.
+
+        From the perspective of keeping the database’s high availability for OLTP workloads, we argue that the
+        writing of logs should be prioritized over the rest to avoid transaction stalls.
+
+* Case Study: PolarDB
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/242.png]]
+
+        In this cloud-native database architecture, the single read-write (RW) node is differentiated from the
+        rest read-only (RO) nodes. There are up to 15 RO nodes in total, which can be added to the cluster
+        elastically according to user workloads. Only the InnoDB in the RW node is responsible for transaction
+        processing that modifies the state of the database, on which we apply the optimizations on the log
+        write path. 
+** Accelerating Persisting WAL
+*** Partitioning Global Log Buffer
+        InnoDB organizes the processing of logs at the granularity of mini-transactions (MTRs) for various
+        benefits in single-machine setups, the processing of which needs to be optimized for cloud storage.
+
+        The baseline InnoDB divides a transaction into MTRs and limits the number of pages that an MTR can
+        exclusively modify to only one. For each MTR, all its modifications are recorded in its own redo log
+        records. InnoDB keeps a global log buffer that collects redo log records from multiple MTRs and
+        flushes them to the disk for durability. When a transaction is committed, all its log records are
+        appended into the tail of the global centralized redo log buffer and a Global Log Sequence Number
+        (GLSN) is assigned to each log record for page version management.
+
+        This design bounds the scale of pages that a transaction exclusively latches during its processing to
+        avoid holding a latch for too long. It also reduces small I/Os by merging MTR’s small log buffers into
+        a global and sequential one. On the cloud storage, however, such buffer merging hinders the potential
+        of the total bandwidth that can be achieved by scattering I/Os among multiple nodes.
+
+        We choose to partition the global log buffer to allow the application of the thread-level parallelism
+        that can scatter I/Os out. And, we choose to partition it by page IDs because a redo log record, when
+        it is needed, is applied to its target page during recovery.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/241.png]]        
+
+        Figure 5 shows the above process where log records from transactions \(Tx_1\) ’s and \(Tx_2\) ’s MTRs
+        are written to a series of Log Buffers. Log Buffer \(i\) is the buffer dedicated to page \(i\). After
+        partitioning, there are three main steps: logging, synchronizing, and writing steps.
+
+        Firstly in logging, log records are copied into reserved spaces in a log buffer.
+        Next, we track and update the offsets marking four different regions (<<1>>) in the synchronizing step. Log
+        records with an LSN smaller than Persisted LSN (PLSN) have persisted. Those between the PLSN and
+        Buffered LSN (BLSN) for a commit have been fully collected and buffered, waiting to be persisted. And,
+        those between BLSN and Reserved LSN (RLSN) are being copied from incoming log records from MTRs. The
+        rest are unused spaces.
+
+        We derive the global persisted LSN (GPLSN), for page version management, from PLSNs via a lightweight
+        LinkBuf, which is a concurrent data structure extensively used in MySQL 8.0 and allows to track
+        concurrently operations performed out of order.
+        
+        In the final writing step, each log buffer partition is written to the storage nodes by a parallel log
+        writer asynchronously, which scatters and aligns I/O and then writes log records up to the
+        corresponding BLSNs. Once the file write is finished, we update the log states and advance the PLSN
+        for each partition. After that, an async notifier is used to notify all workers of the updates.
+
+        In addition to the above design, we implement the RW-to-RO replication of redo logs via the RDMA
+        network, so that scattered redo logs in the cluster do not slow down ROs trying to catch up with the
+        RW. We also enable users to configure various consistency levels to trade RO’s real-time visibility
+        for performance. 
+*** Parallel Log Writer
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/243.png]]
+
+        Figure 6 shows the design of the parallel log writer, which further splits each log buffer into
+        multiple slices, assigns one worker thread to each slice, and issues asynchronous I/O tasks from these
+        threads concurrently to flush log records to logs files in the cloud storage.
+
+        In the cloud storage, a file consists of multiple chunks, which may very likely locate in various
+        storage nodes, according to the allocation strategy for chunks. With this layer of log writers, we are
+        able to split a large I/O task that may be a straggler into multiple slices, for large I/O tasks
+        (e.g., group commit, BLOB update), and reduce the makespan by executing multiple asynchronous I/O
+        tasks at the thread level concurrently. 
+** Fast Recovery
+** Prefetching
+** Fine-grained Locking
+** Multiple I/O Queues and Scheduler
+** Aligned I/O
+** Experiments and Evaluation
+* Case Study: RocksDB
+** Accelerating Persisting WAL
+** Accelerating Data Access
+** Multiple I/O Queues and Scheduler
+** I/O Alignment
+** Experiments and Evaluation
+* Lessons Learned on User Workloads
+        1. very large tables, a single table can be as large as almost 20 TB in the storage
+        2. large attributes, a single attribute storing a flattened semi-structured or JSON object may be as
+           large as 100 KB
+        3. tens of thousands of tables that are concurrently accessed by various departments in the same
+           company. 
+* Problems
+        1. [[1]]: Whats these regions:?
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

@@ -1,0 +1,244 @@
+#+title: HopsFS: Scaling Hierarchical File System Metadata Using NewSQL Databases
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/storage/hopsfs.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/storage/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+
+* Background
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/246.png]]
+** Hadoop Distributed File System
+        * HDFS' metadata is stored on the heap of single Java process called the Active NameNode (ANN).
+        * The files are split into small (typically 128 MB) blocks that are by default triple replicated
+          across the data-nodes.
+        * For high availability of the metadata management service, the Active namenode logs changes to the
+          metadata to journal servers using quorum based replication.
+        * The metadata change log is replicated asynchronously to a Standby NameNode (SbNN), which also
+          performs checkpointing functionality.
+        * In HDFS, the ZooKeeper coordination service enables both agreement on which machine is running the
+          active namenode (preventing a split-brain scenario) as well as coordinating failover from the active
+          to the standby namenode.
+
+        The namenode serves requests from potentially thousands of datanodes and clients, and keeps the
+        metadata strongly consistent by executing the file system operations atomically. The namenode
+        implements atomic operations using a single global lock on the entire file system metadata, providing
+        single-writer, multiple-readers concurrency semantics. Some large file system operations are not
+        atomic, as they would hold the global lock for too long, starving clients. For example, deleting large
+        directories is performed in batches, with inodes first being deleted, then the blocks are deleted in
+        later phases. Moreover, as writing namespace changes to the quorum of journal nodes can take long
+        time, the global file system lock is released before the operation is logged to prevent other clients
+        from starving. Concurrent clients can acquire the file system lock before the previous operations are
+        logged, preventing starvation, at the cost of inconsistent file system operations during namenode
+        failover. For example, when the active namenode fails all the changes that are not logged to the
+        journal nodes will be lost.
+
+        In HDFS the amount of metadata is quite low relative to file data. There is approximately 1 gigabyte
+        of metadata for every petabyte of file system data
+** Network Database (NDB)
+        MySQL Cluster is a shared-nothing, replicated, in-memory, auto-sharding, consistent, NewSQL
+        relational database Network DataBase (NDB) is the storage engine for MySQL Cluster. NDB supports both
+        datanode-level and cluster-level failure recovery. The datanode-level failure recovery is performed
+        using transaction redo and undo logs. NDB datanodes also asynchronously snapshot their state to disk
+        to bound the size of logs and to improve datanode recovery time. Cluster-level recovery is supported
+        using a global checkpointing protocol that increments a global epoch-ID, by default every 2 seconds.
+        On cluster-level recovery, datanodes recover all transactions to the latest epoch-ID.
+
+        NDB horizontally partitions the tables among storage nodes called NDB datanodes. NDB also supports
+        application defined partitioning (ADP) for the tables. Transaction coordinators are located at all NDB
+        datanodes, enabling high performance transactions between data shards, that is, multi-partition
+        transactions. Distribution aware transactions (DAT) are possible by providing a hint, based on the
+        application defined partitioning scheme, to start a transaction on the NDB datanode containing the
+        data read/updated by the transaction. In particular, single row read operations and partition pruned
+        index scans (scan operations in which a single data shard participates) benefit from distribution
+        aware transactions as they can read all their data locally. Incorrect hints result in additional
+        network traffic being incurred but otherwise correct system operation.
+*** NDB Data Replication and Failure Handling
+        NDB datanodes are organized into node groups, where the data replication factor, \(R\), determines the
+        number of datanodes in a node group. Given a cluster size \(N\), there are \(N/R\) node groups. NDB
+        partitions tables (hash partitioning by default) into a fixed set of partitions distributed across the
+        node groups. New node groups can be added online, and existing data is automatically rebalanced to the
+        new node group. A partition is a fragment of data stored and replicated by a node group. Each datanode
+        stores a copy (replica) of the partition assigned to its node group. In NDB, the default replication
+        degree is two, which means that each node group can tolerate one NDB datanode failure as the other NDB
+        datanode in the node group contains a full copy of the data. So, a twelve node NDB cluster has six
+        node groups can tolerate six NDB datanode failures as long as there is one surviving NDB datanode in
+        each of the node groups. To tolerate multiple failures within a node group, the replication degree can
+        be increased at the cost of lower throughput.
+*** Transaction Isolation
+        NDB only supports read-committed transaction isolation.
+* HopsFS Overview
+        HopsFS provides a scale-out metadata layer by decoupling the metadata storage and manipulation
+        services. HopsFS supports multiple stateless namenodes, written in Java, to handle clients’ requests
+        and process the metadata stored in an external distributed database, see Figure 1. Each namenode has a
+        Data Access Layer (DAL) driver that, similar to JDBC, encapsulates all database operations allowing
+        HopsFS to store the metadata in a variety of NewSQL databases. The internal management (house-keeping)
+        operations, such as datanode failure handling, must be coordinated amongst the namenodes. HopsFS
+        solves this problem by electing a leader namenode that is responsible for the housekeeping. HopsFS
+        uses the database as shared memory to implement a leader election and membership management service.
+        The leader election protocol assigns a unique ID to each namenode, and the ID of the namenode changes
+        when the namenode restarts. The leader election protocol defines an alive namenode as one that can
+        write to the database in bounded time
+
+        Clients can choose between /random/, /round-robin/, and /sticky/ policies for selecting a namenode on which
+        to execute file system operations. HopsFS clients periodically refresh the namenode list, enabling new
+        namenodes to join an operational cluster.
+* HopsFS Distributed Metadata
+        Metadata for hierarchical distributed file systems typically contains information on inodes, blocks,
+        replicas, leases and mappings (directories to files, files to blocks, and blocks to replicas). File
+        system operations in HopsFS are implemented primarily using multi-partition transactions and row-level
+        locks in MySQL Cluster to provide serializability for metadata operations.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/247.png]]
+
+        We base our partitioning scheme on the expected relative frequency of HDFS operations in production
+        deployments and the cost of different database operations that can be used to implement the file
+        system operations. Table 1 shows the relative frequency of selected HDFS operations in a workload
+        generated by Hadoop applications, such as, Pig, Hive, HBase, MapReduce, Tez, Spark, and Giraph at
+        Spotify. /List/, /stat/ and /file read/ operations alone account for ≈ 95% of the operations in the HDFS
+        cluster.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/248.png]]
+
+        HopsFS metadata design and metadata partitioning enables implementations of common file system
+        operations using only the low cost database operations, that is, primary key operations, batched
+        primary key operations and partition pruned index scans. For example, the read and directory listing
+        operations, are implemented using only (batched) primary key lookups and partition pruned index scans.
+        Index scans and full table scans were avoided, where possible, as they touch all database shards and
+        scale poorly. 
+** Entiry Relation Model
+        In HopsFS, the file system metadata is stored in tables where a directory inode is represented by a
+        single row in the /Inode/ table. File inodes, however, have more associated metadata, such as a set of
+        blocks, block locations, and checksums that are stored in separate tables.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/249.png]]
+
+        Figure 3 shows the Entity Relational model depicting key entities in the HopsFS metadata model. Files
+        and directories are represented by the /Inode/ entity that contains a reference to its parent inode
+        (parent inode ID) in the file system hierarchy. We store path individual components, not full paths,
+        in inode entries. Each file contains multiple blocks stored in the /Block/ entity. The location of each
+        block replica is stored in the /Replica/ entity. During its lifecycle a block goes through various
+        phases. Blocks may be under-replicated if a datanode fails and such blocks are stored in the
+        under-replicated blocks table (URB).
+        
+        The replication manager, located on the leader namenode, sends commands to datanodes to create more
+        replicas of under-replicated blocks. Blocks undergoing replication are stored in the pending
+        replication blocks table (PRB). 
+
+        Similarly, a replica of a block has various states during its life-cycle. When a replica gets
+        corrupted, it is moved to the corrupted replicas (CR) table. Whenever a client writes to a new block’s
+        replica, this replica is moved to the replica under construction (RUC) table. If too many replicas of
+        a block exist (for example, due to recovery of a datanode that contains blocks that were
+        re-replicated), the extra copies are stored in the excess replicas (ER) table and replicas that are
+        scheduled for deletion are stored in the invalidation (Inv) table.
+
+        Note that the file inode related entities also contain the inode’s foreign key that is also the
+        partition key, enabling HopsFS to read the file inode related metadata using partition pruned index
+        scans. 
+** Metadata Partitioning
+        With the exception of hotspots HopsFS partitions inodes by their parents’ inode IDs, resulting in
+        inodes with the same parent inode being stored on the same database shard. This has the effect of
+        uniformly partitioning the metadata among all database shards and it enables the efficient
+        implementation of the directory listing operation.
+
+        When listing files in a directory, we use a hinting mechanism to start the transaction on a
+        transaction coordinator located on the database shard that holds the child inodes for that directory.
+        We can then use a pruned index scan to retrieve the contents of the directory locally. File inode
+        related metadata, that is, blocks, replica mappings and checksums, is partitioned using the file’s
+        inode ID. This results in metadata for a given file all being stored in a single database shard, again
+        enabling efficient file operations,
+*** Hotspots
+        HopsFS caches the root inode at all the namenodes. In HopsFS, the root inode is immutable, that is, we
+        do not allow operations, such as, renaming, deleting or changing the permissions of the root inode.
+        Making the root inode immutable prevents any inconsis- tencies that could result from its caching.
+
+        HopsFS uses a configurable directory partitioning scheme where the immediate children of the top level
+        directories are pseudo-randomly parti- tioned by hashing the names of the children. By default, HopsFS
+        pseudo-randomly partitions only the first two levels of the file system hierarchy, that is, the root
+        directory and its immediate descendants.
+* HopsFS Transactional Operations
+        Transactional metadata operations in HopsFS belong to one of the two categories: *Inode* operations that
+        operate on single file, directory or block and *subtree* operations that operate on an unknown number of
+        inodes, potentially millions, (for example, recursive delete, move, chmod, and chown on non-empty
+        directories).
+
+        This section describes how HopsFS efficiently encapsulates inode operations in transactions in NDB.
+        The strongest transaction isolation level provided by NDB is /read-committed/, which is not strong
+        enough to provide at least as strong consistency semantics as HDFS which uses single global lock to
+        serialize all HDFS operations. To this end, we use row-level locking to serialize conflicting inode
+        operations. That is, the operations execute in parallel as long as they do not take conflicting locks
+        on the same inodes. However, taking multiple locks in a transaction could lead to extensive
+        deadlocking and transaction timeouts. The reasons are:
+
+        *Cyclic Deadlocks*:In HDFS, not all inode operations follow the same order in locking the metadata which
+        would lead to cyclic deadlocks in our case. To solve this problem, we have reimplemented all inode
+        operations so that they acquire locks on the metadata in the same total order, traversing the file
+        system tree from the root down to leave nodes using left-ordered depth-first search.
+
+        *Lock Upgrades*: In HDFS, many inode operations contain read operations followed by write operations on
+        the same metadata. When translated into database operations within the same transaction, this results
+        in deadlocking due to lock upgrades from read to exclusive locks. We have examined all locks acquired
+        by the inode operations, and re-implemented them so that all data needed in a transaction is read only
+        once at the start of the transaction at the strongest lock level that could be needed during the
+        transaction, thus preventing lock upgrades.
+** Inode Hint Cache
+        Resolving paths and checking permissions is by far the most common operation in most HDFS workloads.
+        In HDFS, the full path is recursively resolved into individual components. In HopsFS for a path of
+        depth \(N\), it would require \(N\) roundtrips to the database to retrieve file path components,
+        resulting in high latency for file system operations.
+
+        we use hints to speed up the path lookups. Hints are mechanisms to quickly retrieve file path
+        components in parallel (batched operations). In our partitioning scheme, inodes have a composite
+        primary key consisting of the parent inode’s ID and the name of the inode (that is, file or directory
+        name), with the parent inode’s ID acting as the partition key. Each namenode caches only the primary
+        keys of the inodes. Given a pathname and a hit for all path components directories, we can discover
+        the primary keys for all the path components which are used to read the path components in parallel
+        using a single database batch query containing only primary key lookups.
+*** Cache Consistency
+        We use the inode hint cache entries to read the whole inodes in a single batch query at the start of a
+        transaction for a file system operation. If a hint entry is invalid, a primary key read operation
+        fails and path resolution falls back to recursive method for resolving file path components, followed
+        by repairing the cache. Cache entries infrequently become stale as move operations, that update the
+        primary key for an inode, are less than 2% of oper- ations in typical Hadoop workloads 
+** Inode Operations
+        HopsFS implements a pessimistic concurrency model that supports parallel read and write operations on
+        the namespace, serializing conflicting inode and subtree operations.
+
+        Inode operations are encapsulated in a single transaction that consists of three distinct phases,
+        which are, *lock*, *execute*, and *update* phases.
+*** Lock Phase
+        In the lock phase, metadata is locked and read from the database with the strongest lock that will be
+        required for the duration of the transaction. Inode operations are path-based and if they are not
+        read-only operations, they only modify the last component(s) of the path, for example, ~rm /etc/conf~
+        and ~chmod +x /bin/script~. Thus, only the last component(s) of the file paths are locked for file
+        system operations.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/250.png]]
+
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

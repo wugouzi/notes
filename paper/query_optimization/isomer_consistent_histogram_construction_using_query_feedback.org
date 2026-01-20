@@ -1,0 +1,254 @@
+#+title: ISOMER: Consistent Histogram Construction Using Query Feedback
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/query_optimization/isomer.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/query_optimization/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+
+* Abstract
+        Database columns are often correlated, so that cardinality estimates computed by assuming independence
+        often lead to a poor choice of query plan by the optimizer. Multidimensional histograms can help solve
+        this problem, but the traditional approach of building such histograms using a data scan often scales
+        poorly and does not always yield the best histogram for a given workload. An attractive alternative is
+        to gather feedback from the query execution engine about the observed cardinality of predicates and
+        use this feedback as the basis for a histogram. In this paper we describe ISOMER, a new feedback-based
+        algorithm for collecting optimizer statistics by constructing and maintaining multidimensional
+        histograms. 
+* Introduction
+        In this paper, we consider an alternative method of building histograms through query feedback.
+        For example, consider a query having a predicate ~make = 'Honda'~, and suppose that the execution engine
+        finds at runtime that 80 tuples from the ~Car~ table satisfy this predicate. Such a piece of information
+        about the observed cardinality of a predicate is called a *query-feedback record* (*QFR*). As the DBMS
+        executes queries, QFRs can be collected with relatively little overhead and used to build and
+        progressively refine a histogram over time. For example, the above QFR may be used to refine a
+        histogram on make by creating a bucket for ~'Honda'~, and setting its count to 80.
+* ISOMER architecture
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: ISOMER Architecture
+        [[../../images/papers/251.png]]
+        We prototyped ISOMER on top of DB2 UDB, which can measure and store actual predicate cardinalities or
+        QFRs at run time.
+
+        Due to efficiency concerns, a QFR is not immediatel used to refine the histogram as soon as it is
+        obtained. Instead, the QFRs are collected in a query feedback store and used in batches to refine the
+        histogram. During periods of light load, or during a maintenance window, the database systems invokes
+        the ISOMER component. On invocation, ISOMER uses the QFRs accumulated in the query feedback store to
+        refine the histogram. The right portion of the figure shows the various components of ISOMER.
+
+        A histogram must be consistent with respect to both new and previous QFRs. However, because of updates
+        to the data these QFRs may be contradictory, in which case there does not exist a histogram consistent
+        with all QFRs. Thus ISOMER’s first task is to detect and discard old, inconsistent QFRs. For this
+        purpose, ISOMER keeps a list of QFRs previously added to the histogram in an offline store as depicted
+        in Figure 1. ISOMER reads the previous QFRs from the offline store and uses linear programming to find
+        and eliminate inconsistent QFRs. Note that the offline store does not have to be read at
+        query-optimization time and hence does not encroach on the space budget allowed for the histogram. In
+        any case, the size of the offline store is not a concern since it cannot grow bigger than the size of
+        the maintained histogram. Indeed, if there are more QFRs than buckets, then some of these QFRs will be
+        either inconsistent or redundant and hence will be eliminated
+
+        Once ISOMER obtains a consistent set of QFRs, the algorithm computes the histogram according to the
+        maximum-entropy principle. If the histogram is too large to fit within its allotted space, ISOMER
+        selectively discards the relatively “unimportant” QFRs in order to reduce the histogram size.
+        Intuitively, a particular QFR is unimportant if the information provided by that QFR is already
+        provided by other QFRs, i.e., if the QFR refines a portion of the histogram that is already
+        sufficiently refined by other QFRs.
+
+        Any inconsistent or unimportant QFR that ISOMER discards is also removed from the list of QFRs that
+        are currently incorporated into the histogram, and the revised list is written back to the offline
+        store. The final histogram is computed according to the maximum-entropy principle and written back
+        into the database statistics. 
+* Incorporating Feedback
+** Histograms and Feedback
+        Given a table \(T\) comprising \(N\) tuples, we wish to build a \(d\)-dimensional histogram over
+        attributes \(A_1,\dots,A_d\) of table \(T\) . For each numerical attribute \(A_i\), denote by \(l_i\)
+        and \(u_i\) the minimum and maximum values of \(A_i\) in the table. We assume that these values are
+        available from one-dimensional database statistics on \(A_i\) . A categorical attribute \(A_i\) having
+        \(D_i\) distinct values can be treated as numerical by mapping each distinct value to a unique integer
+        in \([1,D_i]\), so that \(l_i=1\) and \(u_i=D_i\). The space in which the tuple values lie is
+        \(\cals=[l_1,u_1]\times\dots\times[l_d,u_d]\).
+        
+        A multidimensional histogram is a lossy compressed representation of the true distribution of tuples
+        in \(S\) that is obtained by partitioning \(S\) into \(k\ge 1\) mutually disjoint regions called
+        buckets, and recording the number of tuples in \(T\) that fall in each bucket. ISOMER actually
+        maintains an approximate histogram that records an estimate of the number of tuples that fall in each
+        bucket. Denote by \(b_1,b_2,\dots,b_k\) the \(k\) histogram buckets, by \(C(b_i)\)) the region of
+        \(\cals\) that is covered by \(b_i\), and by \(n(b_i)\) the number of tuples estimated to lie in
+        \(b_i\) . The tuples in each bucket \(b_i\) are assumed to be uniformly distributed throughout
+        \(C(b_i)\).
+
+        ISOMER maintains a histogram based on query feedback. Specifically, at each time point, the system
+        maintains a list of QFRs of the form \((q_1,N(q_1)),(q_2,N(q_2)),\dots,(q_m,N(q_m))\) for some
+        \(m\ge 1\), where each q is a predicate of the form
+        \begin{equation*}
+        (x_1\le C_1\le y_1)\wedge\dots\wedge(x_{d'}\le C_{d'}\le y_{d'})
+        \end{equation*}
+        and \(N(q)\) is the number of tuples that satisfy \(q\). Here \(d'\le d\) and \(C_1,\dots,C_{d'}\) are
+        distinct attributes from among \(A_1,\dots,A_d\). We assume that if \(C_j\) is categorical, then
+        \(x_j=y_j\), so that the conjunct \(x_j\le C_j\le y_j\) is actually an equality predicate. In the
+        following sections, we denote by \(R(q)\) the subset of the region \(S\) for which \(q\) is true.
+** A Running Example
+        Consider
+        #+begin_src sql
+SELECT * FROM Car WHERE
+make = 'Honda' AND color = 'White'
+        #+end_src
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: Gathering Query Feedback (QFRs)
+        [[../../images/papers/252.png]]
+
+        Figure [[ref:f2]] shows a possible plan for executing this query; the actual number of tuples at each
+        stage are shown in parenthesis. The figure also shows the various predicates \(q\) for which \(N(q)\)
+        can be collected during query execution; the cardinality information for these predicates comprise the
+        QFRs. Gathering of QFRs is already supported by several commercial database systems and has been shown
+        in DB2 to have very low runtime overhead (typically less than 5%).
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: Running Example
+        [[../../images/papers/253.png]]
+        
+        Suppose that we wish to build a two-dimensional histogram on the attributes ~make~ and ~color~ by using
+        query feedback. Also suppose for simplicity that there are only two distinct makes (say ~'Honda'~ and
+        ~'BMW'~), and only two distinct colors (say
+        ~'Black'~ and ~'White'~) in the Car relation. Then any multidimensional histogram on these attributes has
+        at most four buckets (Figure [[ref:f3]]). We assume that our histogram stores all of these four buckets.
+        The first QFR that we add to the histogram is the total number of tuples in the table. This number can
+        be obtained from system catalog statistics. Suppose there are 100 tuples in the Car table. This QFR
+        can be expressed as:
+        \begin{equation}
+        \label{1}
+        n(b_1)+n(b_2)+n(b_3)+n(b_4)=100
+        \end{equation}
+        As we assume uniform distribution, we have \(n(b_1)=n(b_2)=n(b_3)=n(b_4)=25\).
+
+        We now add the QFR \(N(\texttt{make = 'Honda'})=80\) to the histogram. This QFP can be expressed as:
+        \begin{equation}
+        \label{2}
+        n(b_2)+n(b_4)=80
+        \end{equation}
+
+        
+        Now we get \(n(b_2)=n(b_4)=40\). But \(n(b_1)=n(b_3)=25\) would be inconsistent now and we need to
+        modify them accordingly.
+
+        In summary, it is reasonable to impose the following requirements when adding a new QFR to the
+        histogram:
+        1. *Consistency*: After adding a new QFR, the histogram should be consistent with all QFRs added so far
+        2. *Uniformity*: If there are multiple histograms consistent with all of the QFRs, then the choice of
+           the final histogram should not be arbitrary, but must be based on the traditional assumption of uniformity.
+
+
+        So far in this example, it has been easy and intuitive to apply the uniformity assumption. However, it
+        is not always clear how to impose uniformity. To illustrate, suppose that the next QFR we add to the
+        histogram is \(N(\texttt{color = 'white'})=30\). This QFR can be written as:
+        \begin{equation}
+        \label{3}
+        n(b_3)+n(b_4)=30
+        \end{equation}
+
+        If we employ the naı̈ve solution of making the histogram consistent with [[eqref:3]] while imposing
+        uniformity on \(n(b_3)\) and \(n(b4 )\), we get \(n(b3 ) = n(b4 ) = 15\). Further enforcing
+        consistency with [[eqref:1]] and [[eqref:2]], we get the final histogram shown in Figure [[ref:f3]](e). This
+        solution clearly does not enforce uniformity: although white Hondas and white BMWs are in equal
+        proportion, there are far more black Hondas than black BMWs. This non-uniformity among black cars has
+        not been indicated by any added QFR, and is only due to our ad-hoc method of enforcing consistency. To
+        enforce consistency while avoiding unsatisfactory results, we turn to the information-theoretic
+        principle of maximum entropy, described next.
+** The Maximum-Entropy Principle
+        Consider a discrete probability distribution \((p_1,p_2,\dots,p_n)\) on \(n\) distinct outcomes, i.e.,
+        each \(p_i\) is nonnegative and \(\sum_{i=1}^n=1\). In many applications, only partial information
+        about such a probability distribution is available (e.g., \(p_1+p_2=0.5\)). The maximum-entropy
+        principle provides a well grounded criterion for selecting a unique distribution from among the
+        candidates.
+
+        Specifically, the principle prescribes selection of the candidate \(\calp=(p_1,p_2,\dots,p_n)\) that
+        has the maximum entropy value \(H(\calp)\), where \(H(\calp)=-\sum_{i=1}^np_i\ln(p_i)\). The
+        maximum-entropy principle can be justified informally as follows:
+
+        From information theory, we know that entropy measures the uncertainty or uninformativeness in a
+        distribution. For example, the value of the entropy ranges from 0—when a specified outcome occurs with
+        certainty—to a maximum of ln(n) when no information is available and all outcomes are equally likely
+        (\(p_1=\dots=p_n=1/n\)). Thus the maximum-entropy principle leads to a choice of the simplest, i.e.,
+        most uninformative distribution possible that is consistent with the available information. To choose
+        a distribution with lower entropy would amount to assuming information that we do not have; to choose
+        one with a higher entropy would ignore the information that we do have. The maximum-entropy
+        distribution is therefore the only reasonable choice. For a continuous probability distribution with
+        probability density function (pdf) \(\calp(u)\), the entropy is defined as
+        \(H(\calp)=\int_{\cals}\calp(u)\ln(\calp(u))du\), and the foregoing discussion extends to this setting
+        in an obvious way.
+
+        For ISOMER, the maximum-entropy principle can also be justified as a means of ensuring uniformity. As
+        mentioned above, entropy is maximized for a uniform distribution. Thus, choosing the distribution
+        according to the maximum-entropy principle facilitates our goal of maintaining consistency and
+        uniformity at the same time. 
+** Maximum Entropy in ISOMER
+*** Histogram Structure in ISOMER
+        ISOMER uses the STHoles data structure to represent and store multidimensional histograms. In the
+        STHoles histogram, each bucket \(b_i\) has a hyperrectangular bounding box denoted by box(\(b_i\))
+        (\(\subseteq\cals\)), i.e., bucket \(b_i\) is bounded between two constant values in each dimension.
+        Bucket \(b_i\), however, does not cover the entire region \(box(b_i)\). There may be some "holes"
+        inside \(box(b_i)\) that are not covered by \(b_i\). These regions are themselves histogram buckets,
+        and are referred to as *children* of \(b_i\). The bounding boxes of these children are mutually disjoint
+        hyperrectangles and completely enclosed within \(box(b_i)\). The region covered by \(b_i\) is formally
+        given by:
+        \begin{equation*}
+        C(b_i)=box(b_i)-\bigcup_{b_j\in children(b_i)}box(b_j)
+        \end{equation*}
+
+        Intuitively, in the absence of holes, \(b_i\) would represent a region of uniform tuple density. However,
+        the STHoles histogram identifies regions within \(b_i\) that have a different tuple density, and represents
+        them as separate histogram buckets.
+
+        For a multidimensional predicate \(q\) that selects all tuples lying in a specified region
+        \(R(q)\subseteq\cali\), an STHoles histogram coomprising buckets \(b_1,\dots,b_k\) estimates the
+        number of tuples that satisfy this predicate as
+        \begin{equation*}
+        \hat{N}(q)=\sum_{i=1}^kn(b_i)\frac{vol(R(q)\cap C(b_i))}{vol(C(b_i))}
+        \end{equation*}
+        Here \(vol(R)\) denotes the usual euclidean volume of the region \(R\) when the data is real-valued;
+        for discrete (i.e., integer of integer-coded categorical) data, \(vol(R)\) denotes the number of
+        integer points that lie in \(R\).
+
+        ISOMER initializes the STHoles histogram to contain a single bucket \(b_1\) such that
+        \(box(b_1)=C(b_1)=\cals\) and \(n(b_1)=N\). At this point, the histogram embodies the simplest
+        possible uniformity assumption. As more QFRs are added over time, ISOMER learns more about the
+        distribution of tuples in \(\cals\) and incorporates this information into the histogram by “drilling”
+        holes in \(b_1\).
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: Drilling Holes for a New QFR
+        [[../../images/papers/254.png]]
+
+
+        Suppose that ISOMER obtains a QFR about a specified multidimensional predicate \(q\), a QFR about a
+        specified multidimensional predicate \(q\). To make the histogram consistent with this QFR, ISOMER
+        must first ensure that the histogram contains a set of buckets that exactly cover \(R(q)\), so that
+        the sum of the tuple counts in these buckets can then be equated to \(N(q)\). If such a set of buckets
+        already exists, no holes need to be drilled. Otherwise, the process of drilling holes for q proceeds
+        as shown in Figure [[ref:f4]]. Specifically, ISOMER descends down the bucket tree until it finds a bucket
+        \(b\) such that \(R(q)\subset C(b)\) but \(R(q)\subsetneq C(b')\) for any \(b'\in children(b)\).
+        ISOMER forms a new bucket \(b_{new}\) such that \(box(b_{new})=R(q)\) and processes each bucket
+        \(b'\in children(b)\) as follows.
+        * If \(box(b')\cap R(q)=\emptyset\), then nothing needs to be done
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

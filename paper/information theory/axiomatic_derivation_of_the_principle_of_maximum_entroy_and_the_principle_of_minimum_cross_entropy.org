@@ -1,0 +1,554 @@
+#+TITLE: Axiomatic Derivation of the Principle of Maximum Entropy and the Principle of Minimum Cross-Entropy
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/information theory/axiomatic_derivation_of_the_principle_of_maximum_entroy_and_the_principle_of_minimum_cross_entropy.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/information theory/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+
+** The Maximum Entropy Principle and the Minimum Cross-Entropy Principle
+        Suppose you know that a system has a set of possible states \(x_i\) with unknown probabilities
+        \(q^\dag(x_i)\), and you then learn /constraints/ on the distribution \(q^\dag\): either values of
+        certain expectations \(\sum_iq^\dag(x_i)f_k(x_i)\) or bounds on these values. Suppose you need to
+        choose a distribution \(q\) that is in some sense the best estimate of \(q^\dag\) given what you know.
+        Usually there remains an infinite set of distributions that are not ruled out by the constraints.
+        Which one should you choose?
+
+        The principle of maximum entropy states that, of all the distributions \(q\) that satisfy the
+        constraints, you should choose the one with the largest entropy \(-\sum_iq(x_i)\log(q(x_i))\)
+
+        The principle of minimum cross-entropy is a generalization that applies in cases when a prior
+        distribution \(p\) that estimates \(q^\dag\) is known in addition to the constraints. The principle
+        states that, of the distributions \(q\) that satisfy the constraints, you should choose the one with
+        the least cross-entropy \(\sum_iq(x_i)\log(q(x_i)/p(x_i))\). Minimizing cross-entropy is equivalent to
+        maximizing entropy when the prior is a uniform distribution. Unlike entropy maximization,
+        cross-entropy minimization generalizes correctly for continuous probability densities. One then
+        minimizes the functional
+        \begin{equation}
+        \label{1}
+        H(q,p)=\int q(x)\log(q(x)/p(x))dx
+        \end{equation}
+
+** Justifying the Principles as General Methods of Inference
+        We prove that the maximum entropy principle is correct in the following sense: maximizing any function
+        but entropy will lead to inconsistencies unless that function and entropy have identical maxima.
+
+        Stated differently, we prove that, given new constraint information, there is only one distribution
+        satisfying these constraints that can be chosen by a procedure that satisfies the consistency axioms;
+        this unique distribution can be obtained by maximizing entropy.
+
+        Informally, our axioms may be phrased as follows:
+        1. *Uniqueness*: The result should be unique
+        2. *Invariance*
+        3. *System Independence*
+        4. *Subset Independence*
+
+* Definitions and Notation
+        We use lowercase boldface roman letters for system states, which may be multidimensional, and
+        uppercase boldface roman letters for sets of system states. Let \(\bx\) be a state of some system that
+        has a set \(\bD\) of possible states, let \(\cald\) be the set of all probability densities \(q\) on
+        \(\bD\) s.t. \(q(\bx)\ge 0\) for \(\bx\in\bD\) and
+        \begin{equation*}
+        \int_{\bD}q(\bx)d\bx=1
+        \end{equation*}
+        We use a superscript dagger to distinguish the system's unknown "true" state probability density
+        \(q^\dag\in\cald\).
+
+        New information takes the form of linear *equality constraints*
+        \begin{equation}
+        \label{3}
+        \int_{\bD}q^\dag(\bx)a_k(\bx)d\bx=0
+        \end{equation}
+        and *inequality constraints*
+        \begin{equation}
+        \label{4}
+        \int_{\bD}q^\dag(\bx)c_k(\bx)d\bx\ge 0
+        \end{equation}
+        for known sets of bounded functions \(a_k\) and \(c_k\). The probability densities that satisfy such
+        constraints always comprise a closed convex subset of \(\cald\). (A set \(\calj\subseteq\cald\) is
+        *convex* if, given \(0\le A\le 1\) and \(q,r\in\calj\), it contains the weighted average \(Aq+(1-A)r\))
+
+        Furthermore, any closed convex subset of \(\cald\) can be defined by equality and inequality
+        constraints. We express constraints in these terms, using the notation \(I=(q^\dag\in\calj)\), to mean
+        that \(q^\dag\) is a member of the closed convex set \(\calj\subseteq\cald\). We refer to \(I\) as a
+        *constraint* and to \(\calj\) as a *constraint set*.
+
+        Let \(p\in\cald\) be some /prior/ density that is an estimate of \(q^\dag\) obtained, by any means,
+        prior to learning \(I\). We require that priors be strictly positive
+        \begin{equation}
+        \label{5}
+        p(\bx\in\bD)>0
+        \end{equation}
+        Given a prior \(p\) and new information \(I\), the *posterior* density \(q\in\calj\) that results from
+        taking \(I\) into account is chosen by minimizing a functional \(H(q,p)\) in the constraint set
+        \(\calj\):
+        \begin{equation}
+        \label{6}
+        H(q,p)=\min_{q'\in\calj}H(q',p)
+        \end{equation}
+
+        We introduce an "information operator" \(\circ\) that expresses [[eqref:6]] using the notation
+        \begin{equation}
+        \label{7}
+        q=p\circ I
+        \end{equation}
+
+        For some other functional \(F(q,p)\), suppose \(q\) satisfies [[eqref:6]] iff it satisfies
+        \begin{equation*}
+        F(q,p)=\min_{q'\in\calj}F(q',p)
+        \end{equation*}
+        Then we say that \(F\) and \(H\) are *equivalent*. If \(F\) and \(H\) are equivalent, the operator
+        \(\circ\) can be realized using either functional.
+
+        If \(H\) has the form [[eqref:1]], then [[eqref:7]] expresses the principle of minimum cross-entropy.
+
+        In making the restriction [[eqref:5]] we assume that \(\bD\) is the set of states that are possible
+        according to prior information. We do not impose a similar restriction on the posterior \(q=p\circ I\)
+        since \(I\) may rule out states currently thought to be possible. If this happens, then \(\bD\) must
+        be redefined before \(q\) is used as a prior in a further application of \(\circ\). For simplicity, we
+        impose on the information \(I\) the restriction that there exists at least one density \(q\in\calj\)
+        with \(H(q,p)<\infty\)
+
+        For some subset \(\bS\subseteq\bD\) of states and \(\bx\in\bS\), let
+        \begin{equation*}
+        q(\bx\mid\bx\in\bS)=\frac{q(\bx)}{\int_{\bS}q(\bx')d\bx'}
+        \end{equation*}
+        be the *conditional density*, given \(\bx\in\bS\), corresponding to any \(q\in\cald\). We use
+        \begin{equation*}
+        q(\bx\mid\bx\in\bS)=q*\bS
+        \end{equation*}
+        as a shorthand.
+
+        When \(\bD\) is a discrete set of system states, densities are replaced by discrete distributions and
+        integrals by sums in the usual way. We use lowercase boldface roman letters for discrete probability
+        distributions, which we consider to be vectors; for example, \(\bq=q_1,\dots,q_n\).
+
+* The Axioms
+        We assume, throughout, a system with possible states \(\bD\) and probability densitiy
+        \(q^\dag\in\cald\).
+
+        #+ATTR_LATEX: :options [Uniqueness]
+        #+BEGIN_axiom
+        The posterior \(q=p\circ I\) is unique for any prior \(p\in\cald\) and new information
+        \(I=(q^\dag\in\calj)\), where \(\calj\subseteq\cald\)
+        #+END_axiom
+
+        #+ATTR_LATEX: :options [Invariance]
+        #+BEGIN_axiom
+        Let \(\Gamma\) be a coordinate transformation from \(\bx\in\bD\) to \(\by\in\bD'\) with
+        \((\Gamma q)(\by)=\bJ^{-1}q(\bx)\) where \(\bJ\) is the Jacobian \(\bJ=\abs{\partial(\by)/\partial(\bx)}\).
+        #+LATEX: \wu{
+        When we change variables from \(\bx\) to \(\by=\Gamma(\bx)\), the volume changes
+        \begin{equation*}
+        \bJ d\bx=d\by
+        \end{equation*}
+        (Check [[https://math.etsu.edu/multicalc/prealpha/Chap3/Chap3-3/printversion.pdf][this]]) Now we hope
+        \begin{gather*}
+        \int(\Gamma q)(\by)d\by=\int(\Gamma q)(\by)\bJ d\bx=1=\int q(\bx)d\bx
+        \end{gather*}
+        Therefore
+        \begin{equation*}
+        (\Gamma q)(\by)=\bJ^{-1}q(\bx)
+        \end{equation*}
+        #+LATEX: }
+        Let \(\Gamma\cald\) be the set of densities \(\Gamma q\) corresponding to densities \(q\in\cald\). Let
+        \((\Gamma\calj)\subseteq(\Gamma\cald)\) correspond to \(\calj\subseteq\cald\). Then, for any prior
+        \(p\in\cald\) and new information \(I=(q^\dag\in\calj)\),
+        \begin{equation*}
+        (\Gamma p)\circ(\Gamma I)=\Gamma(p\circ I)
+        \end{equation*}
+        holds, where \(\Gamma I=((\Gamma q^\dag)\in(\Gamma\calj))\)
+        #+END_axiom
+
+        Justification: We expect the same answer when we solve the same problem in two different coordinate systems
+
+        Suppose there are two systems, with sets \(\bD_1\), \(\bD_2\) of states and probability densities of
+        states \(q_1^\dag\in\cald_1\), \(q_2^\dag\in\cald_2\). Then we require the following axiom.
+        #+ATTR_LATEX: :options [System Independence]
+        #+BEGIN_axiom
+        Let \(p_1\in\cald_1\) and \(p_2\in\cald_2\) be prior densities. Let \(I_1=(q_1^\dag\in\calj_1)\) and
+        \(I_2=(q_2^\dag\in\calj_2)\) be new information about the two systems, where
+        \(\calj_1\subseteq\cald_1\) and \(\calj_2\subseteq\cald_2\). Then
+        \begin{equation*}
+        (p_1p_2)\circ(I_1\wedge I_2)=(p_1\circ I_1)(p_2\circ I_2)
+        \end{equation*}
+        holds
+        #+END_axiom
+
+        Justification: Instead of \(q_1^\dag\) and \(q_2^\dag\) we could describe the systems using the joint
+        density \(q^\dag\in\cald_{12}\). If the two systems were independent, then the joint density would
+        satisfy
+        \begin{equation}
+        \label{12}
+        q^\dag(\bx_1,\bx_2)=q_1^\dag(\bx_1)q_2^\dag(\bx_2)
+        \end{equation}
+        Now the new information about each system can also be expressed completely in terms of the joint
+        density \(q^\dag\). For example, \(I_1\) can be expressed as \(I_1=(q^\dag\in\cali_1')\), where
+        \(\cali_1\subseteq\cald_{12}\) is the set of joint densities \(q\in\cald_{12}\) s.t.
+        \(q_1\in\cali_1\), where
+        \begin{equation*}
+        q_1(\bx_1)=\int_{\bD_2}q(\bx_1,\bx_2)d\bx_2
+        \end{equation*}
+        \(I_2\) can be expressed similarly. Now, since two priors together define a joint prior \(p=p_1p_2\),
+        it follows that there are two ways to take the new information \(I_1\) and \(I_2\) into account: we
+        can obtain separate posteriors \(q_1=p_1\circ I_1\) and \(q_2=p_2\circ I_2\), or we can obtain a joint
+        posterior \(q=p\circ(I_1\wedge I_2)\). Because \(p_1\) and \(p_2\) are independent, and because
+        \(I_1\) and \(I_2\) give no information about any interaction between the two systems, we expect these
+        two ways to be related by \(q=q_1q_2\), whether or not [[eqref:12]] holds
+
+        #+ATTR_LATEX: :options [Subset Independence]
+        #+BEGIN_axiom
+        Let \(\bS_1,\dots,\bS_n\) be disjoint sets whose union is \(\bD\), and let \(p\in\cald\) be any known
+        prior. For each subset \(\bS_i\), let \(I_i=(q^\dag*\bS_i\in\cali_i)\) be new information about the
+        conditional density \(q^\dag*\bS_i\), where \(\cali_i\subseteq\cals_i\) is the set of densities on
+        \(\bS_i\). Let \(M=(q^\dag\in\calm)\) be new information giving the probability of being in each of
+        the \(n\) subsets, where \(\calm\) is the set of densities \(q\) that satisfy
+        \begin{equation}
+        \label{13}
+        \int_{\bS_i}q(\bx)d\bx=m_i
+        \end{equation}
+        for each subset \(\bS_i\), where the \(m_i\) are known values. Then
+        \begin{equation}
+        \label{14}
+        (p\circ(I\wedge M))*\bS_i=(p*\bS_i)\circ I_i
+        \end{equation}
+        holds, where \(I=I_1\wedge I_2\wedge\dots\wedge I_n\)
+        #+END_axiom
+
+        Justification: This axiom concerns situations in which the set of states \(\bD\) decomposes naturally
+        into disjoint subsets \(\bS_i\), and new information \(I_i\) is obtained about the conditional
+        probability densities \(q^\dag*\bS_i\) in each subset. One way of accouting for this information is to
+        obtain a conditional posterior \(q_i=(p*\bS_i)\circ I_i\) from each conditional prior \(p*\bS_i\).
+        Another way is to obtain a posterior \(q=p\circ I\) for the whole system, where
+        \(I=I_1\wedge\dots\wedge I_n\). Two results should be related by \(q*\bS_i=q_i\) or
+        \begin{equation}
+        \label{15}
+        (p\circ I)*\bS_i=(p*\bS_i)\circ I_i
+        \end{equation}
+        Moreover, suppose that we also learn the probability of being in each of the \(n\) susbets. That is,
+        we learn \(M=(q^\dag\in\calm)\) where \(\calm\) is the set of densities \(q\) that satisfy [[eqref:13]]
+        for each subset \(\bS_i\). The known numbers \(m_i\) are the probabilities that the system is in a
+        state within \(\bS_i\). The \(m_i\) satisfy \(\sum_im_i=1\). Taking \(M\) into account should not
+        affect the conditional densities that result from taking \(I\) into account. We therefore expect a
+        more general version of [[eqref:15]] to hold, namely [[eqref:14]]
+* Consequences of the Axioms
+** Summary
+        We establish our main result in four steps.
+        1. The subset independence axiom and a special case of the invariance axiom together restrict \(H\) to
+           functionals that are equivalent to the form
+           \begin{equation*}
+           F(q,p)=\int_{\bD}f(q(\bx),p(\bx))d\bx
+           \end{equation*}
+           for some function \(f\). We call this the "sum form"
+        2. The general case of the invariance axiom restricts \(H\) to functionals that are equivalent to the
+           form
+           \begin{equation*}
+           F(q,p)=\int_{\bD}q(\bx)h(q(\bx)/p(\bx))d\bx
+           \end{equation*}
+           for some function \(h\).
+        3. Using independence axioms, we show that if \(H\) is a functional that satisfies all four axioms,
+           then \(H\) is equivalent to cross-entropy.
+        4. Cross-entropy satisfies the axioms
+** Deriving the Sum Form
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Let the assumptions of Subset independence hold, and let \(q=p\circ(I\wedge M)\) be the posterior for
+        the whole system (\(q\in\cald\)). Then \(q(\bx\in\bS_i)\) is functionally independent of
+        \(q(\bx\notin\bS_i)\), of the prior \(p(\bx\notin\bS_i)\), and of \(n\)
+        #+END_lemma
+
+        #+BEGIN_proof
+        Let
+        \begin{equation}
+        \label{18}
+        q_i=(p*\bS_i)\circ I_i
+        \end{equation}
+        be the conditional posterior density in the \(i\)th subspace (\(q_i\in\cals_i\)). Since \(p*\bS_i\)
+        depends on \(p\) only in terms of \(p(\bx\in\bS_i)\), so does \(q_i\). Furthermore, since \(q_i\) is
+        the solution [[eqref:18]] to a problem in which \(\bx\in\bS_i\) only, \(q_i\) cannot depend on
+        \(q(\bx\notin\bS_i)\). Now, [[eqref:14]] states that \(q(x)=m_iq_i(\bx)\) for \(\bx\in\bS_i\), where we
+        have used [[eqref:13]]. Since the \(m_i\) are fixed, it follows that \(q(\bx\in\bS_i)\) is independent of
+        \(q(\bx\notin\bS_i)\) and \(p(\bx\notin\bS_i)\).
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_lemma
+        Let \(\bS_1,\dots,\bS_n\) be disjoint sets whose union is \(\bD\). For a prior \(p\) and a posterior
+        \(q=p\circ I\), let
+        \begin{equation*}
+        p_j=\int_{\bS_j}p(\bx)d\bx \quad\text{ and }\quad q_j=\int_{\bS_j}q(\bx)d\bx
+        \end{equation*}
+        Suppose that \(p(\bx\in\bS_j)\) is constant for each subset \(\bS_j\), and let the new information
+        \(I\) be provided by constraints [[eqref:3]] and [[eqref:4]] in which the functions \(a_k\) and \(c_k\) are
+        also constant in each subset. Then the posterior \(q=p\circ I\) is also constant in each subset, and
+        \(H\) is equivalent to a sysmmetric function of the \(n\) pairs of variables \((q_j,p_j)\) (we refer
+        to this situation as the *discrete case*)
+        #+END_lemma
+
+        #+BEGIN_proof
+        Since the \(a_k\) and \(c_k\) are constant in each subset, the constraints have the form
+        \begin{equation*}
+        \sum_jq_j^\dag a_{kj}=0
+        \end{equation*}
+        or
+        \begin{equation*}
+        \sum_{j}q_j^\dag c_{kj}\ge 0
+        \end{equation*}
+        where \(a_{kj}=a_k(\bx\in\bS_j)\), \(c_{kj}=c_k(\bx\in\bS_j)\) and
+        \begin{equation*}
+        q_j^\dag=\int_{\bS_j}q^\dag(\bx)d\bx
+        \end{equation*}
+        Now, let \(\Gamma\) be a measure-preserving transformation that scrambles the \(\bx\) within each
+        subset \(\bS_i\). This leaves the prior and the constraints unchanged. It follows from the Invariance
+        that \(\Gamma\) also leaves \(q\) unchanged, which will only be the case if \(q\) is the constant in
+        each \(\bS_i\).
+        #+END_proof
+
+* The Lebesgue Integral
+        [[https://users.math.msu.edu/users/banelson/files/lebesgue_integral.pdf][reference]]
+        [[https://e.math.cornell.edu/people/belk/measuretheory/IntroductionLebesgueIntegral.pdf][link 2]]
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given a non-empty set \(X\), a *\(\sigma\)-algebra on \(X\)* is a non-empty collection \(\calm\) of
+        subsets of \(X\) s.t.
+        1. \(S\in\calm\) implies \(S^c\in\calm\)
+        2. \(S_i\in\calm\) for \(i\in I\) with \(I\) a countable index set implies \(\bigcup_{i\in I}S_i\in\calm\)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        For a non-empty set \(X\) and a collection \(\calf\) of subsets of \(X\), the *\(\sigma\)-algebra*
+        *generated by \(\calf\)* is the smallest \(\sigma\)-algebra \(\calm\) s.t. \(\calf\subset\calm\), and is
+        denoted by \(\calm(\calf)\)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Suppose \(X=E\) a metric space with metric \(d\). Then we consider the collection \(\calf\) of open
+        subsets of \(X\). The \(\sigma\)-algebra \(\calm(\calf)\) generated by this collection is known as the
+        *Borel \(\sigma\)-algebra* and is denoted by \(\calb_X\). Note that since \(\calb_X\) is closed under
+        complements, it also contains all closed subsets of \(X\).
+        #+END_examplle
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given a non-empty set \(X\) equipped with a \(\sigma\)-algebra \(\calm\) on \(X\), a *measure on*
+        \(\calm\) is a map \(\mu:\calm\to[0,\infty]\) s.t.
+        1. \(\mu(\emptyset)=0\)
+        2. for \(\{S_i\}_{i\in I}\) a countable collection of disjoint subsets \(S_i\in\calm\),
+           \(\mu(\bigcup_{i\in I}S_i)=\sum_{i\in I}\mu(S_i)\)
+        
+        #+END_definition
+
+        The triple \((X,\calm,\mu)\) is called a *measure space* and the elements of \(\calm\) are called
+        *measurable sets*.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        [[label:1.8]]
+        Let \(X=\R\) which we think of as a metric space equipped with the metric \(d(x,y)=\abs{x-y}\). Then
+        let \(\calb_{\R}\) be the Borel \(\sigma\)-algebra. Let \(F:\R\to\R\) be an increasing, continuous
+        function. Then one can define a measure \(\mu_F\) on \(\calb_{\R}\) by
+        \begin{equation*}
+        \mu_F(S):=\inf\left\{\sum_{j=1}^\infty[F(b_j)-F(a_j)]:\bigcup_{j=1}^\infty(a_j,b_j]\supset S\right\}
+        \end{equation*}
+        In particular, for any interval \((a,b]\) one has \(\mu_F((a,b])=F(b)-F(a)\). This equality also holds
+        if \((a,b]\) is replaced with \((a,b)\), \([a,b]\) or \([a,b)\)
+        #+END_examplle
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \((X,\calm,\mu)\) be a measure space.
+        1. Monotonicity: If \(S,T\in\calm\) with \(S\subseteq T\), then \(\mu(S)\le\mu(T)\)
+        2. Subadditivity: If \(\{S_i\}_{i\in I}\subset\calm\) is a countable collection of not necessarily
+           disjoint subsets of \(X\), then
+           \begin{equation*}
+           \mu(\bigcup_{i\in I}S_i)\le\sum_{i\in I}\mu(S_i)
+           \end{equation*}
+        3. Continuity from below: If \(\{S_n\}_{n\in\N}\subset\calm\) is an ascending chain
+           \(S_1\subset S_2\subset\dots\), then
+           \begin{equation*}
+           \mu(\bigcup_{n=1}^\infty S_n)=\lim_{n\to\infty}\mu(S_n)
+           \end{equation*}
+        4. Continuity from above: If \(\{S_n\}_{n\in\N}\subset\calm\) is a descending chain
+           \(S_1\supset S_2\supset\dots\) and \(\mu(S_1)<\infty\), then
+           \begin{equation*}
+           \mu(\bigcap_{n=1}^\infty S_n)=\lim_{n\to\infty}\mu(S_n)
+           \end{equation*}
+        #+END_theorem
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Given a measurable space \((X,\calm,\mu)\), a subset \(N\in\calm\) s.t. \(\mu(N)=0\) is called a
+        *\(\mu\)-null set* (or just *null set*). If some property is true for all points \(x\in X\) except on a
+        null set, we say the property holds *\(\mu\)-almost everywhere* (or just *almost everywhere*)
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        A measure space \((X,\calm,\mu)\) is said to be *complete* if for any \(\mu\)-null set \(N\), all
+        subsets \(S\subset N\) are also measurable
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Define \(F:\R\to\R\) by \(F(x)=x\) and let \(\mu_F\) be as in Example [[ref:1.8]]. Let \((\R,\call,m)\) be
+        the completion of the measure space \((\R,\calb_{\R},\mu_F)\). Then \(m\) is called the *Lebesgue
+        measure*, and subsets \(S\subset\R\) are said to be *Lebesgue measurable* if \(S\in\call\)
+        #+END_definition
+
+        Recall that for any half-open interval \((a,b]\), \(\mu_F((a,b])=F(b)-F(a)=b-a\) when \(F(x)=x\).
+        Since the Lebesgue measure extends this measure, we also have \(m((a,b])=b-a\).  Thus the Lebesgue
+        measure is, for sufficiently nice subsets of R like the intervals, simply giving what we usually think
+        of as the length.  In particular, \(m(\R)=\infty\) and \(m(\{x\})=0\) for any \(x\in\R\). However,
+        some sets which we might think of as "large" are actually quite small according to \(m\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_examplle
+        Let \(S\subset\R\) be any countable subset. In this case we can enumerate \(S=\{x_n\}_{n\in\N}\).
+        Since the singleton sets \(\{x_n\}\) are closed for each \(n\in\N\), we have
+        \(\{x_n\}\in\calb_{\R}\subset\call\). As a \(\sigma\)-algebra, \(\calb_{\R}\) is closed under
+        countable unions and hence
+        \begin{equation*}
+        S=\bigcup_{n\in\N}\{x_n\}\in\calb_{\R}\subset\call
+        \end{equation*}
+        Thus \(S\) is Borel measurable and consequently Lebesgue measurable.
+        #+END_examplle
+
+
+
+** Measures
+
+** Ref2
+        Given a measure space \((X,\calm,\mu)\) and a function \(f:X\to\R\), we wish to define the *Lebesgue
+        integral* of \(f\) on \(X\), denoted
+        \begin{equation*}
+        \int_Xfd\mu
+        \end{equation*}
+        
+*** Measurable Functions
+        Recall that the characteristic function (or indicator function) of a set \(X\subseteq X\) is the
+        function \(\chi_S:X\to\R\) defined by
+        \begin{equation*}
+        \chi_S(x)=
+        \begin{cases}
+        1&x\in S\\
+        0&x\notin S
+        \end{cases}
+        \end{equation*}
+        If \(E\subseteq X\) is a measurable set, it seems intuitive that the integral of \(\chi_E\) should be
+        the same as measure of \(E\), i.e.,
+        \begin{equation*}
+        \int_X\chi_Ed\mu=\mu(E)
+        \end{equation*}
+        
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Let \((X,\calm,\mu)\) be a measure space. A function \(f:X\to[-\infty,\infty]\) is said to be
+        *measurable* if the set
+        \begin{equation*}
+        f^{-1}((a,\infty])=\{x\in X\mid f(x)>a\}
+        \end{equation*}
+        is measurable for each \(a\in\R\)
+        #+END_definition
+
+        For example, if \(\chi_V:\R\to\R\)  is the characteristic function of a Vitali set, then
+        \begin{equation*}
+        \chi_V^{-1}((1/2,\infty])=V
+        \end{equation*}
+        is not a measurable set, and hence \(\chi_V\) is not a measurable function
+
+*** Trouble with Negative Values
+        Even if we restrict to measurable functions, it is not reasonable to expect to be able to evaluate any
+        integral. For example, consider the integral
+        \begin{equation*}
+        \int_{\R}\cos dm
+        \end{equation*}
+        
+        Since there is no reasonable way to assign a value to this sum, the Lebesgue integral of the cosine
+        function on all of \(\R\) is undefined
+
+        In general, if \((X,\calm,\mu)\) is a measure space, then we will be able to define the Lebesgue
+        integral
+        \begin{equation*}
+        \int_Xfd\mu
+        \end{equation*}
+        for any /non-negative/ measurable function \(f:X\to[0,\infty]\)
+
+        Assumption: Let \((X,\calm,\mu)\) be a measure space, and let \(f:X\to[0,\infty]\) be a non-negative
+        measurable function. Then the Lebesgue integral
+        \begin{equation*}
+        \int_Xfd\mu
+        \end{equation*}
+        has a well-defined value in \([0,\infty]\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Let \(X\) be a set, and let \(f:X\to[-\infty,\infty]\). Then the *positive part* and *negative part* of
+        \(f\) are the functions \(f^+,f^-:X\to[0,\infty]\) defined by
+        \begin{equation*}
+        f^+(x)=
+        \begin{cases}
+        f(x)&f(x)\ge 0\\
+        0
+        \end{cases}\quad\text{ and }\quad
+        f^-(x)=
+        \begin{cases}
+        -f(x)&f(x)\le 0\\
+        0
+        \end{cases}
+        \end{equation*}
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Let \((X,\calm,\mu)\) be a measure space, and let \(f:X\to[-\infty,\infty]\) be a measurable function.
+        Then the positive and negative parts of \(f\) are measurable
+        #+END_proposition
+
+        #+BEGIN_proof
+        If \(a\in\R\), then \((f^+)^{-1}((a,\infty])=X\) for \(a<0\), and
+        \begin{equation*}
+        (f^+)^{-1}((a,\infty])=f^{-1}((a,\infty))
+        \end{equation*}
+        for \(a\ge 0\), and so \(f^+\) is measurable. For \(f^-\), we have
+        \((f^-)^{-1}((a,\infty])=X\) for \(a<0\). For \(a\ge 0\), observe that
+        \begin{equation*}
+        (f^-)^{-1}((a,\infty])=f^{-1}([-\infty,-a))
+        \end{equation*}
+        But the set on the right is the complement of \(f^{-1}([-a,\infty))\), and
+        \begin{equation*}
+        f^{-1}([-a,\infty))=\bigcap_{n\in\N}f^{-1}((-a-\frac{1}{n},\infty])
+        \end{equation*}
+        which is measurable
+        #+END_proof
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        Let \((X,\calm,\mu)\) be a measure space, and let \(f:X\to[-\infty,\infty]\) be a measurable function.
+        We say that \(f\) is *Lebesgue integrable* if either
+        \begin{equation*}
+        \int_Xf^+d\mu<\infty \quad\text{ or }\quad \int_Xf^-d\mu<\infty
+        \end{equation*}
+        In this case, the *Lebesgue integral* of \(f\) on \(X\) is defined by
+        \begin{equation*}
+        \int_Xfd\mu=\int_Xf^+d\mu-\int_Xf^-d\mu
+        \end{equation*}
+        #+END_definition
+
+        A measurable function \(f:X\to\R\) is said to have *type \(L^1\)* if both of them are finite. 
+
+
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

@@ -1,0 +1,230 @@
+#+title: RDMA Point-to-Point Communication for LLM Systems
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/network/rmda_point_to_point_communication_for_llm_systems.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/network/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+
+* Introduction
+        Mixture-of-Experts (MoE) architectures are becoming the dominant approach for scaling model capacity,
+        while disaggregated inference is emerging as the standard for production serving. These new
+        architectures rely on communication patterns that are fundamentally different from traditional
+        collective-based parallelism.
+
+        LLM frameworks overwhelmingly rely on collective communication, often through NCCL or
+        ~torch.distributed~. While collectives excel at static patterns such as tensor or data parallelism, they
+        impose constraints unsuitable for emerging workloads:
+        * fixed membership prevents dynamic scaling,
+        * synchronized initialization adds overhead
+        * uniform buffer sizes force dense communication even for sparse patterns.
+
+        While these libraries offer Send and Recv primitives for point-to-point communication, they often
+        cannot be effectively composed to achieve viable latency.
+
+        High-performance computing has long used primitives (Send, Recv, Write) built on Remote Direct Memory
+        Access (RDMA) for flexible low-latency high-bandwidth transfers, yet such primitives are rarely
+        available in LLM frameworks. The key barrier is hardware diversity without uniform abstraction:
+        * NVIDIA ConnectX NICs use traditional Reliable Connection (RC) transport with in-order delivery
+        * AWS Elastic Fabric Adapter (EFA) implements a proprietary Scalable Reliable Datagram (SRD) protocol
+          (Shalev et al., 2020) with out-of-order delivery.
+        Existing solutions suffer from vendor lock-in:
+        * DeepEP requires GPU-initiated RDMA (IBGDA) provided exclusively by ConnectX,
+        * NVSHMEM exhibits severe performance degradation on EFA
+        * recent libraries like Mooncake and NIXL lack EFA support or remain preliminary.
+
+        Our key insight is that both ConnectX and EFA support reliable but unordered delivery: ConnectX RC can
+        ignore ordering, while EFA SRD is inherently unordered. We introduce *TransferEngine*, a portable RDMA
+        communication library. It provides two-sided Send/Recv and one-sided WriteImm operations with a novel
+        ImmCounter primitive for completion notification that does not rely on message ordering. It exposes a
+        common interface to both ConnectX and EFA, avoiding vendor lock-in. It transparently manages multiple
+        NICs per GPU, essential for EFA where four 100 Gbps NICs must be aggregated to reach 400 Gbps.
+        
+
+* Background and Related Work
+
+** Network Technology
+        *RDMA* Presently deployed NICs deliver 400 Gbps bandwidth at sub-\(\mu\)s latencies. RDMA achieves its
+        performance through a split design: control plane operations initialize the device and set up buffers
+        with operating system involvement, while data plane operations (data transfer and completion polling)
+        bypass the kernel, avoiding system call overheads.
+        
+        *RDMA Operations* RDMA provides both two-sided and one-sided operations. Two-sided Send/Recv operations
+        first post a Recv with a registered memory region, with the sender issueing a Send, notifying the
+        receiver via a completion queue. One-sided Write operations copy local memory to a remote memory
+        region without peer involvement, requiring the remote memory address and key (RKey). WriteImm extends
+        Write by delivering a 32-bit immediate value that also notifies the receiver via the completion queue.
+        While Read and atomic operations are available, their latencies are not suitable for our purposes.
+
+        *RDMA Transports* The RDMA specification defines three transport protocols: Reliable Connection (RC),
+        Unreliable Connection (UC), and Unreliable Datagram (UD).
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/244.png]]
+
+        *Cloud RDMA Adapters* Beyond the widely-deployed ConnectX series, major cloud providers are deploying
+        their own solutions, such as AWS Elastic Fabric Adapter (EFA), Alibaba Cloud eRDMA and Google Falcon.
+        While most are RC-compatible, EFA implements the proprietary SRD protocol, exposed via ~libfabric~. SRD
+        is connectionless and provides reliable but unordered delivery.
+
+** Programming Interface
+        *Collectives* ML frameworks predominantly rely on collective communication libraries (e.g.,
+        ~torch.distributed~, NCCL, MPI) for inter-GPU data exchange. While collective operations excel at
+        structured data transfers, their point-to-point capabilities are limited:
+        1. *Fixed membership* hinders dynamic scaling by requiring advance knowledge of all participants;
+        2. *Synchronized initialization* mandates global coordination to form “worlds”, blocking independent
+           peer connections;
+        3. *Operation ordering* requires all participants to agree on operation sequence, necessitating extra
+           synchronization even when NCCL supports concurrent receives
+        4. *Shape uniformity* constrains transfer sizes across participants, even for point-to-point.
+
+           
+        *GPUDirect* GPUDirect RDMA enables RDMA NICs to directly access GPU memory over PCIe, eliminating
+        intermediate CPU memory copies. Transfers can be initiated either by the host, or if GPUDirect Async
+        (IBGDA) is available, from the GPU itself to bypass PCIe overheads. Currently, GPUDirect Async is only
+        supported on ConnectX NICs. Additionally, GPUDirect RDMA enables low-latency host-device mem- cpy via
+        the GDRCopy library.
+
+** Related Work
+        *Disaggregated Inference*: Separate the prefill and decode stages of LLM inference to distinct devices.
+
+        *Point-to-Point Network Libraries*: Mooncake Store and DeepSeek 3FS provide distributed storage for KV
+        caches, albeit they currently lack EFA support.
+
+        *Distributed KvCache Storage*
+
+        *Compute-Communication Overlapping*
+
+        *LLM Frameworks*
+
+* TransferEngine
+        It exposes Send/Recv operations to implement RPC-like interfaces. For KvCache tranfers, it provides
+        paged Writes for bulk writes. For RL weight transfers, it exposes low-latency high-throughput Write
+        operations. For MoE routing, it specializes Writes targeting many peers to implement low-latency
+        Scatter and Barrier operations. There are no ordering guarantees across any of the operations. An
+        immediate value can be optionally associated with Writes to increment a counter on the receiver upon receipt.
+
+** Overview and Design Goals
+        The TransferEngine exposes a minimal API that abstracts away the complexity of the underlying RDMA
+        interfaces. It supports multiple interfaces, including EFA with its SRD protocol and a multitude of
+        NICs programmable via ~libibverbs~, including ConnectX-7. Topologies are transparently detected to
+        handle multiple NICs per GPU: while a single ConnectX-7 NIC provides 400 Gbps bandwidth, achieving
+        equivalent bandwidth on AWS p5 instances requires aggregating four 100 Gbps EFA NICs (or two 200 Gbps
+        EFA NICs for p5en instances). A single instance spans multiple threads to manage all GPUs and NICs
+        within a node. Low-latency operations are achieved through zero-copy interfaces and hardware-specific
+        optimizations.
+
+        To bridge the gap between the in-order guarantees of RDMA RC and the out-of-order delivery of EFA SRD,
+        the TransferEngine relies solely on a novel ImmCounter. Instead of relying on ordering guarantees, all
+        completion notifications are handled by polling completion queues and delivering notifications upon
+        the bulk receipt of immediate values. Notifications are delivered through callbacks or atomic flags.
+** Architecture
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../../images/papers/245.png]]
+
+        The engine spawns a worker per GPU, with each managing a generic DomainGroup that coordinates all the
+        associated RDMA NICs, typically 1–4 NICs depending on the hardware platform. Within a generic
+        DomainGroup, each Domain is specialized to the hardware and responsible for a single NIC, handling
+        queue pair management, work submission, and completion polling.
+
+        Each TransferEngine instance exposes a single main address for identification and discovery to remote
+        peers. We use a ~NetAddr~ struct to capture and serialize network address of a Domain, exchanging the
+        structure between peers that wish to communicate. As a restriction, all peers must use the same number
+        of NICs per GPU. Consequently, any transfer has full knowledge of the NICs between the source and
+        destination domain, allowing the TransferEngine to shard or balance the request. This is crucial for
+        EFA, which achieves the full 400Gbps bandwidth using multiple adapters.
+** API Design
+        #+begin_src rust
+#[serde] struct NetAddr(Bytes);
+#[serde] struct MrDesc{ ptr: u64, rkeys: Vec<(NetAddr, u64)> }
+struct MrHandle(NonNull<c_void>); type Offset = u64;
+struct Pages{ indices: Vec<u32>, stride: u64, offset: Offset }
+struct PeerGroupHandle(u64);
+struct ScatterDst{ len: u64, src: Offset, dst: (MrDesc,Offset)}
+enum OnDone { Callback(fn () -> ()), Flag(Atomic<bool>) }
+trait TransferEngine {
+    fn main_address() -> NetAddr;
+    // Memory Region Management
+    fn reg_mr(ptr, len, device) -> (MrHandle, MrDesc);
+    // Two-sided Send/Recv
+    fn submit_send(addr: NetAddr, msg: &[u8], cb: fn () -> ());
+    fn submit_recvs(len: u64, cnt: u64, cb: fn (&[u8]) -> ());
+    // One-sided Write
+    fn expect_imm_count(imm: u32, count: u32, cb: fn () -> ());
+    fn submit_single_write(len: u64, imm: Option<u32>
+        src: (MrHandle, Offset), dst: (MrDesc, Offset), OnDone);
+    fn submit_paged_writes(page_len: u64, imm: Option<u32>,
+        src: (MrHandle, Pages), dst: (MrDesc, Pages), OnDone);
+    // One-sided Write to a group of peers
+    fn add_peer_group(addrs: Vec<NetAddr>) -> PeerGroupHandle;
+    fn submit_scatter(h: Option<PeerGroupHandle>, OnDone,
+        imm: Option<u32>, src: MrHandle, dst: Vec<ScatterDst>);
+    fn submit_barrier(h: Option<PeerGroupHandle>, OnDone,
+        imm: u32, dst: Vec<MrDesc>);
+    // Watcher for CPU-GPU synchronization
+    fn alloc_uvm_watcher(cb: fn(u64,u64) -> ()) -> NonNull<u64>;
+}
+
+        #+end_src
+
+        *Memory Registration* Memory regions must be registered with the engine, returning a serializable ~MrDesc~
+        that can be exchanged with peers to submit Writess through and a local ~MrHandle~ to be used as the
+        source of transfers. The same API can register both host-side buffers and GPU memory. Behind the
+        opaque types, the handles carry the addresses of all the NICs they are associated with, along with the
+        domain-specific remote keys attached to them as a list of (~NetAddr~, RK EY) pairs.
+
+        *Point-to-Point Transfer* submit send and its remote counterpart submit recvs wrap the Send/Recv
+        operations to expose RPC-style communication, exchanging small payloads. Submission involves a copy to
+        allow the caller to reuse or release the buffer immediately. Receive posts a rotating pool of buffers
+        to receive data into. Upon each message, a buffer is temporarily taken out of the pool to allow the
+        callback to process it without copying. Upon callback completion, it is automatically re-posted.
+        Sufficient buffers must be allocated to avoid rejecting messages. These operations utilize only the
+        first NIC in a domain group.
+
+        ~submit_single_write~ and ~submit_paged_writes~ transfer data from a source to a destination buffer,
+        writing contiguous or paged regions determined by indirect indices, strides and offsets, respectively.
+        The engine translates these operations into possibly multiple zero-copy one-sided RDMA Write
+        operations, sharding and rotating them along the available NICs. Each Transfer can optionally carry a
+        32-bit immediate number to notify the receiver upon completion. Transfer completion notifications are
+        delivered asynchronously to the caller.
+
+        ~submit_scatter~ send a slice from a source buffer to each peer in a peer group at different offsets in
+        their receive buffers, while submit barrier is an immediate-only operation for peer notification.
+        These are optimized wrappers around Write, allowing applications to pre-register a *PeerGroup* to target
+        with low-latency bulk transfers.
+
+        *UVM Watcher* In order for the host to be able to initiate transfers upon GPU progress,
+        ~alloc_uvm_watcher~ registers a callback invoked upon changes to a word in memory. It allocates a
+        unified virtual memory (UVM) location that can be updated by the devices, including kernels within a
+        CUDA graph, which is continuously polled by a CPU thread using GDRCopy. Since not all changes are
+        guaranteed to be observed immediately, the callback is invoked the old and the new values, allowing it
+        to respond to GPU-side progress.
+
+        *Completion Notification* Notifications are delivered for both send confirmation and receive completion,
+        either through callbacks or atomic flags. The ImmCounter is a dedicated component that keeps track of
+        per-immediate counters incremented on events retrieved from the completion queue of the underlying
+        devices. Events are generated on the sender after a transfer is completed and on the receiver once a
+        payload with an immediate attached to it has been fully delivered, guaranteeing atomicity. The
+        counters are allocated in the same NUMA node as the domain worker.
+** Implementation
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
