@@ -1,0 +1,64 @@
+#+title: Attention Is All You Need
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/attention_is_all_you_need.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        Recurrent neural networks, long short-term memory and gated recurrent neural networks in particular,
+        have been firmly established as state of the art approaches in sequence modeling and transduction
+        problems such as language modeling and machine translation
+
+        Recurrent models typically factor computation along the symbol positions of the input and output
+        sequences. Aligning the positions to steps in computation time, they generate a sequence of hidden
+        states \(h_t\), as a function of the previous hidden state \(h_{t-1}\) and the input for position
+        \(t\). This inherently sequential nature precludes parallelization within training examples, which
+        becomes critical at longer sequence lengths, as memory constraints limit batching across examples.
+
+        In this work we propose the Transformer, a model architecture eschewing recurrence and instead relying
+        entirely on an attention mechanism to draw global dependencies between input and output.
+* Background
+        Self-attention, sometimes called intra-attention is an attention mechanism relating different
+        positions of a single sequence in order to compute a representation of the sequence.
+* Model Architecture
+        Most competitive neural sequence transduction models have an encoder-decoder structure. Here, the
+        encoder maps an input sequence of symbol representations \((x_1,\dots,x_n)\) to a sequence  of
+        continuous representations \(\bz=(z_1,\dots,z_n)\). Given \(\bz\), the decoder then generates an
+        output sequence \(y_1,\dots,y_m\) of symbols one element at a time. At each step the model is
+        auto-regressive, consuming the previously generated symbols as additional input when generating the
+        next.
+
+        The Transformer follows this overall architecture using stacked self-attention and point-wise, fully
+        connected layers for both the encoder and decoder, shown in the left and right halves of Figure [[ref:1]],
+        respectively.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 1
+        #+CAPTION: 
+        [[../images/papers/273.png]]
+** Encoder and Decoder Stacks
+        Encoder: The encoder is composed of a stack of \(N=6\) identical layers. Each layer has two
+        sub-layers. The first is a multi-head self-attention mechanism, and the second is a simple,
+        position-wise fully connected feed-forward network. We employ a residual connection around each of the
+        two sub-layers, followed by layer normalization. That is, the output of each sub-layer is
+        \(LayerNorm(x + Sublayer(x))\), where \(Sublayer(x)\) is the function implemented by the sub-layer
+        itself. To facilitate these residual connections, all sub-layers in the model, as well as the
+        embedding layers, produce outputs of dimension \(d_{model} = 512\).
+        
+        Decoder: The decoder is also composed of a stack of \(N = 6\) identical layers. In addition to the two
+        sub-layers in each encoder layer, the decoder inserts a third sub-layer, which performs multi-head
+attention over the output of the encoder stack. Similar to the encoder, we employ residual connections
+around each of the sub-layers, followed by layer normalization. We also modify the self-attention
+sub-layer in the decoder stack to prevent positions from attending to subsequent positions. This
+masking, combined with fact that the output embeddings are offset by one position, ensures that the
+predictions for position i can depend only on the known outputs at positions less than i.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

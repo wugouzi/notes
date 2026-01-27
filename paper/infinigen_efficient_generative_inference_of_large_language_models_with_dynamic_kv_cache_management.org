@@ -1,0 +1,88 @@
+#+title: InfiniGen: Efficient Generative Inference of Large Language Models with Dynamic KV Cache Management
+
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers//infinigen.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper//}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        In addition to the well-studied challenge of the model size, deploying LLMs now encounters a new
+        challenge due to the substantial footprint of the transient state, referred to as the key-value (KV)
+        cache, during long context processing and generation. For generative LLM inference, the keys and
+        values of all preceding tokens are stored in memory to avoid redundant and repeated computation.
+        Unlike the model weights, however, the KV cache scales with the output sequence length, often
+        consuming even more memory capacity than the model weights. As the demand for longer sequence lengths
+        (along with larger batch sizes) continues to grow, the issue of the KV cache size will become more
+        pronounced in the future.
+        
+        Meanwhile, modern LLM serving systems support offloading data to the CPU memory to efficiently serve
+        LLMs within the hardware budget. These offloading-based inference systems begin to support even
+        offloading the KV cache to the CPU memory, thereby allowing users to generate much longer contexts
+        beyond the GPU memory capacity. However, transferring the massive size of the KV cache from the CPU
+        memory to the GPU becomes a new performance bottleneck in LLM inference.
+
+        In this work, we propose InfiniGen, a KV cache management framework designed to synergistically work
+        with modern offloading-based inference systems. InfiniGen builds on two key design principles.
+        1. it speculates and chooses the KV cache entries that are critical to produce the next output token,
+           dropping the non-critical ones, by conducting a minimal rehearsal of attention computation for
+           Layer \(i\) at Layer \(i-1\).
+        2. it leverages the CPU memory capacity and maintains the KV cache pool on the CPU, rather than on the
+           GPU, to ensure that the critical KV cache values can be identified for all outputs and layers with
+           a large window size while alleviating the concerns about limited GPU memory capacity for long
+           content generation.
+* Background
+** Large Language Models
+        Large language models (LLMs) are composed of a stack of Transformer blocks, each of which contains an
+        attention layer followed by a feed-forward layer. The input tensor (\(X\)) of the Transformer block
+        has a dimension of \(N\times D\), where \(N\) is the number of query tokens, and \(D\) is the model dimension.
+
+        This input tensor (\(X\)) is first layer-normalized (LayerNorm), and the layer-normalized tensor
+        (\(X_a\)) is fed into the attention layer as input. The attention input (\(X_a\)) is multiplied by
+        three different weight matrices \((W_Q,K_W,W_V)\) to generate Query (\(Q\)), Key (\(K\)), and Value
+        (\(V\)) matrices. Each weight matrix has a dimension of \(D\times D\). Thus, Query, Key, and Value
+        have a dimension of \(N\times D\). These matrices are reshaped to have a dimension of
+        \(H\times N\times d\), where \(H\) is the number of attention heads and \(d\) is the head dimension;
+        note that \(D=H\times d\).
+        
+        Each head individually performs attention computation, which can be formulated as follows:
+        \(softmax(QK^T)V\). The attention output, after a residual add (adding to the input tensor \(X\)X) and
+        layer normalization, is fed into the feed-forward layer. The feed-forward network (FFN) consists of
+        two consecutive linear projections and a non-linear activation operation between them. The output of
+        FFN after a residual add becomes the output of a Transformer block, which has the same dimensionality
+        as the input of the Transformer block (i.e., \(N\times D\)). This allows us to easily scale LLMs by
+        adjusting the number of Transformer blocks.
+** Generative Inference and KV Caching
+        Generative LLM inference normally involves two key stages: the *prefill* stage and the *decoding* stage.
+        * In the prefill stage, LLMs summarize the context of the input sequence (i.e., input prompt) and
+          produce a new token that serves as the initial input for the decoding stage.
+        * Subsequently, using this new token, LLMs run the decoding stage to generate the next token. The
+          newly generated token is then fed back into the decoding stage as input, creating an autoregressive
+          process for token generation.
+
+        In this work, we refer to each token generation in the decoding stage as an iteration.
+
+        To generate a new token that aligns well with the context, LLMs need to compute the relationship
+        between the last token and all the previous ones, including the tokens from the input sequence, in the
+        attention layer. A naïve approach to this is to recompute the keys and values of all the previous
+        tokens at every iteration. However, this incurs a significant overhead due to redundant and repeated
+        computation. Furthermore, the computation overhead linearly grows with the number of the previous
+        tokens; i.e., the overhead becomes larger for longer sequences.
+        
+        To avoid such overhead, the keys (\(K\)) and values (\(V\)) of all the previous tokens are typically
+        memoized in memory, which is known as the *KV Cache*. The KV cache then keeps updated with the key and
+        value of the generated token at each iteration. As such, the dimension of the KV cache at the \(i\)-th
+        iteration can be expressed as \(H\times(N+i)\times d\). If batched inference is employed, the size of
+        the KV cache also grows linearly to the batch size. By employing the KV cache, we can avoid repeated
+        computation and produce the key and value of only one token at each iteration. Note that in the
+        decoding stage, the input to the Transformer block (X) has a dimension of \(1\times D\), and the
+        dimension of the attention score matrix becomes \(H\times 1\times(N+i)\) at the \(i\)-th iteration.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

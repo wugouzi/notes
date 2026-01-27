@@ -1,0 +1,195 @@
+#+title: Systolic Arrays For VLSI
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/systolic_arrays_for_vlsi.tex
+#+LATEX_HEADER: \graphicspath{{../../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* The Basic Components and Systolic Array Structures
+** The Inner Product Step Processor
+        The single operation common to all the computations considered in this paper is the so-called inner
+        product step, \(C\gets C+A\times B\). We postulate a processor which has three registers \(R_A\),
+        \(R_B\), and \(R_C\). Each register has two connections,one for input and one for output. Figure ref:2-1
+        shows two types of geometries for this processor
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 2-1
+        #+CAPTION: 
+        [[../images/papers/262.png]]
+
+        Type (a) geometry will be used for matrix-vector multiplication and solution of triangular linear
+        systems, whereas type (b) geometry will be used for matrix multiplication and LU-decomposition
+
+        We shall define a basic time unit in terms of the operation of this processor. In each unit time
+        interval,the processor shifts the data on its input lines denoted by \(A\), \(B\) and \(C\) into
+        \(R_A\), \(R_B\) and \(R_C\) respectively, computes \(R_C\gets R_C+R_A\times R_B\), and makes the
+        input values for \(R_A\) and \(R_B\) together with the new value of \(R_C\) available as outputs on
+        the outputs lines denoted by \(A\), \(B\) and \(C\), respectively.
+
+        All outputs are latched and the logic is clocked so that when one processor is connected to another,
+        the changing output of one during a unit time interval will net interfere with the input to another
+        during this time interval. This is not the only processing element we shall make use of ,but It will
+        be the work horse. A special processor for performing division will be specified later when it is used.
+** Systolic Arrays
+        A systolic device is typically composed of many interconnected inner product step processors. The
+        basic network organization we shall adopt is the mesh-connected scheme in which all connections from a
+        processor are to neighboring processors.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 2-2
+        #+CAPTION: 
+        [[../images/papers/263.png]]
+
+        Processors lying on the boundary of the systolic array may have external connections to the host
+        memory. Thus, an input /output data path of a boundary processor may sometimes be designated as an
+        external input /output connection for the device. A boundary processor may receive input from the host
+        memory through such an external connection, or it may receive a fixed value such as zero. On the other
+        hand, a boundary processor can send data to the host memory through an external output connection. An
+        output of a boundary processor may sometimes be Ignored. This will be designated by omitting the
+        corresponding output line.
+
+        In this paper we assume that the processors in a systolic array are synchronous.
+* Matric-Vector Multiplication on a Linear Systolic Array
+        We consider the problem of multiplying a matrix \(A=(a_{ij})\) with a vector \(x=(x_1,\dots,x_n)^T\).
+        The elements in the product \(y=(y_1,\dots,y_n)^T\) can be computed by the following recurrences
+        \begin{align*}
+        y_i^{(1)}&=0\\
+        y_i^{(k+1)}&=y_i^{(k)}+a_{ik}x_k\\
+        y_i&=y_i^{(n+1)}
+        \end{align*}
+        Suppose \(A\) is an \(n\times n\) band matrix with band width \(w=p+q-1\). Then the above recurrences
+        can be evaluated by pipelining the \(x_i\) and \(y_i\) through a systolic array consisting of \(w\)
+        linearly connected inner product step processors. We illustrate the operation of the systolic array
+        for the band matrix-vector multiplication problem in Figure ref:3-1. For this case the linearly
+        connected systolic array has four inner product step processors. See Figure ref:3-2.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 3-1
+        #+CAPTION: 
+        [[../images/papers/264.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 3-2
+        #+CAPTION: 
+        [[../images/papers/265.png]]
+
+
+        The general scheme of the computation can be viewed as follows. The \(y_i\), which are initially zero,
+        are pumped to the left while the \(x_i\) are pumped to the right and the \(a_{ij}\) are marching down.
+        (For the general problem of computing \(Ax+d\) where \(d=(d_1,\dots,d_n)^T\) is any given vector ,
+        \(y_i\) , should be initialized as \(d_i\)). All the moves are synchronized. It turns out that each
+        \(y_i\) is able to accumulate all its terms,namely, \(a_{i,i-2}x_{i-2}\), \(a_{i,i-1}x_{i-1}\),
+        \(a_{i,i}x_i\) and \(a_{i,i+1}x_{i+1}\), before it leaves the network. Figure ref:3-3 illustrates the
+        first seven pulsations of the systolic array.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 3-3
+        #+CAPTION: 
+        [[../images/papers/266.png]]
+
+        Observe also that at any given time alternate processors are idle. Indeed , by coalescing pairs of
+        adjacent processors, itis possible to use \(w/2\) processors in the network for a general band matrix
+        with band width \(w\).
+
+        We now specify the operation of the systolic array more precisely. Assume that the processors are
+        numbered by integers \(1,2,\dots,w\) from the left end processor to the right end processor. Each
+        processor has three registers \(R_A\), \(R_x\) and \(R_y\) , which will hold entries in \(A\), \(x\) and \(y\), respectively.
+        Initially, all registers contain zeros. Each pulsation of the systolic array consists of the following
+        operations , but for odd numbered pulses only odd numbered processors are activated and for even
+        numbered pulses only even numbered processors are activated.
+        1. /Shift/
+           - \(R_A\) gets a new element in the band of matrix \(A\)
+           - \(R_x\) gets the contents of register \(R_x\) from the left neighboring node
+           - \(R_y\) gets the contents of register \(R_y\) from the right neighboring node
+        2. /Multiply and Add/
+           \begin{equation*}
+           R_y\gets R_y+R_A\times R_x
+           \end{equation*}
+
+        Using the type (a) inner product step processor, we note that the three shift operations in step 1 can
+        be done simultaneously, and that each pulsation of the systolic array takes a unit of time. Suppose
+        the bandwidth of \(A\) is \(w=p+q-1\). It is readily seen that after \(w\) units of time the
+        components of the product \(y=Ax\) are pumped out from the left end processor at the rate of one
+        output every two units of time.
+
+        Therefore, using our systolic network all the \(n\) components of \(y\) can be computed in \(2n+w\)
+        time units.
+* Matrix Multiplication on a Hexagonal Systolic Array
+        Now we consider multiplying two \(n\times n\) matrices.
+        \begin{align*}
+        c_{ij}^{(1)}&=0\\
+        c_{ij}^{k+1}&=c_{ij}^{(k)}+a_{ik}b_{kj}\\
+        c_{ij}&=c_{ij}^{(n+1)}
+        \end{align*}
+        Consider
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 4-1
+        #+CAPTION: 
+        [[../images/papers/267.png]]
+
+
+        Let \(A\) and \(B\) be \(n\times n\) band matrices of band width \(w_1\) and \(w_2\), respectively.
+        Then a systolic array of \(w_1w_2\) hex-connected processors can pipeline the matrix multiplication
+        \(A\times B\) in \(3n+\min(w_1,w_2)\) units of time.
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 4-2
+        #+CAPTION: 
+        [[../images/papers/268.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 4-3-1
+        #+CAPTION: 
+        [[../images/papers/2699.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 4-3-2
+        #+CAPTION: 
+        [[../images/papers/270.png]]
+
+
+* The LU-Decomposition of a Matrix on a Hexagonal Systolic Array
+        The problem of factoring a matrix \(A\) into lower and upper triangular matrices \(L\) and \(U\) is
+        called LU-decomposition. Once \(L\) and \(U\) factors are known, it is relatively easy to invert \(A\)
+        or solve the linear system \(Ax=b\).
+        
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 5-1
+        #+CAPTION: 
+        [[../images/papers/271.png]]
+
+        We assume that matrix \(A\) has the property that its LU-decomposition can be done by Gaussian
+        elimination without pivoting. (This is true, for example, when \(A\) is a symmetric positive-definite,
+        or an irreducible, diagonally dominent matrix)
+        \begin{align*}
+        a_{ij}^{(1)}&=a_{ij}\\
+        a_{ij}^{(k+1)}&=a_{ij}^{(k)}+l_{ik}(-u_{kj})\\
+       l_{ij} &=         \begin{cases}
+        0&i<k\\
+        1&i=k\\
+        a_{ik}^{(k)}u_{kk}^{-1}&i>k
+        \end{cases}\\
+        u_{kj}&=
+        \begin{cases}
+        0&k>j\\
+        a_{kj}^{(k)}&k\le j
+        \end{cases}
+        \end{align*}
+        
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 5-2
+        #+CAPTION: 
+        [[../images/papers/272.png]]
+
+* Applications and Comments
+
+** Variants of the Systolic Array
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

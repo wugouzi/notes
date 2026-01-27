@@ -1,0 +1,97 @@
+#+title: Binary Fusion Filters: Fast and Smaller Than Xor Filters
+
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/binary_fuse_filters.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        Bloom filters use at least 44% more memory than the theoretical lower bound: \(1.44\log_21/\epsilon\)
+        bits per key. Furthermore, the lower the /false-positive/ probability, the more random access queries
+        and hash-function computations are needed (\(\approx\log_21/\epsilon\)): e.g., seven accesses are
+        required for a 1% false-positive probability.
+
+        Cuckoo filters are often superior to Bloom filters. They may require as few as two distinct cache-line
+        accesses and they may use less memory than Bloom filters. E.g., they may use only 30% to 40% more
+        memory than the optimal bound in the 12-bit and 16-bit cases.
+
+        /Binary fuse filters/ offer a significantly reduced size of \(\approx 13\%\) over the theoretical bound,
+        while maintaining the same good query time
+* Related Work
+        There is a broad family of alternatives to the Bloom filter approach relying instead on the concept of
+        a *fingerprint*. We choose a hash function that maps each potential key to a \(k\)-bit word. Given a
+        set, we construct a data structure that maps each key of the set to its fingerprint. At query time, we
+        compare the computed fingerprint with the retrieved fingerprint from the data structure. If they
+        match, then we conclude that the key might be in the set. As long as the data structure acts as a map
+        for the keys of the original set, there can be no false negative: any key in the set is correctly
+        identified as being potentially in the set since the fingerprints are identical. If a key is not in
+        the set, then the data structure could return any other fingerprint. We randomly pick the
+        fingerprint-generating function from a universal family 
+* Binary Fuse Filter
+        The binary fuse filter is a variation on the xor filter. It is made of a fingerprint function, an
+        array of fingerprints and a hash function from keys to locations in the array of fingerprints. We
+        review the construction of the xor filter.
+
+        We start from a set of \(n\) distinct keys from a given universe of keys. Furthermore, we need a
+        fingerprint function that maps each possible value from the universe to a word value (e.g., an 8-bit
+        word). The size of the word in bits determines the false-positive probability: each additional bit
+        reduce the false-positive probability by half. The fingerprint function may be provided by the user.
+        The construction itself consists of picking a hash function and populating an array of fingerprints.
+
+        We begin by describing a 3-wise construction though we also extend it to a 4-wise construction. We
+        pick three hash functions mapping each key of the set to three distinct locations in the array. These
+        hash functions are picked at random from a family of hash functions. For each key, we want to pick one
+        primary location out of the three array locations. Furthermore, we seek an ordering of the keys such
+        that no key is mapped to the primary location of an earlier key.
+
+        The xor filter is built out of such a construction. To construct an xor filter, we pick an array,
+        which contains \(\approx 1.23n\) words, and we divide it into three nearly equal segments (of size
+        \(\approx 1.23n/3\)). Given a 3-way hash function from the set to the array, each word in the array is
+        mapped from \(\approx 3/1.23\approx 2.4\) keys of the set, on average. We can count how many keys from
+        the set are mapped to each location. We can scan the array, and when we find a location that
+        corresponds to exactly one key from the set, we match this key to this location. We remove the matched
+        key from consideration as if it never existed: we decrement the three counters corresponding to its
+        corresponding three distinct locations. Each time we remove a key, we potentially create new locations
+        corresponding to a single key. With high probability, this peeling process eventually terminates when
+        all keys have been removed. As a result, we have constructed an injective function. In case of
+        failure, we restart the process with different hash functions—again picked at random. The exact
+        success probability depends on the size of the set and on the size of the array: we found empirically
+        that it was greater than 90% when the array contains \(1.23n+32\) words. For large sets, the probability converges to
+100%. We can bound the failure probability and thus the expected construction time: a lower bound
+of 90% on the success rate implies that the expected number of trials is no more than ≈ 1.1. We can
+then build an xor filter as follows. We start from the last matched key, and we iterate backward
+through all keys—in the reversed order that they were matched. Each time, we query the three
+word values in the array corresponding to the key, and modify the value in the array at the one
+location corresponding to the key so that the bitwise exclusive or (xor) value of the three word
+values is equal to the fingerprint of the key. By construction, once we have read an array value,
+we never modify it again. Thus, if we pick any key from the set, and xor the three corresponding
+values from the array, we find again the fingerprint of the key.
+To query an xor filter, starting from a potential key, we compute the three hash functions. We
+access the three corresponding locations in the array. We compute the bitwise exclusive or value of
+the three values, and we compare it with the fingerprint of the potential key. If the key is part of
+the set, then the fingerprint matches the aggregate of the three values. If the key is not part of the
+set, then it is likely that its fingerprint differs from the aggregate.
+An xor filter is fast at query time. Although we query three distinct locations in the array to check
+any membership, modern processors can sustain ten, twenty or more memory loads in parallel at
+any one time per core. However, the construction can be relatively slow since we rely extensively
+on unpredictable random accesses. As the size of the array grows, our construction struggles to
+make good use of the fast cache of the processor. We can slightly optimize the construction with
+buffers, but we have been unable to make the construction of the xor filter as fast as that of a
+comparable Bloom filter.
+The xor filter relies on a three-way partition of the array. Dietzfelbinger and Walzer [8] suggest
+an approach that might be preferable, especially for larger values of 𝑛: we can divide the array into
+many small same-size non-overlapping segments (e.g., hundreds) and then have the hash function
+pick three distinct locations corresponding to three consecutive segments.2 They note that this
+construction works well for large values of 𝑛. For small values of 𝑛, we can set the number of
+segments to three, in which case the construction, and the space usage, match the xor filter. Hashing
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

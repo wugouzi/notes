@@ -1,0 +1,214 @@
+#+title: Xor Filters: Faster and Smaller Than Bloom and Cuckoo Filters
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/xor_filters.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* XOR Filters
+        Notation:
+        * \(U\): universe of possible elements
+        * \(S\): keys
+        * \(B\): array of \(k\)-bit values
+        * \(c=\abs{B}\): size of the array \(B\), we set \(c=\floor{1.23\cdot\abs{S}}+32\)
+        * \(h_0,h_1,h_2\): hash functions from \(U\) to integers in \([0,\floor{c/3})\),
+          \([\floor{c/3},\floor{2c/3})\), \([\floor{2c/3},c)\)
+        * \(\epsilon\): false-positive rate
+
+        Given a key \(x\), we produce its \(k\)-bit fingerprint (noted \(fingerprint(x)\)) using a randomly
+        chosen hash function. We assume an idealized fully independent hash function; all fingerprints are
+        equally likely so that \(P(fingerprint(x)=c)=1/2^k\) for any \(x\) and \(c\). This probability
+        \(\epsilon=1/2^k\) determines the false-positive probability of our filter.
+        
+        We want to construct a map \(F\) from all possible elements to \(k\)-bit integers such that it maps
+        all keys \(y\) from a set \(S\) to their \(k\)-bit \(fingerprint(x)\). Thus, if we pick any element of
+        the set, it gets mapped to its fingerprint by design \(F(y)=fingerprint(y)\). Any value that is not
+        part of the filter gets mapped to a value distinct from its fingerprint with a probability
+        \(1-\epsilon=1-1/2^k\)
+
+        We store the fingerprints in an array \(B\) with capacity \(c\) slightly larger than the cardinality
+        of the set \(\abs{S}\) (i.e., \(c\approx 1.23\times\abs{S}\)). We randomly and independently choose
+        three hash functions \(h_0,h_1,h_2\) from \(U\) to consecutive ranges of integer values
+        \begin{equation*}
+        h_0:S\to\{0,\dots,c/3-1\},h_1:S\to\{c/3,\dots,2c/3-1\},h_2:S\to\{2c/3,\dots,c-1\}
+        \end{equation*}
+        Our goal is to have that the exclusive-or aggregate of the values in array \(B\) at the locations
+        given by the three hash functions agree with the fingerprint for all elements x ∈ S, namely
+        \begin{equation*}
+        B[h_0(x)]\oplus B[h_1(x)]\oplus B[h_2(x)]=fingerprint(x)
+        \end{equation*}
+         The hash functions \(h_0,h_1,h-2\) are assumed to be independent from the hash function used for the
+         fingerprint.
+** Membership Tests
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/274.png]]
+** Construction
+        The construction follows the algorithm from [[cite:&10.1007/978-3-540-73951-7_13]] to build acyclic
+        3-partite random hypergraphs. We apply Algorithm 2 which calls Algorithm 3 one or more times until it
+        succeeds, passing randomly chosen hash functions \(h_0,h_1,h_2\) with each call. In practice, we pick
+        hash functions by generating a new pseudo-random seed. Finally, we apply Algorithm 4.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/275.png]]
+
+        
+        The probability of success approaches 100% if the set is large. For sets of size 107 ,
+        [[cite:&10.1007/978-3-540-73951-7_13]] found that the probability is almost 1. For smaller sets, we
+        experimentally found that the estimated probability is always greater than 0.8 with
+        \(c=1.23\cdot\abs{S}+32\)
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/276.png]]
+
+        Algorithm 3 runs in linear time with respect to the size of the input set \(S\) as long as adding and
+        removing a key \(x\) from a set in \(H\) is done in constant time.
+
+        In practice, if the keys in \(S\) are integer values or other fixed-length objects, we can implement
+        the sets using an integer-value counter and a fixed-length mask (both initialized with zeros). When
+        adding a key, we increment the counter and compute the exclusive-or of the key with the mask, storing
+        the result as the new mask. We similarly remove a key by decrementing the counter and computing the
+        same exclusive-or. Even when the set is made of large or variable-length elements, it may still be
+        practical to represent them as small fixed-length (e.g., 64-bit or 128-bit) integers by hashing: it
+        only comes at the cost of introducing a small error when two hash values collide, an improbable event
+        that may only minutely increase the false-probability probability.
+
+        To construct the xor filter, we allocate an array \(B\) large enough to store
+        \(\floor{1.23\cdot\abs{S}}+32\) fingerprints. We iterate over the keys and their indexes in the
+        reverse order, compared to how they were identified in the “Mapping Step” (Algorithm 3). For each key,
+        there are three corresponding locations \(h_0(x),h_1(x),h_2(x)\) in the table \(B\); the index
+        associated with the key is one of \(h_0(x),h_1(x),h_2(x)\). We set the value of \(B[i]\) so that
+        \(B[h_0(x)]\oplus B[h_1(x)]\oplus B[h_2(x)]=fingerprint(x)\). We repeat this for each key. Each key is
+        processed once.
+        
+        By our construction, an entry in \(B\) is modified at most once. After we modify an entry \(B[i]\),
+        then none of the values \(B[h_0(x)],B[h_1(x)],B[h_2(x)]\) will ever be modified again. This follows by
+        our argument where we work through Algorithm 3 in reverse: \(i\) is different from
+        \(h_0(x'),h_1(x'),h_2(x')\) for all keys \(x'\) encountered so far. Remember that we use a stack, so
+        the last entry added to the stack in Algorithm 3 is removed first in Algorithm 4
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/277.png]]
+
+        Thus we have
+        \begin{equation*}
+        B[h_0(x)]\oplus B[h_1(x)]\oplus B[h_2(x)]=fingerprint(x)
+        \end{equation*}
+** Space Optimization: Xor+ Filter
+        About 19% of the entries in table \(B\) are empty: for each 100 keys, we need 123 entries, and 23 are
+        empty. For transmission, much of this empty space can be saved as follows: before sending \(B\), send
+        a bit array that contains '0' for empty entries and '1' for occupied entries. Then we only send the
+        data of the occupied entries. If we use \(k=8\) bits, the regular xor filter needs \(8\times
+        1.23=9.84\) bits per entry, which we can compress in this way to 8 + 1.23 = 9.23 bits per entry. If
+        space usage at runtime is more important than query speed, compression can be used at runtime. We can
+        get a constant time access using a rank data structure such as Rank9, at the expense of a small
+        storage overhead (≈25%), or poppy for an even smaller overhead (≈3%) at the expense of some
+        speed.
+        
+        By changing the construction algorithm slightly, we can move most of the empty entries to the last
+        third of the table B. To do so, we change the mapping algorithm so that three queues are used instead
+        of one: one for each hash function—each hash function represents a third of the table \(B\). We then
+        process entries of the first two queues until those are empty, before we process entries from the
+        third queue. Experimentally, we find that 36% of the entries in the last third of table \(B\) are
+        empty on average. If the rank data structure is then only constructed for this part of the table,
+        space can be saved without affecting the membership-test performance as much, as only one rank
+        operation is needed. We refer to this algorithm as “xor+ filter”, using Rank9 as the default rank data
+        structure. With the fingerprint size in bits k, it needs k × 1.23 × 2/3 bits per key for the first two
+        thirds of the table B, k × 1.23 × 1/3 × (1 − 0.36) for the last third, plus 1.23 × 1/3 × 1.25 for the
+        Rank9 data structure. In summary, xor+ filters use 1.0824k + 0.5125 bits per entry as opposed to 1.23k
+        bit per entry for xor filters. 
+** Space Comparison
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/278.png]]
+
+        For very low false-positive probabilities (\(5.6\times 10^{-6}\)), cuckoo filters at full capacity use
+        less space than xor filters. However, we are not aware of any system that uses such a low
+        false-positive probability: most systems seem to use between 8 and 20 bits per key
+* Experiments
+        We use 64-bit keys as set elements. We build a filter based on a set of 10M or 100M keys. We build a
+        distinct set made of 10M queried keys. This set of queried keys is created by mixing some of the keys
+        from the original set, and some keys not present in the original set. We use different fractions
+        (e.g., 0%, 25%, 50%, 75% and 100%) of the keys in the original set. The benchmark counts the number of
+        queried keys that are possibly in the set according to the filter. The benchmark is single threaded
+        and calls the membership-test functions with different keys in a loop. We disable inlining of the
+        functions to prevent compilers from unduly optimizing the benchmark which counts the number of
+        matching keys
+
+        For all implementations, we use a randomly seeded Murmur finalizer to compute the fingerprint from the
+        key. We choose this option instead of faster alternatives so that even non-random keys work well and
+        do not result in higher-than-expected false-positive probabilities, or construction failure in the
+        case of the cuckoo filter. For our tests, we use pseudo-randomly generated keys; we also tested with
+        sequentially generated keys and found no statistically significant difference compared to using random
+        keys after introducing the Murmur finalizer.
+
+        All implementations need to reduce a hash value \(x\) to the range \(\{0,\dots,m-1\}\) where \(m\) is
+        not necessarily a power of two. Where this is needed, we do not use the relatively slow modulo
+        operation \(x\) mod \(m\) for performance reasons. Instead, starting with 32-bit values \(x\) and
+        \(m\) and computing their full 64-bit product x ×m, we use the faster multiply-shift combination
+        \begin{equation*}
+        (x\times m)\div 2^{32}=(x\times m)>>32
+        \end{equation*}
+** Filter Implementations
+        Against:
+        * handwritten standard bloom filter
+        * impala blocked bloom filter
+        * cuckoo filter with modification
+        * cuckoo semi-sorted from author
+        * golomb-compressed sequences: handwritten
+        * Xor
+** Construction
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/279.png]]
+** Query Time Versus Space Overhead
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/280.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/281.png]]
+** Discussions
+        We attribute the good membership-test performance of xor filters mainly to the following reasons. Xor
+        filters use exactly 3 memory accesses, independent of the false-positive probability. These memory
+        accesses can be executed in parallel by the memory subsystem. The number of instructions meanwhile is
+        small and there are no branches.
+
+        For a false-positive probability of 1%, the standard Bloom filter needs more memory accesses for a
+        match, and even more so for lower false-positive probabilities. The Bloom filter uses between 41 and
+        105 instructions per key, depending on the number of set bits set and false-positive probability. For
+        a miss (if the key is not in the set), on average fewer memory accesses are needed, but there might be
+        mispredicted branches with accompanying penalties.
+
+        The cuckoo filter uses exactly 2 memory accesses, and 66 to 68 instructions per key (depending on
+        fingerprint size). The xor filter uses exactly 3 memory accesses, but only about 48 instructions per
+        key. Processors execute complex machine instructions using low-level instructions called \(\mu\)ops. A
+        processor like our Skylake can support up to 10 outstanding memory requests per core, limited by an
+        instruction reorder buffer of 200 µops. In the absence of mispredicted branches and long dependency
+        chains, the capacity of the instruction buffer becomes a limitation [[cite:&7314147]]. It is likely the
+        reason why the cuckoo filter and the xor filter have similar membership-test performance. That is,
+        while the cuckoo filter has fewer memory accesses, it generates more instructions which makes it
+        harder for the processor to fetch as many memory requests as it could. 
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
