@@ -1,0 +1,204 @@
+#+title: Scaling Up Memory Disaggregated Applications with Smart
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/scaling_up_memory_disaggregated_applications_with_smart.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Background
+** RDMA Netowrk
+        RDMA supports one-sided verbs, i.e., READ, WRITE, CAS (compare-and-swap), and FAA (fetch-and-add),
+        which operate directly on remote memory without involving weak CPUs in memory blades.
+
+        The programming interface of RDMA is centralized around the abstraction of queue pairs (QPs). Each QP
+        contains a pair of send queue and receive queue and is associated with a completion queue (CQ). For
+        each RDMA operation, the library posts a work request (WR) to the QP. Then, after a WR is acknowledged
+        by the receiver’s RNIC, the sender’s RNIC performs a PCIe DMA write that appends a CQ entry, and the
+        application is notified by continuously polling the CQ.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/293.png]]
+
+
+        *Doorbell Register* (DB) is the mechanism used by the RNIC to receive notifications of newly enqueued
+        work requests. Figure ref:f2 illustrates the doorbell registers in ConnectX-6. By default, up to 16
+        DBs are allocated per RDMA device context, including 4 low-latency DBs and 12 medium-latency DBs. Each
+        low-latency DB is associated with only one QP, but multiple QPs can be associated with the same
+        medium-latency DB. These doorbell registers are mapped in the User Access Region (UAR), and the driver
+        library performs memory-mapped I/O (MMIO) writes to update them.
+
+        For drivers used by Connect-IB to ConnectX-7 , updates to the same DB are all protected by a
+        spinlock[fn:1] . As a result, when a DB is shared by multiple QPs used by different threads, an implicit
+        thread contention occurs and becomes an implicit bottleneck that limits the parallelism of
+        disaggregated applications. For example, as shown in Figure [[ref:f2]](b), thread \(x\) using QP16 may be
+        contended by thread \(y\) using QP28 because both QPs are associated with DB16. Obviously, such a
+        default mapping is not optimized for massively parallel applications.
+        
+        *Memory Translation and Protection Table*. Many existing works worry that too many QPs will exhaust the
+        small on-chip SRAM cache in the RNIC and lead to cache thrashing problems. But, the caches inside
+        RNICs are actually used to cache many other important objects whose sizes are not proportional to the
+        number of QPs. For example, once the RNIC is notified by the doorbell ringing, it must perform
+        virtual-to-physical address translation and security checking by looking up the memory translation
+        table (MTT) and the memory protection table (MPT). These mapping tables are cached in MTT/MPT caches
+        to achieve better performance, whose size does not depend on the number of QPs but to the number of
+        device contexts, memory regions (MRs), and memory windows (MWs).
+        
+        According to internal performance counters collected by Mellanox Neo-Host, in a typical environment
+        where all threads of the application share the same device context and thus the same MTT/MPT, the
+        cache hit ratio of the MTT/MPT cache is higher than 95% in most cases. In contrast, the cache hit
+        ratio of the MTT/MPT cache can drop to less than 70% when multiple device contexts are created because
+        each device context allocates memory regions separately, even though the size of each memory region is
+        only a few MB. Therefore, sharing the device context to reduce redundancy in global data structures is
+        not only good for management but also for performance.
+        
+        *Outstanding Work Requests* (OWRs) are enqueued work requests whose completion entries have not yet been
+        polled from the CQ. After receiving messages from remote QPs, the RNIC must retrieve metadata of the
+        corresponding work request, which may reside in the on-chip WQE cache. A cache miss results in a PCIe
+        DMA read, which is much more expensive. As a result, cache thrashing occurs when the number of
+        outstanding work requests exceeds a certain threshold.
+
+        However, fewer OWRs can also lead to performance degradation due to a lack of parallelism.
+* Scalability Bottlenecks
+** Implicit Doorbell Contention
+        we speculate that the implicit contention in doorbell registers is the main limitation of parallelism
+        in disaggregated applications. To validate this assumption, we compare three different types of
+        allocation mechanisms that have been used by existing works and a novel method that is aware of the
+        structure of doorbell registers:
+        1. Shared QP: all threads share a single QP
+        2. Multiplexed QP: each QP is shared by \(q\) threads in a NUMA-aware manner
+        3. Per-thread QP: each thread owns and uses a dedicated QP
+        4. Per-thread Doorbell: each thread is associated with not only a separate QP, but also a separate
+           doorbell register
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/294.png]]
+
+        We build a bench tool to measure the throughput of READ/WRITE operations at any thread count and any
+        concurrency depth \(k\) (i.e., OWRs per thread). Each thread repeatedly posts \(k\) work requests,
+        rings the doorbell, and then waits for acknowledgments. The remote address of each work request is
+        chosen uniformly randomly within a 1 GB memory region.
+
+        Figure ref:f3 shows the result of 8-byte READ/WRITEs with different thread counts and the same
+        concurrency depth 8. The number of QPs is the main bottleneck when there are fewer than 32 threads.
+        Per-thread QP and per-thread doorbell outperform other connection multiplexing policies. However, when
+        the thread count exceeds 32, the throughput of the per-thread QP policy drops sharply.
+        
+        In contrast, per-thread doorbell is able to unleash the potential of higher parallelism. We have
+        analyzed the execution overhead of the per-thread QP policy (in Figure ref:f3, with a thread count
+        of 96) using the Linux perf tool and Intel VTune Profiler. Up to 74.05% of the total execution time is
+        consumed by ~pthread_spin_lock()~ from doorbell- associated spin-locks. Readers may also notice the
+        throughput drops of per-thread doorbell at the tail of the curve, which is related to the cache
+        trashing problem that will be discussed in the next section.
+** Cache Thrashing
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/295.png]]
+
+
+        Specifically, we use the per-thread doorbell policy to avoid doorbell contentions and then adjust both
+        the number of threads (i.e., parallelism) and the number of OWRs (i.e., concurrency depth). We then
+        measure the throughput of random 8-byte READ and WRITE requests for each setting. The specific depth
+        of concurrency per thread is achieved by polling the completion queue after every \(k\) work requests are
+        posted, and the results are shown in Figure [[ref:f4]](a)
+
+        With our experiments based on control variables, we show that different levels of parallelism require
+        a correspondingly appropriate concurrency depth to achieve the best throughput. We confirmed the
+        increase in cache misses in the RNIC by measuring the /PCIe inbound bandwidth/, i.e., the traffic of the
+        RNIC’s access to the host DRAM. Figure [[ref:f4]](b) shows the average DRAM access traffic per work
+        request for different thread counts and outstanding work requests. These extra PCIe reads are mainly
+        caused by WQE cache misses. Comparing Figures [[ref:f4]]a and [[ref:f4]]b, we find that throughput decreases
+        as the DRAM access traffic per work request increases.
+** Unsuccessful Retries
+        In addition to the sender-side contention with the observations above, receiver-side contention can
+        also lead to scalability bottlenecks in disaggregated applications. According to our investigation,
+        update contention, which leads to unsuccessful RDMA CAS retries, is the most common and important
+        scalability bottleneck in receiver-side contention.
+
+        Specifically, without server-side coordination, disaggregated memory applications have to implement
+        application-side coordination with one-sided RDMA operations, which is the main source of
+        receiver-side contentions. For example, Sherman points out that basic spinlocks using RDMA CAS suffer
+        from the scalability problem: if the client thread fails to acquire a lock, it immediately retries,
+        which leads to extra remote network accesses. This wastes the limited IOPS of RDMA networks.
+* Design
+        Motivated by the analysis of scale-up bottlenecks, we design Smart, a library for building scalable
+        disaggregated applications.
+** Thead-aware Resource Allocation
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/297.png]]
+
+        Smart allocates QPs, CQs, and DBs in a per-thread manner, and these resources are not shared by
+        multiple threads. Other resources, including protection domains (PDs) and memory regions (MRs), are
+        shared among all threads, thus the local memory is registered only once. A QP is created for each pair
+        of a local thread and a remote memory blade. Thus each thread contains multiple QPs (for different
+        remote blades), but they are associated with the same CQ and DB.
+
+        More specifically, Smart maintains a QP pool for each thread, where all the QPs in the same pool are
+        all associated with the same CQ and DB. Some QPs are active (e.g., QP1 and QP5 in QP pool 1), while
+        others are idle (e.g., QP9 ). Each thread allocates QPs only from its own QP pool and releases them to
+        its own QP pool after use.
+
+        To construct enough QP pools during application startup, the number of medium-latency doorbell
+        registers available should not be fewer than the number of threads, but it is only 12 by default. The
+        RNIC driver supports tuning the number of doorbell registers per RDMA context, e.g., the environment
+        variable ~MLX5_TOTAL_UUARS~ for Mellanox products. However, the driver also limits the number of
+        medium-latency doorbell registers, so a minor modification to the driver code is required. The maximum
+        valid number of DBs is 512 in the Mellanox ConnectX-6 RNIC, 256 in the Intel E810 RNIC, which are
+        typically larger than the number of CPU cores per machine
+
+        On the other hand, since the structure of doorbell registers is not exposed to the developers, there
+        is no external API that can be used to bind a QP with a specific doorbell register. However, after
+        digging into the source code of the RNIC user-mode driver, we found that each newly created QP is
+        associated with doorbells in a round-robin fashion. Therefore, before creating a QP, we can know which
+        doorbell register it will be associated with. It can be used to determine the associated QP pool.
+** Adaptive Work Request Throttling
+        Smart uses credit-based throttling to limit the number of outstanding work requests of a QP.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: a1
+        #+CAPTION: 
+        [[../images/papers/298.png]]
+
+        According to our observations, the optimal maximum credit \(C_{max}\) depends on both the thread count
+        and the workload. Smart updates \(C_{max}\) periodically during application execution. We follow the
+        epoch-based model, i.e., each epoch consists of an update phase and a stable phase.
+
+        Stable phase last \(T=60\times\Delta=480\) milliseconds
+** Conflict Avoidance
+        \begin{equation*}
+        t=\min\{t_0\times 2^i,t_{max}\}+Rand(t_0)
+        \end{equation*}
+* Implementation
+** Programming Interface
+        API:
+        1. ~connect~
+        2. ~read~, ~write~, ~faa~, ~cas~: append a work request (WR) to the local buffer
+        3. ~post_send~: post WRs in the local buffer to the RNIC
+        4. ~sync~: wait for all previously posted WRs to complete
+        5. ~backoff_cas_sync~: perform a CAS operation with exponential backoff optimization
+** Applications
+        * lock-free hash table, smart-ht
+        * persistent transaction processing, smart-dtx
+        * lock-based B+tree
+* Evaluation
+** Evaluation Setup
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
+* Footnotes
+
+[fn:1] Enabling the ~MLX5_SINGLE_THREADED~ environment variable removes such spinlocks, but leads potential races
+between two CPUs due to write-combining buffers in multi-threaded applications 

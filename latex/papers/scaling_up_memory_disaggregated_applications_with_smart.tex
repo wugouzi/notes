@@ -1,0 +1,84 @@
+% Created 2026-01-28 Wed 19:22
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../paper/}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Scaling Up Memory Disaggregated Applications with Smart}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Scaling Up Memory Disaggregated Applications with Smart},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Background}
+\label{sec:org78930b2}
+\subsection{RDMA Netowrk}
+\label{sec:org86b791a}
+RDMA supports one-sided verbs, i.e., READ, WRITE, CAS (compare-and-swap), and FAA (fetch-and-add),
+which operate directly on remote memory without involving weak CPUs in memory blades.
+
+The programming interface of RDMA is centralized around the abstraction of queue pairs (QPs). Each QP
+contains a pair of send queue and receive queue and is associated with a completion queue (CQ). For
+each RDMA operation, the library posts a work request (WR) to the QP. Then, after a WR is acknowledged
+by the receiver’s RNIC, the sender’s RNIC performs a PCIe DMA write that appends a CQ entry, and the
+application is notified by continuously polling the CQ.
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/293.png}
+\captionof{figure}{\label{f2}}
+\end{center}
+
+
+\textbf{Doorbell Register} (DB) is the mechanism used by the RNIC to receive notifications of newly enqueued
+work requests. Figure \ref{f2} illustrates the doorbell registers in ConnectX-6. By default, up to 16
+DBs are allocated per RDMA device context, including 4 low-latency DBs and 12 medium-latency DBs. Each
+low-latency DB is associated with only one QP, but multiple QPs can be associated with the same
+medium-latency DB. These doorbell registers are mapped in the User Access Region (UAR), and the driver
+library performs memory-mapped I/O (MMIO) writes to update them. For drivers used
+
+        by Connect-IB to ConnectX-7 , updates to the same DB are all protected by a spinlock\footnote{Enabling the \texttt{MLX5\_SINGLE\_THREADED} environment variable removes such spinlocks, but leads potential races
+between two CPUs due to write-combining buffers in multi-threaded applications} . As a result, when a DB is shared
+by multiple QPs used by different threads, an implicit thread
+contention occurs and becomes an implicit bottleneck that
+limits the parallelism of disaggregated applications. For ex-
+ample, as shown in Figure 2(b), thread 𝑥 using QP16 may
+be contended by thread 𝑦 using QP28 because both QPs are
+associated with DB16. Obviously, such a default mapping is
+not optimized for massively parallel applications.
+Memory Translation and Protection Table. Many exist-
+ing works worry that too many QPs will exhaust the small
+on-chip SRAM cache in the RNIC and lead to cache thrash-
+ing problems [5, 16, 25, 41]. But, the caches inside RNICs are
+actually used to cache many other important objects whose
+sizes are not proportional to the number of QPs [26]. For
+example, once the RNIC is notified by the doorbell ringing,
+\section{Problems}
+\label{sec:org751b553}
+
+
+\section{References}
+\label{sec:org48c2950}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+\end{document}

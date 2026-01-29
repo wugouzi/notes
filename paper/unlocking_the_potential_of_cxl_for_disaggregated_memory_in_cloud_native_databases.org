@@ -1,0 +1,410 @@
+#+title: Unlocking The Potential of CXL for Disaggregated Memory in Cloud-Native Databases
+
+#+AUTHOR: polardb
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../../latex/papers/polardb_cxl.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Inroduction
+        Compute Express Link (CXL) has emerged as a promising solution for low-latency, high-bandwidth
+        interconnects in data centers, with features like inherent cache coherency, native load/store support,
+        memory pooling/sharing across multiple hosts and devices, making it an attractive option in
+        memory-intensive applications
+
+        For disaggregated database, existing RDMA-based solutions face critical challenges such as limited
+        bandwidth, higher latency, limited concurrency and complexity in managing cache coherency
+
+        The emergence of CXL addresses these challenges by offering low-latency, high-bandwidth connections
+        with native cache coherency and memory pooling/sharing support, significantly improving the
+        performance of cloud databases
+* Background and motivation
+** CXL introduction
+        CXL is an interconnect technology for high-speed, low-latency communication between host processors
+        and peripheral devices. CXL has evolved significantly across its three major versions, each enhancing
+        its capabilities and flexibility.
+
+        CXL 1.0, introduced in 2019, laid the foundation with support for
+        three key protocols: *CXL.io* for I/O operations, *CXL.cache* for caching semantics, and *CXL.mem* for
+        memory access semantics. These protocols enable low-latency, high-bandwidth communication between host
+        processors and accelerators, focusing on coherent memory access and device Discovery.
+
+        CXL 2.0, released in 2020, introduced memory pooling to enable multiple hosts to share memory
+        resources and added switching capabilities to improve scalability.
+
+        CXL 3.0, launched in 2022, further extended these features with innovations such as multi-level
+        switching, dynamic capacity devices, and support for fabric-based topologies, delivering greater
+        memory scalability, improved disaggregation, and flexible memory sharing across hosts.
+
+        The key advantages of CXL compared to RDMA include:
+        1. Low latency: CXL connects the host to device-attached memory via PCIe, whereas RDMA requires
+           protocol interface conversions between InfiniBand and PCIe. CXL can also translate memory
+           store/load requests from the last-level cache into CXL flits (Flow Control UnIT), while RDMA relies
+           on DMA to read/write memory data, making it slower. DirectCXL reports that CXL is 8.3× faster than
+           RDMA for reading 64 bytes of data. 
+        2. Load/store support: CXL natively supports load/store instructions, allowing direct access to CXL
+           memory. In contrast, with RDMA-based systems, applications must first read data from the remote
+           memory into local memory, process it locally, and then write the updated data back to the remote
+           memory. This additional step adds significant overhead. In a CXL-based system, the CPU can directly
+           access and process data in the CXL memory without this intermediate step, and the CPU cache can
+           further enhance memory access performance.
+        3. Simplicity: RDMA relies on specialized interfaces and drivers for access, introducing programming
+           complexity. Additionally, RDMA requires developers to possess deep expertise to design
+           high-performance systems that effectively leverage its capabil- ities. In contrast, CXL offers a
+           transparent memory space for applications
+        4. Cache coherency: CXL 3.0 supports hardware-based cache coherency across memory and devices attached
+           to multiple hosts, unlike RDMA. This feature opens up new opportunities for memory sharing across
+           systems.
+** Memory disaggregation in cloud databases
+        In RDMA-based systems, the CPU cannot access remote memory via RDMA as transparently as it accesses
+        local memory, requiring data to be fetched to local DRAM and processed locally. Additionally, RDMA
+        operations are still much slower than local DRAM access, necessitating the use of a local buffer pool
+        (LBP) to maintain performance. The LBP and remote memory are typically organized in a tiered memory
+        structure.
+
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/282.png]]
+
+
+        Limitations:
+        1. Read-write amplification: In current designs, databases store pages in disaggregated memory and
+           transfer data at the page granularity. From figure ref:f1, LBP size of 10%, RDMA bandwidth
+           utilization reaches 6.9 GB/s and 3.9 GB/s under two workloads, consuming up to 57% of a ConnectX-6
+           NIC’s 12 GB/s bandwidth, despite utilizing only 8.3% of CPU resources on a 192 vCPU host.
+
+           These findings highlight the high RDMA bandwidth consumption inherent in such systems and reveal
+           the trade-offs in RDMA-based designs, where increasing the LBP size can alleviate bandwidth
+           pressures but sacrifices cost-efficiency in cloud environments.
+        2. Inefficient recovery: Storing metadata on disaggregated memory via RDMA is impractical due to
+           RDMA’s high latency. 
+        3. RDMA bottleneck. RDMA driver can become a performance bottleneck. Existing IOPS-bound disaggregated
+           applications do not scale well beyond 32 cores. CXL, which supports load/store memory semantics via
+           the PCIe interface, can eliminate these bottlenecks. 
+        4. Lack of cache coherency. Due to the lack of cache coherency between nodes, databases are required
+           to implement their own cache coherency mechanisms. For instance, in PolarDB-MP, after a node
+           modifies a page in its local buffer and pushes it to disaggregated memory, it must invalidate
+           copies in other nodes’ local buffers to maintain cache coherency. Fortunately, the CXL 3.0 protocol
+           natively implements cache coherency, removing this overhead from the application layer and improving overall performance.
+** Characteristics of CXL switch
+        #+ATTR_LATEX: :width .5\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/283.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION: 
+        [[../images/papers/284.png]]
+
+
+        This paper employs the XConn CXL switch for the evaluation, the world’s first CXL 2.0 switch,
+        supporting up to 256 lanes with a total switching capacity of 2TB/s. The left panel of Figure ref:f2
+        shows our in-house built physical prototype rack, which integrates two CXL switch-enabled clusters,
+        each connected to memory devices and hosts. The right panel illustrates the topology of a single CXL
+        switch system, where both the CXL switch and memory devices operate with independent power supply
+        units. In multi-socket servers, when the CXL switch is connected to one socket, CPUs on other sockets
+        may experience higher latency when accessing CXL memory.
+
+        Table ref:t1 compares the latency of DRAM and CXL memory access, measured using the Intel MLC tool.
+        Additionally, we juxtapose the latency of directly accessing CXL memory without the switch, used in
+        most existing works. Without the switch, the latency of CXL is comparable to remote DRAM access,
+        aligning with prior claims. However, deploying the CXL switch introduces additional latency. For local
+        NUMA node access, CXL latency is 3.76× that of DRAM; for remote NUMA access, it is 2.82×. Even when
+        comparing remote DRAM access with local CXL access, CXL latency is still 2.38× higher than DRAM. As
+        this paper focuses on memory pooling and sharing based on CXL memory, the use of the CXL switch is
+        essential for these scenarios. All subsequent discussions in this paper are based on the CXL switch.
+        From our evaluation, the additional latency introduced by the CXL switch proves to be negligible in
+        cloud database scenarios.
+
+        *Data transfer of RDMA vs CXL*. Data transfers between local and remote memory in RDMA-based systems are
+         common. Table ref:t1 shows latency comparison between RDMA and CXL for data transfers, including
+         writes (local DRAM to remote memory) and reads (remote memory to local DRAM).
+
+        As the data size  increases to 16KB, CXL’s latency rises more substantially than RDMA’s. RDMA’s
+        latency is less sensitive to data size due to its fixed overhead, e.g., network RTT, protocol
+        handling, and NIC memory access, while CXL latency grows with data size due to limited CPU load/store
+        buffer depth. For instance, increasing the data size from 64B to 16KB only increases RDMA latency by
+        36.61% and 56.70%, whereas CXL’s latency increases by 1.15× for writes and 2.28× for reads.
+
+        These findings motivate us to consider load/store instructions for direct memory accesses and
+        eliminate the local buffer completely, instead of copying data from the remote memory to the local
+        buffer. Directly accessing data on CXL memory is much faster than with RDMA, making it a feasible
+        option to run databases directly on CXL memory. Moreover, databases often require only a portion of a
+        page during a transaction processing, eliminating the need to transfer entire pages.
+        
+        *Database performance on CXL*. Copying data pages from CXL memory to local DRAM introduces significant
+        latency. Although CXL latency is higher than DRAM, it is much faster than RDMA, and CPU caching
+        mitigates the latency impact. Additionally, database buffer pool operations are more sensitive to
+        bandwidth than latency.
+
+        These factors motivate our approach to directly running the database on CXL memory. To further prove
+        this, we implement a CXL-based buffer pool (CXL-BP) in PolarDB to enable direct CXL memory access and
+        bypass local DRAM buffering, and compare its performance with DRAM-based buffer pool (DRAM-BP), as
+        shown in Figure ref:f3.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/285.png]]
+
+        In our test, each physical host has 192 vCPUs and supports up to 12 database instances, with each
+        instance configured with 16 vCPUs. We varied the number of instances from 1 to 12 to evaluate whether
+        CXL-BP could fully utilize the 192 vCPUs and achieve throughput comparable to DRAM-BP. Figure ref:f3
+        shows that
+        * in the point-select workload, CXL-BP achieves comparable perfor- mance to DRAM with no signs of
+          bottlenecks, showing only a 7% throughput difference at the maximum scale of 12 instances.
+        * In the range-select workload, CXL demonstrates similar performance (approximately 10% lower) for 1
+          to 8 instances. Beyond 9 instances, the network becomes the bottleneck due to the volume of query
+          results returned to the client, resulting in similar performance for both CXL-BP and DRAM-BP.
+        * For the read-write workload, the throughput difference remains within 7% for up to 11 instances.
+          With more than 11 instances, WAL persistency becomes the system bottleneck, and both DRAM-BP and
+          CXL-BP exhibit similar performance.
+          
+        In summary, using CXL as the buffer pool in databases results in only minor performance drops or none
+        in some scenarios.
+* Design and Implementation
+** PolarCXLMem
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/286.png]]
+
+        *Overview*. PolarCXLMem shares a similar architecture with RDMA-based disaggregated memory. The key
+        difference is that the database constructs its buffer pool, including both data pages and metadata,
+        directly on CXL memory. Local DRAM is reserved for variables and other transaction engine-related data
+        structures. As shown in Figure ref:f4, all hosts running the database instance, along with the CXL
+        memory devices, are connected to the CXL switch. The database instance can transparently access CXL
+        memory using native load/store instructions, as if it were accessing local DRAM.
+
+        *CXL Memory allocation*. Although the CXL 2.0 switch natively supports memory pooling, the CXL 2.0
+        driver is not yet fully upstreamed. Therefore, we utilize the ~EFI_MEMORY_SP~ attribute set by the BIOS.
+        On each host connected to the CXL switch, we configure the CXL-attached memory as a [[https://docs.kernel.org/driver-api/cxl/allocation/dax.html][dax]] device in
+        device direct access (/devdax/) mode using /daxctl/, enabling easy access via mmap. In this setup, we
+        designed a CXL memory manager to support multi-tenancy, preventing multiple nodes from accessing the
+        same memory region.
+
+        The manager allocates memory for each node, ensuring that no two nodes access overlapping CXL memory.
+        When a node requests CXL memory, it communicates with the manager via RPC, specifying the required
+        memory size. The manager then returns an offset for the allocated memory, allowing the node to use
+        memory starting from that offset. Since the CXL memory for the buffer pool is only allocated once
+        during database startup, the memory allocation overhead has no impact during runtime.
+        
+        *CXL-based buffer pool*. During database startup, the database instance calculates the memory required
+        for the buffer pool and allocates CXL memory from the CXL memory manager. After receiving the offset,
+        the database instance uses mmap to map the CXL dax device at the specified offset. The allocated CXL
+        memory is logically divided into blocks, with each block storing a database page and its corresponding
+        metadata. These blocks are managed through two linked lists: a free list, representing blocks that are
+        available, and an in-use list, representing blocks already in use for database pages. When the
+        transaction engine requests a page, if the page is in the in-use list, the data pointer is returned
+        directly to the transaction engine. If not, a block from the free list is assigned, an I/O operation
+        is performed to load the page into memory, and the data pointer is returned. The transaction engine
+        can then operate on the data pointer without needing to know whether it points to local DRAM or CXL
+        memory.
+
+        *Avoiding Tiered Memory*. In PolarCXLMem, we eliminate the tiered memory structure commonly used in many
+        RDMA-based disaggregated memory systems. Although CXL memory is slower than local DRAM, it is already
+        fast enough for the buffer pool. Therefore, a tiered memory structure is unnecessary with CXL-based
+        disaggregated memory
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/287.png]]
+        
+        *Physical topology*. Figure ref:f5 depicts the physical topology of a PolarCXLMem deployment. This setup
+        includes two CXL switches housed in a single switch box. A controller connects to these switches,
+        enabling servers to send control messages via Ethernet for configuration and management. The switches
+        are connected via CXL x16 lanes to memory devices organized in a CXL memory box, which supports up to
+        16TB of memory, forming a pool of the same capacity. Each CXL switch, along with its connected memory,
+        constitutes an independent memory pool that can be accessed by servers. This example demonstrates a
+        deployment with two CXL-based memory pools, showcasing the scalability and flexibility of the system.
+** Instant recovery on PolarCXLMem
+        The CXL switch has an independent power supply unit (PSU). When a host goes down, the data in CXL
+        memory remains intact. We can utilize the CXL-based disaggregated memory to achieve the instant
+        recovery since the main purpose of the database crash recovery is to recover the buffered data pages.
+        Thus, we propose the instant recovery scheme, *PolarRecv*, based on /PolarCXLMem/.
+
+        *Challenges*. When using the RDMA-based disaggregated memory, the latest versions of pages are not
+         retained in disaggregated memory, as pages are updated locally in the buffer. Therefore, after a
+         crash, the recovery process must scan all redo logs, retrieve pages from disaggregated memory or
+         storage, and apply these logs
+
+         In contrast, PolarCXLMem allows the database to operate directly on CXL memory. As a result, after a
+         crash, CXL memory retains all the latest updates, enabling us to initialize the buffer pool structure
+         directly from CXL memory.
+
+         However, because other in-memory data structures, such as thread contexts, are lost during a crash,
+         the database cannot simply restart based on CXL memory alone. There are additional issues that must
+         be addressed to enable instant recovery:
+         1. The LRU list may be inconsistent after a crash if the crash occurred during the movement of an LRU
+            node. In this case, the system needs to detect this issue and rebuild the LRU list during
+            recovery.
+        2. If a crash happens during structure modification operations (SMOs) in the B-tree, such as page
+           splitting or merging, the B-tree structure may be inconsistent. The system must restore the B-tree
+           to a consistent state during recovery
+        3. When a crash occurs during a page update, the page may be left in a partial state, preventing
+           reliable database operation. Page atomicity must be guaranteed.
+        4. Since the redo log buffer still uses local DRAM, any logs not flushed to storage at the time of the
+           crash will be lost. This could result in an updated page being present after recovery without
+           corresponding redo logs, which violates the ARIES-style logging scheme. To maintain consistency,
+           it’s essential to avoid situations where there are ‘too new’ pages without associated logs.
+
+
+        *PolarRecv design*. /PolarRecv/ is built on /PolarCXLMem/, where the database directly utilizes
+        disaggregated CXL memory as the buffer pool. To recover the buffer pool structure after a crash, we
+        also store metadata for each page in CXL memory. We organize each page’s data and metadata within a
+        structure called a *block*, as shown in Figure ref:f4. The ~id~ field represents the page ID, and
+        ~lock_state~ indicates whether the page is currently locked for updating. The ~prev~ and ~next~ fields are
+        used for the double-linked list managed by the LRU policy, while ~lsn~ stores the latest log sequence
+        number corresponding to the page.
+        
+        In most databases, a page’s write or read lock must be acquired before it is updated or read, so we
+        store the lock state in CXL memory. During recovery, we scan each page’s lock state. If a page is
+        write-locked, it may have been in the middle of an update when the crash occurred, potentially leaving
+        it in a partial state. In such cases, we must recover the page from the redo logs rather than using
+        the potentially incomplete page directly.
+        
+        During a B-tree SMO, the process is protected by a mini-transaction, with the corresponding page
+        locked using a two-phase locking policy. In this case, the locks on related pages involved in the SMO
+        are only released upon the completion of the mini-transaction. Furthermore, redo logs are typically
+        flushed to storage only after the mini-transaction is committed. During recovery, if a page is found
+        to be write-locked, we apply the redo logs to restore it rather than directly using the version in CXL
+        memory. Therefore, if a crash occurs during an SMO, we can still identify the related pages involved
+        in the incomplete SMO’s mini-transaction, recover them from the redo logs, and maintain B-tree
+        consistency.
+        
+        In the recovery process, /PolarCXLMem/ first retrieves the maxi- mum LSN from the persistent redo logs.
+        When scanning pages in CXL memory, it checks both the lock state and the LSN field of each page. If a
+        page’s LSN is greater than the maximum LSN in the persistent redo logs, PolarCXLMem rebuilds the page
+        by applying the redo logs instead of using the version in CXL memory. This approach ensures that we do
+        not use a version of the page that lacks corresponding redo logs.
+        
+        To ensure LRU consistency, we use a lock state in CXL memory to indicate any modifications. Changes to
+        the LRU structure are protected by a mutex lock, with the lock state also stored in CXL memory. When
+        recovering, this lock state is checked to determine if the LRU structure was being modified at the
+        time of the crash. If it was, the LRU list is rebuilt; otherwise, PolarCXLMem can directly use the
+        existing LRU list.
+** CXL-based data sharing on PolarCXLMem
+        Since CXL 3.0 switches with inherent cache coherency are not yet available, we design a new cache
+        coherency protocol for the CXL 2.0-based disaggregated memory.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/289.png]]
+
+        *Overview*. Figure ref:f6 illustrates the design of data sharing in a multi-primary database based on
+        PolarCXLMem. Similar to PolarDB-MP, we employ a buffer fusion server to manage the metadata of the
+        distributed buffer pool (DBP). The buffer fusion server allocates memory from PolarCXLMem. The CXL
+        memory is organized at the page level, with each page storing a single unit of data. Pages are managed
+        using an LRU policy. Initially, all pages are stored in a free list. During runtime, pages are
+        allocated from the free list and moved to the in-use list. A background thread dynamically moves the
+        least recently used pages from the in-use list back to the free list to free space for new pages. On
+        the database side, each buffer pool maintains a set of pages but stores only the CXL memory addresses
+        of the pages rather than the pages themselves. For each page, the system also tracks two additional
+        fields: ~invalid~ and ~removal~. The ~invalid~ flag ensures cache coherency by indicating whether a page has
+        been modified by another node, requiring the current node to invalidate its CPU cache. The removal
+        flag manages the LRU policy on the buffer fusion side. If the buffer fusion server moves a page from
+        the in-use list to the free list, it resets the removal flag across all nodes.
+
+        *Workflow*. On the database side, a hash table is initially allocated to manage the page metadata
+        buffer. The hash table uses the page ID as the key, while the values consist of the corresponding
+        metadata, including ~data_addr~ (the page’s CXL address allocated by the buffer fusion server), ~invalid~
+        and ~removal~. The ~invalid~ and ~removal~ fields nare stored in CXL memory and can be updated by the buffer
+        fusion server when the page state changes.
+        
+        Initially, these metadata records are free and stored in a free list. When the database requests a new
+        page that cannot be found in the local page metadata buffer, it allocates a free metadata record from
+        the free list and sends an RPC to the buffer fusion server, providing its invalid and removal CXL
+        addresses. If the requested page already exists in the buffer fusion server’s in-use list, the server
+        returns its CXL address to the database. Otherwise, the server allocates a page from its free list,
+        updates the page’s metadata, adds the requesting node to the active list, and records the
+        corresponding invalid and removal fields. Once the database node receives the page’s CXL memory
+        address from the buffer fusion server, it stores the address in its local page metadata buffer.
+        
+        If the requested page is found in the local page metadata buffer, the database first checks the
+        removal flag. If the flag is set, it indicates that the page’s CXL address has been recycled by the
+        buffer fusion server. In this case, the database cannot use the page directly and must request a new
+        address from the buffer fusion server via RPC. Afterward, the invalid flag is checked to determine
+        whether the page has been modified by another node. If the invalid flag is set, the database
+        invalidates the CPU cache for this page to ensure consistency. Subsequent accesses to the page will
+        read directly from the CXL memory device to obtain the latest version.
+
+        *Cache coherency*. Since the CXL 2.0 switch lacks inherent cache coherency, a node updating a data page
+        in CXL memory cannot invalidate the same page in another node’s CPU cache. Additionally, updates made
+        by a node may remain in its CPU cache and be flushed to CXL memory in the background, preventing
+        immediate visibility of the changes to other nodes. To address this, we implement cache coherency at
+        the database level.
+
+        In existing cloud-native multi-primary databases, concurrent access to data pages
+        is managed through distributed page locks. Before reading from or writing to a page, a node must
+        acquire the page’s read or write lock. We integrate our cache coherency scheme with this page locking
+        mechanism. When a node updates a page, it must hold the write lock for that page, preventing any other
+        node from reading or writing to it until the lock is released. Upon releasing the write lock, the node
+        performs a /clflush/ operation on the page to flush the modifications from the CPU cache to CXL memory,
+        ensuring the CXL memory contains the latest version of the page. Additionally, when releasing the page
+        lock, the buffer fusion server sets the invalid flag for all nodes where the page is active. This flag
+        update is executed as a memory store operation on CXL memory, which generally completes within a few
+        hundred nanoseconds. If the flag is set, it indicates that the page has been modified by another node.
+        To ensure cache coherency, the node must invalidate its CPU cache for the page to avoid accessing
+        outdated data. Since concurrent nodes cannot update the page without holding the lock, the cache lines
+        of the page should already be clean. Therefore, a /clflush/ operation can be performed to invalidate the
+        cache lines of the page. Subsequent accesses will then fetch the data directly from CXL memory,
+        ensuring the node retrieves the latest version. <<P1>>
+
+        *Background recycle*. The CXL memory allocated for the DBP is limited, so a background thread on the
+        buffer fusion server is enabled to recycle the least recently used pages, moving them from the in-use
+        list to the free list. Before recycling a page, the buffer fusion server must ensure it is not in use
+        by any database node by acquiring an exclusive lock on the page. Once a page is recycled, the buffer
+        fusion server sets the removal flag for all nodes where the page is active. This flag update is
+        performed through a single memory store operation on CXL memory, which typically takes only a few
+        hundred nanoseconds.
+
+        When a node detects that a page’s removal flag is set, it recognizes that the page has been removed by
+        the buffer fusion server and retrieves the page’s new CXL address via RPC. Additionally, on the
+        database side, a background thread periodically scans the page metadata buffer to recycle metadata
+        entries whose removal flag is set.
+        
+        *Benefits*. In this CXL-based data sharing solution, database nodes can directly operate on CXL memory
+        without needing to read entire pages into local buffers for processing, as required in existing
+        RDMA-based solutions. Our approach eliminates read/write amplification, thereby significantly saving
+        bandwidth, as thoroughly discussed in previous sections. What’s more, when a page is updated, only a
+        /clflush/ operation is needed to synchronize the modified cache lines to CXL memory. Unlike RDMA-based
+        solutions, which transfer the entire page to the distributed buffer pool even when only a small part
+        of the page is updated, the CXL-based approach synchronizes only the modified data, avoiding redundant
+        writes and reducing bandwidth usage and synchronization overhead.
+* Evaluation
+** Experimental setup
+** PolarCXLMem pooling performance
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f7
+        #+CAPTION: 
+        [[../images/papers/290.png]]
+
+        In RDMA-based systems, querying a single record (a few hundred bytes in this workload) may induce the
+        transfer of an entire page (16KB) from the disaggregated memory.  This results in significant read
+        amplification, making RDMA bandwidth the primary bottleneck.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f8
+        #+CAPTION: 
+        [[../images/papers/291.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f9
+        #+CAPTION: 
+        [[../images/papers/292.png]]
+** Recovery performance of PolarRecv
+** Data sharing performance
+* Problems
+        1. [[P1]]: How does other know the removal/invalid flag. Ah, know the purple squre in the image, they are
+           CXL memory
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
