@@ -7,6 +7,150 @@
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
 
+* Background
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/299.png]]
+
+        Figure ref:f1 shows the relevant hardware components of a machine in an RDMA cluster. A NIC with one
+        or more ports connects to the PCIe controller of a multi-core CPU. The PCIe controller reads/writes
+        the L3 cache to service the NIC’s PCIe requests; on modern Intel servers, the L3 cache provides
+        counters for PCIe events. 
+** PCI Express
+        The current fastest PCIe link is PCIe “3.0 x16,”(\wu{Now thre is PCIe 8.0}) the 3rd generation PCIe protocol, using 16 lanes. The
+        bandwidth of a PCIe link is the per-lane bandwidth times the number of lanes. PCIe is a layered
+        protocol, and the layer headers add overhead that is important to understand for efficiency. RDMA
+        operations generate 3 types of PCIe transaction layer packets (TLPs): read requests, write requests,
+        and read completions (there is no transaction-layer response for a write). Figure [[ref:f2]]a lists the
+        bandwidth and header overhead for the PCIe generations in our clusters. Note that the header overhead
+        of 20–26 bytes is comparable to the common size of data items used in services such as memcached
+        and RPCs.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/300.png]]
+
+        Roughly
+        | Gen | Raw Rate (GT/s) | Signaling / Encoding | Effective per-lane BW | x16 BW (one-dir) |
+        | 2.0 |               5 | NRZ, 8b/10b          | 0.50 GB/s             | 8.0 GB/s         |
+        | 3.0 |               8 | NRZ, 128b/130b       | 0.985 GB/s            | 15.75 GB/s       |
+        | 4.0 |              16 | NRZ, 128b/130b       | 1.97 GB/s             | 31.5 GB/s        |
+        | 5.0 |              32 | NRZ, 128b/130b       | 3.94 GB/s             | 63.0 GB/s        |
+        | 6.0 |              64 | PAM4, FLIT (256B)    | 7.88 GB/s             | 126 GB/s         |
+        | 7.0 |             128 | PAM4, FLIT (256B)    | 15.75 GB/s            | 252 GB/s         |
+        | 8.0 |             256 | PAM4 (evolved), FLIT | 31.5 GB/s             | 504 GB/s         |
+
+        *MMIO writes vs. DMA reads*. CPUs write to mapped device memory (MMIO) to initiate PCIe writes. To
+        avoid generating a PCIe write for each store instruction, CPUs use an optimization called “write
+        combining,” which combines stores to generate cache line–sized PCIe transactions. PCIe devices have
+        DMA engines and can read from DRAM using DMA. DMA reads are not restricted to cache lines, but a read
+        response larger than the CPU’s read completion combining size (\(C_{rc}\)) is split into multiple
+        completions. \(C_{rc}\) is 128(\wu{now maybe 256}) bytes for the Intel CPUs used in our measurements; we assume 128
+        bytes for the AMD CPU. A DMA read always uses less host-to-device PCIe bandwidth than an
+        equal-sized MMIO; Figure [[ref:2]]b shows an analytical comparison. This is an important factor, and we show
+        how it affects performance of higher-layer protocols in the subsequent sections.
+
+        *PCIe counters* Although precise PCIe analysis requires expensive PCIe analyzers or
+         proprietary/confidential NICs manuals, PCIe counters available on modern CPUs can provide several
+         useful insights[fn:1]. For each counter, the number of captured events per second is its counter rate. Our
+         analysis primarily uses counters for DMA reads (~PCIeRdCur~) and DMA writes (~PCIeItoM~).
+** RDMA
+*** RDMA verbs and transports
+        RDMA hosts communicate using queue pairs (QPs); hosts create QPs consisting of a send queue and a
+        receive queue, and post operations to these queues using the *verbs* API. We call the host initiating a
+        verb the *requester* and the destination host the *responder*. For some verbs, the responder does not
+        actually send a response. On completing a verb, the requester’s NIC optionally signals completion by
+        DMA-ing a completion entry (CQE) to a completion queue (CQ) associated with the QP. Verbs can be made
+        *unsignaled* by setting a flag in the request; these verbs do not generate a CQE, and the application
+        detects completion using application-specific methods.
+
+        The two types of verbs are memory verbs and messaging verbs.
+        * Memory verbs include RDMA reads, writes, and atomic operations. These verbs specify the remote
+          address to operate on and bypass the responder’s CPU.
+        * Messaging verbs include the send and receive verbs. These verbs involve the responder’s CPU: the
+          send’s payload is written to an address specified by a receive that was posted previously by the
+          responder’s CPU.
+        In this paper, we refer to RDMA read, write, send, and receive verbs as READ, WRITE, SEND, and RECV
+        respectively.
+
+        RDMA transports are either reliable or unreliable, and either connected or unconnected (also called
+        datagram).
+
+        With reliable transports, the NIC uses acknowledgments to guarantee in-order delivery of messages.
+        Unreliable transports do not provide this guarantee. However, modern RDMA implementations such as
+        InfiniBand use a lossless link layer that prevents congestion-based losses using link layer flow
+        control, and bit error–based losses using link layer retransmissions. Therefore, unreliable transports
+        drop packets very rarely.
+
+        Connected transports require one-to-one connections between QPs, whereas a datagram QP can communicate
+        with multiple QPs. We consider two types of connected transports in this paper: Reliable Connected
+        (RC) and Unreliable Connected (UC). Current RDMA hardware provides only 1 datagram transport:
+        Unreliable Datagram (UD). 
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION: 
+        [[../images/papers/301.png]]
+
+        UD (unreliable datagram)
+*** RDMA WQEs
+        To initiate RDMA operations, the user-mode NIC driver at the requester creates Work Queue Elements
+        (WQEs) in host memory; typically, WQEs are created in a pre-allocated, contiguous memory region, and
+        each WQE is individually cache line–aligned.The WQE format is vendor-specific and is determined by the
+        NIC hardware.
+        
+        WQE size depends on several factors: the type of RDMA operation, the transport, and whether the
+        payload is referenced by a pointer field or inlined in the WQE (i.e., the WQE buffer includes the payload).
+*** Terminology and default assumptions
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/302.png]]
+
+        We distinguish between inbound and outbound verbs because their performance differs significantly:
+        memory verbs and SENDs are outbound at the requester and inbound at the responder; RECVs are always
+        inbound. Figure ref:f3 summarizes this. As our study focuses on small messages, all WRITEs and SENDs
+        are inlined by default. We define the padding-to-cache-line-alignment function \(x':=\ceil{x/64}*64\).
+        We denote the per-lane bandwidth, request header size, and completion header size of PCIe 3.0 by
+        \(P_{bw}\), \(P_r\) and \(P_c\) respectively.
+* RDMA design guidelines
+        Assumption:
+        1. the NIC is PCIe-based device.
+        2. the NIC has internal parallelism using multiple processing units (PUs)
+** Reduce CPU-initiated MMIOs
+        Both CPU efficiency and RDMA throughput can improve if MMIOs are reduced or replaced with the more
+        CPU- and bandwidth-efficient DMAs. CPUs initiate network operations by sending a message to the NIC
+        via MMIO. The message can
+        1. contain the new work queue elements, or
+        2. it can refer to the new WQEs by using information such as the address of the last WQE.
+        In the first case, the WQEs are transferred via 64-byte write-combined MMIOs.
+
+        In the second case, the NIC reads the WQEs using one or more DMAs.
+
+        We refer to these methods as WQE-by-MMIO and Doorbell respectively. (Different technologies have
+        different terms for these methods. Mellanox uses “BlueFlame” and “Doorbell,” and Intel Omni-Path
+        Architecture uses “PIO send” and “SDMA,” respectively.) Figure ref:f3 summarizes this.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/303.png]]
+
+
+        The WQE-by-MMIO method optimizes for low latency and is typically the default. Two optimizations can
+        improve performance by reducing MMIOs:
+
+        *Doorbell batching*: If an application can issue multiple WQEs to a QP, it can use one Doorbell MMIO for
+        the batch
+
+        *WQE shrinking*: Reducing the number of cache lines used by a WQE can improve throughput drastically.
+** Reduce NIC-initiated DMAs
+        Reducing DMAs saves NIC processing power and PCIe bandwidth, improving RDMA throughput. Note that the
+        batching optimization above adds a DMA read, but it avoids multiple MMIO
+
+        
 * Problems
 
 
@@ -15,3 +159,10 @@
 bibliographystyle:alpha
 
 \bibliography{/Users/wu/notes/notes/references.bib}
+
+* Footnotes
+
+[fn:1] The CPU intercepts cache line-level activity between the PCIe
+controller and the L3 cache, so the counters can miss some critical
+information. For example, the counters indicate 2 PCIe reads when the
+NIC reads a 4-byte chunk straddling 2 cache lines. 
