@@ -1,0 +1,181 @@
+#+title: Prefix Sums and Their Applications
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/prefix_sums_and_their_applications.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        The *all-prefix-sums* operation takes a binary associative operator \(\oplus\), and an ordered set of
+        \(n\) elements
+        \begin{equation*}
+        [a_0,a_1,\dots,a_{n-1}]
+        \end{equation*}
+        and returns the ordered set
+        \begin{equation*}
+        [a_0, (a_0\oplus a_1),\dots,(a_0\oplus a_2\oplus\cdots\oplus a_{n-1})]
+        \end{equation*}
+        #+END_definition
+
+        Uses:
+        1. To lexically compare strings of characters. For example, to determine that ~strategy~ should appear
+           before ~stratification~ in a dictionary
+        2. To add multi precision numbers. These are numbers that cannot be represented in a single machine word.
+        3. To evaluate polynomials
+        4. To solve recurrences. For example, to solve the recurrences \(x_i=a_ix_{i-1}+b_ix_{i-2}\) and
+           \(x_i=a_i+b_i/x_{i-1}\)
+        5. To implement radix sort
+        6. To implement quicksort
+        7. To solve tridiagonal linear systems
+        8. To delete marked elements from an array
+        9. To dynamically allocate processors
+        10. To perform lexical analysis. For example, to parse a program into tokens.
+        11. To search for regular expressions. For example, to implement the UNIX grep program. 
+        12. To implement some tree operations. For example, to find the depth of every vertex in a tree
+        13. To label components in two dimensional images.
+
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.1
+        #+CAPTION: 
+        [[../images/papers/319.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        The *scan* operation is a vector all-prefix-sums operation
+        #+END_definition
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        The *prescan* operation takes a binary associative operator \(\oplus\) with identity \(I\), and a vector
+        of \(n\) elements
+        \begin{equation*}
+        [a_0,\dots,a_{n-1}]
+        \end{equation*}
+        and returns the vector
+        \begin{equation*}
+        [I,a_0,(a_0\oplus a_1),\dots,(a_0\oplus a_1\oplus\cdots\oplus a_{n-2})]
+        \end{equation*}
+        #+END_definition
+
+* Implementation
+        This section describes an algorithm for calculating the scan operation in parallel. For \(p\)
+        processors and a vector of length \(n\) on an EREW [[https://en.wikipedia.org/wiki/Parallel_RAM][PRAM]], the algorithm has a time complexity of
+        \(O(n/p+\log p)\). The algorithm is simple and well suited for direct implementation in hardware.
+        Chapter 4 shows how the time of the scan operation with certain operators can be reduced to
+        \(O(n/p+\log p/\log\log p)\) on a CREW PRAM.
+        
+        Before describing the scan operation, we consider a simpler problem, that of generating only the final
+        element of the scan. We call this the *reduce* operation.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_definition
+        The *reduce* operation takes a binary associative operator \(\oplus\) with identity \(i\), and an
+        ordered set \([a_0,\dots,a_{n-1}]\) of \(n\) elements, and returns the value \(a_0\oplus\dots\oplus a_{n-1}\)
+        #+END_definition
+
+        A balanced binary tree can be used to implement the reduce operation by laying the tree over the
+        values, and using \(\oplus\) to sum pairs at each vertex (see Figure [[ref:1.2]]a). The correctness of the
+        result relies on \(\oplus\) being associative. The operator, however, does not need to be commutative
+        since the order of the operands is maintained.
+
+        On an EREW PRAM, each level of the tree can be executed in parallel, so the implementation can step
+        from the leaves to the root of the tree (see Figure [[ref:1.2]]b); we call this an *up-sweep*. Since the
+        tree is of depth \(\ceil{\log n}\), and one processor is needed for every pair of elements, the
+        algorithm requires \(O(\log n)\) time and \(n/2\) processors.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.2
+        #+CAPTION: 
+        [[../images/papers/320.png]]
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.3
+        #+CAPTION: 
+        [[../images/papers/321.png]]
+
+        If we assume a fixed number of processors \(p\), with \(n>p\), then each processor can sum an \(n/p\)
+        section of the vector to generate a processor sum; the tree technique can then be used to reduce the
+        processor sums (see Figure [[ref:f1.3]]). The time taken to generate the processor sums is \(\ceil{n/p}\),
+        so the total time required on an EREW PRAM is:
+        \begin{equation*}
+        T_R(n,p)=\ceil{n/p}+\ceil{\log p}=O(n/p+\log p)
+        \end{equation*}
+
+        
+        When \(n/p\ge\log p\) the complexity \(O(n/p)\).
+
+        We now return to the scan operation. We actually show how to implement the prescan operation; the scan
+        is then determined by shifting the result and putting the sum at the end. If we look at the tree
+        generated by the reduce operation, it contains many partial sums over regions of the vector. It turns
+        out that these partial sums can be used to generate all the prefix sums. This requires executing
+        another sweep of the tree with one step per level, but this time starting at the root and going to the
+        leaves (a down-sweep). Initially, the identity element is inserted at the root of the tree. On each
+        step, each vertex at the current level passes to its left child its own value, and it passes to its
+        right child, \(\oplus\) applied to the value from the left child from the up-sweep and its own value
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.4
+        #+CAPTION: 
+        [[../images/papers/322.png]]
+
+        Let's consider why the down-sweep works. We say that vertex \(x\) *precedes* vertex \(y\) if \(x\)
+        appears before \(y\) in the preorder (root, left, right) traversal of the tree 
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        [[label:thm1.1]]
+        After a complete down-sweep, each vertex of the tree contains the sum of all the leaf values that
+        precedes it
+        #+END_theorem
+
+        #+BEGIN_proof
+        Induction on the root: if a parent has the correct sum, both children must have the correct sum. The
+        root has no element preceding it, so its value is correctly the identity element.
+
+        Consider Figure [[ref:f1.5]]. The left child of any vertex has exactly the same leaves preceding it as the
+        vertex itself (the leaves in region A in the figure). This is because the preorder traversal always
+        visits the left child of a vertex immediately after the vertex. By the induction hypothesis, the
+        parent has the correct sum, so it need only copy this sum to the left child.
+
+        The right child of any vertex has two sets of leaves preceding it, the leaves preceding the parent
+        (region A), and the leaves at or below the left child (region B). Therefore, by adding the parent’s
+        down-sweep value, which is correct by the induction hypothesis, and the left-child’s up-sweep value,
+        the right-child will contain the sum of all the leaves preceding it. 
+
+        #+END_proof
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.5
+        #+CAPTION: 
+        [[../images/papers/323.png]]
+
+        On an EREW PRAM, the running time is \(2\ceil{\log n}\)
+
+        If we assume a fixed number of processors \(p\), with \(n>p\). Each processor first sums an \(n/p\)
+        section of the vector to generate a processor sum, the tree technique is then used to prescan the
+        processor sums. The results of the prescan of the processor sums are used as an offset for each
+        processor to prescan within its \(n/p\) section (see Figure [[ref:f1.6]]). The time complexity of the
+        algorithm is:
+        \begin{equation*}
+        T_S(n,p)=2(\ceil{n/p}+\ceil{\log p})=O(n/p+\log p)
+        \end{equation*}
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.6
+        #+CAPTION: 
+        [[../images/papers/324.png]]
+
+* Line-of-Sight and Radix-Sort
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
