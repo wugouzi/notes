@@ -1,0 +1,313 @@
+#+title: Leveraging Re-costing for Online Optimization of Parameterized Queries with Guarantees
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/leveraging_recosting_for_online_optimization_of_parameterized_queries_with_guarantees.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        *Parameteric query optimization* (PQO) store a small set of carefully chosen execution plans for a
+        parameterized query rather than only one as in Optimize-Once. When a new query instance arrives they
+        judiciously select one of these plans use such that the cost of the selected plan is not much worse
+        when compared to the cost of the plan if that query instance had been optimized
+
+        Metrics:
+        1. *cost sub-optimality*: cost of the selected plan relative to the cost of the optimal for each query instance,
+        2. *optimization overheads*: fraction of query instances that are optimized
+        3. *number of plans stores*
+
+        Existing online approaches to PQO fall short on one or more of the above three metrics.
+
+        We propose a new technique for online PQO that, given a bound on cost sub-optimality that can be
+        tolerated, effectively addresses all three metrics above, based on the following key ideas.
+
+        *Selectivity check*:
+        * determine if the optimal plan for a previously optimized instance \(q_a\) can also be used for a new
+          instance \(q_b\), while *guaranteeing* that its cost sub-optimality is within the specified bound.
+        * This check is very efficient as it only requires comparing the selectivities of parameterized
+          predicates of \(q_a\) with the corresponding selectivities of \(q_b\) .
+        * Its soundness is based on a conservative assumption on how rapidly the cost of a plan changes with
+          selectivity 
+        * If the selectivity check is successful, we can reuse a stored plan for \(q_b\)
+
+
+        *Cost check*:
+        For query instances where the selectivity check fails, we invoke a cost check that relies on a new
+        Recost API that we have implemented in the database engine. We use this API to compute the cost of
+        using the optimal plan associated with an already optimized instance \(q_a\), for a new query
+        instance \(q_b\). Using this cost, and the selectivities of \(q_a\) and \(q_b\) , the cost check
+        determines whether the optimal plan for \(q_a\) can be used for \(q_b\) while still guaranteeing the
+        same bound on plan cost sub-optimality.
+
+        Although the Recost API is more expensive than a selectivity check, it is much faster than the
+        traditional optimizer call (up to two orders of magnitude in our implementation). Hence, if the cost
+        check passes, we still achieve significant reduction in optimization overheads. In practice, many
+        query instances that fail the selectivity check typically pass the cost check, and can therefore
+        still use a stored plan with bounded cost sub-optimality.
+
+        *Redundency check*:
+        This check applies when both the above checks fail. In this case we need to optimize the new query
+        instance qb . If this optimization results in a new plan, we first check whether it is redundant with
+        respect to the existing stored plans, i.e., whether one of the stored plans could ensure bounded cost
+        sub-optimality for \(q_b\). Otherwise, this plan is added to the set of stored plans.
+
+        We refer to our technique as SCR.
+
+        We have implemented our techniques in the Microsoft SQL Server 2016 database engine. Our experiments
+        are conducted on TPC-DS and TPC-H industry benchmark queries as well as two real-world workloads. We
+        observe that on each of the three metrics, the SCR technique performs similar or significantly better
+        than the best existing techniques as discussed in Section 7.
+
+* Problem Description
+        * Given a parameterized query (a.k.a. query template) \(Q\), we use the term *dimensions* for the number
+          of parameterized predicates and denote it with \(d\).
+        * We use \(q_e\) to denote an example instance of \(Q\) and a vector \(sVector_e\) for compact representation of
+          instance \(q_e\) that captures corresponding selectivities for the parameterized predicates, e.g.
+          \((s_1,\dots,s_d)\). 
+        * for query instance \(q_e\), the optimal plan is denoeted with \(P_{opt}(q_e)\)
+        * For a given plan \(P\) and query instance \(q_e\), the optimizer estimated cost is denoted with
+          \(Cost(P,q_e)\)
+        * a *workload* \(W\) is a sequence of query instances for the query template \(Q\), i.e., \(W=\la q_1,q_2,\dots\ra\)
+        * Let \(\calp\) denote the set of all plans that are optimal for at least one query instance in \(W\),
+          and \(n\) denote the cardinality of \(\calp\)
+
+        *Online PQO setting*. An online PQO technique needs to decide which plan to use for each incoming query
+        instance in an online fashion. It does so by storing a set of plans in a plan cache and then deciding
+        whether to pick one of the cached plans or make an optimizer call. This is usually done by associating
+        each plan with a /inference region/, i.e., selectivity region where it can be reused. At any
+        intermediate state, we denote the query instance currently being processed with \(q_c\) and the set of
+        previously processed instances with \(W_{past}\) .        
+
+        
+** Metric
+        1. *Cost sub-optimality*. For query instance \(q_e\), let \(P(q_e)\) denote the plan used by the online
+           technique. Then sub-optimality for \(q_e\) is defined as
+           \begin{equation*}
+           SO(q_e)=\left(\frac{Cost(P(q_e),q_e)}{Cost(P_{opt}(q_e),q_e)}\right)
+           \end{equation*}
+           Any plan \(P\), for which \(1<SO(q_e)\le\lambda\), is termed as *\(\lambda\)-optimal plan* for
+           \(q_e\). Further, we measure the worst case sub-optimality across the workload sequence using
+           \(MSO\) defined as
+           \begin{equation*}
+           MMMMSO=\max_{q_e\in W}(SO(q_e))
+           \end{equation*}
+           Since MSO only captures the worst case and does not reflect whether such cases are frequent or
+           rare, we also measure aggregate performance of the technique over the given workload using
+           TotalCostRatio as
+           \begin{equation*}
+           TotalCostRatio=\frac{\sum_{q_e\in W}Cost(P(q_e),q_e)}{\sum_{q_e\in W}Cost(P_{opt}(q_e),q_e)}
+           \end{equation*}
+        2. *Optimization overheads*. We use numOpt to denote the number of optimizer calls made across the workload
+        3. *Number of plans cached*: denote the maximum number of plans stored in the plan cache with numPlans.
+
+        For the purpose of evaluation, we generate fixed length workloads, s.t. \(\abs{W}=m\), in which case
+        \(numPlans\le numOpt\le m\). Also, we use only optimizer estimated costs in our evaluation.
+
+        
+
+** Problem Definition
+        In this work, we focus on designing an online PQO technique that aims to minimize optimizer overheads
+        wihile ensuring that every processed query instance \(q\) satisfies \(SO(q)\le\lambda\) , where
+        \(\lambda\ge 1\)  is an input parameter
+
+        We also study a variant of the above problem with an additional constraint that the number of plans
+        stored in the plan cache cannot exceed \(k\ge 1\)
+* Existing Techniques
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION: 
+        [[../images/papers/358.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/359.png]]
+
+        Our workload consists of 13 query instances which are marked in Figure [[ref:f1]] as \(i[j]\), where \(i\)
+        represents \(i^{th}\) query instance \(q_i\) and \(j\) denotes \(j^{th}\) plan \(P_j\) which is
+        optimal plan for \(q_i\), i.e., \(P_{opt}(q_i)\).
+        
+        * *Limitations affecting optimizer overhead*: For all existing techniques, the reuse of a stored plan
+          \(P\) is possible only after workload has provided two or more instances that satisfy certain
+          pre-conditions (Table [[ref:t1]]). Such restrictions may prevent reuse of suitable plan that already
+          exists in plan cache.
+        * *Limitations affecting cost sub-optimality*: All plan inference techniques that use selectivity-based
+          neighborhoods can seriously compromise MSO, since they do not take into account the cost behavior of
+          the inferred plan or optimal plan – as explained in Appendix A.
+
+          In the example workload, while the elliptical region around \(q_1\) and \(q_5\) provides optimal
+          plans for \(q_{10}\) and \(q_{12}\) , it also results in a sub-optimal plan \(P_1\) for \(q_{13}\) .
+        * *Limitations affecting number of plans required*: Existing techniques mostly use trivial policies for
+          managing the plan cache, e.g. store every new plan and never drop a plan. As a result, they are
+          prone to storing a large number of plans.
+* Solution Overview
+** Architecture
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/360.png]]
+
+        At any intermediate stage, the plancache stores a set of plans and extra information to capture their
+        inference regions - we denote the set of plans with \(\calp_C\)
+
+        When a new query instance \(q_c\) arrives, the first step is to compute its selectivity vector
+        (\(sVector_c\)) which is then passed to the ~getPlan~ module. This modules interacts with the plan cache
+        and makes the decision to optimize or not for \(q_c\) . Let \(P(q_c)\) denotes the plan chosen for
+        \(q_c\). ~getPlan~ tries to find the plan \(P(q_c)\) from the plan cache failing which an optimizer call
+        is made to obtain the optimal plan for \(q_c\) . Note that ~getPlan~ occurs on the critical path of
+        query execution, and must therefore be efficient.
+        
+        If \(q_c\) is optimized, then we get the plan \(P_{opt}(q_c)\), which is then fed to the ~manageCache~
+        module. This module makes the following decisions regarding the state of plan cache:
+        1. If \(P_{opt}(q_c)\) is found to already exist in plan cache, then how to modify its inference
+           region.
+        2. If \(P_{opt}(q_c)\) is not found in the plan cache, then whether to store or not.
+        3. For each of the existing plans in plan cache, drop or not.
+
+        Since ~manageCache~ does not need to occur on the critical path of query execution, it can be
+        implemented asynchronously on a background thread.
+** Requirements from the database engine
+        1. *Compute selectivity vector*: given a query instance \(q_c\), efficiently compute and return \(sVector_c\)
+        2. *Recost plan*: Given a plan \(P\) and a query instance \(q_c\), efficiently compute and return \(Cost(P,q_c)\)
+** Outline for ~getPlan~ and ~manageCache~
+* Design of ~getPlan~ Module
+        We first describe our approach to decide if a plan that already exists in the plan cache can be reused
+        for a new query instance while guaranteeing λ-optimality.
+** Plan reuse approach
+        When a query instance \(q_e\) is optimized, we get plan \(P_{opt}(q_e)\). The sub-optimality of
+        \(P_{opt}(q_e)\) when used for another query instance \(q_c\) is given by:
+        \begin{equation*}
+        SubOpt(P_{opt}(q_e),q_c)=\frac{Cost(P_{opt}(q_e),q_c)}{Cost(P_{opt}(q_c),q_c)}
+        \end{equation*}
+        The challenge is that computing exact value of sub-optimality is not possible without making optimizer
+        call for \(q_c\), which would defeat the very purpose of plan reuse.
+
+        Our approach is to infer an /upper bound/ on the value of \(SubOpt(P_{opt}(q_e),q_c)\) by utilizing an
+        upper bound on the cost of the numerator and a lower bound on the cost of the denominator.
+
+        We also exploit the fact that the above sub-optimality bound can be further tightened if we can obtain
+        the exact value of numerator. Interestingly, computing the numerator requires only re-costing of plan
+        \(P_{opt}(q_e)\) for query instance \(q_c\) , which, in our implementation is up to two order of
+        magnitude faster than an optimizer call.
+
+        Finally, the above plan reuse approach is not restricted only to the optimal plan for \(q_e\), and can
+        be utilized for any generic plan \(P\) as long as its sub-optimality at \(q_e\) is known. We exploit
+        this property (in ~manageCache~) to retain only a subset of optimal plans without violating
+        \(\lambda\)-optimality. 
+** Bounded cost growth (BCG) assumption
+        Consider a plan \(P\) whose cost at query instance \(q_0=(s_1,s_2)\) of a 2-dimensional query is
+        \(C\). Also consider query instances \(q_1=(\alpha_1s_1,s_2)\) and \(a_2=(s_1,\alpha_2s_2)\), with
+        \(\alpha_1,\alpha_2>1\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/361.png]]
+
+        PCM (plan cost monotonicity) assumption:  the cost of a plan increases with increase in each
+        individual selectivity, i.e.,
+        1. \(Cost(P , q1 ) > C\)
+        2. \(Cost(P , q2 ) > C\)
+
+        BCG assumption: This is an extension to PCM assumption where it is also assumed that for every
+        individual selectivity dimension, if the selectivity value increases by a factor \(\alpha\), the
+        resulting increase in cost of \(P\) is upper bounded by a known function of \(\alpha\). That is,
+        1. \(C<Cost(P,q_1)<f_1(\alpha_1)C\)
+        2. \(C<Cost(P,q_2)<f_2(\alpha_2)C\)
+        where both \(f_1\) and \(f_2\) are increasing functions defined over the domain \((1,\infty)\)
+*** Cost implications for neighboring instances
+        For \(q_3 = (α_1 s_1 , α_2 s_2 )\), PCM assumption implies cost lower bound, i.e.,
+        \(Cost(P , q_33 ) > C\), while successive application of BCG assumption implies both lower and upper
+        bounds on cost of P , i.e., \(C < Cost(P , q_3 ) < f_1 (α_1 )f_2 (α_2 )C\).
+        
+        For \(q_5 = (\frac{s_1}{\alpha_1} , s2 )\), PCM provides an upper bound on the cost of \(P\) by
+        considering \(q_5\) as the reference for \(q_0\), that is,
+        \(Cost(P , q_0 ) > Cost(P , q_5 ) ⇒ Cost(P , q_5 ) < C\). On the other hand, BCG again provides lower
+        as well as upper bounds on cost:
+        \begin{equation*}
+        \Rightarrow\frac{C}{f_1(\alpha_1)}<Cost(P,q_5)<C
+        \end{equation*}
+** Constructing \texorpdfstring{\(\lambda\)}{λ}-optimal region
+        Next we formalize the cost implications of the BCG assumption to define cost and sub-optimality bounds
+        for plan \(P_{opt}(q_e)\) for a generic neighboring query instance \(q_c\). We use these bounds to
+        construct \(\lambda\)-optimal region for \(P_{opt}(q_e)\) around \(q_e\). In this analysis, we follow
+        the assumption \(f_i(\alpha)=\alpha\)
+
+        Consider two query instances \(q_e\) and \(q_c\), let \(P_e\) and \(P_c\) denote their optimal plan
+        choices and \((\alpha_1,\alpha_2,\dots,\alpha_d)\) be the vector of selectivity ratios between their
+        \(sVectors\) with each \(\alpha_i=\frac{s_i(q_c)}{s_i(q_e)}\). Further, let
+        \(L=\prod_{\alpha_i<1}\frac{1}{\alpha_i}\) denote the net cost decrement factor due to selectivity
+        ratios. Similarly define \(G=\prod_{\alpha_i>1}\alpha_i\)
+
+        Bullshit
+        #+ATTR_LATEX: :options [Cost Bounding Lemma]
+        #+BEGIN_lemma
+        Under the assumption that the bounding functions are knwon to be \(f_i(\alpha_i)=\alpha_i\),
+        \(Cost(P_e,q_c)\) satisfies the following bounds
+        \begin{equation*}
+        \frac{Cost(P_e,q_e)}{L}<Cost(P_e,q_c)<G\times Cost(P_e,q_e)
+        \end{equation*}
+        #+END_lemma
+
+        #+ATTR_LATEX: :options [Sub-optimality Bound]
+        #+BEGIN_theorem
+        Under the assumption that the \(f_i(\alpha_i)=\alpha_i\) holds for both plans \(P_e\) and \(P_c\), \(SubOpt(P_e,q_c)<GL\)
+        #+END_theorem
+
+        #+BEGIN_proof
+        By BGC,
+        \begin{gather*}
+        Cost(P_e,q_c)<G\times Cost(P_e,q_e)\\
+        Cost(P_c,q_e)<L\times Cost(P_c,q_c)
+        \end{gather*}
+        Therefore
+        \begin{equation*}
+        \frac{Cost(P_e,q_c)}{Cost(P_c,q_c)}<\frac{G\times Cost(P_e,q_e)}{Cost(P_c,q_e)/L}<GL\frac{Cost(P_e,q_e)}{Cost(P_e,q_e)}=GL
+        \end{equation*}
+        #+END_proof
+
+        *Improve upper bound on \(SubOpt(P_e,q_c)\)*. Next let \(R=\frac{Cost(P_e,q_c)}{Cost(P_e,q_e)}\) . We
+        know that
+        \begin{equation*}
+        Cost(P_e,q_e)<Cost(P_c,q_e)<L\times Cost(P_c,q_c)
+        \end{equation*}
+        we have
+        \begin{equation*}
+        SubOpt(P_e,q_c)=\frac{Cost(P_e,q_c)}{Cost(P_c,q_c)}<L\frac{Cost(P_e,q_c)}{Cost(P_c,q_e)}<L\frac{Cost(P_e,q_c)}{Cost(P_e,q_e)}=LR
+        \end{equation*}
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/362.png]]
+
+        A sample representation of the \(\lambda\)-optimal region around \(q_e\) is provided in Figure [[ref:f4]].
+        The inner region is the selectivity based \(\lambda\)-optimal region that is defined by
+        \(GL\le\lambda\). Geometrically, it's a closed region bound by \(y=s_2\lambda/s_1\),
+        \(y=s_2x/(s_1\lambda)\), \(y=s_1s_2\lambda/x\) and \(y=s_1s_2/(\lambda x)\).
+
+        Once we know the value of \(R\) after Recost for plan \(P_e\) at \(q_c\), we can use \(RL\le\lambda\)
+        to detect whether \(q_c\) lies in Recost based \(\lambda\)-optimal region of \(P_e\)
+** Examining validity of BCG assumption
+* Implementation Details
+** Plan cache data structure
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/364.png]]
+
+        1. \(V\) is the selectivity vector
+        2. \(PP\) is the pointer of the plan
+        3. \(C\) is the estimated optimal cost
+        4. \(S\) is the sub-optimality \(P(q_e)\) at \(q_e\)
+        5. \(U\) is the running count
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

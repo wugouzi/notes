@@ -1,0 +1,284 @@
+#+title: A Cloud-Scale Characterization of Remote Procedure Calls
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/cloud_scale_characterization_of_remote_procedure_calls.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        This paper presents, to our knowledge, the first analysis of RPCs from geo-distributed applications
+        running across a fleet of datacenters. Our study is unique in its massive scale: we evaluate RPC calls
+        in Google’s internal-application environment collected over a period of 23 months, using multiple
+        tools and data sources describing RPC characteristics and behavior.
+
+        For example, we examine counters collected every 30 minutes from over 10,000 different unique RPC
+        methods (procedures) running in 100s of different clusters, and we analyze over 722 billion RPC
+        samples collected from a single day. This data, which we describe more in following sections, allows
+        us to discover key properties such as the volume of RPCs and its growth over time, the contributions
+        of different RPC components to latency, and the depth and structure of RPC call trees. Together, these
+        different analysis methodologies allow us to conduct a thorough and in-depth analysis of the behavior
+        of RPCs and global-scale applications in one of the world’s largest hyperscalers.
+
+        Contributions:
+        * use of RPC is increasing rapidly, indicating the importance of RPC optimization.
+        * characterize the latency, frequency, size, and nested hierarchy of over 10,000 distinct RPC methods,
+          showing that their characteristics differ significantly from those assumed by prior work.
+
+          For example, on average, RPCs in our environment operate at millisecond timescales and kilobyte
+          sizes with relatively deep nested hierarchies. 
+        * We analyze the latency components in RPC completion time and find that the RPC latency bottleneck
+          differs from prior assumptions. On average, the majority of this time is spent on application
+          processing, but tail latency is dominated by the RPC latency tax, i.e., the time spent on queues,
+          RPC processing, and network transfers. 
+        * We characterize the latency components in eight top services and show the latency variation within
+          and across physically co-located clusters of servers distributed across datacenters. We find that
+          high server and memory utilization leads to high variation within clusters, while network latency
+          dominates the variation across clusters.
+        * Finally, we analyze the CPU cycle variation in processing RPCs across the fleet and find that there
+          is a significant variance in CPU cycles used for RPCs, indicating the opportunity for better
+          load-balancing.
+* Characteristics of RPCs at Hyperscale
+        For each RPC that we analyze, we measure the behavior of the RPC stack and the RPC handler (i.e., the
+        invoked method). Specifically, we measure RPCs from Google’s first-party commercial products,
+        including both user-facing web services (e.g., Google Search, Google Maps, Gmail, and YouTube), as
+        well as the massive internal services and data processing systems that support these web services
+        (e.g., Spanner, BigQuery, Bigtable, F1, GFS, and Chubby). Our study does not include Google’s external
+        Cloud product (GCP) or RPCs issued by its customers.
+
+        Nearly all of the services we study are built with the Stubby RPC stack, a Google-internal RPC library
+        that provides features similar to gRPC.
+** Methodology
+        In our analysis, we primarily focus on the most common RPC stacks at Google: Stubby and gRPC. Our
+        analysis is performed using three different Google-internal monitoring tools, Monarch, Dapper, and
+        GWP. We particularly focus on the distribution of RPC completion time, size, and depth, as prior works
+        propose optimizations based on these RPC properties
+
+        Monarch is a monitoring database that performs periodic sampling of various metrics exported by
+        individual application instances (tasks). These samples provide distributions of RPC behavior across
+        various levels and dimensions of aggregation, e.g., per-cluster or network-traffic class. Not all
+        metrics in this database have the same retention policies. Some metrics are retained for 700 days with
+        metric samples every 30 minutes. Over shorter time scales like the past 30 days, it is possible to get
+        samples with shorter windows, e.g., one every minute. Our results are based on metrics from a 700-day
+        period between December 2020 and November 2022. We use this timescale of 700 days primarily to observe
+        changes in RPCs over time.
+
+        Aggregate time-series data does not provide complete information about the behavior of individual
+        RPCs, so we employ Dapper to conduct some aspects of our analysis. Dapper is an internal service that
+        collects samples of entire RPC trees (traces), where each node in the tree represents an individual
+        child RPC call. For each RPC call, the service collects information about the latency of various
+        components, including the time spent in the client, server, and network. For RPCs that make nested RPC
+        calls, the time of the nested calls is included in the application processing time of the parent RPC.
+        From the RPC handler’s perspective, waiting for application processing and waiting for the responses
+        from nested RPCs are the same, as the nesting is invisible to the caller. Similarly, we exclude the
+        latency of error RPCs from the measurement. However, the caller of erroneous RPCs needs to handle
+        errors (unless canceled by the caller), and the latency of these callers is included in the latency
+        measurement. Note that TCP retransmissions are not counted as errors.
+
+        We use GWP (Google-Wide Profiling) to study the number of CPU cycles spent processing RPCs in our
+        fleet. GWP collects daily CPU profiles of sampled application execution, and these profiles can be
+        used to identify RPC cycles. 
+** Why is RPC Evaluation Important
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/325.png]]
+
+        Figure [[ref:f1]] shows the number of RPCs per second (RPS) in our fleet divided by the number of CPU
+        cycles consumed over the 700-day period. The daily RPS/CPU value in this figure is normalized to the
+        first day of our observation, which shows the growth rate of the ratio.
+
+        Therefore, RPC usage is growing faster than compute in our cloud.
+        #+LATEX: \wu{
+        Really interesting measurement.
+        #+LATEX: }
+
+        Possible reason:
+        1. optimization of the RPC stack
+        2. growth of microservice-based design
+** Not all RPCs are the same
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/326.png]]
+
+        Figure [[ref:f2]]a shows, for our 10K methods, the RPC completion time (RCT) per method, sorted by the
+        median latency. CDF = cumulative distribution function.
+
+        For 90% of the methods, the 1st percentile latency is 657 µs or less. However, services often operate
+        at the millisecond scale in our fleet. 90% of the services have a median latency that is 10.7 ms or
+        greater.
+
+        At the tail, almost all methods have slow RPCs that operate on the scale of milliseconds. Over 99.5%
+        of methods have a P99 latency of 1 ms or greater; 50% of methods have a P99 latency of 225 ms or
+        greater. Further, the slowest methods are even slower. Of the slowest 5% of methods, the P1 and P99
+        latencies are 166 ms and 5 s or greater, respectively. 
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/327.png]]
+
+        The 10 most popular methods account for 58% of all calls, and the top-100 account for 91% of all
+        calls. While many long-latency methods may be less frequent, collectively they consume more
+        resources than shorter, more popular methods. The slowest 1000 RPC methods account for only 1.1% of
+        all calls, but they take 89% of the total RPC time.
+** Nested RPCs are Wider than Deep
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/328.png]]
+        90% of RPC methods have P90 and P99 descendant counts of over 105 and 1155, respectively.
+        
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/329.png]]
+
+        In early RPC systems, calls typically went to simple, discrete services. However, from our
+        measurements, RPCs in the cloud environment may invoke general computations that include complex call
+        trees and nested RPCs. Understanding this call structure has important implications, e.g., in creating
+        benchmarks for hyperscale services that can accurately represent the shape of complex, nested RPC call
+        graphs.
+** RPC Size Matters
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/330.png]]
+
+        The figure shows that most RPCs are small — with the smallest a single cache line (64 B). The smallest
+        10% have median requests and responses under 2030 B and 188-B, respectively. Half of the methods have
+        median requests under 1530 B, with responses under 315 B.
+
+        Although most RPCs are small, most methods have a large heavy tail. For example, P90 request and
+        response sizes are 11.8 KB and 10 KB, respectively; P99 requests and responses are 196 KB and 563 KB —
+        an order-of-magnitude increase over the median.
+        
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f7
+        #+CAPTION: 
+        [[../images/papers/331.png]]
+        This figure shows that most RPC methods service both write- and read-dominant RPCs with there being a
+        heavy tail of both large responses and large requests for all RPC methods. However, the majority of
+        RPCs for most methods are writes because the median ratio for most methods is below 1. This finding
+        implies that most RPC methods should expect both ingress and egress dataflow.
+** Sotrage RPCs are Important
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f8
+        #+CAPTION: 
+        [[../images/papers/332.png]]
+* RPC Latency
+** RPC Components
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f9
+        #+CAPTION: 
+        [[../images/papers/333.png]]
+** Fleet-Wide Latency Variation
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f10
+        #+CAPTION: 
+        [[../images/papers/334.png]]
+
+        *Application-processing time dominates but RPC tax can be significant*. Overall, the average tax is only
+        2.0% of the total completion time. Of that 2.0%, the network accounts for roughly half (1.1% of total
+        time), while the RPC processing and network stack component and the queuing component each contribute
+        nearly one quarter. However, for RPCs with P95-tail latency, the tax component is significant.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f11
+        #+CAPTION: 
+        [[../images/papers/336.png]]
+
+        the tax ratio is the fraction of RPC service time for which the tax is responsible. Most RPCs are
+        bottlenecked by application-processing time; for the RPC method with the median ratio, the tax makes
+        up only 8.6% of the total completion time. the RPC tax is more significant at the tail. For the 10% of
+        methods with the highest overheads, the median RPC tax is 38%, while the 90th -percentile RPC tax is
+        96%. The 99th-percentile RPC tax ratio for the top and bottom 1% of methods ranges from 0.5% to 99.99%
+        with a median of 66%. We conclude that optimizing RPC latency requires a two-pronged approach.
+        Optimizing server processing time is extremely important to reduce the completion time of most RPCs.
+        At the tail, however, most method types have RPC invocations where latency comes almost entirely from
+        the RPC tax.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f12
+        #+CAPTION: 
+        [[../images/papers/337.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f13
+        #+CAPTION: 
+        [[../images/papers/338.png]]
+
+
+        Figure [[ref:f12]] shows a per-method breakdown of the latency distribution for combined Network Wire (RW)
+        and RPC Processing and Network Stack (RN). Figure [[ref:f13]] shows the per-method queuing latencies.
+
+        at the tail, combined RPC processing and networking stack latencies are high. The slowest 10% of
+        methods have a P99 latency of at least 271 ms. Finally, the slowest 1% have a P99 latency of 826 ms,
+        which is significantly higher than the longest network propagation delays, suggesting that there is
+        room for improvement in RPC processing and network performance.
+
+        Queuing latency is also a significant contributor to the RPC tax. Half of the methods have median and
+        P99 queuing latencies under 360 µs and 102 respectively, compared to median and P99 latencies under
+        398 µs and 115 ms for combined RPC processing and network stack. However, for the 10% of methods that
+        experience the highest queuing latency, median and P99 latencies are 1.1 ms and 611 ms, respectively.
+        This implies that it may be possible to reduce tail latency for many methods by improving tail queuing
+        with better scheduling and load balancing.
+
+        #+LATEX: \wu{
+        By looking at the tail, we can find the room
+        #+LATEX: }
+** Service-Specific Latency Variation
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: t1
+        #+CAPTION: 
+        [[../images/papers/341.png]]
+
+*** Latency Variation Within a Cluster
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f14
+        #+CAPTION: 
+        [[../images/papers/339.png]]
+
+        Based on the dominant component, we categorize the eight RPCs as /application-processing-heavy/
+        (Bigtable, Network Disk, F1, ML Inference, and Spanner), /queuing-heavy/ (SSD cache and Video Metadata),
+        and /RPC-stack-heavy/ (KV-Store).
+        
+*** Component Impact on Tail Latency
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f15
+        #+CAPTION: 
+        [[../images/papers/340.png]]
+
+        To better understand how each component impacts tail latency, we perform a “what-if” analysis by
+        replacing each latency component of (P95) tail RPCs with its median value, one-by-one.
+
+*** Service Latency of Different Clusters
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f16
+        #+CAPTION: 
+        [[../images/papers/342.png]]
+
+        Figure [[ref:f16]] shows the latency breakdown of P95-tail latencies for RPCs for each of the 8 services
+        across different clusters.
+
+
+        
+* Resource Utilization of RPCs
+        This section studies the CPU costs of RPCs, which we refer to as the RPC *cycle tax*.
+
+** CPU Cycle Breakdown
+
+* Problems
+
+
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

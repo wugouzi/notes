@@ -1,0 +1,354 @@
+#+title: Here, There and Everywhere: The Past, the Present and the Future of Local Storage in Cloud
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/past_present_future_of_local_storage_in_cloud.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Cloud local storage (i.e., ephemeral storage) is a service widely provided by many vendors, such as
+        AWS, Azure, and Alibaba. In this service, disks are physically attached to compute
+        servers and exposed as virtual disks (VDs) to guest VMs via virtualization.
+
+        Storage devices, especially SSDs, have been rapidly evolving with IOPS tripled in recent years (500K
+        to 1.5M) and throughput doubled from 3 GB/s (PCIe Gen3) to 6 GB/s (PCIe Gen4). However, harnessing
+        such great performance is challenging for the cloud local storage. At Alibaba Cloud, we initially used
+        a kernel-based stack for HDDs, which fails to deliver satisfactory performance on SSDs due to frequent
+        context switches unders high-IOPS workloads.
+
+        Hence, we started our journey with ESPRESSO, our first-generation cloud local storage with NVMe SSDs.
+        Leveraging SPDK, we moved the stack to user space and used polling to reduce context switches. Each
+        server (12× PCIe Gen3 NVMe SSDs) delivers a maximum of 38.4 GB/s throughput (3.2 GB/s per SSD) and
+        5,760K IOPS (480K per SSD). However, in ESPRESSO, each thread manages a VD and is bound to a dedicated
+        CPU core. Therefore, while ESPRESSO was successfully launched around 2017 and deployed on thousands of
+        servers, it cannot support bare-metal instances, has low CPU utilization efficiency (around 60%), and
+        still suffers context switches between VMs and hypervisor.
+
+        We then moved on to develop DOPPIO, offloading virtualization and I/O processing to commercial
+        ASIC-based Data Processing Units (DPUs). Each DPU manages two physically attached SSDs. The hardware
+        assistance avoids using host CPU (i.e., bare-metal ready), alleviates CPU inefficiency, and uses fast
+        hardware interrupts instead of software ones. With 6 DPUs (12× PCIe Gen3 NVMe SSDs), each DOPPIO
+        server achieves up to 38.4GB/s throughput (3.2 GB/s per SSD) and 6M IOPS (500K per SSD). We again
+        managed to scale DOPPIO to thousands of servers. But, DOPPIO still has its limitations. ASIC-based
+        DPUs have limited processing power, and thus are not able to exploit the latest NVMe SSD with 1.5M
+        IOPS. In addition, the fixed hardware logic of ASIC cannot well support the emerging cloud features
+        (e.g., Logical Volume Management). While using high-performance FPGA may alleviate some of the issues,
+        it would incur high energy cost and Capital Expenditure (CapEx).
+
+        In 2023, we built RISTRETTO, combining the flexibility of System-on-Chip (SoC) and the efficiency of
+        ASIC through co-design. RISTRETTO works as a PCIe-extended board with an ASIC and SoC (embedded with
+        4× ARM Cortex-A72 cores and 64 GB DRAM). The ASIC handles VD requests as an emulated NVMe
+        controller, enabling SoC access to SSDs and encapsulating NVMe packets. The SoC provides a
+        customizable block abstraction layer. RISTRETTO delivers near-physical performance: 900K IOPS for
+        single VD on PCIe Gen4 NVMe SSD and 7.2M IOPS for 8 VDs combined.
+
+        Although RISTRETTO delivers performance similar to physical devices, the inherent disadvantages (e.g.,
+        weak availability and elasticity) make the local disks an unfavorable choice for many scenarios, such
+        as Large Language Model System (LLMsys) with dynamic scale. While high-performance Elastic Block
+        Storage (EBS) can already provide 30µs latency and 1M IOPS with strong availability and elasticity,
+        the much higher price can deter users from adopting it as an alternative. We therefore propose a
+        Proof-of-Concept (PoC), called LATTE, to integrate both local disk (i.e., RISTRETTO) and a more
+        affordable standard EBS to serve together as the local storage. By integrating machine learning based
+        I/O dispatcher and cache admission control, LATTE enjoys the advantages of both local disk and EBS,
+        providing near-physical performance and high availability under a reasonable CapEx increase.
+
+* Cloud Local Storage: A Background
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/348.png]]
+
+        Guest VMs (a.k.a., computing instances) can mount one or several Virtual Disks (VDs). The VDs are
+        backed by SSDs or HDDs that are directly attached to the same physical servers that operate VMs (i.e.,
+        co-located).  The Host OS enables two essential functions: virtualization, which encapsulates
+        partitions of physical disks as virtual block devices, and I/O management, which facilitates
+        communication and data transfer between the VDs and physical disks.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/349.png]]
+
+        A typical use case of cloud local storage is caching for cloud structures, such as serving Content
+        Delivery Network (CDN) and storing intermediate results for big data analytics.
+
+        Having the disks directly installed on the compute nodes also results in *limited elasticity and availability*.
+
+* ESPRESSO: An SPDK-based Stack
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/350.png]]
+
+** Kernel-based Practice Turns Outdated
+        *Stack overview*. Our initial local storage stack was built atop HDDs. The stack uses Virtio, a
+        KVM-based para-virtualization, to transfer I/Os between Virtual Disks (VDs) in VMs and kernel storage
+        stack in the host OS. VMs can mount a VD backed by (a partition of) one or several HDDs. The
+        control-/data-flow with detailed procedures (denoted as circled numbers) is described in Figure
+        [[ref:f2]](a). Assume the VM issues a write request to the VD (i.e., /dev/vda).
+        1. the guest OS operates virtual I/O queues via Virtio driver to interact with KVM module in the host
+           kernel ①.
+        2. The KVM module activates the hypervisor ② to parse the Virtio request and then issue an I/O into
+           underlying disks via kernel stack ③.
+        3. Then, the HDD issues a DMA write to the data buffer ④.
+        4. Upon completion, the disk generates an interrupt to notify the host kernel, which then returns the
+           I/O comple tion to hypervisor ⑤
+        5. Finally, the hypervisor invokes the KVM ⑥ to generate an interrupt to guest OS, indicating the I/O
+           completion ⑦
+
+        The read procedure is similar.
+
+        This stack works well for HDDs but *fails* to deliver satisfactory performance on NVMe SSDs.
+        Specifically, a VD under this stack can at most achieve 9.54% of the maximum IOPS of the underlying
+        NVMe PCIe Gen3 SSD but can require up to around 140% CPU utilization. The situation further
+        deteriorates when the VM mounts VDs from multiple NVMe SSDs. The root cause is that the NVMe SSDs
+        significantly outperform HDDs with orders of magnitude more IOPS and much lower latency. This triggers
+        frequent and expensive context switches, thereby leading to severe CPU contention and synchronization
+        overhead. Note that there are three types of context switches in Figure [[ref:f2]](a) caused by ~VM_Exits~
+        (①, ⑦), system calls (③, ⑥) and interrupts (⑤)
+** ESPRESSO Design
+        *Architecture*. shift the stack from kernel to user space by leveraging SPDK. In ESPRESSO,
+        1. the vhost-user process actively polls the incoming I/O requests from virtual I/O queues from the
+           guest OS Ⓐ
+        2. Vhost then forward the new I/O to the underlying SSDs via the user space stack Ⓑ
+        3. The SSD issues a DMA write into the data buffer Ⓒ
+        4. Meanwhile, the vhost-user continues to actively poll the I/O completions from the SSD Ⓓ
+        5. Finally, the vhost-user interacts with KVM module Ⓔ to generate an interrupt to guest OS,
+           indicating the I/O completion Ⓕ
+
+
+        *Benefits*:
+        * Adopting SPDK-based user space stack and using polling-mode event handling avoid frequent context
+          switches caused by VM_Exits (Ⓐ vs ①), system calls (Ⓑ vs ③) and interrupts (Ⓓ vs ⑤)
+        * Binding dedicated CPU cores to I/O threads for polling and adopting share-nothing data structures
+          for each thread. This increases the CPU affinity and minimizes the impact of CPU contention and synchronization overhead.
+        * ESPRESSO stack mostly builds on mature open source software and libraries.
+
+        The physical server, when utilizing all 12 SSDs in the node, can achieve up to maximum 38.4GB/s
+        throughput (3.2 GB/s × 12) and 5,760K IOPS (480K × 12). Compared to the HDD-based stack, E SPRESSO
+        reduces software overhead by 82.35%. For 8 VDs (backed by 8 NVMe SSDs, our largest instance in E
+        SPRESSO), the performance can achieve up to 3,848K IOPS with four cores (400% CPU utilization), much
+        higher than the previous design under the same setup (440K IOPS with 340% CPU utilization).
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/351.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/352.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/353.png]]
+
+        
+        *Limitations* (SWL stands for software limitation)
+        * *SWL_1: Not supporting bare-metal service*. ESPRESSO stack requires dedicated host CPU cores to serve
+          I/Os (i.e., 6 cores for 12 SSDs), preventing us from providing bare-metal service on
+          ESPRESSO-enabled nodes for users who run high-performance applications (e.g., OLAP) or simply wish
+          to migrate the setup from offline to the cloud with minimal changes. These users expect the exact
+          same amount/ability of cores from the cloud.
+        * *SWL_2: Not efficiently using host CPU*. Each dedicated core in ESPRESSO is exclusively used for
+          serving requests. However, the 99th percentile actual utilization is below 60% of the CPU
+          utilization as shown in Figure [[ref:f3]](a). Note that this cannot be simply remedied by harvesting
+          idle CPUs for other tasks because of unpredictable CPU utilization caused by sudden burst I/O as
+          shown in Figure [[ref:f3]](b) and expensive cost on task context switching.
+        * *SWL_3: Not free from context switches*. Upon ESPRESSO finalizing I/Os, SPDK triggers the eventfd to
+          inform VM the completion of requests. This incurs additional context switches caused by system calls
+          and VM_Exits (i.e., Ⓔ and Ⓕ in Figure [[ref:f2]](b)), necessitating extra 5-12µs for processing.
+
+          Hence performance gap between ESPRESSO and physical drive widens with deeper queue depth in Figure
+          [[ref:f4]]. A latency breakdown of original E SPRESSO and modified ESPRESSO with polling mode driver
+          inside VM (i.e., no context switch upon I/O completion, denoted as ESPRESSO-M) in Figure [[ref:f5]] shows
+          that the software latency of guest OS and hypervisor (VM bar in the Figure) reduces by 60.3% and
+          that of vhost stack reduces by 65.6%, which is inevitable for many users’ legacy applications that
+          still rely on interrupts.
+* DOPPIO: An ASIC-offloading Stack
+** DOPPIO Design
+        ASIC-based offloading. Data Processing Units (DPUs) - evolving from traditional NVMe RAID cards or
+        NVMe Switches (e.g., Marvell NevoX)—provide virtualization capability to the host (e.g., SR-IOV).
+        Users can create Virtual Functions (VFs) to emulate various PCI devices (e.g., NVMe SSD) using SR-IOV
+        and directly attach VFs into VMs. They hence offer the potential to offload local storage stacks to
+        hardware and handle the SWL_1-3 in ESPRESSO limitations. Since the basic computational logic is based
+        on ASIC instead of CPU cores, these types of DPUs can provide similar processing power with reduced
+        costs and energy consumption. Typically, the cost and power consumption of an ASIC-based DPU is about
+        1/20 and 1/3 of an SoC-based DPU, respectively. Therefore, we opted to use a commercial off-the-shelf
+        ASIC-based DPU for DOPPIO instead of SoC.
+
+        *Architecture*. In DOPPIO, our DPU is equipped with an ASIC, 128KB internal SRAM, DMA engine, and 16
+        PCIe Gen3 lanes. The DPU is directly plugged to the host PCIe bus. Each DPU can manage two PCIe Gen3
+        NVMe SSDs via the on-chip PCIe Root Complex (RC). Further, we use DPU to partition each NVMe SSD into
+        one or multiple independent namespaces and register each namespace as a VF that is assigned to the VM
+        as a VD via the PCI passthrough.
+
+        Figure [[ref:f2]](c) shows that control-/data-flow with procedures.
+        1. After VMs issue I/Os to the VDs, the DPU can fetch the NVMe requests from the host via DMA engine
+           Ⓐ, process hardware-defined functions (e.g., throttling, device sharing) before further forwarding
+           the I/Os to the SSDs Ⓒ
+        2. Upon completion of I/O operations by SSDs Ⓔ, DPU notifies guest OS Ⓕ via MSI interrupts (hardware interrupts).
+        3. Note that the DPU’s DRAM serves as an intermediate buffer for the user’s data. DPU should move data
+           from the host into its intermediate buffer Ⓑ
+        4. The I/O completion is not acknowledged to the VMs until the SSD finishes the DMA read/write of user
+           data from the intermediate buffer Ⓓ
+
+
+        *Benefits*:
+        * DOPPIO does not need host CPU for I/O processing (i.e., bare-metal ready, no SWL_1) and alleviates
+          host CPU utilization (i.e., SWL_2).
+        * DOPPIO, with hardware-assisted virtualization (SR-IOV), reduces the context switches overhead of
+          system calls and VM_Exits. DOPPIO mitigates the overhead by DPU-enabled hardware interrupts. Under
+          the same tests, Figure [[ref:f4]] and Figure [[ref:f5]] show the latency and IOPS improvement led by DOPPIO
+          (near-physical performance). 
+        * We retain the ability to execute hardware-defined functions and manage storage devices through ASIC
+          units.
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: t2
+        #+CAPTION: 
+        [[../images/papers/354.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/355.png]]
+        
+        *Limitations*:
+        * *HWL_1: Hard to keep up with SSD evolution*. In Table [[ref:t2]], we list the random 4K read/write IOPS
+          from 2017 to 2023 under two enterprise NVMe SSD model families (V-1 and V-2). While the SSD
+          performance doubles or even triples across generations, commercial ASICs may take longer iteration
+          cycles and can often fall behind the SSD evolution. Statistically, with one DPU for two Gen4 SSDs, a
+          D OPPIO VD can at most achieve 1.3M IOPS, see Figure [[ref:f6]](a).
+        * *HWL_2: Inadequate support for cloud features*. ASICs are usually optimized for specific
+          functionalities with logic hard-wired during manufacturing. Hence, DOPPIO is inflexible when
+          compared to E SPRESSO, and difficult to incorporate emerging techniques that require host management
+          (e.g., logical volume management and ZNS).
+* RISTRETTO: An ASIC/SoC Co-design Stack
+        1. eliminate host CPU usage for bare-metal readiness and VM core reservation,
+        2. enable interrupt passthrough to avoid hypervisor processing delays,
+        3. ensure performance scalability with evolving SSD technology, and
+        4. provide flexible cloud features support for vendors.
+** RISTRETTO Design
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f7
+        #+CAPTION: 
+        [[../images/papers/356.png]]
+
+        At a high level, RISTRETTO serves as a PCIe extension card—with multiple NVMe SSDs installed—directly
+        connected to the host server. RISTRETTO registers SSD partitions or entire SSDs as Virtual Functions
+        (VFs) via SR-IOV. Each VF is assigned to a VM and mounted as a virtual disk.
+
+        The ASIC includes a DMA engine and on-chip memory for storage offloading and acceleration. The SoC is
+        equipped with an ARM Cortex-A72 processor with 4 cores at 2.50GHz and 64GB DRAM for running Linux OS
+        and software stack. ASIC and SoC interconnect via internal PCIe bus and integrated on a customized
+        PCIe board, which has 32 PCIe Gen4 lanes, attaching to the host server via PCIe Root Complex and
+        managing SSDs via PCIe Endpoints. We use ASIC Logic Elements to implement our proposed hardware
+        designs, which supports over 1,000 VFs for NVMe controller emulation. The hardware uses round-robin
+        polling for emulated NVMe registers and I/O completion events.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f8
+        #+CAPTION: 
+        [[../images/papers/357.png]]
+
+
+        We now demonstrate the design for *ASIC virtualization backend* and *ASIC-based SSD driver* (upper and
+        lower blue areas in Figure [[ref:f8]]), and describe Runtime software on SoC (the yellow area in Figure
+        [[ref:f8]]) with its block abstraction layer enabling cloud features.
+
+        The ASIC provides virtualization back-end functionality.
+        1. It can configure Virtual Functions as virtual NVMe devices and assign it to VMs as standard NVMe
+           storage.
+        2. VM I/O completion notifications use MSIs triggered by ASIC DMA writes to special host addresses
+           through PCIe Subsystem.
+        3. To transfer NVMe commands from guest VM, ASIC gets new command offsets, issues DMA reads to
+           corresponding host memory ranges, and writes I/O completions to NVMe CQ memory ranges in host.
+           Besides, ASIC establishes ASIC-to-SoC channel with virtual queues (VQ) for transferring user requests.
+** RISTRETTO Data Flow
+        1. the user application sends an I/O request to a virtual disk via NVMe driver Ⓐ which submits an NVMe
+           command to the submission queue (SQ), and updates the virtual doorbell register (the mapped ASIC
+           BAR) with the current SQ tail.
+        2. the RISTRETTO NVMe controller receives the doorbell notification and fetches the new NVMe command
+           using its DMA engine Ⓑ. Host IOMMU is required for address translation from guest to host memory.
+           Then, the NVMe controller parses the NVMe PRP/SGL and transforms it into a block I/O (bio),
+           submitting it to virtual queues (VQ) in the ASIC-to-SoC channel Ⓒ
+        3. the runtime software polls the request from the VQ, fetches the new I/O request, and submits it
+           into block abstraction layer Ⓓ. In block abstraction layer, RISTRETTO performs cloud-specific
+           features.
+
+           For example, the host-side FTL in RISTRETTO converts logical block address (LBA) to physical block
+           address (PBA) for ZNS SSD through B-Plus Tree indexing.
+        4. RISTRETTO forwards new block I/Os to the VQ of SoC-to-ASIC Ⓔ. ASIC repeatedly checks incoming
+           requests from VQs Ⓕ encapsulates received block requests into standard NVMe packets (e.g., PRPs and
+           SGL) and interacts with NVMe SSDs via standard NVMe Queue Pairs. 
+        5. the SSD receives the doorbell notification and fetches the NVMe commands Ⓖ from RISTRETTO’s DRAM.
+           After parsing the command, the SSD issues a DMA request Ⓗ which ASIC captures and routes to the
+           user’s data buffer in guest OS Ⓘ
+        6. upon I/O completion, SSD returns the I/O to NVMe Queue Pairs Ⓙ. After receiving I/O completion,
+           ASIC parses NVMe requests and moves the completed request to the VQ  Ⓚ. The runtime software
+           repeatedly polls VQs and processes block-level completion for cloud features. After that, the
+           runtime software moves completed request to the VQ Ⓛ. RISTRETTO NVMe controller actively polls
+            in ASIC-to-SoC channel to check response Ⓜ and returns the completed I/O to the host’s NVMe CQ via
+           DMA Ⓝ followed by a hardware interrupt to the guest OS.
+
+
+        *Benefits*:
+        * Similar to DOPPIO, RISTRETTO offloads the entire I/O stack to the DPU (ASIC and SoC). Therefore,
+          RISTRETTOdoes not rely on host CPUs (no SWL_1-2).
+        * Inspired by hardware interrupt mechanism in DOPPIO, we enable the ASIC to directly inject hardware
+          interrupts (MSIs) to the guest OS via PCI passthrough with Intel’s VT-D (i.e., alleviating SWL_3).
+        * Redesigning ASIC to leverage high parallel execution improves computational power in adapting to
+          storage device evolution (i.e., HWL_1).
+        * Utilizing SoC CPU versatility to achieve cloud-defined features, such as LVM and FTL (i.e., HWL_2).
+        * By offloading components and interaction between ASIC and SoC, RISTRETTO achieves more powerful
+          computing capability with optimized total cost of ownership compared to SoC-only offloading
+
+        *Limitations*
+        * *LDL_1: Availability*. Upon a local disk crash (e.g., annual failure rate around 0.44%), local storage
+          users usually can tolerate data loss since use cases are typically hosting cache data (e.g., CDN).
+          However, more often than not, we observe users may need to experience an hour-level service
+          unavailability.
+
+          This is because users may own multiple local SSDs and require all of them to properly run their
+          services. In this case, while we can allocate a new node with SSDs, the user may still need to
+          migrate data from the rest of functioning local disks to the new node, yielding high overhead
+        * *LDL_2: Elasticity*. Many recent application scenarios require highly elastic storage capacity (e.g.,
+          persisting temporal checkpoints, pulling model parameters and KV cache in LLMsys). The physical
+          co-location limits a disk to be scaled up (capped at SSD’s capacity).
+        * *LDL_3: Accessibility*. One not-so-well-known fact is that local storage is limited to certain regions
+          where there are major local storage users (owning more than 1K disks).
+* Future of Local Storage
+** EBSX as Local Storage
+        Overview of Alibaba EBS architecture:
+        * *Compute end* in Alibaba EBS comprises multiple servers where each server runs one client and can host
+          several VMs. A VM can mount one or more VDs. Users can access the VD as a block device and the host
+          server forwards the I/O requests to the storage clusters via the client.
+        * *Storage end* utilizes dedicated storage servers atop self-developed distributed file system. The
+          servers employ log-structured design to translate VD writes into append-only writes in the file
+          system, across which data is stored in three-replication or online erasure coding (EC) compression
+          formats.
+
+        Pro:
+        * much better availability, scalability and accessibility by nature
+        * EBSX: 30us latency, 6GB/s throughput and up to 1M IOPS with the help of Persistent Memory and
+          100Gbps high-speed network.
+
+        Con:
+        * Price. a 1M IOPS/4TB capacity EBSX virtual disk could lead to around 20× of a local disk (RISTRETTO)
+          price with comparable performance and capacity 
+        * much better data reliability can be an overkill for local storage scenario.
+** LATTE: Local-Cloud Combined Storage
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

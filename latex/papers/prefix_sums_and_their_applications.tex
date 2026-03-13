@@ -1,0 +1,248 @@
+% Created 2026-02-13 Fri 20:46
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../paper/}}
+\DeclareMathOperator{\maximum}{\textsf{maximum}}
+\DeclareMathOperator{\maxprescan}{\textsf{max-prescan}}
+\DeclareMathOperator{\prescan}{\textsf{prescan}}
+\DeclareMathOperator{\ssplit}{\textsf{split}}
+\DeclareMathOperator{\scan}{\textsf{scan}}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Prefix Sums and Their Applications}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Prefix Sums and Their Applications},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\section{Introduction}
+\label{sec:org5459166}
+\begin{definition}[]
+The \textbf{all-prefix-sums} operation takes a binary associative operator \(\oplus\), and an ordered set of
+\(n\) elements
+\begin{equation*}
+[a_0,a_1,\dots,a_{n-1}]
+\end{equation*}
+and returns the ordered set
+\begin{equation*}
+[a_0, (a_0\oplus a_1),\dots,(a_0\oplus a_2\oplus\cdots\oplus a_{n-1})]
+\end{equation*}
+\end{definition}
+
+Uses:
+\begin{enumerate}
+\item To lexically compare strings of characters. For example, to determine that \texttt{strategy} should appear
+before \texttt{stratification} in a dictionary
+\item To add multi precision numbers. These are numbers that cannot be represented in a single machine word.
+\item To evaluate polynomials
+\item To solve recurrences. For example, to solve the recurrences \(x_i=a_ix_{i-1}+b_ix_{i-2}\) and
+\(x_i=a_i+b_i/x_{i-1}\)
+\item To implement radix sort
+\item To implement quicksort
+\item To solve tridiagonal linear systems
+\item To delete marked elements from an array
+\item To dynamically allocate processors
+\item To perform lexical analysis. For example, to parse a program into tokens.
+\item To search for regular expressions. For example, to implement the UNIX grep program.
+\item To implement some tree operations. For example, to find the depth of every vertex in a tree
+\item To label components in two dimensional images.
+\end{enumerate}
+
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/319.png}
+\captionof{figure}{\label{f1.1}}
+\end{center}
+
+\begin{definition}[]
+The \textbf{scan} operation is a vector all-prefix-sums operation
+\end{definition}
+
+\begin{definition}[]
+The \textbf{prescan} operation takes a binary associative operator \(\oplus\) with identity \(I\), and a vector
+of \(n\) elements
+\begin{equation*}
+[a_0,\dots,a_{n-1}]
+\end{equation*}
+and returns the vector
+\begin{equation*}
+[I,a_0,(a_0\oplus a_1),\dots,(a_0\oplus a_1\oplus\cdots\oplus a_{n-2})]
+\end{equation*}
+\end{definition}
+\section{Implementation}
+\label{sec:orgb864ab5}
+This section describes an algorithm for calculating the scan operation in parallel. For \(p\)
+processors and a vector of length \(n\) on an EREW \href{https://en.wikipedia.org/wiki/Parallel\_RAM}{PRAM}, the algorithm has a time complexity of
+\(O(n/p+\log p)\). The algorithm is simple and well suited for direct implementation in hardware.
+Chapter 4 shows how the time of the scan operation with certain operators can be reduced to
+\(O(n/p+\log p/\log\log p)\) on a CREW PRAM.
+
+Before describing the scan operation, we consider a simpler problem, that of generating only the final
+element of the scan. We call this the \textbf{reduce} operation.
+
+\begin{definition}[]
+The \textbf{reduce} operation takes a binary associative operator \(\oplus\) with identity \(i\), and an
+ordered set \([a_0,\dots,a_{n-1}]\) of \(n\) elements, and returns the value \(a_0\oplus\dots\oplus a_{n-1}\)
+\end{definition}
+
+A balanced binary tree can be used to implement the reduce operation by laying the tree over the
+values, and using \(\oplus\) to sum pairs at each vertex (see Figure \ref{1.2}a). The correctness of the
+result relies on \(\oplus\) being associative. The operator, however, does not need to be commutative
+since the order of the operands is maintained.
+
+On an EREW PRAM, each level of the tree can be executed in parallel, so the implementation can step
+from the leaves to the root of the tree (see Figure \ref{1.2}b); we call this an \textbf{up-sweep}. Since the
+tree is of depth \(\ceil{\log n}\), and one processor is needed for every pair of elements, the
+algorithm requires \(O(\log n)\) time and \(n/2\) processors.
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/320.png}
+\captionof{figure}{\label{f1.2}}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/321.png}
+\captionof{figure}{\label{f1.3}}
+\end{center}
+
+If we assume a fixed number of processors \(p\), with \(n>p\), then each processor can sum an \(n/p\)
+section of the vector to generate a processor sum; the tree technique can then be used to reduce the
+processor sums (see Figure \ref{f1.3}). The time taken to generate the processor sums is \(\ceil{n/p}\),
+so the total time required on an EREW PRAM is:
+\begin{equation*}
+T_R(n,p)=\ceil{n/p}+\ceil{\log p}=O(n/p+\log p)
+\end{equation*}
+
+
+When \(n/p\ge\log p\) the complexity \(O(n/p)\).
+
+We now return to the scan operation. We actually show how to implement the prescan operation; the scan
+is then determined by shifting the result and putting the sum at the end. If we look at the tree
+generated by the reduce operation, it contains many partial sums over regions of the vector. It turns
+out that these partial sums can be used to generate all the prefix sums. This requires executing
+another sweep of the tree with one step per level, but this time starting at the root and going to the
+leaves (a down-sweep). Initially, the identity element is inserted at the root of the tree. On each
+step, each vertex at the current level passes to its left child its own value, and it passes to its
+right child, \(\oplus\) applied to the value from the left child from the up-sweep and its own value
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/322.png}
+\captionof{figure}{\label{f1.4}}
+\end{center}
+
+Let's consider why the down-sweep works. We say that vertex \(x\) \textbf{precedes} vertex \(y\) if \(x\)
+appears before \(y\) in the preorder (root, left, right) traversal of the tree 
+
+\begin{theorem}[]
+\label{thm1.1}
+After a complete down-sweep, each vertex of the tree contains the sum of all the leaf values that
+precedes it
+\end{theorem}
+
+\begin{proof}
+Induction on the root: if a parent has the correct sum, both children must have the correct sum. The
+root has no element preceding it, so its value is correctly the identity element.
+
+Consider Figure \ref{f1.5}. The left child of any vertex has exactly the same leaves preceding it as the
+vertex itself (the leaves in region A in the figure). This is because the preorder traversal always
+visits the left child of a vertex immediately after the vertex. By the induction hypothesis, the
+parent has the correct sum, so it need only copy this sum to the left child.
+
+The right child of any vertex has two sets of leaves preceding it, the leaves preceding the parent
+(region A), and the leaves at or below the left child (region B). Therefore, by adding the parent’s
+down-sweep value, which is correct by the induction hypothesis, and the left-child’s up-sweep value,
+the right-child will contain the sum of all the leaves preceding it. 
+\end{proof}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/323.png}
+\captionof{figure}{\label{f1.5}}
+\end{center}
+
+On an EREW PRAM, the running time is \(2\ceil{\log n}\)
+
+If we assume a fixed number of processors \(p\), with \(n>p\). Each processor first sums an \(n/p\)
+section of the vector to generate a processor sum, the tree technique is then used to prescan the
+processor sums. The results of the prescan of the processor sums are used as an offset for each
+processor to prescan within its \(n/p\) section (see Figure \ref{f1.6}). The time complexity of the
+algorithm is:
+\begin{equation*}
+T_S(n,p)=2(\ceil{n/p}+\ceil{\log p})=O(n/p+\log p)
+\end{equation*}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/324.png}
+\captionof{figure}{\label{f1.6}}
+\end{center}
+\section{Line-of-Sight and Radix-Sort}
+\label{sec:orgdcc991b}
+Line-of-sight: given a terrain map in the form of a grid of altitudes and an observation point \(X\) on
+the grid, find which points are visible along a ray originating at the observation point. A point on a
+ray is visible if and only if no other point between it and the$\backslash$ observation point has a greater
+vertical angle. 
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/343.png}
+\captionof{figure}{\label{f1.7}}
+\end{center}
+
+To find if any previous point has a greater angle, the altitude of each point along the ray is placed
+in a vector (the \textbf{altitude vector}). These altitudes are then converted to angles and placed in the
+\textbf{angle vector}. A prescan using the operator \(\maximum\) (\(\maxprescan\)) is then executed on the
+\textbf{angle vector}, which returns to each point the maximum previous angle. To test for visibility, each
+point only needs to compare its angle to the result of the \(\maxprescan\).
+
+For \(n\) points on a ray, the complexity of the algorithm is \(T_S(n,p)=O(n/p+\log n)\) on an EREW PRAM.
+
+
+Now consider \emph{radix sort} algorithm. The algorithm loops over the bits of the keys, starting at the
+lowest bit, executing a \(\textsf{split}\) operation on each iteration (assume all the keys have the
+same number of bits). The \(\ssplit\) operation packs the keys with a 0 in the corresponding bit to the
+bottom of a vector, and packs the key with a 1 in the bit to the top of the same vector.
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/344.png}
+\captionof{figure}{\label{f1.8}}
+\end{center}
+
+We now consider how to \(\ssplit\) can be implemented using a scan. To determine the new indices for
+elements with a 0 in the bit, we invert the flags and execute a prescan with integer addition. To
+determine the new indices of elements with a 1 in the bit, we execute a \(+\text{-}\scan\) in reverse
+order (starting at the top of the vector) and subtract the results from the length of the vector n.
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/345.png}
+\captionof{figure}{\label{f1.9}}
+\end{center}
+
+\(\ssplit\): \(O(n/p+\log p)\)
+\section{Problems}
+\label{sec:org3404ef6}
+
+
+\section{References}
+\label{sec:orgb365df0}
+\label{bibliographystyle link}
+\bibliographystyle{alpha}
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+\end{document}

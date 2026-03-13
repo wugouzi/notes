@@ -1,0 +1,72 @@
+#+title: Operating Systems: Three Easy Pieces
+#+AUTHOR: 
+#+EXPORT_FILE_NAME: ../latex/OperatingSystemsThreeEasyPieces/OperatingSystemsThreeEasyPieces.tex
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+LATEX_HEADER: \graphicspath{{../../books/}}
+#+LATEX_HEADER: \makeindex
+#+STARTUP: shrink
+* Mechanism: Limited Direct Execution
+        In order to virtualize the CPU, the operating system needs to somehow share the physical CPU among
+        many jobs running seemingly at the same time. The basic idea is simple: run one process for a little
+        while, then run another one, and so forth. By time sharing the CPU in this manner, virtualization is
+        achieved.
+
+        Challenges:
+        1. Performance
+        2. control
+** Basic Technique: Limited Direct Execution
+        The “direct execution” part of the idea is simple: just run the program directly on the CPU.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f6.1
+        #+CAPTION: 
+        [[../images/Misc/25.png]]
+
+        Problem:
+        1. how can the OS make sure the program doesn’t do anything that we don’t want it to do, while still
+           running it efficiently? 
+        2. when we are running a process, how does the operating system stop it from running and switch to
+           another process, thus implementing the time sharing we require to virtualize the CPU?
+** Problem #1: Restricted Operations
+        The approach we take is to introduce a new processor mode, known as *user mode*; code that runs in user
+        mode is restricted in what it can do.
+
+        In contrast to user mode is *kernel mode*, which the operating system (or kernel) runs in. In this mode,
+        code that runs can do what it likes, including privileged operations such as issuing I/O requests and
+        executing all types of restricted instructions.
+
+        What should a user process do when it wishes to perform some kind of privileged operation, such as
+        reading from disk? To enable this, virtually all modern hardware provides the ability for user
+        programs to perform a *system call*
+
+        how does the trap know which code to run inside the OS? The kernel does so by setting up a *trap table*
+        at boot time. When the machine boots up, it does so in privileged (kernel) mode, and thus is free to
+        configure machine hardware as need be. One of the first things the OS thus does is to tell the
+        hardware what code to run when certain exceptional events occur.
+
+        For example, what code should run when a harddisk interrupt takes place, when a keyboard interrupt
+        occurs, or when a program makes a system call? The OS informs the hardware of the locations of these
+        *trap handlers*, usually with some kind of special instruction. Once the hardware is informed, it
+        remembers the location of these handlers until the machine is next rebooted, and thus the hardware
+        knows what to do
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f6.2
+        #+CAPTION: 
+        [[../images/Misc/26.png]]
+** Problem #2: Switching Between Processes
+        if a process is running on the CPU, this by definition means the OS is not running. If the OS is not
+        running, how can it do anything at all?
+
+        The Crux: how to regain control of the CPU
+        
+        *Cooperative* appraoch: OS /trusts/ the processes of the system to behave reasonably. Processes that run
+        for too long are assumed to periodically give up the CPU so that the OS can decide to run some other
+        task.
+
+        the OS regains control of the CPU by waiting for a system call or an illegal operation of some kind
+        to take place.
+
+        How to gain control without cooperation? *Timer interrupt*
+
+        

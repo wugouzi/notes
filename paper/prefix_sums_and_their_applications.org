@@ -4,6 +4,13 @@
 #+EXPORT_FILE_NAME: ../latex/papers/prefix_sums_and_their_applications.tex
 #+LATEX_HEADER: \graphicspath{{../../paper/}}
 #+OPTIONS: toc:nil
+#+LATEX_HEADER: \DeclareMathOperator{\maximum}{\textsf{maximum}}
+#+LATEX_HEADER: \DeclareMathOperator{\maxprescan}{\textsf{max-prescan}}
+#+LATEX_HEADER: \DeclareMathOperator{\prescan}{\textsf{prescan}}
+#+LATEX_HEADER: \DeclareMathOperator{\ssplit}{\textsf{split}}
+#+LATEX_HEADER: \DeclareMathOperator{\scan}{\textsf{scan}}
+#+LATEX_HEADER: \DeclareMathOperator{\copscan}{\textsf{copy-scan}}
+#+LATEX_HEADER: \DeclareMathOperator{\bdot}{\boldsymbol{\cdot}}
 #+STARTUP: shrink
 
 * Introduction
@@ -170,6 +177,231 @@
         [[../images/papers/324.png]]
 
 * Line-of-Sight and Radix-Sort
+        Line-of-sight: given a terrain map in the form of a grid of altitudes and an observation point \(X\) on
+        the grid, find which points are visible along a ray originating at the observation point. A point on a
+        ray is visible if and only if no other point between it and the\ observation point has a greater
+        vertical angle. 
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.7
+        #+CAPTION: 
+        [[../images/papers/343.png]]
+
+        To find if any previous point has a greater angle, the altitude of each point along the ray is placed
+        in a vector (the *altitude vector*). These altitudes are then converted to angles and placed in the
+        *angle vector*. A prescan using the operator \(\maximum\) (\(\maxprescan\)) is then executed on the
+        *angle vector*, which returns to each point the maximum previous angle. To test for visibility, each
+        point only needs to compare its angle to the result of the \(\maxprescan\).
+
+        For \(n\) points on a ray, the complexity of the algorithm is \(T_S(n,p)=O(n/p+\log n)\) on an EREW PRAM.
+
+
+        Now consider /radix sort/ algorithm. The algorithm loops over the bits of the keys, starting at the
+        lowest bit, executing a \(\textsf{split}\) operation on each iteration (assume all the keys have the
+        same number of bits). The \(\ssplit\) operation packs the keys with a 0 in the corresponding bit to the
+        bottom of a vector, and packs the key with a 1 in the bit to the top of the same vector.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.8
+        #+CAPTION: 
+        [[../images/papers/344.png]]
+
+        We now consider how to \(\ssplit\) can be implemented using a scan. To determine the new indices for
+        elements with a 0 in the bit, we invert the flags and execute a prescan with integer addition. To
+        determine the new indices of elements with a 1 in the bit, we execute a \(+\text{-}\scan\) in reverse
+        order (starting at the top of the vector) and subtract the results from the length of the vector n.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.9
+        #+CAPTION: 
+        [[../images/papers/345.png]]
+
+        \(\ssplit\): \(O(n/p+\log p)\)
+
+* Recurrence Equations
+        A recurrence is a set of equations of the form
+        \begin{equation*}
+        x_i=f_i(x_{i-1},x_{i-2},\dots,x_{i-m}),\quad m\le i<n
+        \end{equation*}
+        along with a set of initial values \(x_0,\dots,x_{m-1}\)
+
+        The scan operation is the special case of a recurrence of the form
+        \begin{equation}
+        \label{1.4}
+        x_i=
+        \begin{cases}
+        a_0&i=0\\
+        x_{i-1}\oplus a_i&0<i<n
+        \end{cases}
+        \end{equation}
+
+        
+** First-Order Recurrences
+        we consider
+        \begin{equation}
+        \label{1.5}
+        x_i=
+        \begin{cases}
+        b_0&i=0\\
+        (x_{i-1}\otimes a_i)\oplus b_i&0<i<n
+        \end{cases}
+        \end{equation}
+        where \(a_i\) and \(b_i\) are sets of \(n\) arbitrary constants and \(\oplus,\otimes\) are arbitrary
+        binary operator satisfying:
+        1. \(\oplus\) is associative
+        2. \(\otimes\) is semiassociative: there exists a binary associative operator \(\odot\) s.t.
+           \((a\otimes b)\otimes c=a\otimes(b\odot c)\)
+        3. \(\otimes\) distributes over \(\oplus\): \(a\otimes(b\oplus c)=(a\otimes b)\oplus(a\otimes c)\)
+
+        \(\odot\) is called the *companion operator* of \(\otimes\). If \(\otimes\) is fully associative, then
+        \(\odot\) and \(\otimes\) are equivalent
+
+        We now show how eqref:1.5 can be reduced to eqref:1.4. Consider the set of pairs
+        \begin{equation*}
+        c_i=[a_i,b_i]
+        \end{equation*}
+        and define a new binary operator \(\bullet\) as follows
+        \begin{equation*}
+        c_i\bullet c_j\equiv[c_{i,a}\odot c_{j,a},(c_{i,b}\otimes c_{j,a})\oplus c_{j,b}]
+        \end{equation*}
+        where \(c_{i,a}\) and \(c_{j,b}\) are the first and second elements of \(c_i\) respectively
+
+        \(\bullet\) is associative
+        \begin{align*}
+        &(c_i\bullet c_j)\bullet c_k=\\
+        &\quad =[c_{i,a}\odot c_{j,a},(c_{i,b}\otimes c_{j,a})\oplus c_{j,b}]\bullet c_k\\
+        &\quad=[(c_{i,a}\odot c_{j,a})\odot c_{k,a},(((c_{i,b}\otimes c_{j,a})\oplus c_{j,b})\otimes c_{k,a})\oplus c_{k,b}]\\
+        &\quad=[c_{i,a}\odot(c_{j,a}\odot c_{k,a}),((c_{i,b}\otimes c_{j,a})\otimes c_{k,a})\oplus((c_{j,b}\otimes c_{k,a})
+        \oplus c_{k,b})]\\
+        &\quad=[c_{i,a}\odot(c_{j,a}\odot c_{k,a}),(c_{i,b}\otimes(c_{j,a}\odot c_{k,a}))\oplus((c_{j,b}\otimes c_{k,a})
+        \oplus c_{k,b})]\\
+        &\quad=c_i\bullet(c_j\bullet c_k)
+        \end{align*}
+
+        We now define the ordered set \(s_i=[y_i,x_i]\), where the \(y_i\) obey the recurrence
+        \begin{equation*}
+        y_i=
+        \begin{cases}
+        a_0&i=0\\
+        y_{i-1}\odot a_i&0<i<n
+        \end{cases}
+        \end{equation*}
+        and the \(x_i\) are from eqref:1.5. We get
+        \begin{align*}
+        s_0&=[y_0,x_0]\\
+        &=[a_0,b_0]\\
+        &=c_0\\
+        s_i&=[y_i,x_i]\\
+        &=[y_{i-1}\odot a_i,(x_{i-1}\otimes a_i)\oplus b_i]\\
+        &=[y_{i-1}\odot c_{i,a},(x_{i-1}\otimes c_{i,a})\oplus c_{i,b}]\\
+        &=[y_{i-1},x_{i-1}]\bullet c_i\\
+        &=s_{i-1}\bullet c_i
+        \end{align*}
+
+        This allows us to use the scan with operator \(\bullet\) to solve any recurrence of the form eqref:1.5
+        on an EREW PRAM in time:
+        \begin{equation*}
+        (T_{\odot}+T_{\otimes}+T_{\oplus})T_S(n,p)=2(T_{\odot}+T_{\otimes}+T_{\oplus})(n/p+\log p)
+        \end{equation*}
+
+        
+** Higher Order Recurrences
+        Now consider
+        \begin{equation*}
+        x_i=
+        \begin{cases}
+        b_i&0\le i<m\\
+        (x_{i-1}\otimes a_{i,1})\oplus\cdots\oplus(x_{i-m}\otimes a_{i,m})\oplus b_i&m\le i<n
+        \end{cases}
+        \end{equation*}
+        with same restrictions as eqref:1.5
+
+        Define
+        \begin{equation*}
+        s_i=
+        \begin{bmatrix}
+        x_i&\cdots&x_{i-m+1}
+        \end{bmatrix}
+        \end{equation*}
+
+        
+* Segmented Scans
+        This section shows how the vector operated on by a scan can be broken into segments with flags so that
+        the scan starts again at each segment boundary
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.10
+        #+CAPTION: 
+        [[../images/papers/346.png]]
+
+        Each of these scans takes two vectors of values: a *data vector* and a *flag vector*. The segmented scan
+        operations present a convenient way to execute a scan independently over many sets of values. The next
+        section shows how the segmented scans can be used to execute a parallel quicksort
+
+        The segmented scans satisfy the recurrence
+        \begin{equation*}
+        x_i=
+        \begin{cases}
+        a_0&i=0\\
+        \begin{cases}
+        a_i&f_i=1\\
+        x_{i-1}\oplus a_i&f_i=0
+        \end{cases}&0<i<n
+        \end{cases}
+        \end{equation*}
+        where \(\oplus\) is the original associative scan operator. If \(\oplus\) has identity \(I_{\oplus}\),
+        then we have
+        \begin{equation*}
+        x_i=
+        \begin{cases}
+       a_0&i=0\\
+        (x_{i-1}\times_sf_i)\oplus a_i&0<i<n 
+        \end{cases}
+        \end{equation*}
+        where
+        \begin{equation*}
+        x\times_sf=
+        \begin{cases}
+        I_{\oplus}&f=1\\
+        x&f=0
+        \end{cases}
+        \end{equation*}
+        This is in the form eqref:1.5 and \(\times_s\) is semiassociative with logical *or* as the companion
+        operator. Therefore we can execute the segmented scans in time
+        \begin{equation*}
+        (T_{or}+T_{\times_s}+T_{\oplus})T_S(n,p)
+        \end{equation*}
+
+** Example: Quicksort
+        Consider a parallel version of quicksort. Similar to the standard sequential version, the parallel
+        version picks one of the keys as a pivot value, splits the keys into three sets—keys lesser, equal and
+        greater than the pivot—and recurses on each set.
+
+        Complexity: \(O(T_S(n,p)\log n)=O(\frac{n}{p}\log n+\log^2n)\)
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: f1.11
+        #+CAPTION: 
+        [[../images/papers/347.png]]
+
+        1. Check if sorted: reduce with logical *and*
+        2. Within each segment, pick a pivot and distribute it to the other elements.
+
+           If we pick the first element as a pivot, we can use a segmented scan with the binary operator
+           \(\textsf{copy}\), which returns the first of its arguments
+           \begin{equation*}
+           a\gets\textsf{copy}(a,b)
+           \end{equation*}
+        3. Within each segment, compare each element with the pivot and split based on the result of the
+           comparison
+
+           We can use a version of the \(\ssplit\) which splits into three sets instead of two, and which is
+           segmented. To implement such a segmented \(\ssplit\), we can use a segmented version of the
+           +-\(\scan\) operation to generate indices relative to the beginning of each segment, and we can use
+           a segmented \(\copyscan\) to copy the offset of the beginning of each segment across the segment.
+           We then add the offset to the segment indices to generate the location to which we permute each
+           element. 
+        4. Within each segment, insert additional segment flags to separate the split values
 
 * Problems
 
