@@ -1,0 +1,852 @@
+% Created 2026-03-21 Sat 20:17
+% Intended LaTeX compiler: xelatex
+\documentclass[11pt]{article}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\input{/Users/wu/notes/preamble.tex}
+\graphicspath{{../../books/}}
+\usepackage[UTF8]{ctex}
+\makeindex
+\definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+\usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+\setminted{breaklines,
+mathescape,
+bgcolor=mintedbg,
+fontsize=\footnotesize,
+frame=single,
+linenos}
+
+%% ox-latex features:
+%   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
+%   image, !announce-end.
+
+\usepackage{capt-of}
+
+\usepackage{graphicx}
+
+%% end ox-latex features
+
+
+\date{\today}
+\title{Yuanmeng Note}
+\hypersetup{
+ pdfauthor={},
+ pdftitle={Yuanmeng Note},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={},
+ pdflang={English}}
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\href{https://zhuanlan.zhihu.com/p/654910335}{Blog}
+\section{Transformer}
+\label{sec:org77b1e98}
+\subsection{Positional Encoding}
+\label{sec:org66d6a2f}
+\subsubsection{What's positional encoding}
+\label{sec:orge85d09e}
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/365.png}
+\captionof{figure}{\label{}}
+\end{center}
+\begin{equation*}
+input=input\_embedding+positional\_encoding
+\end{equation*}
+
+这里，input\textsubscript{embedding是通过常规embedding层}，将每一个token的向量维度从vocab\textsubscript{size映射到d}\textsubscript{model}，由于是相
+加关系，自然而然地，这里的positional\textsubscript{encoding也是一个d}\textsubscript{model维度的向量}。（在原论文里，d\textsubscript{model} = 512） 
+
+那么，我们为什么需要position encoding呢？在transformer的self-attention模块中，序列的输入输出如下（不了
+解self-attention没关系，这里只要关注它的输入输出就行）：
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/366.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+在self-attention模型中，输入是一整排的tokens，对于人来说，我们很容易知道tokens的位置信息，比如：
+\begin{enumerate}
+\item 绝对位置信息。a1是第一个token，a2是第二个token\ldots{}\ldots{}
+\item 相对位置信息。a2在a1的后面一位，a4在a2的后面两位\ldots{}\ldots{}
+\item 不同位置间的距离。a1和a3差两个位置，a1和a4差三个位置\ldots{}.
+\end{enumerate}
+但是这些对于self-attention来说，是无法分辩的信息，因为self-attention的运算是无向的。因为，我们要想办法，
+把tokens的位置信息，喂给模型。
+\subsubsection{构造位置编码的方法 /演变历程}
+\label{sec:org5927cba}
+\textbf{用整型值标记位置}: 给第一个token标记1，给第二个token标记2\ldots{}，以此类推。
+这种方法产生了以下几个主要问题：
+\begin{enumerate}
+\item 模型可能遇见比训练时所用的序列更长的序列。不利于模型的泛化。
+\item 模型的位置表示是无界的。随着序列长度的增加，位置值会越来越大。
+\end{enumerate}
+
+\textbf{用[0,1]范围标记位置}: 为了解决整型值带来的问题，可以考虑将位置值的范围限制在[0,1]之内，其中，0表示第一
+个token，1表示最后一个token。比如有3个token，那么位置信息就表示成[0, 0.5, 1]；若有四个token，位置信息
+就表示成[0, 0.33, 0.69, 1]。
+
+但这样产生的问题是，当序列长度不同时，token间的相对距离是不一样的。例如在序列长度为3时，token间的相对
+距离为0.5； 在序列长度为4时，token间的相对距离就变为0.33。 
+
+因此，我们需要这样一种位置表示方式，满足于：
+\begin{enumerate}
+\item 它能用来表示一个token在序列中的绝对位置
+\item 在序列长度不同的情况下，不同序列中token的相对位置/距离也要保持一致
+\item 可以用来表示模型在训练过程中从来没有看到过的句子长度。
+\end{enumerate}
+
+\textbf{用二进制向量标记位置}: 考虑到位置信息作用在input embedding上，因此比起用单一的值，更好的方案是用一个和
+input embedding维度一样的向量来表示位置。这时我们就很容易想到二进制编码。如下图，假设d\textsubscript{model} = 3，那么
+我们的位置向量可以表示成：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/367.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+这下所有的值都是有界的（位于0，1之间），且transformer中的d\textsubscript{model本来就足够大}，基本可以把我们要的每一个
+位置都编码出来了。 
+
+但是这种编码方式也存在问题：这样编码出来的位置向量，处在一个离散的空间中，不同位置间的变化是不连续的。
+假设d\textsubscript{model} = 2，我们有4个位置需要编码，这四个位置向量可以表示成[0,0],[0,1],[1,0],[1,1]。我们把它的位
+置向量空间做出来： 
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/368.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+如果我们能把离散空间（黑色的线）转换到连续空间（蓝色的线），那么我们就能解决位置距离不连续的问题。同时，
+我们不仅能用位置向量表示整型，我们还可以用位置向量来表示浮点型。
+
+\textbf{用周期函数（sin）来表示位置}:回想一下，现在我们需要一个有界又连续的函数，最简单的，正弦函数sin就可以满
+足这一点。我们可以考虑把位置向量当中的每一个元素都用一个sin函数来表示，则第t个token的位置向量可以表示
+为：
+\begin{equation*}
+PE_t=\left[\sin(\frac{1}{2^0}t),\sin(\frac{1}{2^1}t),\dots,\sin(\frac{1}{2^{d_{model}-1}}t)\right]
+\end{equation*}
+
+
+
+结合下图，来理解一下这样设计的含义。图中每一行表示一个\(PE_t\) ，每一列表示 \(PE_t\)中的第\(i\)个元素。
+旋钮用于调整精度，越往右边的旋钮，需要调整的精度越大，因此指针移动的步伐越小。每一排的旋钮都在上一排的
+基础上进行调整（函数中t的作用）。通过频率\(\frac{1}{2^i-1}\) 来控制sin函数的波长，频率不断减小，则波长
+不断变大，此时sin函数对\(t\)的变动越不敏感，以此来达到越向右的旋钮，指针移动步伐越小的目的。 这也类似于二
+进制编码，每一位上都是0和1的交互，越往低位走（越往左边走），交互的频率越慢。
+
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/369.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+由于sin是周期函数，因此从纵向来看，如果函数的频率偏大，引起波长偏短，则不同t下的位置向量可能出现重合的
+情况。比如在下图中(d\textsubscript{model} = 3），图中的点表示每个token的位置向量，颜色越深，token的位置越往后，在频率
+偏大的情况下，位置响亮点连成了一个闭环，靠前位置（黄色）和靠后位置（棕黑色）竟然靠得非常近：
+
+\begin{center}
+\includegraphics[width=6.\textwidth]{../images/papers/370.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+
+为了避免这种情况，我们尽量将函数的波长拉长。一种简单的解决办法是同一把所有的频率都设成一个非常小的值。
+因此在transformer的论文中，采用了 \(\frac{1}{10000^{i/(d_{model}-1)}}\)这个频率（这里i其实不是表示第i
+个位置，但是大致意思差不多，下面会细说）  
+
+总结一下，到这里我们把位置向量表示为：
+\begin{equation*}
+PE_{t+\Delta t}=T_{\Delta t}* PE_t
+\end{equation*}
+
+\textbf{用sin和cos交替来表示位置}: 目前为止，我们的位置向量实现了如下功能：
+\begin{enumerate}
+\item 每个token的向量唯一（每个sin函数的频率足够小）
+\item 位置向量的值是有界的，且位于连续空间中。模型在处理位置向量时更容易泛化，即更好处理长度和训练数据分
+布不一致的序列（sin函数本身的性质）
+\end{enumerate}
+
+那现在我们对位置向量再提出一个要求， \textbf{不同的位置向量是可以通过线性转换得到的} 。这样，我们不仅能表示一
+个token的绝对位置，还可以表示一个token的相对位置，即我们想要：
+
+这里，T表示一个线性变换矩阵。观察这个目标式子，联想到在向量空间中一种常用的线形变换——旋转。在这里，
+我们将\(t\)想象为一个角度，那么\(\Delta t\)就是其旋转的角度，则上面的式子可以进一步写成：
+\begin{equation*}
+\begin{pmatrix}
+\sin(t+\Delta t)\\\cos(t+\Delta t)
+\end{pmatrix}=
+\begin{pmatrix}
+\cos\Delta t&&\sin\Delta t\\
+-\sin\Delta t&&\cos\Delta t
+\end{pmatrix}
+\begin{pmatrix}
+\sin t\\\cos t
+\end{pmatrix}
+\end{equation*}
+有了这个构想，我们就可以把原来元素全都是sin函数的\(PE_t\) 做一个替换，我们让位置两两一组，分别用sin
+和cos的函数对来表示它们，则现在我们有：
+   \begin{equation*}
+PE_t=[\sin(w_0t),\cos(w_0t),\sin(w_1t),\cos(w_1t),\dots,\sin(w_{\frac{d_{model}}{2}-1}t),
+\cos(w_{\frac{d_{model}}{2}-1}t)]
+   \end{equation*}
+
+
+于是
+\begin{equation*}
+\scalebox{0.7}{$
+PE_{t+\Delta t}=T_{\Delta t}*PE_t=
+\begin{pmatrix}
+\begin{pmatrix}
+\cos(w_0\Delta t)&&\sin(w_0\Delta t)\\
+-\sin(w_0\Delta t)&&\cos(w_0\Delta t)
+\end{pmatrix}&&\dots&&0\\
+\dots&&\dots&&\dots\\
+0&&\dots&&
+\begin{pmatrix}
+\cos(w_{\frac{d_{model}}{2}-1}\Delta t)&&\sin(w_{\frac{d_{model}}{2}-1}\Delta t)\\
+-\sin(w_{\frac{d_{model}}{2}-1}\Delta t)&&\cos(w_{\frac{d_{model}}{2}-1}\Delta t)
+\end{pmatrix}
+\end{pmatrix}
+\begin{pmatrix}
+\sin(w_0t)\\
+\cos(w_0t)\\
+\dots\\
+\sin(w_{\frac{d_{model}}{2}-1}t)\\
+\cos(w_{\frac{d_{model}}{2}-1}t)
+\end{pmatrix}=
+\begin{pmatrix}
+\sin(w_0(t+\Delta t))\\
+\cos(w_0(t+\Delta t))\\
+\dots\\
+\sin(w_{\frac{d_{model}}{2}-1}(t+\Delta t))\\
+\cos(w_{\frac{d_{model}}{2}-1}(t+\Delta t))
+\end{pmatrix}$}
+\end{equation*}
+\subsubsection{Transformer中位置编码方法：Sinusoidal functions}
+\label{sec:org5cad8ad}
+定义：
+\begin{itemize}
+\item \(t\)是这个token在序列中的实际位置（例如第一个token为1，第二个token为2\ldots{}）
+\item \(PE_t\in\R^d\)是这个token的位置向量， \(PE_t^{(i)}\) 表示这个位置向量里的第i个元素
+\item \(d_{model}\)是这个token的维度（在论文中，是512)
+\end{itemize}
+
+\begin{equation*}
+PE_t^{(i)}=
+\begin{cases}
+\sin(w_kt)&i=2k\\
+\cos(w_kt)&i=2k+1
+\end{cases}
+\end{equation*}
+where \(w_k=\frac{1}{10000^{2k/d_{model}}}\),
+\(i=0,1,\dots,\frac{d_{model}}{2}-1\)
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/371.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+\begin{minted}[]{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# ----------------------------
+# 参数
+# ----------------------------
+d_model = 128      # 论文中的维度
+seq_len = 50      # 可视化前100个位置
+show_dims = 8      # 单独画出前几个维度的曲线
+
+# ----------------------------
+# 计算 Positional Encoding
+# PE[t, i] 表示第 t 个位置在第 i 维上的值
+# 这里用 0-based 下标实现：
+#   偶数维: sin(position * w_k)
+#   奇数维: cos(position * w_k)
+# 其中 k = i // 2
+# ----------------------------
+positions = np.arange(1, seq_len + 1)[:, np.newaxis]   # shape: (seq_len, 1), 位置从1开始
+dims = np.arange(d_model)[np.newaxis, :]               # shape: (1, d_model)
+
+# 对应论文里的 w_k = 1 / 10000^(2k / d_model)
+# 在实现里，偶数维和奇数维共享同一个频率，所以可写成：
+angle_rates = 1 / np.power(10000, (2 * (dims // 2)) / d_model)
+angles = positions * angle_rates
+
+PE = np.zeros((seq_len, d_model))
+PE[:, 0::2] = np.sin(angles[:, 0::2])   # 偶数维
+PE[:, 1::2] = np.cos(angles[:, 1::2])   # 奇数维
+
+# ----------------------------
+# 图1：热力图，观察整体模式
+# ----------------------------
+plt.figure(figsize=(14, 6))
+plt.imshow(PE, aspect='auto', cmap='viridis')
+plt.colorbar(label='PE value')
+plt.xlabel('Dimension i')
+plt.ylabel('Position t')
+plt.title(f'Sinusoidal Positional Encoding Heatmap (seq_len={seq_len}, d_model={d_model})')
+plt.show()
+
+# ----------------------------
+# 图2：前几个维度随位置变化的曲线
+# ----------------------------
+plt.figure(figsize=(14, 6))
+for i in range(show_dims):
+    plt.plot(positions.squeeze(), PE[:, i], label=f'dim {i}')
+plt.xlabel('Position t')
+plt.ylabel('PE value')
+plt.title(f'First {show_dims} Dimensions of Positional Encoding')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# ----------------------------
+# 图3：挑几个不同频率的维度对比
+# ----------------------------
+selected_dims = [0, 1, 2, 3, 10, 11, 100, 101]
+
+plt.figure(figsize=(14, 6))
+for i in selected_dims:
+    plt.plot(positions.squeeze(), PE[:, i], label=f'dim {i}')
+plt.xlabel('Position t')
+plt.ylabel('PE value')
+plt.title('Different Dimensions Have Different Frequencies')
+plt.legend(ncol=2)
+plt.grid(True)
+plt.show()
+\end{minted}
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/372.png}
+\captionof{figure}{\label{}}
+\end{center}
+可以发现，由于sin/cos函数的性质，位置向量的每一个值都位于[-1, 1]之间。同时，纵向来看，图的右半边几乎都
+是蓝色的，这是因为越往后的位置，频率越小，波长越长，所以不同的t对最终的结果影响不大。而越往左边走，颜
+色交替的频率越频繁。
+
+\begin{proposition}[]
+两个位置编码的点积(dot product)仅取决于偏移量\(\Delta\),也即两个位置编码的点积可以反应出两个位置编码间的距离。
+\end{proposition}
+
+\begin{proof}
+\begin{align*}
+PE_t^T*PE_{t+\Delta t}&=\sum_{i=0}^{\frac{d_{model}}{2}-1}
+[\sin(w_it)\sin(w_i(t+\Delta t))+\cos(w_it)\cos(w_i(t+\Delta t))]\\
+&=\sum_{i=0}^{\frac{d_{model}}{2}-1}\cos(w_i(t-(t+\Delta t)))\\
+&=\sum_{i=0}^{\frac{d_{model}}{2}-1}\cos(w_i\Delta t)
+\end{align*}
+\end{proof}
+
+\begin{proposition}[]
+位置编码的点积是无向的，即\(PE_t^T*PE_{t+\Delta t}=PE_t^T*PE_{t-\Delta t}\)
+\end{proposition}
+
+我们可以分别训练不同维度的位置向量，然后以某个位置向量\(PE_t\)为基准，去计算其左右和它相距的位置向量的
+点积，可以得到如下结果：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/373.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+这里横轴的k指的就是\(\Delta t\) ，可以发现，距离是对成分布的，且总体来说， 越大或者越小的时候，内积也
+越小，可以反馈距离的远近。也就是说，虽然位置向量的点积可以用于表示距离 (distance-aware)，但是它却不能
+用来表示位置的方向性(lack-of-directionality) 
+
+当位置编码随着input被喂进attention层时，采用的映射方其实是：
+\(PE_t^TW_Q^TW_KPE_{t+k}\)
+这里\(W_Q^T\)和\(W_K\)表示self-attention中的query和key参数矩阵，他们可以被简写成 \(W\)表示attention
+score的矩阵，到这里看不懂也没事，在self-attention的笔记里会说明的）。我们可以随机初始化两组\(W_1\),
+\(W_2\)然后将\(PE_t^TW_1PE_{t+k}\),\(PE_t^TW_2PE_{t+k}\)和\(PE_t^TPE_{t+k}\) 这三个内积进行比较，得到
+的结果如下：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/374.png}
+\captionof{figure}{\label{}}
+\end{center}
+绿色和黄色即是 \(W_1\)和 \(W_2\)的结果。可以发现，进入attention层之后，内积的距离意识(distance-aware)
+的模式也遭到了破坏
+\subsection{Attention Score}
+\label{sec:org6d4c926}
+\subsubsection{Attention的基本运作方式}
+\label{sec:org5230bf7}
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/375.png}
+\captionof{figure}{\label{}}
+\end{center}
+在RNN当中，tokens是一个一个被喂给模型的。比如在a3的位置，模型要等a1和a2的信息都处理完成后，才可以生成
+a3。这样的作用机制，使得RNN存在以下几个问题
+\begin{enumerate}
+\item \textbf{Sequential operations的复杂度随着序列长度的增加而增加} 。这是指模型下一步计算的等待时间，在RNN中为O(N)
+\item \textbf{Maximum Path length的复杂度随着序列长度的增加而增加} 。这是指信息从一个数据点传送到另一个数据点所需
+要的距离，在RNN中同样为O(N)，距离越大，则在传送的过程中越容易出现信息缺失的情况，即数据点对于远距离
+处的信息，是很难“看见”的。
+\end{enumerate}
+
+
+那么，在处理序列化数据的时候，是否有办法，在提升模型的并行运算能力的同时，对于序列中的每个token，也能
+让它不损失信息地看见序列里的其他tokens呢？ Attention
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/376.png}
+\captionof{figure}{\label{}}
+\end{center}
+\subsubsection{Attention的计算过程图解}
+\label{sec:org67959ef}
+\begin{enumerate}
+\item Self-attention
+\label{sec:orgfe473ed}
+Self-attention的意思是，我们给Attention的输入都来自同一个序列，其计算方式如下
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/378.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+这张图所表示的大致运算过程是：对于每个token，先产生三个向量query，key，value：
+\begin{itemize}
+\item query向量类比于询问。某个token问：“其余的token都和我有多大程度的相关呀？”
+\item key向量类比于索引。某个token说：“我把每个询问内容的回答都压缩了下装在我的key里”
+\item value向量类比于回答。某个token说：“我把我自身涵盖的信息又抽取了一层装在我的value里”
+\end{itemize}
+
+
+以图中的token a2为例：
+\begin{itemize}
+\item 它产生一个query，每个query都去和别的token的key做“某种方式”的计算，得到的结果我们称为attention score
+（即为图中的\(\alpha\)）。则一共得到四个attention score。（attention score又可以被称为attention
+weight）。
+\item 将这四个score分别乘上每个token的value，我们会得到四个抽取信息完毕的向量。
+\item 将这四个向量相加，就是最终a2过attention模型后所产生的结果b2。
+\end{itemize}
+
+
+下图描述了产生query(q)，key(k)和value(v)的过程：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/379.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+假设batch\textsubscript{size}=1，输入序列X的形状为(seq\textsubscript{len} = 4, d\textsubscript{model} = 6)，则对于这串序列，我们产生三个参数矩阵：
+\(W^Q,W^K,W^V\) 。通过上述的矩阵乘法，我们可以得到最终的结果\(Q,K,V\)。
+
+一般来说， \(W^Q\), \(W^K\) 都同样使用k\textsubscript{dim},\(W^V\)使用v\textsubscript{dim}。k\textsubscript{dim和v}\textsubscript{dim不一定要相等}，但在
+transformer的原始论文中，采用的策略是，设num\textsubscript{heads为self}-attention的头数，则: 
+\begin{equation*}
+k\_dim=v\_dim=d\_model//num\_heads
+\end{equation*}
+
+//是整除的意思。上图所绘是num\textsubscript{heads} = 1的情况。关于num\textsubscript{heads的概念}，在本文的后面会详细解释。
+
+到目前为止，对于某条输入序列\(X\)，我们有
+\begin{equation*}
+\begin{cases}
+Q=XW^Q\\
+K=XW^K\\
+V=XW^V
+\end{cases}
+\end{equation*}
+现在，我们做两件事：
+\begin{itemize}
+\item 利用Q和K，计算出attention score矩阵，这个矩阵由图3中的\(\alpha\)组成。利用V和attention score矩阵，计
+算出Attention层最终的输出结果矩阵，这个矩阵由图3中的b组成。
+\end{itemize}
+记最终的输出结果为 \(Attention(Q,K,V)\) ，则有：
+\begin{equation*}
+Attention(Q,K,V)=softmax(\frac{QK^T}{\sqrt{d_k}})V
+\end{equation*}
+
+这个 \(d_k\)就是k\textsubscript{dim}，而\(softmax(\frac{QK^T}{\sqrt{d_k}})\)就是Attention Score矩阵，我们来详细看下这个矩阵的计算过程。
+
+如图5，计算attention score的主流方式有两种，在transformer的论文中，采用的是dot-product（因为不需要额外
+再去训练一个W矩阵，运算量更小），因此我们来重点关注一下dot-product。
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/380.png}
+\captionof{figure}{\label{}}
+\end{center}
+更确切地说，论文中所采用的是scaled dot-product，因为乘上了因子 \(1/\sqrt{d_k}\) 。在softmax之后，
+attention score矩阵的每一行表示一个token，每一列表示该token和对应位置token的\(\alpha\)值，因为进行了
+softmax，每一行的\(\alpha\)值相加等于1。
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/381.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+之所以进行scaling，是为了使得在softmax的过程中，梯度下降得更加稳定，避免因为梯度过小而造成模型参数更新
+的停滞。下面我们通过数学证明，来解释这个结论。为了表达方便（也为了和论文的标识保持一致），我们把k\textsubscript{dim}
+写成\(d_k\)，同理v\textsubscript{dim写成} \(d_v\) ，S表示softmax函数，假设在做softmax之前，紫色矩阵里的每一个值为
+\(\alpha_{ij}^*\) ，则有：
+\begin{equation*}
+\alpha_{ij}=S(\alpha_{ij}^*)=\frac{e^{\alpha_{ij}^*}}{\sum_{j=1}^{d_k}e^{\alpha_{ij}^*}}
+\end{equation*}
+
+
+
+
+
+
+聚焦到紫色矩阵的某一行，对于其中某个 \(j'\)，我们有：
+\begin{align*}
+&\frac{\partial S(\alpha_{ij'}^*)}{\partial\alpha_{ij'}^*}=S(\alpha_{ij'}^*)(1-S(\alpha_{ij'}^*))\\
+&\frac{\partial S(\alpha_{ij'}^*)}{\partial \alpha^*_{ij}}=-S(\alpha_{ij'}^*)S(\alpha_{ij}^*),\quad j\neq j'
+\end{align*}
+从上面可以看出：
+\begin{itemize}
+\item 当 \(\alpha_{ij'}^*\)相对于同一行其他的\(\alpha_{ij}^*\)更大的时候， \(S(\alpha_{ij}^*)\) 趋近于1， \(S(\alpha_{ij}^*)\) 趋近于0，此时以上的两个结果都趋近于0。
+\item 当  \(\alpha_{ij'}^*\) 相对于同一行其他的 \(\alpha_{ij}^*\)更小的时候，\(S(\alpha_{ij}^*)\) 趋近于0，
+\(S(\alpha_{ij}^*)\)趋近于1，此时以上的两个结果都趋近于0。
+\end{itemize}
+
+总结起来，即当 \(\alpha_{ij'}^*\)相对于其他结果过大或者过小时，都会造成softmax函数的偏导趋近于0（梯度
+过低）。在这种情况下，整个模型在backprop的过程中，经过softmax之后，就无法继续传播到softmax之前的函数上，
+造成模型参数无法更新，影响了模型的训练效率。 
+
+那么\(\alpha_{ij'}^*\)是怎么计算来的呢？通过前面的讲解可以知道：
+\begin{equation*}
+\alpha_{ij}^*=q_ik_j^T=\sum_{l=1}^{d_k}q_{il}k_{jl}
+\end{equation*}
+
+假设向量q和k中的每一个元素都是相互独立，均值为0，方差为1的随机变量，那么易知\(\alpha_{ij}^*\) 的均值也为0，方差为\(d_k\) 。 
+\(d_k\)较大，意味着不同\(\alpha_{ij}^*\)间值的差距也很大，这就导致了上面所说的梯度消失的问题。
+
+\begin{proof}
+let \(X_l=q_{il}k_{jl}\), then \(\alpha_{ij}^*=\sum_{l=1}^{d_k}X_l\)
+
+Now \(\E[X_l]=\E[q_{il}k_{jl}]=\E[q_{il}]\E[k_{jl}]=0\)
+
+\begin{align*}
+Var(X)&=\E[(X-\E[X])^2]\\
+&=\E[X^2]-2\E[X\E[X]]+(\E[X])^2\\
+&=\E[X_l^2]-(\E[X_l])^2\\
+&==\E[q_{il}^2k_{jl^2}]=\E[q_{il}^2]\E[k_{jl}^2]
+\end{align*}
+
+As \(Var(q_{il})=\E[q_{il}^2]-(\E[q_{il}])^2=\E[q_{il}^2]=1\),
+we have \(Var(X_l)=1\)
+
+Finally, \(Var(\alpha_{ij}^*)=d_k\) (expand by definition)
+\end{proof}
+
+最后
+\begin{equation*}
+Var(\frac{qk^T}{\sqrt{d_k}})=1
+\end{equation*}
+\item Masked Attention
+\label{sec:org7b75373}
+有时候，我们并不想在做attention的时候，让一个token看到整个序列，我们只想让它看见它左边的序列，而要把右
+边的序列遮蔽（Mask）起来。例如在transformer的decoder层中，我们就用到了masked attention，这样的操作可以
+理解为模型为了防止decoder在解码encoder层输出时“作弊”，提前看到了剩下的答案，因此需要强迫模型根据输入序
+列左边的结果进行attention。 
+
+
+Masked的实现机制其实很简单，如图：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/382.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+首先，我们按照前文所说，正常算attention score，然后我们用一个MASK矩阵去处理它（这里的+号并不是表示相加，
+只是表示提供了位置覆盖的信息）。在MASK矩阵标1的地方，也就是需要遮蔽的地方，我们把原来的值替换为一个很
+小的值（比如-1e09），而在MASK矩阵标0的地方，我们保留原始的值。这样，在进softmax的时候，那些被替换的值
+由于太小，就可以自动忽略不计，从而起到遮蔽的效果。 
+
+举例来说明MASK矩阵的含义，每一行表示对应位置的token。例如在第一行第一个位置是0，其余位置是1，这表示第
+一个token 在attention时，只看到它自己，它右边的tokens是看不到的。以此类推。
+\item Multihead Attention
+\label{sec:org56f711c}
+在图像中，我们知道有不同的channel，每一个channel可以用来识别一种模式。如果我们对一张图采用attention，
+比如把这张图的像素格子拉平成一列，那么我们可以对每个像素格子训练不同的head，每个head就类比于一个
+channel，用于识别不同的模式。 
+
+
+而在NLP中，这种模式识别同样重要。比如第一个head用来识别词语间的指代关系(某个句子里有一个单词it，这个it
+具体指什么呢），第二个head用于识别词语间的时态关系（看见yesterday就要用过去式）等等。
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/383.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+图8展示了multihead attention的运作方式。设头的数量为num\textsubscript{heads}，那么本质上，就是训练num\textsubscript{heads个}
+\(W^Q,W^K,W^V\)个矩阵，用于生成num\textsubscript{heads个}\(Q,K,V\)结果。每个结果的计算方式和单头的attention的计算方式一致。最
+终将生成的b连接起来生成最后的结果。
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/384.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+图9详细展示了8个head的矩阵化的运算过程，由于拆分成了多头，则此时有
+\begin{equation*}
+k\_dim=v\_dim=d\_model//num\_heads
+\end{equation*}
+按照这个规则拆分后，多头的运算量和原来单头的运算量一样。同时在图9中，在输出部分出现了一个 矩阵，这个矩
+阵用于将拼接起来的多头输出转换为最终总输出
+
+将每个head上的attention score分数打出，可以具象化地感受每个head的关注点，以入句子``The animal didn't
+cross the streest because it was too tired''为例，可视化代码可点此
+\end{enumerate}
+\subsection{为什么Transformer要用LayerNorm/Batch Normalization \& Layer Normalization}
+\label{sec:orgaae1a44}
+这一篇写Transformer里标准化的方法。在Transformer中，数据过Attention层和FFN层后，都会经过一个Add \&amp;
+Norm处理。其中，Add为residule block（残差模块），数据在这里进行residule connection（残差连接）。而Norm
+即为Normalization（标准化）模块。Transformer中采用的是Layer Normalization（层标准化）方式。常用的标准
+化方法有Batch Normalization，Layer Normalization，Group Normalization，Instance Normalization等，这篇
+笔记将在论文研究的基础上，着重聚焦于前两者。
+\subsubsection{Batch Normalization}
+\label{sec:orgbd9a3eb}
+\begin{enumerate}
+\item 背景
+\label{sec:org574b497}
+Batch Normalization（以下简称BN）的方法最早由Ioffe\&Szegedy在2015年提出，主要用于解决在深度学习中
+产生的ICS（Internal Covariate Shift）的问题。若模型输入层数据分布发生变化，则模型在这波变化数据上的表
+现将有所波动，输入层分布的变化称为Covariate Shift，解决它的办法就是常说的Domain Adaptation。同理，在深
+度学习中，第L+1层的输入，也可能随着第L层参数的变动，而引起分布的变动。这样每一层在训练时，都要去适应这
+样的分布变化，使得训练变得困难。这种层间输入分布变动的情况，就是Internal Covariate Shift。而BN提出的初
+衷就是为了解决这一问题。 
+
+\begin{align*}
+&Z^{[L]}=W^{[L]}*A^{[L-1]}+b^{[L]}(\text{linear transformation layer})\\
+&A^{[L]}=g^{[L]}(Z^{[L]})(\text{non-linear transformation/activation layer})
+\end{align*}
+（ICS：随着梯度下降的进行， \(W^{[L]}\) 和\(b^{[L]}\)都会被更新，则\(Z^{[L]}\)的分布改变，进而影响
+\(A^{[L]}\)分布，也就是第L+1层的输出）
+
+ICS带来的问题:
+\begin{enumerate}
+\item 在过激活层的时候，容易陷入激活层的梯度饱和区，降低模型收敛速度。
+
+这一现象发生在我们对模型使用饱和激活函数(saturated activation function)，例如sigmoid，tanh时。如下
+图：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/385.png}
+\captionof{figure}{\label{}}
+\end{center}
+可以发现当绝对值越大时，数据落入图中两端的梯度饱和区（saturated regime），造成梯度消失，进而降低模
+型收敛速度。当数据分布变动非常大时，这样的情况是经常发生的。当然，解决这一问题的办法可以采用非饱和
+的激活函数，例如ReLu 。
+
+\item 需要采用更低的学习速率，这样同样也降低了模型收敛速度。
+
+如前所说，由于输入变动大，上层网络需要不断调整去适应下层网络，因此这个时候的学习速率不宜设得过大，
+因为梯度下降的每一步都不是“确信”的。
+\end{enumerate}
+
+
+在BN提出之前，有几种用于解决ICS的常规办法：
+\begin{itemize}
+\item 采用非饱和激活函数
+\item 更小的学习速率
+\item 更细致的参数初始化办法
+\item 数据白化（whitening）
+\end{itemize}
+其中，最后一种办法是在模型的每一层输入上，采用一种线性变化方式（例如PCA），以达到如下效果：
+\begin{itemize}
+\item 使得输入的特征具有相同的均值和方差。例如采用PCA，就让所有特征的分布均值为0，方差为1
+\item 去除特征之间的相关性。
+\end{itemize}
+然而在每一层使用白化，给模型增加了运算量。而小心地调整学习速率或其他参数，又陷入到了超参调整策略的复杂
+中。因此，BN作为一种更优雅的解决办法被提出了。
+\item BN实践
+\label{sec:orgcd01a9a}
+\begin{itemize}
+\item 对每一个batch进行操作，使得对于这一个batch中所有的输入数据，它们的每一个特征都是均值为0，方差为1的分
+布
+
+即把均值和方差算出来normalize一下
+\begin{equation*}
+\barz=\frac{z-\mu}{\sqrt{\sigma^2+\epsilon}}
+\end{equation*}
+\(\epsilon\)防止分母是0
+\item 单纯把所有的输入限制为(0,1)分布也是不合理的，这样会降低数据的表达能力（第L层辛苦学到的东西，这里都暴
+力变成（0,1）分布了）。因此需要再加一个线性变换操作，让数据恢复其表达能力。这个线性变化中的两个参数
+\(\gamma,\beta\)是需要模型去学习的。
+\begin{equation*}
+z'=\gamma\barz+\beta
+\end{equation*}
+\end{itemize}
+
+整个BN的过程可以见下图：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/386.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+上图所示的是2D数据下的BN，而在NLP或图像任务中，我们通常遇到3D或4D的数据，例如：
+\begin{itemize}
+\item 图像中的数据维度：（N, C, H, W)。其中N表示数据量（图数），C表示channel数，H表示高度，W表示宽度。
+\item NLP中的数据为度：（B, S, E）。其中B表示批量大小，S表示序列长度，E表示序列里每个token的embedding向量
+维度。
+\end{itemize}
+
+如下图，它们在执行BN时，在图中每一个蓝色的平面上求取\(\mu,\sigma\)(也就是一个batch里同一channel上的所
+有数据)，同时让模型自己学习\(\gamma,\beta\)。其中``H,W''表示的是``H*W''，即每一个channel里pixel的数量。为
+了表达统一，这张图用作NLP任务说明时，可将(N, C, H*W)分别理解成(B, E, S)。
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/387.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+
+在训练过程里，我们等一个batch的数据都装满之后，再把数据装入模型，做BN。但是在测试过程中，我们却更希望
+模型能来一条数据就做一次预测，而不是等到装满一个batch再做预测。也就是说，我们希望测试过程共的数据不依
+赖 batch，每一条数据都有一个唯一预测结果。这就产生了训练和测试中的gap：测试里的\(\mu,\sigma\)要怎么算
+呢？一般来说有两种方法。
+
+1: 用训练集中的均值和方差做测试集中均值和方差的无偏估计。
+
+保留训练模型中，每一组batch的每一个特征在每一层的\(\mu_{batch},\sigma^2_{batch}\)，这样我们就可以得到
+测试数据均值和方差的无偏估计：
+\begin{align*}
+\mu_{test}&=\E(\mu_{batch})\\
+\sigma^2_{test}&=\frac{m}{m-1}\E(\sigma^2_{batch})\\
+BN(X_{test})&=\gamma\frac{X_{test}-\mu_{test}}{\sqrt{\sigma^2_{test}+\epsilon}}+\beta
+\end{align*}
+其中\(m\)表示批量大小
+
+\wu{
+\begin{equation*}
+\sigma^2_{batch}=\frac{1}{m}\sum(x_i-\mu_{batch})^2
+\end{equation*}
+但是
+\begin{equation*}
+\E(\sigma^2_{batch})=\frac{m-1}{m}\sigma^2
+\end{equation*}
+}
+
+\begin{proposition}[]
+设一组样本\(X_1,\dots,X_m\)独立同分布，满足
+\begin{equation*}
+\E[X_i]=\mu,\quad Var(X_i)=\sigma^2
+\end{equation*}
+记样本均值为
+\begin{equation*}
+\barX=\frac{1}{m}\sum_{i=1}^mX_i
+\end{equation*}
+方差
+\begin{equation*}
+S^2=\frac{1}{m}\sum_{i=1}^m(X_i-\barX)^2
+\end{equation*}
+有
+\begin{equation*}
+\E[S^2]=\frac{m-1}{m}\sigma^2
+\end{equation*}
+\end{proposition}
+
+\begin{proof}
+\begin{align*}
+\sum_{i=1}^m(X_i-\barX)^2&=\sum(X_i-\mu+\mu-\barX)^2\\
+&=\sum(X_i-\mu)^2-2(\barX-\mu)\sum(X_i-\mu)+\sum(\barX-\mu)^2\\
+&=\sum(X_i-\mu)^2-2m(\barX-\mu)^2+m(\barX-\mu)^2\\
+&=\sum(X_i-\mu)^2-m(\barX-\mu)^2
+\end{align*}
+
+\begin{align*}
+\E[S^2]&=\frac{1}{m}\sum\E[(X_i-\mu)^2]-\E[(\barX-\mu)^2]\\
+&=Var(X)-Var(\barX)
+\end{align*}
+
+But
+\begin{equation*}
+Var(\barX)=Var(\frac{1}{m}\sum X_i)=\frac{1}{m^2}\sum Var(X_i)=\frac{\sigma^2}{m}
+\end{equation*}
+\end{proof}
+
+
+2: Momentum：移动平均法(Moving Average)
+
+稍微改变一下训练过程中计算均值和方差的办法，设\(\mu_t\)是当前步骤求出的均值， \(\bar{\mu}\)是之前的训练步骤累积起来求得的均值（也称running mean），则：
+\begin{equation*}
+\bar{\mu}\gets p\bar{\mu}+(1-p)\mu^t
+\end{equation*}
+其中，p是momentum的超参，表示模型在多大程度上依赖于过去的均值和当前的均值。 \(\bar{\mu}\)则是新一轮的
+ruuning mean，也就是当前步骤里最终使用的mean。同理，对于方差，我们也有：
+\begin{equation*}
+\bar{\sigma^2}\gets p\bar{\sigma^2}+(1-p)(\sigma^2)^t
+\end{equation*}
+
+采用这种方法的好处是：
+\begin{itemize}
+\item 节省了存储空间，不需要保存所有的均值和方差结果，只需要保存running mean和running variance即可
+\item 方便在训练模型的阶段追踪模型的表现。一般来讲，在模型训练的中途，我们会塞入validation dataset，对模型
+训练的效果进行追踪。采用移动平均法，不需要等模型训练过程结束再去做无偏估计，我们直接用running mean和
+running variance就可以在validation上评估模型。
+\end{itemize}
+
+
+
+以解决ICS为目的而提出的BN，在各个比较实验中都取得了更优的结果。但是来自MIT的Santurkar et al. 2019却指出：
+
+\begin{itemize}
+\item 就算发生了ICS问题，模型的表现也没有更差
+\item BN对解决ICS问题的能力是有限的
+\item BN奏效的根本原因在于它让optimization landscape更平滑
+\end{itemize}
+\end{enumerate}
+\subsubsection{Layer Normalization}
+\label{sec:orgb4e8e0f}
+BN提出后，被广泛作用在CNN任务上来处理图像，并取得了很好的效果。针对文本任务，Ba et al. 2016 提出在RNN
+上使用Layer Normalization（以下简称LN）的方法，用于解决BN无法很好地处理文本数据长度不一的问题。例如采
+用RNN模型+BN，我们需要对不同数据的同一个位置的token向量计算\(\mu,\sigma^2\)，在句子长短不一的情况下，容易出现：
+
+\begin{itemize}
+\item 测试集中出现比训练集更长的数据，由于BN在训练中累积\(\mu_{batch}\), \(\sigma^2_{batch}\)，在测试中使
+用累计的经验统计量的原因，导致测试集中多出来的数据没有相应的统计量以供使用。 （在实际应用中，通常 会
+对语言类的数据设置一个max\textsubscript{len}，多裁少pad，这时没有上面所说的这个问题。但这里我们讨论的是理论上的情况，
+即理论 上，诸如Transformer这样的模型，是支持任意长度的输入数据的）
+\item 长短不一的情况下，文本中的某些位置没有足够的batch\textsubscript{size的数据}，使得计算出来的\(\mu,\sigma^2\)产生偏差。
+例如Shen et al. (2020)就指出，在数据集Cifar-10（模型RestNet20)和IWLST14（模型Transformer）的训练过程
+中，计算当前epoch所有batch的统计量\(\mu_B\), \(\sigma_B^2\)和当前累计（running）统计量
+\(\mu,\sigma^2\)的平均Euclidean distance，可以发现文本数据较图像数据的分布差异更大：
+\end{itemize}
+
+
+整体做法类似于BN，不同的是LN不是在特征间进行标准化操作（横向操作），而是在整条数据间进行标准化操作（纵
+向操作）。 
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/388.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+在图像问题中，LN是指对一整张图片进行标准化处理，即在一张图片所有channel的pixel范围内计算均值和方差。而
+在NLP的问题中，LN是指在一个句子的一个token的范围内进行标准化。 
+\begin{enumerate}
+\item 
+\label{sec:orgd968c34}
+\end{enumerate}
+\subsubsection{Transformer LN改进：Pre-LN}
+\label{sec:org47efec2}
+原始transformer中，采用的是Post-LN，即LN在residule block（图中addtion）之后。Xiong et al. (2020)中提出
+了一种更优Pre-LN的架构，即LN在residule block之前，它能和Post-LN达到相同甚至更好的训练结果，同时规避了
+在训练Post-LN中产生的种种问题。两种架构的具体形式可以见下图。 
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/389.png}
+\captionof{figure}{\label{}}
+\end{center}
+\subsection{ResNet}
+\label{sec:org251d388}
+\subsubsection{Background}
+\label{sec:orga0e4c2b}
+\textbf{梯度消失/爆炸} ：
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/390.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+\begin{align*}
+&Z^{[L]}=W^{[L]}*A^{[L-1]}+b^{[L]}(\text{linear transformation layer})\\
+&A^{[L]}=g^{[L]}(Z^{[L]})(\text{non-linear transformation/activation layer})
+\end{align*}        
+
+现在计算第一层\(W^{[1]}\)的梯度，有
+\begin{align*}
+\frac{\partial LOSS}{\partial W}&=\frac{\partial LOSS}{\partial A^{[3]}}
+\frac{\partial A^{[3]}}{\partial Z^{[3]}}\frac{\partial Z^{[3]}}{\partial A^{[2]}}
+\frac{\partial A^{[2]}}{\partial Z^{[2]}}\frac{\partial Z^{[2]}}{\partial A^{[1]}}
+\frac{\partial A^{[1]}}{\partial Z^{[1]}}\frac{\partial Z^{[1]}}{\partial W^{[1]}}\\
+&=\frac{\partial LOSS}{\partial A^{[3]}}g^{[3]\prime}W^{[3]}g^{[2]\prime}W^{[2]}g^{[1]\prime}
+\frac{\partial Z^{[1]}}{\partial W^{[1]}}
+\end{align*}
+\end{document}
