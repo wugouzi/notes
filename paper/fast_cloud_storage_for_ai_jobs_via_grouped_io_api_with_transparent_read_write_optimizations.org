@@ -1,4 +1,4 @@
-#+title: Fast Cloud Storage For Ai Jobs Via Grouped Io Api With Transparent Read Write Optimizations
+#+title: Fast Cloud Storage For AI Jobs via Grouped IO API with Transparent Read Write Optimizations
 
 #+AUTHOR: 
 #+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
@@ -6,7 +6,70 @@
 #+LATEX_HEADER: \graphicspath{{../../paper/}}
 #+OPTIONS: toc:nil
 #+STARTUP: shrink
+* Introduction
+        At H UAWEI cloud, we observed that AI jobs now consume more than 10 % of cloud storage bandwidth in a
+        local datacenter. For training, the most bandwidth-intensive storage I/Os result from writing
+        checkpoints periodically for fault tolerance and debugging. In inference, bandwidth usage mainly stems
+        from reading checkpoints for autoscaling and accessing KVCache—the intermediate results of LLM
+        inference—to accelerate inference performance.
 
+        A key characteristic of storage I/O in these AI jobs is the high demand for storage bandwidth.
+        Operations such as checkpointing and KVCache access involve files of at least tens of megabytes.
+        Consequently, limited storage bandwidth significantly degrades end-to-end job performance. However,
+        meeting this bandwidth demand introduces two challenges for cloud storage systems.
+
+        First, the disaggregated storage architecture  employed by most modern cloud vendors makes it
+        challenging to improve storage bandwidth in a cost-efficient way. This architecture, designed for
+        efficiency, decouples storage from compute servers that host AI accelerators (XPUs, such as GPUs and
+        NPUs) to a dedicated fleet of storage servers that compute servers access over a network fabric.
+        Therefore, improving storage bandwidth requires deploying sufficient storage servers for a specific
+        job, which increases monetary costs proportionally. Moreover, the network connecting compute and
+        storage servers has a hard bandwidth limit that is challenging to overcome, because the cluster’s
+        fabric prioritizes the networking between XPUs (compute fabric) rather than between compute and
+        storage servers (storage fabric).
+
+        Second, optimizing storage time requires effectively identifying duplicate chunks in the read/write
+        data as well as careful planning of I/O between compute and storage fabrics. Currently, this demands
+        extensive application-level optimizations. For example, Megatron, the leading training framework,
+        dedicates a quarter of its codebase to optimizing checkpoint read/write operations. However, its
+        performance remains suboptimal because it fails to account for the complex disaggregated nature of
+        cloud storage. Similarly, recent training frameworks for emerging workloads like multimodal train- ing
+        (e.g., OpenSora) still lack adequate checkpointing optimizations. Since cloud providers may serve
+        diverse AI jobs, we seek to transparently optimize I/O operations without requiring significant
+        application modifications.
+
+        We present AIT URBO—a cloud storage system that efficiently supports the large bandwidth requirements
+        for AI jobs without extensive application-level optimizations.
+
+        AITURBO builds upon two insights.
+
+        First, host DRAM and compute fabric are underutilized in AI jobs;
+        therefore, cloud storage can holistically exploit them as a fast staging buffer to mediate data
+        transfer between XPUs and storage servers when storage bandwidth is insufficient.
+        For instance, for recommendation model serving in our production cluster, the DRAM is fully utilized.
+        However, if we use the same hardware for training, the DRAM is underutilized.
+        A challenge to this staging buffer design is that AI jobs stall until writes complete due to the
+        compute-I/O dependency. Thus, the computation is still bottlenecked by slow storage.
+        This issue can be addressed by caching writes at the buffer—trading write durability for performance.
+        This trade-off is reasonable for write operations in common AI jobs like checkpointing: any lost data
+        can be tolerated either through replication or by the application itself, e.g., using
+the last checkpoint since checkpoints are written periodically.
+Second, the storage system can automatically derive opti-
+mizations such as deduplication [49] and load-balanced read-
+write planning through a simple yet powerful API: grouped
+read/write API. Inspired by group communicators commonly
+used in AI jobs [34], each client not only specifies the file to
+read or write, but also indicates the group of clients that will
+participate in the operation. Since the API captures more I/O
+patterns compared to existing singleton file reads and writes,
+and the API implementation provider—the cloud storage—
+understands its storage architecture better than the application
+developers, we can transparently derive an optimized I/O plan
+that outperforms existing application-level I/O optimizations.
+Moreover, we found that such APIs are easy to integrate with
+existing frameworks (see §5.4), e.g., with only hundreds of
+lines of code changes, which is orders of magnitude less than
+existing (less performant) application-level optimizations.
 * Problems
 
 

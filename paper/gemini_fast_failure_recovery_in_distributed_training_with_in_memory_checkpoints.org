@@ -1,0 +1,289 @@
+#+title: Gemini: Fast Failure Recovery in Distributed Training with In-Memory Checkpoints
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/gemini_fast_failure_recovery.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        Existing solutions cannot handle training failures efficiently. Existing solutions rely on naïve
+        checkpointing, which periodically saves the model states to a remote persistent storage system, for
+        failure recovery, i.e., the process to fetch the latest checkpoint and resume training to the states
+        right before a failure.
+        Intuitively, a higher network bandwidth leads to shorter checkpoint retrieval times, and a higher
+        checkpoint frequency reduces training progress loss in case of failures. However, existing solutions
+        are restricted by the low bandwidth to remote persistent storage, resulting in significant failure
+        recovery costs, i.e., taking up to tens of minutes to retrieve the checkpoint captured a few hours ago
+        to resume the training.
+
+        Two questions:
+        1. how to maximize the probability of a successful failure recovery from CPU memory?
+
+           Gemini stores redundant checkpoints and proposes a placement strategy that maximizes the probability.
+        2. how to minimize the interference of checkpoint traffic with model training?
+
+           Checkpointing model states to remote CPU memory shares the network resource with the regular
+           training. Gemini designs a deliberate communication scheduling algorithm for interleaving these two
+           types of traffic to minimize the interference on training throughput.
+* Motivation
+** Failure Recovery in Model Training
+        * Frequent failures in model training.
+        * Wasted time for failure recovery.
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/400.png]]
+
+        We define *wasted time* as the sum of the time spent on the lost training process before a failure and
+        the time for retrieving the latest checkpoint during a failure recovery. It's determined by three
+        factors:
+        * *checkpoint time* (\(t_{ckpt}\)), which is the time to finish a checkpoint of model states
+        * *checkpoint frequency* (\(f\)), which determines how frequently the training system checkpoints the
+          model states to the storage system
+        * *retrieval time* (\(t_{rtvl}\)), which is the time to retrieve the latest complete checkpoint
+
+        In this paper, we use the
+        average wasted time as the main metric to evaluate the performance of a checkpointing solution,
+        because a failure may occur at any time and the wasted time varies.
+        \begin{equation*}
+        T_{wasted}=t_{ckpt}+\frac{1}{2f}+t_{rtvl}
+        \end{equation*}
+        In addition, we have
+        \begin{equation*}
+        1/f\ge\max(t_{ckpt},T_{iter})
+        \end{equation*}
+        where \(T_{iter}\) is the iteration time.
+** Limitations of Existing Solutions
+        Existing solutions fail to achieve high checkpoint frequency for failure recovery due to the remote
+        persistent storage system usage.
+** The Opportunity and Challenges
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/401.png]]
+
+        *Checkpointing to CPU memory*: We observe that the CPU memory in GPU machines is sufficient to store a
+        few checkpoints.
+
+        One concern is that the CPU memory size is insufficient to store the history of checkpoints for
+        purposes other than failure recovery, such as transfer learning and model debugging. To address this
+        concern, Gemini decouples checkpoints for different purposes. It only stores the checkpoints for
+        failure recovery in CPU memory, while storing checkpoints for other purposes in remote persistent
+        storage.
+
+        *Challenges*:
+        * How to maximize the probability of failure recovery from checkpoints stored in CPU memory?
+        * How to minimize the interference of checkpoint traffic with model training?
+* System Architecture of Gemini
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/402.png]]
+** Checkpoint Creation Module
+        Gemini uses a decoupled and hierarchical storage design for checkpointing. In Gemini, the checkpoint
+        creation module stores the checkpoints of each GPU machine to different destinations, including local
+        CPU memory, remote CPU memory on other machines, and remote persistent storage. The checkpoint
+        creation module stores the checkpoints for failure recovery in local and remote CPU memory. These
+        checkpoints are managed by Gemini’s checkpoint creation module and are transparent to users.
+
+        On the other hand, checkpoints for other purposes, such as transfer learning and model debugging, are
+        stored in remote persistent storage and managed by users.
+
+        During failure recovery, checkpoints are first retrieved from local CPU memory and then remote CPU
+        memory if unavailable in local CPU memory. If both local and remote CPU memory checkpoints are
+        unavailable, Gemini retrieves checkpoints from remote persistent storage.
+        
+        As illustrated in Figure [[ref:f2]], each training machine has a Gemini worker agent for checkpointing to
+        CPU memory. Where to place checkpoints for failure recovery on CPU memory determines the failure
+        recovery capacity. To maximize the probability of failure recovery from checkpoints in CPU memory, we
+        propose a provably near-optimal checkpoint placement strategy for checkpointing to CPU memory. Gemini
+        determines the checkpoint placement strategy when training is initialized. During runtime, the Gemini
+        worker agent on each machine communicates checkpoints from GPU memory to CPU memory based on the
+        placement strategy and checkpoint frequency. To minimize or even eliminate the interference of
+        checkpoint traffic with model training, we propose a traffic scheduling algorithm that pipelines
+        checkpoint traffic and interleaves it with training traffic.
+** Failure Recovery Module
+        Gemini’s failure recovery module has four components: a group of Gemini worker agents, a Gemini root
+        agent, a distributed key-value store, and a cloud operator.
+        * Worker agents monitor their own machine’s health status and update it in the distributed key-value
+          store.
+        * The unique root agent runs on a regular training machine with a worker agent.
+        * The training machine with the root agent running is called the root machine. The root agent
+          periodically checks the health status of each training machine from the distributed key-value store.
+        * The cloud operator manages the training computation resources and replaces failed machines with
+          healthy ones as needed.
+          
+        If the root agent detects a training machine failure, the root agent takes corresponding actions based
+        on failure types. For example, when a training machine replacement is needed, the root agent interacts with
+        the cloud operator to complete the machine replacement and guides the replaced machine where to
+        retrieve its checkpoints. Worker agents also periodically check the root machine’s health status in
+        the distributed key-value store. A root machine failure is detected when the root machine’s health
+        status has not been updated for a predefined time threshold. In the case of a root machine failure,
+        one alive worker machine is promoted as the root machine, and one new worker machine is initialized to
+        replace the failed one. Gemini relies on the leader election method in the distributed key-value store
+        for the root machine selection. 
+* Checkpoint Placement to CPU Memory
+        To reduce the wasted time, Gemini writes checkpoints to CPU memory to achieve high frequencies.
+        However, the checkpoints stored in CPU memory may become invalid for recovery when some GPU machines
+        are disconnected from training. In such cases, Gemini has to fetch from remote persistent storage to
+        perform recovery, leading to significant wasted time. Adding more checkpoint replicas reduces the
+        possibility of unavailable checkpoints in CPU memory, but it also increases CPU memory usage and
+        network bandwidth competition with training traffic.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/403.png]]
+
+
+        In addition to the number of replicas, our research has revealed that the checkpoint placement
+        strategy, i.e., where to store the checkpoint replicas, also affects the possibility, as shown in
+        Figure [[ref:f3]]. Hence, we aim to identify the best placement strategy that maximizes the probability
+        of failure recovery from CPU memory, given a specific number of replicas. This problem can be
+        formulated as follows:
+        #+ATTR_LATEX: :options []
+        #+BEGIN_problem
+        Given \(N\) machines and \(m\) checkpoint replicas, what is the optimal placement strategy to
+        distribute the \(m\) replicas among the \(N\) machines to maximize the probability of failure recovery
+        from CPU memory?
+        #+END_problem
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/404.png]]
+
+        During training, each machine broadcasts its checkpoints to the \(m-1\) machines in the same group. It
+        also writes one checkpoint to its own CPU memory as a local replica, which is one tier in Gemini’s
+        hierarchical checkpoint solution. Otherwise, when \(N\) is not divisible by \(m\), we split the \(N\)
+        machines into \(\floor{N/m}\) groups and apply the group placement strategy to the first \(\floor{N/m}-1\) groups.
+        For the last \(N-m(\floor{N/m}-1)\) machines, we apply a ring placement strategy, in which each
+        machine writes the checkpoints from GPU memory to its local CPU memory and also sends checkpoints to
+        the consecutive \(m-1\) machines in the ring from its left hand. Regardless of the placement strategy
+        employed, Gemini copies the checkpoint from GPU memory to the local CPU memory and treats it as a
+        local replica.
+
+        Two advantages:
+        1. mitigate the network bandwidth contention with training traffic
+        2. for certain failure types, e.g., software failures, Gemini can directly resume training from the
+           local replica to accelerate checkpoint retrieval.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        1. When \(N\) is divisible by \(m\), the group placement strategy is optimal
+        2. When \(N\) is not divisible by \(m\), the mixed placement strategy is optimal
+        #+END_theorem
+
+        #+BEGIN_proof
+        Observations:
+        1. The optimal strategy requires \(m\) machines to store the \(m\) checkpoint copies of each machine
+           to maximize the recovery probability. If there are only \(m'\) machines to store the \(m\) copies,
+           where \(m'<m\), it is equivalent to the strategy with only \(m'\) copies for recovering failures
+           from CPU memory.
+        2. The optimal strategy requires Machine \(i\) to store one copy of its own machine checkpoint to
+           minimize the checkpointing time. If so, each machine only needs to send out \(m-1\) checkpoint
+           copies. Otherwise, it has to send out \(m\) copies which leads to a higher checkpointing time.
+
+        The checkpoint communication time with the Group strategy is minimized because each machine sends out
+        and receives \(m-1\) checkpoint copies, no matter whether \(N\) is divisible by \(m\) or not. We next
+        analyze the probability that Gemini can recover failures from CPU memory.
+
+        Assume there are \(k\) machines disconnected at the same time. Gemini can certainly recover failures
+        from CPU memory when \(k<m\) because there are \(m\) copies in \(m\) instances. We mainly discuss the
+        case that \(k=m\) here because the failure rate with \(k+1\) machines disconnected simultaneously is
+        much lower than that with \(k\) machines disconnected simultaneously in practice.
+
+        For Machine \(i\), we denote the set of machines that store its machine checkpoints as \(s_i\) and it
+        has \(\binom{N}{m}\) possible combinations. Then a strategy can be expressed as \(\cals=\{s_1,\dots,s_N\}\).
+        Because it is possible that \(s_i=s_j\) when \(i\neq j\), we define \(\cals'\equal unique(\cals)\)
+        and \(n=\abs{\cals'}\). The union of these \(n\) sets in \(\cals'\) covers all the \(N\) machines
+        because each machine stores a local checkpoint.
+        
+        We denote the set of the \(m\) disconnected machines as \(s_d\). Gemini cannot recover training from
+        CPU memory when \(s_d\) is an element in \(\cals'\). The probability that \(s_d\) is an element in \(\cals'\) is \(n/\binom{N}{m}\), which linearly increases with \(n\).
+
+        *Probability upper bound*. The upper bound of the probability is \(1-\ceil{\frac{N}{m}}/\binom{N}{m}\)
+        because \(n\ge N/m\). If \(\ceil{n<N/m}\), the size of the union of the \(n\) sets is at most
+        \(nm<N\). It contradicts the requirement that they must cover the \(N\) machines.
+        #+END_proof
+* Minimizing Traning Inference
+        we will explain how Gemini mitigates the interference caused by frequent checkpointing
+** Traffic Interleaving
+        Modern distributed training, such as large model training, relies on collective communication
+        operations for synchronization. For example, in ZeRO, each GPU needs to fetch the parameters of each
+        layer from other GPUs before its computation in both forward and backward passes. These communication
+        operations can block computation when the parameters of a layer are not ready but the computation of
+        the previous layer has been completed. We denote the communication traffic for model computation,
+        including gradient synchronization and parameter fetching, as *training traffic*.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/405.png]]
+
+        An example of training traffic during model computation is shown in Figure [[ref:f4]]a. When checkpointing
+        to remote CPU memory, its traffic, denoted as checkpoint traffic, shares the same network as training
+        traffic, resulting in potential network resource contention that may delay training traffic and hinder
+        computations. When performing checkpointing at the start of subsequent iterations, it blocks the
+        training process and incurs non-negligible overheads for model training, as illustrated in Figure
+        [[ref:f4]]b. This significantly negates the benefits gained from the reduced wasted time by checkpointing
+        to CPU memory. Hence, Gemini must carefully orchestrate the checkpoint traffic to minimize its
+        interference with training throughput. Fortunately, we observe that the network has idle timespans
+        overlapped with computation and this naturally occurs in large model training. This observation
+        provides a great opportunity for Gemini to insert checkpoint traffic in these idle timespans and
+        overlap checkpoint communications with computation
+** Difficulties and Approaches
+        Gemini needs to write checkpoints from local GPU memory to CPU memory on remote machines. It first
+        uses GPU-to-GPU communications to send checkpoints between machines for interleaving checkpoint
+        traffic with training traffic, which also uses direct GPU-to-GPU communications among machines in
+        large model training. After that, it transmits the checkpoints from GPU memory on remote machines to
+        their CPU memory with GPU-to-CPU copy. This design allows scheduling training traffic and checkpoint
+        traffic in the application layer without relying on the network layer.
+
+        Gemini orchestrates both types
+        of traffic by leveraging existing inter-GPU communication libraries, such as NCCL, in a unified
+        manner. However, this design raises two practical difficulties.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/406.png]]
+
+        *Difficulty: Extra GPU memory consumption*. [[ref:f5]]b
+
+        *Approach: Partitioning checkpoint*. Gemini first reserves a small GPU memory buffer for checkpoint
+        communications, then partitions a whole checkpoint into small chunks and transfers the small chunks
+        separately.
+
+        *Difficulty: Local GPU-to-CPU copy overhead.*
+
+        *Approach: Pipelining checkpoint transmission.*
+** Checkpoint Partition Algorithm
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/407.png]]
+** Online Profiling
+        Gemini adopts online profiling for the first several iterations of training, e.g., 20 iterations in
+        our implementation, without checkpointing in order to capture the network idle timespans during model
+        training.
+        #+LATEX: \wu{
+        This assumption is skeptical in real world
+        #+LATEX: }
+* Resuming Traning from Failures
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/408.png]]
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

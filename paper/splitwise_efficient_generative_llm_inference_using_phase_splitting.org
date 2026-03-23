@@ -1,0 +1,81 @@
+#+title: Splitwise: Efficient Generative LLM Inference Using Phase Splitting
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/splitwise_efficient_generative_llm_inference_using_phase_splitting.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Generative LLM inference for a single request consists of several forward passes through the model,
+        since the output tokens are generated one by one. This inherently has two contrasting phases of
+        computation.
+        1. the prompt computation phase, in which all the input prompt tokens run through the forward pass of
+           the model in parallel to generate the first output token. This phase tends to be computationally
+           intensive and requires the high FLOPs (floating point operations per second) of the latest GPUs
+           today.
+        2. the token generation phase, in which subsequent output tokens are generated sequentially based on
+           the forward pass of the last token and all the cached context from previous tokens in the sequence.
+           Given the lack of compute parallelism, this phase tends to be more memory bandwidth and capacity
+           bound, despite state-of-the-art batching. 
+
+
+        Running both phases on the same machine often leads to inconsistent end-to-end latencies due to the
+        arbitrary batching of prompt and token phases. Due to these challenges, services need to
+        over-provision expensive GPUs to meet tight inference service level objectives (SLOs) for interactive
+        applications. At the same time, cloud service providers (CSPs) are having to build a lot of new
+        datacenters to meet the GPU demand, and are running into a power wall
+
+        Given the distinct properties of prompt computation and token generation phases, we propose splitting
+        the inference request and running them on separate machines. Doing so allows us to separately manage
+        hardware resources for each phase, thereby increasing the GPU utilization and the overall efficiency
+        of the system. It also enables using different, better-suited hardware for each phase. To realize such
+        a setup, the cached context from the prompt computation needs to be communicated over from the prompt
+        processing machine to the token generation machine at low latency. We implement these transfers in an
+        optimized manner over the back-end Infiniband interconnects avaialble in datacenters today, allowing
+        us to increase efficiency without any perceived performance loss.
+
+        We show that Splitwise-based LLM inference clusters can achieve 1.4× higher throughput at 20% lower
+        cost than existing clusters. Alternatively, they can deliver 2.35× more throughput with the same cost
+        and power budgets. 
+
+* Background
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/409.png]]
+
+        Three main metrics for LLM inference: end-to-end (E2E) latency, time to first token (TTFT), and
+        throughput. We add another latency metric: time between tokens (TBT), to track the online streaming
+        throughput of the tokens as they are generated serially.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/410.png]]
+
+        Inference requests can be batched together for higher throughput.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/411.png]]
+
+        * request-level: high TTFT, high E2E
+        * continuous batching: scheduling decisions are made before each forward pass of the model, short TTFT, high tail TBT & E2E
+        * mixed, scheduling decisions are made at each forward pass, and the prompt and token phases can run together
+
+
+        Model parallelism can be used to divide a model onto multiple GPUs, and even multiple machines, for
+        higher efficiency and memory capacity. LLM inference typically uses pipeline and tensor parallelism.
+        * Pipeline parallelism (PP) divides the layers of the model among the GPUs, while keeping all the operators and tensors within a layer on the same GPU.
+        * Tensor parallelism (TP) divides the tensor across the GPUs, while replicating all the layers on each GPU
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

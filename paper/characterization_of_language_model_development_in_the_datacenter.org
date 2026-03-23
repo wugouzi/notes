@@ -1,0 +1,71 @@
+#+title: Characterization of Language Model Development in The Datacenter
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/characterization_of_language_model_development.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Developing LLMs is closely intertwined with the support of GPU clusters in various aspects. A thorough
+        analysis of cluster workloads is essential for comprehending challenges and uncovering opportunities
+        in designing systems tailored for LLMs. This is primarily due to the divergent characteristics and
+        requirements of LLMs:
+        1. *Paradigm Transition*: DL workloads generally follow a task-specific paradigm that trains the model
+           on domain-specific data to tackle a particular task (e.g., translation). In contrast, LLMs follow
+           an emerging paradigm that performs self-supervised training on broad data to generate a foundation
+           model and further adapts to a wide range of downstream tasks.
+        2. *Tailored Software Stack*: To accommodate the enormous model size of LLMs, a series of systems
+           implement advanced techniques to optimize the execution of LLMs.
+
+           For instance, Deepspeed [79], Megatron [68] and Alpa [113] accelerate the training via hybrid
+           parallelism or state-sharding optimizer. As for model serving, Orca [104] and vLLM [51] improve
+           throughput via iteration scheduling or memory management. 
+        3. *Unified Architecture*: The architectural homogeneity suggests a high level of uniformity in the LLM
+           development pipeline and similarity across different datacenters.
+
+        We present an in-depth study of our operational experiences in the datacenter Acme of Shanghai AI
+        Laboratory. It houses two distinct clusters, Seren and Kalos, dedicated to LLM development and
+        equipped with 4,704 A100 GPUs in total.
+
+        Findings:
+        * *Shorter Job Duration and Unfair Queuing Delay*
+        * *Imbalanced Resource Usage*: The imbalance is manifested in two aspects. Firstly, in terms of workload
+          distribution, pre-training jobs only account for 3.2% of the total job count but consume 94.0% of
+          the whole compute resource (i.e., GPU time) in Kalos.
+        * *Long GPU Idle Time in Evaluation Workload*
+        * *Frequent Job Failures*
+
+
+* Background
+
+** LLM Development Pipeline
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/398.png]]
+
+        Deployment: To meet the strict cost and latency constraints of LLM applications, several advanced
+        techniques have been developed to achieve efficient model serving, including quantization [30],
+        distillation [83], CUDA kernel optimization [29,43], model parallelism [57, 104] and memory management 
+
+** ACME overview
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/399.png]]
+
+        Seren and Kalos have 2,288 and 2,416 GPUs respectively. Each node is equipped with 8× NVIDIA A100-SXM
+        80GB GPUs and 2× Intel Xeon Platinum 8358P CPUs (128 threads in total). GPUs are interconnected to
+        each other by NVLink and NVSwitch [9], and inter-node communication is achieved via NVIDIA Mellanox
+        200Gbps HDR InfiniBand 
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
