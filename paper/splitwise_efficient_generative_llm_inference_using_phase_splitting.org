@@ -68,8 +68,211 @@
 
         Model parallelism can be used to divide a model onto multiple GPUs, and even multiple machines, for
         higher efficiency and memory capacity. LLM inference typically uses pipeline and tensor parallelism.
-        * Pipeline parallelism (PP) divides the layers of the model among the GPUs, while keeping all the operators and tensors within a layer on the same GPU.
-        * Tensor parallelism (TP) divides the tensor across the GPUs, while replicating all the layers on each GPU
+        * Pipeline parallelism (PP) divides the layers of the model among the GPUs, while keeping all the
+          operators and tensors within a layer on the same GPU. 
+        * Tensor parallelism (TP) divides the tensor across the GPUs, while replicating all the layers on each
+          GPU  
+* Characterization
+        We use production traces taken from two Azure LLM inference services on November 11 2023.
+
+        we run BLOOM-176B and Llama-70B on vLLM on a machine with 8 H100 GPUs.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/417.png]]
+
+        *insight 1*: Different inference services may have widely different prompt and token distributions.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/418.png]]
+
+        Figure [[ref:f4]] shows the distribution of the time spent by the machine running various number of active
+        tokens in a batch. Note that if a prompt of 100 tokens is running in its prompt phase, we count the
+        active tokens as 100. However, once the request is in the token phase, we count it as one active
+        token, since the tokens are generated one at a time.
+
+        Since the coding service has very few output tokens, it experiences even worse batching in the token
+        phase and runs with a single token for more than 20% of the time.
+
+        *insight 2*: Mixed continuous batching spends most of the time with very few active tokens batched.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/419.png]]
+
+        *Insight 3*: For most requests, the majority of the E2E time is spent in the token generation phase.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/420.png]]
+
+        *insight 4*: The prompt phase batch size should be limited to ensure good performance. In contrast,
+         batching the token generation phase yields high throughput without any downside.
+
+         #+ATTR_LATEX: :width .6\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/421.png]]
+         *insight 5*: Batching during the prompt phase is compute-bound, whereas the token phase is limited by
+         memory capacity.
+
+         #+ATTR_LATEX: :width .6\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/422.png]]
+         *insight 6*: While the prompt phase utilizes the power budget of the GPU efficiently, the token phase
+         does not.
+
+         #+ATTR_LATEX: :width .6\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/423.png]]
+         *insight 7*: Token generation can be run on less compute-capable hardware for better Perf/W and Perf/$
+         efficiencies.
+* Splitwise
+        Based on our characterization insights, we propose Splitwise
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/424.png]]
+        All machines are preloaded with the model of choice. When a new inference request arrives, the
+        scheduler allocates it to a pair of machines (i.e., prompt and token). The prompt machines are
+        responsible for generating the first token for an input query, by processing all the input prompt
+        tokens in the prompt phase and generating the KV-cache. The prompt machine also sends over the
+        KV-cache to the token machine, which continues the token generation until the response is complete. We
+        use continuous batching at the token machines to maximize their utilization. Machines in the mixed
+        pool use mixed continuous batching.
+
+        At a lower request rate, we target better latency in Splitwise, while, at a higher request rate, we
+        target avoiding any performance or throughput reduction due to the fragmentation between prompt and
+        token machine pools.
+
+        Splitwise uses a hierarchical two-level scheduling. The CLS is responsible for machine pool management
+        and for routing incoming inference requests. The MLS maintains the pending queue and manages batching
+        of requests at each machine
+** CLS
+        *Machine pool management*. The CLS maintains the prompt, token, and mixed machine pools. Splitwise
+        initially assigns machines to the prompt or token pool depending on the expected request load and
+        input/output token distributions. Machines from the prompt or token pools may be dynamically moved
+        into and out of the mixed pool to reduce fragmentation (\wu{idle machine}) and meet SLOs at higher
+        loads..
+
+        *Request routing*. CLS uses Join the Shortest Queue (JSQ) scheduling to assign a prompt and a token
+        machine to each request. Queue lengths are defined by the number of pending tokens. Each machine
+        regularly communicates to the CLS changes in its memory capacity or pending queue. We simultaneously
+        assign both the prompt and token machine when scheduling requests, since we can then overlap KV-cache
+        transfers with prompt computation to reduce transfer overheads
+
+        When routing requests, if the pending queue is bigger than a certain threshold, the CLS looks for
+        target machines in the mixed pool. If the mixed pool is also full, it proceeds to look in the opposite
+        pool (i.e., a token machine to run prompts and vice versa) and moves the machine into the mixed pool.
+        Once the queue of mixed requests is drained, the CLS transitions the machine back to its original pool.
+** MLS
+        The MLS runs on each machine and is responsible for tracking the GPU memory utilization, maintaining
+        the queue, deciding the batch for each iteration, and reporting the relevant status to the CLS.
+
+        *Prompt machines*. The MLS simply uses first-come-first-serve (FCFS) to schedule prompts.
+        The results in Figure [[ref:f6]] show that after 2048 prompt tokens, the throughput degrades. For this
+        reason, the MLS restricts the batching of multiple prompts together to 2048 tokens in total.
+
+        *Token machines*. The MLS uses FCFS to schedule tokens and batches as much as possible. Figure [[ref:f6]]
+        shows that the token generation throughput keeps scaling up with the batch size until the machine
+        runs out of memory. For this reason, the MLS tracks the memory and starts queueing tokens once the
+        machine is close to running out of memory.
+
+         *Mixed machines*. To meet the TTFT SLO, the MLS must prioritize running prompts and schedule any new
+          prompts in the pending queue immediately. If the machine is running token phases and has no
+          additional capacity to run the prompt phase, the MLS will /preempt/ tokens. To avoid starvation of the
+          token phase due to preemption, we increase the priority of the token with age and limit the number
+          of preemptions that each request can have
+** KV-cache transfer
+        KV-cache is generated during the prompt phase of the request, and it continuously grows during the
+        token generation phase. In Splitwise, we need to transfer the KV-cache from the prompt machine to the
+        token machine to complete the inference.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/425.png]]
+
+        As each layer in the LLM gets calculated in the prompt machine, the KV cache corresponding to that
+        layer is also generated. At the end of each layer, we trigger an asynchronous transfer of the KV-cache
+        for that layer while the prompt computation continues to the next layer.
+
+        Layer-wise KV-cache transfer happens in parallel with the prompt computation for the next layer. This
+        requires fine-grained synchronization per layer for correctness. Thus, it is possible to incur
+        performance interference and increase the TTFT, especially for smaller prompts. However, for small
+        prompts the total KV-cache size is small and does not need the layer-wise transfer to hide the
+        latency. Since the number of tokens in a batch is already known at the start of computation, Splitwise
+        picks the best technique for KV-cache transfer. It uses serialized KV-cache transfer for smaller
+        prompts and layer-wise transfer and for larger prompts.
+** Provisioning with Splitwise
+        *Types of machines*. Splitwise-AA, Splitwise-HH, Splitwise-HA, Splitwise-HHcap
+
+        A - A100, H - H100, HCap - power-capped H100, AH - prompt A token H
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/426.png]]
+
+        \(\star\): iso-throughput cost-optimized
+
+        optimization goals: throughput, cost, and power.
+* Methodology
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/427.png]]
+* Evaluation
+** Experimental results
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/428.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/429.png]]
+
+** Iso-power throughput-optimized clusters
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f16
+        #+CAPTION: 
+        [[../images/papers/430.png]]
+
+        For the baseline, we use the power for 40 DGX-H100 machines as our target peak power. For the A100
+        baseline, we can fit 70 DGX-A100 machines under the same power budget. We denote these two designs as
+        40P/T and 70P/T respectively, since they both use mixed batching in all machines.
+
+        For the coding trace (Figure [[ref:f16]]a), Splitwise-HH, Splitwise-HHcap, and Splitwise-AA all perform
+        better than Baseline-H100. As the load increases, Baseline-H100 suffers from high TBT due to mixed
+        batching with large prompt sizes.
+        #+LATEX: \wu{
+        result of long prompt.
+        #+LATEX: }
+        Although Splitwise-AA can support higher throughput, its TTFT is
+        consistently higher than most designs. Splitwise-HA clearly bridges the gap by providing low TTFT and
+        E2E at high throughput. The mixed machine pool in Splitwise becomes useful at higher loads to use all
+        the available hardware without fragmentation. 
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/431.png]]
+        At low load, all 40 Baseline-H100 machines spend 70% of the time running ≤15 tokens, and the rest
+        running mixed batches with large prompts, which affects TBT and E2E. The 35 Splitwise-HH prompt
+        machines are mostly idle, and when active, run much larger batches of tokens. The 15 Splitwise-HH
+        token machines also do a better job at batching. Overall, Splitwise machines have better batching and
+        latency at 70 RPS. At high load, since the mixed pool is utilized more, the batch sizes start looking
+        similar across prompt and token machines. 
 * Problems
 
 

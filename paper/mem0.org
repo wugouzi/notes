@@ -1,0 +1,140 @@
+#+title: Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/mem0.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+* Proposed Methods
+
+** \texorpdfstring{\(\texttt{Mem0}\)}{Mem0}
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/437.png]]
+
+        Two phase: extarction and update
+
+        The *extraction phase* initiates upon ingestion of a new message pair \((m_{t-1},m_t)\), where \(m_t\)
+        represents the current message and \(m_{t-1}\) the preceding one. This pair typically consists of a user
+        message and an assistant response, capturing a complete interaction unit. To establish appropriate
+        context for memory extraction, the system employs two complementary sources:
+        1. a conversation summary \(\cals\) retrieved from the database that encapsulates the semantic content
+           of the entire conversation history, 
+        2. a sequence of recent messages \(\{m_{t-m},m_{t-m+1},\dots,m_{t-2}\}\) from the conversation
+           history, where \(m\) is a hyperparameter controlling the recency window.
+
+        To support context-aware memory extraction, we implement an asynchronous summary generation module
+        that periodically refreshes the conversation summary. This component operates independently of the
+        main processing pipeline, ensuring that memory extraction consistently benefits from up-to-date
+        contextual information without introducing processing delays. While \(\cals\) provides global thematic
+        understanding across the entire conversation, the recent message sequence offers granular temporal
+        context that may contain relevant details not consolidated in the summary.
+
+        This dual contextual information, combined with the new message pair, forms a comprehensive prompt
+        \(P=(S,\{m_{t-m},\dots,m_{t-2},m_{t-1},m_t\})\) for an extraction function \(\phi\) implemented via an
+        LLM. The function \(\phi(P)\) then extracts a set of salient memories
+        \(\Omega=\{\omega_1,\dots,\omega_n\}\) specifically from the new exchange while maintaining awareness
+        of the conversation’s broader context, resulting in candidate facts for potential inclusion in the
+        knowledge base. 
+
+        The *update phase* evaluates each candidate fact against existing memories to maintain consistency and
+        avoid redundancy. This phase determines the appropriate memory management operation for each extracted
+        fact \(\omega_i\in\Omega\).
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/438.png]]
+
+        For each fact, the system first retrieves the top \(s\) semantically similar memories using _vector_
+        _embeddings_ from the database. These retrieved memories, along with the candidate fact, are then
+        presented to the LLM through a function-calling interface we refer to as a ‘tool call.’ The LLM itself
+        determines which of four distinct operations to execute: ADD/UPDATE/DELETE/NOOP.
+
+        Rather than using a separate classifier, we leverage the LLM’s reasoning capabilities to directly
+        select the appropriate operation based on the semantic relationship between the candidate fact and
+        existing memories. Following this determination, the system executes the provided operations, thereby
+        maintaining knowledge base coherence and temporal consistency. 
+
+        In our experimental evaluation, we configured the system with \(m=10\) previous messages for
+        contextual reference and \(s=10\) similar memories for comparative analysis. All language model
+        operations utilized GPT-4o-mini as the inference engine. The vector database employs dense embeddings
+        to facilitate efficient similarity search during the update phase.
+
+** \texorpdfstring{\(\texttt{Mem0}^g\)}{Mem0g}
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/439.png]]
+
+        Graph-based memory approach that effectively captures, stores, and retrieves contextual information
+        from natural language interactions.
+
+        In this framework, memories are represented as a directed labeled graph \(G=(V,E,L)\), where:
+        * Nodes \(V\) represent entities (e.g., Alice, San_Francisco)
+        * Edges \(E\) represent relationships between entities (e.g., lives_in)
+        * Labels \(L\) assign semantic types to nodes (e.g., Alice - Person, San_Francisco - City)
+
+        Each entity node \(v\in V\) contains three components:
+        1. an entity type classification that categorizes the entity (e.g., Person, Location, Event)
+        2. an embedding vector \(e_v\) that captures the entity’s semantic meaning
+        3. metadata including a creation timestamp \(t_v\).
+        Relationships in our system are structured as triplets in the form \(v_s,r,v_d\), where \(v_s\) and
+        \(v_d\) are source and destination entity nodes, respectively, and \(r\) is the labeled edge
+        connecting them.
+        
+        The extraction process employs a two-stage pipeline leveraging LLMs to transform unstructured text
+        into structured graph representations.
+
+        First, an *entity extractor* module processes the input text to identify a set of entities along with
+        their corresponding types. In our framework, entities represent the key information elements in
+        conversations—including people, locations, objects, concepts, events, and attributes that merit
+        representation in the memory graph. The entity extractor identifies these diverse information units by
+        analyzing the semantic importance, uniqueness, and persistence of elements in the conversation. For
+        instance, in a conversation about travel plans, entities might include destinations (cities,
+        countries), transportation modes, dates, activities, and participant preferences—essentially any
+        discrete information that could be relevant for future reference or reasoning.
+
+        Next, a *relationship generator* component derives meaningful connections between these entities,
+        establishing a set of relationship triplets that capture the semantic structure of the information.
+        This LLM- based module analyzes the extracted entities and their context within the conversation to
+        identify semantically significant connections. It works by examining linguistic patterns, contextual
+        cues, and domain knowledge to determine how entities relate to one another.
+
+        The module employs prompt engineering techniques that guide the LLM to reason about
+        both explicit statements and implicit information in the dialogue, resulting in relationship triplets
+        that form the edges in our memory graph and enable complex reasoning across interconnected
+        information.
+
+        When integrating new information, \(\texttt{Mem0}^g\) employs a sophisticated storage and update
+        strategy. For each new relationship triple, we compute embeddings for both source and destination
+        entities, then search for existing nodes with semantic similarity above a defined threshold \(t\).
+        Based on node existence, the system may create both nodes, create only one node, or use existing nodes
+        before establishing the relationship with appropriate metadata.
+
+        To maintain a consistent knowledge graph, we implement a conflict detection mechanism that identifies
+        potentially conflicting existing relationships when new information arrives. An LLM-based update
+        resolver determines if certain relationships should be obsolete, marking them as invalid rather than
+        physically removing them to enable temporal reasoning. 
+
+        The memory retrieval functionality in \(\texttt{Mem0}^g\) implements a dual-approach strategy for
+        optimal information access. The entity-centric method first identifies key entities within a query,
+        then leverages semantic similarity to locate corresponding nodes in the knowledge graph. It
+        systematically explores both incoming and outgoing relationships from these anchor nodes, constructing
+        a comprehensive subgraph that captures relevant contextual information. Complementing this, the
+        semantic triplet approach takes a more holistic view by encoding the entire query as a dense embedding
+        vector. This query representation is then matched against textual encodings of each relationship
+        triplet in the knowledge graph. The system calculates fine-grained similarity scores between the query
+        and all available triplets, returning only those that exceed a configurable relevance threshold,
+        ranked in order of decreasing similarity. This dual retrieval mechanism enables Mem0 to handle both
+        targeted entity-focused questions and broader conceptual queries with equal effectiveness. 

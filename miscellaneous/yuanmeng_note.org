@@ -891,8 +891,124 @@ plt.show()
         2. Memory efficient: 在标准attention场景中，forward时我们会计算并保存N*N大小的注意力矩阵；在backward时
            我们又会读取它做梯度计算，这就给硬件造成了\(O(N^2)\)的存储压力。在Flash Attention中，则巧妙避开了这点，使得存储压力降至\(O(N)\)
         3. Exact Attention
- 
+** 计算限制与内存限制
+        为什么瓶颈在IO？
+
+        definition
+        * \(\pi\): *硬件算力上限*.指的是一个计算平台倾尽全力每秒钟所能完成的浮点运算数。单位是 FLOPS or FLOP/s。
+        * \(\beta\): *硬件带宽上限* 。指的是一个计算平台倾尽全力每秒所能完成的内存交换量。单位是Byte/s。
+        * \(\pi_t\)：某个算法所需的总运算量，单位是FLOPs。下标\(t\)表示total。
+        * \(\beta_t\)：某个算法所需的总数据读取存储量，单位是Byte。下标\(t\) 表示total。
+        * FLOPS：等同于FLOP/s，表示Floating Point Operations Per Second，即每秒执行的浮点数操作次数，用于衡量硬件计算性能。
+        * FLOPs：表示Floating Point Operations，表示某个算法的总计算量（即总浮点运算次数），用于衡量一个算法的
+          复杂度。
+        * \(T_{cal}\)：对某个算法而言，计算所耗费的时间，单位为s，下标cal表示calculate。其满足 \(T_{cal}=\frac{\pi_t}{\pi}\)
+        * \(T_{load}\)：对某个算法而言，读取存储数据所耗费的时间，单位为s。其满足\(T_{load}=\frac{\beta_t}{\beta}\)
+        * \(T\):  ：对某个算法而言，完成整个计算所耗费的总时间，单位为s。其满足\(T=\max(T_{cal},T_{load})\)
+        * math-bound: \(T_{cal}>T_{load}\)
+        * memory-bound: \(T_{cal}<T_{load}\)
+
+        现在我们可以来分析影响Transformer计算效率的因素到底是什么了。我们把目光聚焦到attention矩阵的计算上，其
+        计算复杂度为 \(O(N^2)\)，是Transformer计算耗时的大头。 
+
+        假设我们现在采用的硬件为A100-40GB SXM，同时采用混合精度训练（可理解为训练过程中的计算和存储都是fp16形
+        式的，一个元素占用2byte）
+        \begin{equation*}
+        \frac{\pi}{\beta}=\frac{312*10^{12}}{1555*10^9}=201FLOPs/Bytes
+        \end{equation*}
+        #+LATEX: \wu{
+        这里指的是硬件峰值
+        #+LATEX: }
+
+
+        假定我们现在有矩阵\(Q,K\in\R^{N\times d}\)，其中 \(N\) 为序列长度， \(d\) 为embedding dim。现在我们要
+        计算 \(S=QK^T\) ，则有：
+        \begin{equation*}
+        \frac{\pi_t}{\beta_t}=\frac{2N^2d}{2Nd+2Nd+2N^2}=\frac{N^2d}{2Nd+N^2}
+        \end{equation*}
+        分母是因为fp16 2byte
 
 
 
+        不同 \(N,d\) 取值下的受限类型如下：
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/412.png]]
+
+        * 计算限制（math-bound）：大矩阵乘法（N和d都非常大）、通道数很大的卷积运算。相对而言，读得快，算得慢。
+        * 内存限制（memory-bound）：逐点运算操作。例如：激活函数、dropout、mask、softmax、BN和LN。相对而言，算得快，读得慢。
+
+
+        一个算法运行的效率是离不开硬件本身的。我们往往想知道：对于一个运算量为\(\pi_t\) ，数据读取存储量为
+        \(\beta_t\) 的算法，它在算力上限为 \(\pi\) ，带宽上限为 \(\beta\) 的硬件上，能达到的最大性能 \(P\)
+        (Attanable Performance)是多少？
+
+        这里最大性能\(P\) 指的是当前算法实际运行在硬件上时，每秒最多能达到的计算次数，单位是FLOP/s。
+
+        Roof-line模型就是为了解答这一问题而提出的，它能直观帮我们看到算法在硬件上能跑得多快，模型见下图。
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/413.png]]
+** GPU上的存储与运算
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/414.png]]
+
+        上图是Flash attention论文所绘制的硬件不同的存储类型、存储大小和带宽。一般来说，GPU上的存储分类，可以按
+        照是否在芯片上分为片上内存(on chip)和片下内存(off chip)。 
+        * 片上内存：主要用于缓存（cache）及少量特殊存储单元（例如texture），其特点是“存储空间小，但带宽大”。对
+          应到上图中，SRAM就属于片上内存，它的存储空间只有20MB，但是带宽可以达到19TB/s。 
+        * 片下内存：主要用于全局存储（global memory），即我们常说的显存，其特点是“存储空间大，但带宽小”，对应
+          到上图中，HBM就属于片下内存（也就是显存），它的存储空间有40GB（A100 40GB），但带宽相比于SRAM就小得多，
+          只有1.5TB/s。
+
+        当硬件开始计算时，会先从显存（HBM）中把数据加载到片上（SRAM），在片上进行计算，然后将计算结果再写回显
+        存中。那么这个“片上”具体长什么样，它又是怎么计算数据的呢？
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/415.png]]
+
+        如图，负责GPU计算的一个核心组件叫SM（Streaming Multiprocessors，流式多处理器），可以将其理解成GPU的计
+        算单元，一个SM又可以由若干个SMP（SM Partition）组成，例如图中就由4个SMP组成。SM就好比CPU中的一个核，但
+        不同的是一个CPU核一般运行一个线程，但是一个SM却可以运行多个轻量级线程（由Warp Scheduler控制，一个Warp
+        Scheduler会抓一束线程（32个）放入cuda core（图中绿色小块）中进行计算）。
+
+        
+        现在，我们将GPU的计算核心SM及不同层级GPU存储结构综合起来，绘制一张简化图：
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/416.png]]
+
+        * HBM2：即是我们的显存。
+        * L1缓存/shared memory：每个SM都有自己的L1缓存，用于存储SM内的数据，被SM内所有的cuda cores共享。SM间不
+          能互相访问彼此的L1。NV Volta架构后，L1和shared memory合并（Volta架构前只有Kepler做过合并），目的是为
+          了进一步降低延迟。合并过后，用户能写代码直接控制的依然是shared memory，同时可控制从L1中分配多少存储
+          给shared memory。Flash attention中SRAM指的就是L1 cache/shared memory。 
+        * L2缓存：所有SM共享L2缓存。L2缓存不直接由用户代码控制。L1/L2缓存的带宽都要比显存的带宽要大，也就是读
+          写速度更快，但是它们的存储量更小。 
+
+
+        现在我们再理一遍GPU的计算流程：将数据从显存（HBM）加载至on-chip的SRAM中，然后由SM读取并进行计算。计算
+        结果再通过SRAM返回给显存。 
+
+        我们知道显存的带宽相比SRAM要小的多，读一次数据是很费时的，但是SRAM存储又太小，装不下太多数据。所以我们
+        就以SRAM的存储为上限，尽量保证每次加载数据都把SRAM给打满，节省数据读取时间。 
+
+
+        前面说过，由于从显存读一次数据是耗时的，因此在SRAM存储容许的情况下，能合并的计算我们尽量合并在一起，避
+        免重复从显存读取数据。 
+
+        举例来说，我现在要做计算A和计算B。在老方法里，我做完A后得到一个中间结果，写回显存，然后再从显存中把这
+        个结果加载到SRAM，做计算B。但是现在我发现SRAM完全有能力存下我的中间结果，那我就可以把A和B放在一起做了，
+        这样就能节省很多读取时间，我们管这样的操作叫kernel融合。 
+
+由于篇幅限制，我们无法详细解释kernel这个概念，在这里大家可以粗犷地理解成是“函数”，它包含对线程结构（grid-block-thread）的定义，以及结构中具体计算逻辑的定义。理解到这一层已不妨碍我们对flash attention的解读了，想要更近一步了解的朋友，推荐阅读这篇（小小将：CUDA编程入门极简教程）
+
+kernel融合和尽可能利用起SRAM，以减少数据读取时间，都是flash attention的重要优化点。在后文对伪代码的解读中我们会看到，分块之后flash attention将矩阵乘法、mask、softmax、dropout操作合并成一个kernel，做到了只读一次和只写回一次，节省了数据读取时间。
 

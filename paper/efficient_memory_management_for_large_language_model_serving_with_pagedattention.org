@@ -1,0 +1,169 @@
+#+title: Efficient Memory Management for Large Language Model Serving with PagedAttention
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/paged_attention.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/433.png]]
+
+        Inefficiencies:
+        1. Internal and external memory fragmentation. To store the KV cache of a request in contiguous space,
+           they pre-allocate a contiguous chunk of memory with the request’s maximum length (e.g., 2048
+           tokens).
+
+           Moreover, even if the actual length is known a priori, the pre-allocation is still inefficient: As
+           the entire chunk is reserved during the request’s lifetime, other shorter requests cannot utilize
+           any part of the chunk that is currently unused.
+
+           Besides, external memory fragmentation can also be significant, since the pre-allocated size can be
+           different for each request. Indeed, our profiling results in Fig. [[ref:f2]] show that only 20.4% -
+           38.2% of the KV cache memory is used to store the actual token states in the existing systems.
+        2. the existing systems cannot exploit the opportunities for memory sharing. LLM services often use
+           advanced decoding algorithms, such as parallel sampling and beam search, that generate multiple
+           outputs per request. In these scenarios, the request consists of multiple sequences that can
+           partially share their KV cache.
+
+        To address the above limitations, we propose *PagedAttention*, an attention algorithm inspired by the
+        operating system’s (OS) solution to memory fragmentation and sharing: /virtual memory with paging/.
+        PagedAttention divides the request’s KV cache into blocks, each of which can contain the attention
+        keys and values of a fixed number of tokens. In PagedAttention, the blocks for the KV cache are not
+        necessarily stored in contiguous space. Therefore, we can manage the KV cache in a more flexible way
+        as in OS’s virtual memory: one can think of blocks as pages, tokens as bytes, and requests as
+        processes.
+
+        This design alleviates internal fragmentation by using relatively small blocks and allocating them on
+        demand. Moreover, it eliminates external fragmentation as all blocks have the same size. Finally, it
+        enables memory sharing at the granularity of a block, across the different sequences associated with
+        the same request or even across the different requests.
+
+* Background
+** Transformer-Based Large Language Models
+        Given \(x_i\in\R^{d\times 1}\), \(W_q,W_k\in\R^{d_k\times d}\), \(W_v\in\R^{d_v\times d}\), we have
+        \begin{equation*}
+        q_i=W_qx_i, k_i=W_kx_i,v_i=W_vx_i
+        \end{equation*}
+        We have
+        \begin{gather*}
+        a_{ij}=\frac{\exp(q_i^\top k_j/\sqrt{d})}{\sum_{t=1}^i\exp(q_t^\top k_t/\sqrt{d})}\\
+        o_i=\sum_{j=1}^ia_{ij}v_j
+        \end{gather*}
+** Batching Techniques for LLMs
+        Because the requests share the same model weights, the overhead of moving weights is amortized across
+        the requests in a batch, and can be overwhelmed by the computational overhead when the batch size is
+        sufficiently large.
+
+        However, batching the requests to an LLM service is non-trivial for two reasons
+        1. the requests may arrive at different times. A naive batching strategy would either make earlier
+           requests wait for later ones or delay the incoming requests until earlier ones finish, leading to
+           significant queueing delays.
+        2. the requests may have vastly different input and output lengths. A straightforward batching
+           technique would pad the inputs and outputs of the requests to equalize their lengths, wasting GPU
+           computation and memory.
+
+        To address this problem, fine-grained batching mechanisms, such as cellular batching and
+        iteration-level scheduling[[cite:&280922]], have been proposed. Unlike traditional methods that work at the request
+        level, these techniques operate at the iteration level. After each iteration, completed requests are
+        removed from the batch, and new ones are added. Therefore, a new request can be processed after
+        waiting for a single iteration, not waiting for the entire batch to complete. Moreover, with special
+        GPU kernels, these techniques eliminate the need to pad the inputs and outputs. By reducing the
+        queueing delay and the inefficiencies from padding, the fine-grained batching mechanisms significantly
+        increase the throughput of LLM serving.
+* Memory Challenges in LLM Serving
+        the serving system’s throughput is *memory-bound*. Chellenges:
+        * *Large KV cache*. The KV Cache size grows quickly with the number of requests. As an example, for the
+          13B parameter OPT model, the KV cache of a single token demands 800 KB of space, calculated as 2
+          (key and value vectors) × 5120 (hidden state size) × 40 (number of layers) × 2 (bytes per FP16).
+          Since OPT can generate sequences up to 2048 tokens, the memory required to store the KV cache of one
+          request can be as much as 1.6 GB.
+
+          Concurrent GPUs have memory capacities in the tens of GBs. Even if all available memory was
+          allocated to KV cache, only a few tens of requests could be accommodated. Moreover, inefficient
+          memory management can further decrease the batch size, as shown in Fig. [[ref:f2]].
+
+          Additionally, given the current trends, the GPU’s computation speed grows faster than the memory
+          capacity. For example, from NVIDIA A100 to H100, The FLOPS increases by more than 2x, but the GPU
+          memory stays at 80GB maximum. Therefore, we believe the memory will become an increasingly
+          significant bottleneck. 
+        * *Complex decoding algorithms*. LLM services offer a range of decoding algorithms for users to select
+          from, each with varying implications for memory management complexity.
+
+          For example, when users request multiple random samples from a single input prompt, a typical use
+          case in program suggestion, the KV cache of the prompt part, which accounts for 12% of the total KV
+          cache memory in our experiment, can be shared to minimize memory usage. On the other hand, the KV
+          cache during the autoregressive generation phase should remain unshared due to the different sample
+          results and their dependence on context and position.
+
+          The extent of KV cache sharing depends on the specific decoding algorithm employed. In more
+          sophisticated algorithms like beam search, different request beams can share larger portions of
+          their KV cache
+        * *Scheduling for unknown input & output lengths*.
+** Memory Management in Existing Systems
+        Since most operators in current deep learning frameworks require tensors to be stored in contiguous
+        memory, previous LLM serving systems also store the KV cache of one request as a contiguous tensor
+        across the different positions. Due to the unpredictable output lengths from the LLM, they statically
+        allocate a chunk of memory for a request based on the request’s maximum possible sequence length,
+        irrespective of the actual input or eventual output length of the request.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/434.png]]
+
+        Fig. [[ref:f3]] illustrates two requests: request A with 2048 maximum possible sequence length and request
+        B with a maximum of 512.
+
+        *internal fragmentation* due to over-provisioning for potential maximum sequence lengths, and *external
+        fragmentation* from the memory allocator like the buddy allocator.
+* Method
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/435.png]]
+
+        vLLM adopts a centralized scheduler to coordinate the execution of distributed GPU workers. The KV
+        cache manager effectively manages the KV cache in a paged fashion, enabled by PagedAttention.
+        Specifically, the KV cache manager manages the physical KV cache memory on the GPU workers through the
+        instructions sent by the centralized scheduler.
+** PagedAttention
+        PagedAttention partitions the KV cache of each sequence into *KV blocks*. Each block contains the key
+        and value vectors for a fixed number of tokens, which we denote as *KV block size* (\(B\)). Denote the
+        key block \(K_j=(k_{(j-1)B+1},\dots,k_{jB}\) and value block \(V_{j}=v_{(j-1)B+1},\dots,v_{jB}\). Then
+        attention computation can be transformed into
+        \begin{gather*}
+        A_{ij}=\frac{\exp(q_i^\top K_j/\sqrt{d})}{\sum_{t=1}^{\ceil{i/B}}\exp(q_i^\top K_t\bone/\sqrt{d})}\\
+        o_i=\sum_{j=1}^{\ceil{i/B}}V_jA_{ij}^\top
+        \end{gather*}
+        where \(A_{ij}=(a_{i,(j-1)B+1},\dots,a_{i,jB})\) is the row vector of attention score on \(j\)-th KV block
+
+        During the attention computation, the PagedAttention kernel identifies and fetches different KV blocks
+        separately.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/436.png]]
+** KV Cache Manager
+        A request’s KV cache is represented as a series of *logical KV blocks*, filled from left to right as new
+        tokens and their KV cache are generated. The last KV block’s unfilled positions are reserved for
+        future generations. On GPU workers, a *block engine* allocates a contiguous chunk of GPU DRAM and
+        divides it into physical KV blocks. The KV block manager also maintains block tables—the mapping
+        between logical and physical KV blocks of each request. Each block table entry records the
+        corresponding physical blocks of a logical block and the number of filled positions. Separating
+        logical and physical KV blocks allows vLLM to dynamically grow the KV cache memory without reserving
+        it for all positions in advance, which eliminates most memory waste in existing systems
+** Decoding with PagedAttention and vLLM
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
