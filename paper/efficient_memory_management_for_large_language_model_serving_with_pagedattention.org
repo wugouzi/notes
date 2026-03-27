@@ -123,7 +123,7 @@
         fragmentation* from the memory allocator like the buddy allocator.
 * Method
         #+ATTR_LATEX: :width .6\textwidth :float nil
-        #+NAME: 
+        #+NAME: f4
         #+CAPTION: 
         [[../images/papers/435.png]]
 
@@ -159,6 +159,161 @@
         logical and physical KV blocks allows vLLM to dynamically grow the KV cache memory without reserving
         it for all positions in advance, which eliminates most memory waste in existing systems
 ** Decoding with PagedAttention and vLLM
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/440.png]]
+        1. As in OS’s virtual memory, vLLM does not require reserving the memory for the maximum possible
+           generated sequence length initially. Instead, it reserves only the necessary KV blocks to
+           accommodate the KV cache generated during prompt computation.
+
+           In this case, The prompt has 7 tokens, so vLLM maps the first 2 logical KV blocks (0 and 1) to 2
+           physical KV blocks (7 and 1, respectively). In the prefill step, vLLM generates the KV cache of the
+           prompts and the first output token with a conventional self-attention algorithm. vLLM then stores
+           the KV cache of the first 4 tokens in logical block 0 and the following 3 tokens in logical
+           block 1. The remaining slot is reserved for the subsequent autoregressive generation phase
+        2. In the first autoregressive decoding step, vLLM generates the new token with the PagedAttention
+           algorithm on physical blocks 7 and 1. Since one slot remains available in the last logical
+           block, the newly generated KV cache is stored there, and the block table’s #filled record is updated
+        3. At the second decoding step, as the last logical block is full, vLLM stores the newly generated KV
+           cache in a new logical block; vLLM allocates a new physical block (physical block 3) for it and
+           stores this mapping in the block table.
+
+        Globally, for each decoding iteration, vLLM first selects a set of candidate sequences for batching
+        and allocates the physical blocks for the newly required logical blocks. Then, vLLM concatenates all
+        the input tokens of the current iteration (i.e., all tokens for prompt phase requests and the latest
+        tokens for generation phase requests) as one sequence and feeds it into the LLM. During LLM’s
+        computation, vLLM uses the PagedAttention kernel to access the previous KV cache stored in the form of
+        logical KV blocks and saves the newly generated KV cache into the physical KV blocks.
+
+        Storing multiple tokens within a KV block (block size > 1) enables the PagedAttention kernel to
+        process the KV cache across more positions in parallel, thus increasing the hardware utilization and
+        reducing latency. However, a larger block size also increases memory fragmentation.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/441.png]]
+** Application to Other Decoding Scenarios
+        In many successful LLM applications, an LLM service must offer more complex decoding scenarios that
+        exhibit complex accessing patterns and more opportuni- ties for memory sharing. We show the general
+        applicability of vLLM on them in this section.
+
+        *Parallel sampling*. In LLM-based program assistants, an LLM generates multiple sampled outputs for a
+        single input prompt; users can choose a favorite output from various candidates. So far we have
+        implicitly assumed that a request generates a single sequence.
+
+        In the remainder of this paper, we assume the more general case in which a request generates multiple
+        sequences. In parallel sampling, one request includes multiple samples sharing the same input prompt,
+        allowing the KV cache of the prompt to be shared as well. Via its PagedAttention and paged memory
+        management, vLLM can realize this sharing easily and save memory.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/442.png]]
+
+        Since a single physical block can be mapped to multiple logical blocks, we introduce a *reference count*
+        for each physical block. In this case, the reference counts for physical blocks 7 and 1 are both 2. At
+        the generation phase, the two outputs sample different output tokens and need separate storage for KV
+        cache. vLLM implements a copy-on-write mechanism at the block granularity for the physical blocks that
+        need modification by multiple sequences. Specifically, in Fig. [[ref:f8]], when sample A1 needs to write
+        to its last logical block (logical block 1), vLLM recognizes that the reference count of the
+        corresponding physical block (physical block 1) is greater than 1; it allocates a new physical block
+        (physical block 3), instructs the block engine to copy the information from physical block 1, and
+        decreases the reference count to 1. Next, when sample A2 writes to physical block 1, the reference
+        count is already reduced to 1; thus A2 directly writes its newly generated KV cache to physical
+        block 1.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/443.png]]
+
+        *Beam search*. In LLM tasks like machine translation, the users expect the top-𝑘 most appropriate
+        translations output by the LLM. Beam search is widely used to decode the most probable output sequence
+        from an LLM, as it mitigates the computational complexity of fully traversing the sample space. The
+        algorithm relies on the *beam width* parameter \(k\), which determines the number of top candidates
+        retained at every step. During decoding, beam search expands each candidate sequence in the beam by
+        considering all possible tokens, computes their respective probabilities using the LLM, and retains
+        the top-\(k\) most probable sequences out of \(k\cdot\abs{V}\) candidates, where \(\abs{V}\) is the
+        vocabulary size.
+
+        Unlike parallel decoding, beam search facilities sharing not only the initial prompt blocks but also
+        other blocks across different candidates, and the sharing patterns dynamically change as the decoding
+        process advances.
+
+        Fig. [[ref:f9]] shows how vLLM manages the KV blocks for a beam search example with \(k=4\). Prior to the
+        iteration illustrated as the dotted line, each candidate sequence has used 4 full logical blocks. All
+        beam candidates share the first block 0 (i.e., prompt). Candidate 3 digresses from others from the
+        second block. Candidates 0-2 share the first 3 blocks and diverge at the fourth block. At subsequent
+        iterations, the top-4 probable candidates all originate from candidates 1 and 2. As the original
+        candidates 0 and 3 are no longer among the top candidates, their logical blocks are freed, and the
+        reference counts of corresponding physical blocks are reduced.
+        
+        vLLM frees all physical blocks whose reference counts reach 0 (blocks 2, 4, 5, 8). Then, vLLM
+        allocates new physical blocks (blocks 9-12) to store the new KV cache from the new candidates. Now,
+        all candidates share blocks 0, 1, 3; candidates 0 and 1 share block 6, and candidates 2 and 3 further
+        share block 7.
+
+        *Shared prefix*. Commonly, the LLM user provides a (long) description of the task including instructions
+        and example inputs and outputs, also known as *system prompt*.
+
+        For this type of application, many user prompts share a prefix, thus the LLM service provider can
+        store the KV cache of the prefix in advance to reduce the redundant computation spent on the prefix.
+        In vLLM, this can be conveniently achieved by reserving a set of physical blocks for a set of
+        predefined shared prefixes by the LLM service provider, as how OS handles shared library across
+        processes. A user in- put prompt with the shared prefix can simply map its logical blocks to the
+        cached physical blocks (with the last block marked copy-on-write). The prompt phase computation only
+        needs to execute on the user’s task input.
+
+        *Mixed decoding methods*. vLLM facilitates the simultaneous processing of requests with different
+        decoding preferences, which existing systems cannot efficiently do. This is because vLLM conceals the
+        complex memory sharing between different sequences via a common mapping layer that translates logical
+        blocks to physical blocks. The LLM and its execution kernel only see a list of physical block IDs for
+        each sequence and do not need to handle sharing pat- terns across sequences. Compared to existing
+        systems, this approach broadens the batching opportunities for requests with different sampling
+        requirements, ultimately increasing the system’s overall throughput.
+** Scheduling and Preemption
+        In vLLM, we adopt the first-come-first-serve (FCFS) scheduling policy for all requests, ensuring
+        fairness and preventing starvation. When vLLM needs to preempt requests, it ensures that the earliest
+        arrived requests are served first and the latest requests are preempted first.
+
+        LLM services face a unique challenge: the input prompts for an LLM can vary significantly in length,
+        and the resulting output lengths are not known a priori, contingent on both the input prompt and the
+        model. As the number of requests and their outputs grow, vLLM can run out of the GPU’s physical blocks
+        to store the newly generated KV cache. There are two classic questions that vLLM needs to answer in
+        this context:
+        1. which blocks should it evict
+        2. how to recover evicted blocks if needed again
+
+        Since in our case we know that all blocks of a sequence are accessed together, we implement an
+        all-or-nothing eviction policy, i.e., either evict all or none of the blocks of a sequence.
+
+        Furthermore, multiple sequences within one request (e.g., beam candidates in one beam search request)
+        are gang-scheduled as a *sequence group*. The sequences within one sequence group are always preempted
+        or rescheduled together due to potential memory sharing across those sequences.
+
+        To answer the second question of how to recover an evicted block, we consider two techniques:
+        * *Swapping*: we copy evicted blocks to the CPU memory as in Fig [[ref:f4]]. When vLLM exhausts free
+          physical blocks for new tokens, it selects a set of sequences to evict and transfer their KV cache
+          to the CPU. Once it preempts a sequence and evicts its blocks, vLLM stops accepting new requests
+          until all preempted sequences are completed.
+
+          Once a request completes, its blocks are freed from memory, and the blocks of a preempted sequence
+          are brought back in to continue the processing of that sequence. Note that with this design, the
+          number of blocks swapped to the CPU RAM never exceeds the number of total physical blocks in the GPU
+          RAM, so the swap space on the CPU RAM is bounded by the GPU memory allocated for the KV cache.
+        * *Recomputation*
+** Distributed Execution
+        Many LLMs have parameter sizes exceeding the capacity of a single GPU. Therefore, it is necessary to partition them
+across distributed GPUs and execute them in a model parallel
+fashion [28, 63]. This calls for a memory manager capable of
+handling distributed memory. vLLM is effective in distributed
+settings by supporting the widely used Megatron-LM style
+tensor model parallelism strategy on Transformers [47]. This
+strategy adheres to an SPMD (Single Program Multiple Data)
+execution schedule, wherein the linear layers are partitioned
 * Problems
 
 

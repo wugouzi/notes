@@ -1,16 +1,24 @@
-% Created 2026-02-02 Mon 20:40
+% Created 2026-03-26 Thu 10:30
 % Intended LaTeX compiler: xelatex
 \documentclass[11pt]{article}
 \usepackage{capt-of}
 \usepackage{hyperref}
 \input{/Users/wu/notes/preamble.tex}
 \graphicspath{{../../paper//}}
+\newcommand{\mya}{\color{Goldenrod}\textsf{A}}
+\newcommand{\myb}{\color{Orchid}\textsf{B}}
+\newcommand{\myc}{\color{Red}\textsf{C}}
+\newcommand{\myd}{\color{Purple}\textsf{D}}
+\newcommand{\myf}{\color{Green}\textsf{F}}
+\newcommand{\mye}{\color{Brown}\textsf{E}}
 
 %% ox-latex features:
 %   !announce-start, !guess-pollyglossia, !guess-babel, !guess-inputenc, caption,
-%   image, !announce-end.
+%   underline, image, !announce-end.
 
 \usepackage{capt-of}
+
+\usepackage[normalem]{ulem}
 
 \usepackage{graphicx}
 
@@ -30,12 +38,12 @@
 
 \maketitle
 \section{Introduction}
-\label{sec:org080add1}
+\label{sec:org24393cd}
 Flash’s main challenge is its limited write endurance; i.e., flash can only be written so many times
 before wearing out. Wearout is especially problematic for tiny objects because flash can be read and
 written only at multi-KB granularity. For example, writing a 100 B object may require writing a 4 KB
 flash page, amplifying bytes written by 40× and rapidly wearing out the flash device. Thus, cost also
-argues for minimizing excess bytes written to flash. 
+argues for minimizing excess bytes written to flash.
 
 \textbf{The Problem}. Prior flash-cache designs either use too much DRAM or write flash too much.
 \begin{itemize}
@@ -62,9 +70,9 @@ KSet (i.e., hash collisions), so that each flash write to KSet can insert multip
 Our insight is that even a small log will yield many hash collisions, so only a small amount of extra
 DRAM (for KLog’s index) is needed to significantly reduce flash writes (in KSet).
 \section{Background and related work}
-\label{sec:orgfae9a14}
+\label{sec:org647be46}
 \subsection{Tiny objects are important and numerous}
-\label{sec:org7c5d94a}
+\label{sec:orgc56e317}
 Tiny objects are prevalent in many large-scale systems:
 \begin{itemize}
 \item At Facebook, small objects are prevalent in the social graph. For example, the average social-graph
@@ -80,7 +88,7 @@ popular metadata. Another use case arises in search advertising, where Azure cac
 other results
 \end{itemize}
 \subsection{Caching tiny objects in flash is hard}
-\label{sec:orgeba8bb7}
+\label{sec:orge3a66a2}
 DRAM is expensive
 
 Challenges:
@@ -119,9 +127,9 @@ the block, install the new data, and then write the entire block. For example, i
 data into a 4 KB logical block involves rewriting the other 3 KB, giving alwa of 4×. Ideally, the
 unmodified data in the block would not have been rewritten.
 \subsection{Current approaches and related work}
-\label{sec:org5c0e1b8}
+\label{sec:orgd78808a}
 \section{Kangeroo Overview and Motivation}
-\label{sec:org7d83cda}
+\label{sec:orgb1b63b3}
 \begin{center}
 \includegraphics[width=.7\textwidth]{../images/papers/306.png}
 \captionof{figure}{\label{f3}}
@@ -139,12 +147,348 @@ that might hold the object.
 \item[{3b}] Otherwise, the object is probably on flash, so the request reads the LBA(s) for the given set
 and scans for the requested key.
 \end{description}
+
+Insertion:
+\begin{description}
+\item[{1}] Newly inserted items are first written to the DRAM cache. This likely pushes some objects out
+of the DRAM cache, where they are either
+\item[{2a}] dropped by KLog’s pre-flash admission policy or
+\item[{2b}] added to KLog’s DRAM index and
+\item[{2c}] appended to KLog’s flash log (after buffering in DRAM to batch many insertions into a single flash write).
+\end{description}
+inserting objects to KLog will push other objects out of KLog, which are either
+\begin{description}
+\item[{3a}] dropped by another admission policy or
+\item[{3b}] inserted into KSet.
+\end{description}
+
+Insertions to KSet operate somewhat differently than in a conventional cache. For any object moved
+from KLog to KSet, Kangaroo moves \emph{all objects in KLog that map to the same set} to KSet, no matter
+where they are in the log. Doing this amortizes flash writes in KSet, significantly reducing
+Kangaroo’s alwa.
+
+\begin{itemize}
+\item KSet eliminates the DRAM index by hashing objects’ keys to restrict their possible locations on
+flash. But KSet alone suffers too much write amplification, as every tiny object writes a full 4 KB
+page when admitted
+\item KLog comes to the rescue, serving as a write-efficient staging area in front of KSet, which Kangaroo
+uses to amortize KSet’s writes.
+\end{itemize}
+
+On top of this basic design, Kangaroo introduces three techniques to minimize DRAM usage, minimize
+flash writes, and reduce cache misses.
+\begin{enumerate}
+\item Kangaroo’s partitioned index for KLog can efficiently find all objects in KLog mapping to the same
+set in KSet, and is split into many independent partitions to minimize DRAM usage.
+\item Kangaroo’s threshold admission policy between KLog and KSet only admits objects to KSet when at
+least \(n\) objects in KLog map to the same set, reducing alwa by \(\ge n\times\).
+\item Kangaroo’s “RRIParoo” eviction improves hit ratio in KSet by approximating RRIP, a state-of-the-art
+eviction policy, while only using a single bit of DRAM per object.
+\end{enumerate}
+
+\textbf{Theoretical foundations}: We develop a Markov model of Kangaroo’s basic design, including threshold
+ admission. This model rigorously demonstrates that Kangaroo can greatly reduce alwa compared to a
+ set-only design, without any increase in miss ratio.
+
+Formally, we assume the commonly used independent reference model, in which objects are referenced
+independently with fixed probability per object. However, we make no assumptions about the object
+popularity distribution, so Theorem \ref{thm1} holds across any popularity distribution (uniform,
+Zipfian, etc.). Suppose that KLog contains \(q\) objects; KSet contains \(s\) sets with \(w\) objects
+each; objects are admitted to flash with a \(p\) probability; and objects are only admitted to KSet
+if at least \(n\) new objects are being inserted.
+
+\begin{theorem}[]
+\label{thm1}
+Kangaroo's app-level write amplification is
+ \begin{equation*}
+ALWA_{Kangaroo}=p\left( 1+\frac{w\barF_X(n)}{\barF_X(1)\E[X|X\ge n]} \right)
+ \end{equation*}
+where \(X\sim Binomial(q,1/s)\) and \(\barF_X(n)=\sum_{i=1}^n\P[X=i]\) is the probability of a set
+being re-written. Furthermore, the probability of admitting an object to KSet is
+\(\P[X\ge n\mid X\ge 1]\)
+\end{theorem}
+\section{Kangaroo Design and Implementation}
+\label{sec:org2f5888b}
+\subsection{Pre-flash admission to KLog}
+\label{sec:org3484dab}
+It has a pre-flash admission policy that can be configured to randomly admit objects to KLog with
+probability \(p\), decreasing Kangaroo’s write rate proportionally without additional DRAM overhead.
+\subsection{KLog}
+\label{sec:org4f1091d}
+Three operations: Lookup, Insert, and Enumerate-Set. Enumerate-Set allows KLog to find all objects
+mapping to the same set in KSet.
+
+\textbf{Operation}. KLog writes objects to a circular buffer on flash in large batches and tracks objects via
+an index kept in DRAM. To support Enumerate-Set efficiently, KLog’s index is implemented as a hash
+table using separate chaining. Each index entry contains an \texttt{offset} to locate the object in the flash
+log, a \texttt{tag} (partial hash of the object’s key), a \texttt{next-pointer} to the next entry in the chain (for
+collision resolution), eviction-policy metadata, and a \texttt{valid} bit.
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/307.png}
+\captionof{figure}{\label{f4}}
+\end{center}
+
+Lookup:
+\begin{enumerate}
+\item KLog determines which bucket it belongs to by computing the object’s set in KSet.
+\item KLog traverses index entries in this bucket, ignoring invalid entries, until a tag matches a hash
+of the key. If there is no matching tag, KLog returns a miss.
+\item KLog reads the flash page at offset in the log. After confirming a full key match, KLog returns the
+data and updates eviction-policy metadata.
+\end{enumerate}
+
+Insert:
+\begin{enumerate}
+\item KLog creates an index entry, adds it to the bucket corresponding to the key’s set in KSet, and
+appends the object to an in-DRAM buffer. The on-flash circular log is broken into many \textbf{segments},
+one of which is buffered in DRAM at a time.
+\item Once the segment buffer is full, it is written to flash.
+\end{enumerate}
+
+KLog is structured internally as multiple partitions. Each partition is an independent log-structured
+cache with its own flash log and DRAM index. Moreover, each partition’s index is split into multiple
+tables, each an independent hash table.
+
+This partitioned structure reduces DRAM usage, as described next, but otherwise changes the operation
+of KLog little. The table and partition are inferred from an object’s set in KSet. Hence, all objects
+in the same set will belong to the same partition, table, and bucket; and operations work as described
+above within each table.
+
+\begin{center}
+\includegraphics[width=.6\textwidth]{../images/papers/308.png}
+\captionof{figure}{\label{t1}}
+\end{center}
+
+The flash offset must be large enough to identify which page in the flash log contains the object,
+which requires \(\log_2(LogSize/4\text{KB})\) bits. By splitting the log into 64 partitions, KLog
+reduces \(LogSize\) by 64× and saves 6b in the pointer.
+
+The tag size determines the false-positive rate in the index; i.e., a smaller tag leads to higher read
+amplification. KLog splits the index into \(2^{20}\) tables. Since the table is inferred from the key, all
+keys in one table effectively share 20b of information, and KLog can use a much smaller tag to achieve
+the same false positive rate as the naïve design
+
+KLog’s structure also reduces the \texttt{next-pointer} size. We only need to know the offset into memory
+allocated to the object’s index table. Thus, rather than using a generic memory pointer, we can store
+a 16b offset, which allows up to \(2^{16}\) items per table. KLog can thus index \(2^{36}\) items as
+parameterized (12.5 TB of flash with 200B objects), which can be increased by splitting the index into
+more tables.
+
+In a naïve cache using LRU eviction, each entry keeps a pointer to adjacent entries in the LRU list.
+This requires \(2\cdot\log_2(LogSize/ObjectSize)\) bits. In contrast, Kangaroo’s RRIParoo policy is
+based on RRIP and only needs 3b per object in KLog (and even less in KSet).
+
+Finally, each bucket in KLog’s index requires one pointer for the head of the chain. In naïve logs,
+this is a 64b pointer. In KLog, it is a 16b offset into the table’s memory. KLog allocates roughly one
+bucket per set in KSet. With 4 KB sets and 200 B objects, the per-object DRAM overhead is 3.1 b
+(Naïve) or 0.8 b (KLog) per object.
+
+All told, KLog’s partitioned structure reduces the per-object metadata from 190 b to 48 b per object,
+a 3.96× savings vs. the naïve design. Compared to prior index designs, KLog’s index uses slightly more
+DRAM per object than the state- of-the-art (30 b per object in Flashield), but it supports
+Enumerate-Set and has fewer false positives. Most importantly, KLog only tracks ≈5\% of objects in
+Kangaroo, so indexing overheads are just 3.2 b per object. Adding KSet’s DRAM overhead gives a total
+of 7.0 b per object, a 4.3× improvement over the state-of-the-art.
+\subsection{KLog \texorpdfstring{\(\to\)}{to} KSet: Minimizing flash writes}
+\label{sec:orgaad5b1f}
+\textbf{Moving objects from KLog to KSet}. A background thread keeps one segment free in each log partition.
+ This thread flushes segments from the on-flash log in FIFO order, moving objects from KLog to KSet as
+ shown in \ref{f4}(c).
+
+For each victim object in the flushed segment, this thread
+\begin{description}
+\item[{1}] call Enumerate-Set to find all other objects in KLog
+\item[{2a}] if there are not enough objects to move, the victim object is dropped, or if popular, is
+re-admitted to KLog
+\item[{2b}] otherwise, the victim object and all other objects returned by Enumerate-Set are moved from
+KLog to KSet in a single flash write
+\end{description}
+
+Instead of flushing one segment at a time, one could fill the entire log and then flush it completely.
+But this leaves the log half-empty, on average. Flushing one segment at a time keeps KLog’s capacity
+utilization high, empirically 80–95\%.
+
+\textbf{Threshold admission to KSet}. Kangaroo adds an admission policy between KLog and KSet that sets a
+threshold, \(n\), of objects required to write a set in KSet. If Enumerate-Set(\(x\)) returns fewer
+than \(n\) objects, then \(x\) is not admitted to KSet.
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/309.png}
+\captionof{figure}{\label{f5}}
+\end{center}
+
+Fig. \ref{f5} shows the effect of thresholding on alwa and KSet’s admission probability for different
+object sizes using Theorem \ref{thm1}, keeping KLog at 5\% of cache size.
+
+To avoid unnecessary misses to popular objects that do not meet the threshold when moving from KLog to
+KSet, Kangaroo readmits any object that received a hit during its stay in KLog back to the head of the
+log. 
+\subsection{KSet}
+\label{sec:org751aadb}
+KSet employs a set-associative cache design similar to CacheLib’s Small Object Cache. This design
+splits the cache into many sets, each holding multiple objects; by default, each set is 4 KB, matching
+flash’s read and write granularity. KSet maps an object to a set by hashing its key.
+
+To reduce unnecessary flash reads, KSet keeps a small Bloom filter in DRAM built from all the keys in
+the set. These Bloom filters are sized to achieve a false positive rate of about 10\%. Whenever a set
+is written, the Bloom filter is reconstructed to reflect the set’s contents.
+
+\textbf{RRIParoo: Usage-based eviction without a DRAM index}. Usage-based eviction policies can significantly
+improve miss ratio, effectively doubling the cache size (or more) without actually adding any
+resources. Unfortunately, implementing these policies on set-associative flash caches is hard, as such
+policies involve per-object metadata that must be updated whenever an object is accessed. Since KSet
+has no DRAM index to store metadata and cannot update on-flash metadata without worsening alwa, it is
+not obvious how to implement a usage-based eviction policy. For these reasons, most flash caches use
+FIFO eviction, which keeps no per-object state. Unfortunately, FIFO significantly increases miss ratio
+because popular objects continually cycle out of the cache.
+
+Kangaroo introduces RRIParoo, a new technique to efficiently support usage-based eviction policies in
+flash caches. Specifically, RRIParoo implements RRIP, a state-of-the- art eviction policy originally
+proposed for processor caches, while using only \(\approx 1\) bit of DRAM per object and without any
+additional flash writes.
+
+\uline{Background: How RRIP works}. RRIP is essentially a multi-bit clock algorithm: RRIP associates a small
+number of bits with each object (3 bits in Kangaroo), which represent reuse predictions from near
+reuse (000) to far reuse (111). Objects are evicted only once they reach far. If there are no far
+objects when something must be evicted, all objects’ predictions are incremented until at least one is
+at far. Objects are promoted to near (000) when they are accessed. Finally, RRIP inserts new objects
+at long (110) so they will be evicted quickly, but not immediately, if they are not accessed again.
+This insertion policy handles scans that can degrade LRU’s performance.
+
+\uline{RRIParoo’s key ideas}. There are two ideas to support RRIP in KSet.
+\begin{enumerate}
+\item rather than tracking all of RRIP’s predictions in a DRAM index, RRIParoo stores the eviction
+metadata in flash and keeps only a small portion of it in DRAM
+\item to reduce DRAM metadata to a single bit, we observe that RRIP only updates predictions upon
+eviction (incrementing predictions towards far) and when an object is accessed (promoting to near).
+\end{enumerate}
+
+Our insight is that, so long as KSet tracks which objects are accessed,
+\emph{promotions can be deferred to eviction time}, so that all updates to on-flash RRIParoo metadata are
+only made at eviction, when the set is being re-written anyway. Hence, since KSet can track whether an
+object has been accessed using only single bit in DRAM, KSet achieves the hit-ratio of a
+state-of-the-art eviction policy with one-third of the DRAM usage (1 b vs. 3 b).
+\wu{
+\begin{enumerate}
+\item 1 bit in dram
+\item 3 bit in flash
+\item Deferred Update Strategy
+\begin{enumerate}
+\item access: set bit to 1 in dram
+\item eviction: if bit is 1, set prediction to 000; otherwise, increment prediction
+\end{enumerate}
+\end{enumerate}
+}
+
+\uline{RRIParoo operation}. RRIParoo allocates enough metadata to keep one DRAM bit per object on average;
+e.g., 40b for 4 KB sets and 100B objects. Objects use the bit corresponding to their position in the
+set (e.g., the \(i\) th object uses the \(i\) th bit), so there is no need for an index. If there are
+too many objects, RRIParoo does not track hits for the objects closest to near, as they are least
+likely to be evicted.
+
+Kangaroo also uses RRIP to merge objects from KLog. Tracking hits in KLog is trivial because it
+already has a DRAM index. Objects are inserted into KLog at long prediction, and their
+predictions are decremented towards near on each subsequent access. Then, when moving objects from
+KLog to KSet, KSet sorts objects from near to far and fills up the set in this order until out of
+space, breaking ties in favor of objects already in KSet.
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/310.png}
+\captionof{figure}{\label{f6}}
+\end{center}
+
+\uline{Example}: Figure \ref{f6}.
+\begin{enumerate}
+\item We start when KLog flushes a segment containing object \(\color{Green}\textsf{F}\), which maps to a
+set in KSet. KLog finds a second object, \(\color{Brown}\textsf{E}\), elsewhere in the log that
+also maps to this set. Meanwhile, the set contains objects \(\mya\), \(\myb\), \(\myc\), and
+\(\myd\) with the RRIP predictions shown on flash, and \(\myb\) has received a hit since the set
+was last re-written, as indicated by bits in DRAM.
+\item Since \(\myb\) received a hit, we promote its RRIP prediction to near and clear the bits in DRAM.
+\item Since no object is at far, we increment all objects’ predictions by 3, whereupon object \(\mya\)
+reaches far.
+\item Finally, we fill up the set by merging objects in DRAM and flash in prediction-order until the set
+is full. The set now contains \(\myc\), \(\myf\), \(\myd\), and \(\myc\); \(\mya\) was evicted, and
+\(\mye\) stays in KLog for now since its KLog segment was not flushed. (The set on flash is only
+written once, after the above procedure completes.)
+\end{enumerate}
+\section{Evaluation}
+\label{sec:orgeacea34}
+Finding:
+\begin{enumerate}
+\item Kangaroo reduces misses by 29\% under realistic system constraints.
+\item Kangaroo improves the Pareto frontier when varying constraints.
+\item In a production deployment, Kangaroo reduces flash-cache misses by 18\% at equal write rate and
+reduces write rate by 38\% at equal miss ratios.
+\end{enumerate}
+\subsection{Experimental setup}
+\label{sec:org5812a7b}
+Comparison:
+\begin{enumerate}
+\item cachelib's small object cache (SA) that serves the Facebook Social Graph
+\item optimistic version of a log-structured cache (LS) with a full DRAM index
+\end{enumerate}
+
+Workload: sampled 7-day traces from Facebook and Twitter. Average object sizes of 291B aand 271B respectively.
+\subsection{Main result: Kangaroo significantly reduces misses vs. prior cache designs under realistic constraints}
+\label{sec:orgfcaf4e0}
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/311.png}
+\captionof{figure}{\label{f7}}
+\end{center}
+
+
+\begin{center}
+\begin{tabular}{llll}
+ & Kangaroo & LS & SA\\
+\hline
+peak throughput(get/s) & 158k & 172k & 168k\\
+p99 latency (us) & 736 & 229 & 699\\
+\end{tabular}
+\end{center}
+\subsection{Kangaroo performs well as contraints change}
+\label{sec:org578723e}
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/312.png}
+\captionof{figure}{\label{}}
+\end{center}
+
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/313.png}
+\captionof{figure}{\label{}}
+\end{center}
+\subsection{Parameter sensitivity and benefit attribution}
+\label{sec:org5598e9e}
+\begin{center}
+\includegraphics[width=.7\textwidth]{../images/papers/314.png}
+\captionof{figure}{\label{}}
+\end{center}
+\subsection{Production deployment test}
+\label{sec:org786bf99}
+we present results from two production test deployments on a small-object workload at Facebook,
+comparing Kangaroo to SA. Each deployment receives the same request stream as production servers but
+does not respond to users. Due to limitations in the production setup, we can only present
+application-level write rate (i.e., not device-level) and flash miss ratio (i.e., for requests that
+miss in the DRAM cache). In addition, both systems use the same cache size (i.e., Kangaroo does not
+benefit from reduced over-provisioning).
+
+To find appropriate production configurations, we chose seven configurations for each system that
+performed well in simulation: four with probabilistic pre-flash admission and three with a
+machine-learning (ML) pre-flash admission policy. The first production deployment ran all
+probabilistic admission configurations and the second ran all ML admission configurations. Since
+these configurations ran under different request streams, their results are not directly comparable.
+
+\begin{center}
+\includegraphics[width=.8\textwidth]{../images/papers/315.png}
+\captionof{figure}{\label{}}
+\end{center}
 \section{Problems}
-\label{sec:org016e002}
+\label{sec:org980f345}
 
 
 \section{References}
-\label{sec:org269f910}
+\label{sec:orge493734}
 \label{bibliographystyle link}
 \bibliographystyle{alpha}
 
