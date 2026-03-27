@@ -117,12 +117,22 @@
 (use-package mixed-pitch
   :ensure t
   :hook (org-mode . mixed-pitch-mode)
-  )
+  :config
+  (dolist (face '(line-number org-property-value org-drawer
+                              error org-cite corfu-current corfu-default
+                              org-meta-line org-tag))
+    (add-to-list 'mixed-pitch-fixed-pitch-faces face))
+  (setq mixed-pitch-set-height nil
+        mixed-pitch-variable-pitch-cursor nil)
+  (defun my/mixed-pitch-spacing ()
+    (if mixed-pitch-mode
+        (setq line-spacing 0.12)
+      (setq line-spacing 0.0))))
 
 ;; so mixed pitch doesn't work for 9.0 later?
 (setq org-src-block-faces
-        '(("emacs-lisp" (:background "#EEE2FF"))
-          ("python" (:background "#e5ffb8"))))
+      '(("emacs-lisp" (:background "#EEE2FF"))
+        ("python" (:background "#e5ffb8"))))
 
 (require 'org-indent)
 
@@ -135,36 +145,37 @@
   :hook
   ((org-mode . auto-fill-mode)
    (org-mode . (lambda () (setq fill-column 110)))
+   (org-mode . (lambda () (setq org-pretty-entities nil)))
    (org-mdoe . org-latex-preview-auto-mode)
    (org-mode . valign-mode)
    )
 
   :config
   (defface my-org-emphasis-bold
-  '((default :inherit bold)
-    (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
-     :foreground "#048025") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
-    (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
-     :foreground "#ff8059"))
-  "My bold emphasis for Org.")
+    '((default :inherit bold)
+      (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
+       :foreground "#048025") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
+      (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
+       :foreground "#ff8059"))
+    "My bold emphasis for Org.")
 
   (defface my-org-emphasis-italic
-  '((default :inherit italic)
-    (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
-     :foreground "#a16c50") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
-    (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
-     :foreground "#ff8059"))
-  "My italic emphasis for Org.")
-  
+    '((default :inherit italic)
+      (((class color) (min-colors 88) (background light)) ;浅色背景的情况下的样式
+       :foreground "#a16c50") ; 这里可以使用:underline, :background等参数设置自己喜欢的样式
+      (((class color) (min-colors 88) (background dark)) ；深色背景的情况下的样式
+       :foreground "#ff8059"))
+    "My italic emphasis for Org.")
+
   (setq org-emphasis-alist
-      '(("*" my-org-emphasis-bold)
-	("/" my-org-emphasis-italic)
-	("_" underline)
-        ("=" org-verbatim verbatim)
-        ("~" org-code verbatim)
-	;; ("+" my-org-emphasis-strike-through)
-        ))
-  
+        '(("*" my-org-emphasis-bold)
+          ("/" my-org-emphasis-italic)
+          ("_" underline)
+          ("=" org-verbatim verbatim)
+          ("~" org-code verbatim)
+          ;; ("+" my-org-emphasis-strike-through)
+          ))
+
   (setq org-highlight-latex-and-related '(script entities)
         org-startup-indented nil
         org-hide-emphasis-markers t
@@ -191,11 +202,17 @@
 
   ;; Turn on auto-mode, it's built into Org and much faster/more featured than
   ;; org-fragtog. (Remember to turn off/uninstall org-fragtog.)
-  (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
+  (add-hook 'org-mode-hook 'org-latex-preview-mode)
 
   ;; Block C-n and C-p from opening up previews when using auto-mode
   (add-hook 'org-latex-preview-auto-ignored-commands 'next-line)
   (add-hook 'org-latex-preview-auto-ignored-commands 'previous-line)
+
+  ;; https://list.orgmode.org/orgmode/878ql1bt4s.fsf@localhost/
+  (defun my/org-latex-preview-show-error ()
+    (display-local-help t))
+  (add-hook 'org-ctrl-c-ctrl-c-final-hook
+            #'my/org-latex-preview-show-error -10)
 
   ;; Enable consistent equation numbering
   (setq org-latex-preview-numbered t)
@@ -527,6 +544,7 @@
  '(diff-refine-added ((t (:bold t :weight bold :foreground "#40803f" :background "#f0fafa"))))
  '(magit-diff-added-highlight ((t (:bold t :weight bold :foreground "#50a14f" :background "#f0f5f0"))))
  '(magit-diff-added ((t (:bold t :weight bold :foreground "#40803f" :background "#f0fafa"))))
+ '(custom-button ((t (:foreground "#f2f2f0" :background "#787878"))))
  ;;'(fixed-pitch ((t ( :family "Ios" :height 111))))
  )
 
@@ -543,7 +561,7 @@
         '("--24-bit-color" "always"
           "--features" "magit-delta"
           "--color-only"))
-)
+  )
 
 (add-hook! 'rainbow-mode-hook
   (hl-line-mode (if rainbow-mode -1 +1)))
@@ -552,26 +570,26 @@
   :mode "\\.tla\\'"
   :ensure t
   :config
-  ; The grammar is called tlaplus, but the mode is called tla
+                                        ; The grammar is called tlaplus, but the mode is called tla
   (setq treesit-load-name-override-list '((tla "libtree-sitter-tlaplus" "tree_sitter_tlaplus")))
-)
+  )
 
 
 (global-wakatime-mode)
 
-(use-package why-this
-  :hook
-  (pdf-view-mode . (lambda ()
-                     (when (string-match-p "\\.pdf\\'" (buffer-name))
-                       (why-this-mode -1))))
-  :config
-  (set-face-background 'why-this-annotate-heat-map-cold "#dde3f4")
-  (set-face-background 'why-this-annotate-heat-map-warm "#f0e0d4")
-  (set-face-attribute 'why-this-face nil
-                      :foreground "dark slate blue")
-  (setq why-this-minimum-column 100)
-  (setq why-this-idle-delay 0.3)
-  (global-why-this-mode))
+;; (use-package why-this
+;;   :hook
+;;   (pdf-view-mode . (lambda ()
+;;                      (when (string-match-p "\\.pdf\\'" (buffer-name))
+;;                        (why-this-mode -1))))
+;;   :config
+;;   (set-face-background 'why-this-annotate-heat-map-cold "#dde3f4")
+;;   (set-face-background 'why-this-annotate-heat-map-warm "#f0e0d4")
+;;   (set-face-attribute 'why-this-face nil
+;;                       :foreground "dark slate blue")
+;;   (setq why-this-minimum-column 100)
+;;   (setq why-this-idle-delay 0.3)
+;;   (global-why-this-mode))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; MODUS THEME ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -591,7 +609,7 @@
                            (unusedwrite . t)
                            (useany . t)
                            (unusedvariable . t)))
-)
+  )
 
 ;;;; Global keybinding
 (map! "S-<f12>" #'+lookup/references
@@ -629,3 +647,8 @@
             (message "Formatted SQL file: %s" filename))
         ;; Error message if formatter not found
         (message "sql-formatter not found in PATH!")))))
+
+(server-start)
+
+ (setq pdf-info-epdfinfo-error-filename "/tmp/pdf-tools-epdfinfo.log" ; for the server process
+       pdf-info-log t)

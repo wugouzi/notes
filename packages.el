@@ -55,6 +55,7 @@
 (package! org-appear)
 (package! org-ref)
 (package! org-sticky-header)
+(package! org-superstar)
 (package! aio)
 (package! mixed-pitch)
 (package! svg-tag-mode)
@@ -109,7 +110,7 @@
 (package! wakatime-mode)
 
 (package! logview)
-(package! why-this)
+;; (package! why-this)
 (package! google-c-style)
 (package! tintin-mode
   :recipe (:host github
