@@ -306,14 +306,96 @@
           RAM, so the swap space on the CPU RAM is bounded by the GPU memory allocated for the KV cache.
         * *Recomputation*
 ** Distributed Execution
-        Many LLMs have parameter sizes exceeding the capacity of a single GPU. Therefore, it is necessary to partition them
-across distributed GPUs and execute them in a model parallel
-fashion [28, 63]. This calls for a memory manager capable of
-handling distributed memory. vLLM is effective in distributed
-settings by supporting the widely used Megatron-LM style
-tensor model parallelism strategy on Transformers [47]. This
-strategy adheres to an SPMD (Single Program Multiple Data)
-execution schedule, wherein the linear layers are partitioned
+        Many LLMs have parameter sizes exceeding the capacity of a single GPU. Therefore, it is necessary to
+        partition them across distributed GPUs and execute them in a model parallel fashion. This calls for a
+        memory manager capable of handling distributed memory. vLLM is effective in distributed settings by
+        supporting the widely used Megatron-LM style tensor model parallelism strategy on Transformers
+        [[cite:&megatron-lm]]. This strategy adheres to an SPMD (Single Program Multiple Data) execution schedule,
+        wherein the linear layers are partitioned to perform block-wise matrix multiplication, and the GPUs
+        constantly synchronize intermediate results via an all-reduce operation. Specifically, the attention
+        operator is split on the attention head dimension, each SPMD process takes care of a subset of
+        attention heads in multi-head attention.
+        
+        We observe that even with model parallel execution, each model shard still processes the same set of
+        input tokens, thus requiring the KV Cache for the same positions. Therefore, vLLM features a single KV
+        cache manager within the centralized scheduler, as in Fig. [[ref:f4]]. Different GPU workers share the
+        manager, as well as the mapping from logical blocks to physical blocks. This common mapping allows GPU
+        workers to execute the model with the physical blocks provided by the scheduler for each input
+        request. Although each GPU worker has the same physical block IDs, a worker only stores a portion of
+        the KV cache for its corresponding attention heads.
+
+        In each step,
+        1. the scheduler first prepares the message with input token IDs for each request in the batch, as
+           well as the block table for each request.
+        2. the scheduler broadcasts this control message to the GPU workers.
+        3. the GPU workers start to execute the model with the input token IDs.
+        4. In the attention layers, the GPU workers read the KV cache according to the block table in the
+           control message.
+        5. During execution, the GPU workers synchronize the intermediate results with the all-reduce
+           communication primitive without the coordination of the scheduler, as in [[cite:&megatron-lm]].
+        6. the GPU workers send the sampled tokens of this iteration back to the scheduler.
+
+        In summary, GPU workers do not need to synchronize on memory management as they only need to receive
+        all the memory management information at the beginning of each decoding iteration along with the step
+        inputs. 
+* Implementation
+** Kernel-level Optimization
+        1. *fused reshape and block write*: In every Transformer layer, the new KV cache are split into blocks,
+           reshaped to a memory layout optimized for block read, then saved at positions specified by the
+           block table. To minimize kernel launch overheads, we fuse them into a single kernel.
+        2. *Fusing block read and attention*. We adapt the attention kernel in FasterTransformer to read KV
+           cache according to the block table and perform attention operations on the fly. To ensure coalesced
+           memory access, we assign a GPU warp to read each block. Moreover, we add support for variable
+           sequence lengths within a request batch.
+        3. *Fused block copy*. Block copy operations, issued by the copy-on-write mechanism, may operate on
+           discontinuous blocks. This can lead to numerous invocations of small data movements if we use the
+           ~cudaMemcpyAsync~ API. To mitigate the overhead, we implement a kernel that batches the copy
+           operations for different blocks into a single kernel launch.
+** Supporting Various Decoding Algorithm
+        vLLM implements various decoding algorithms using three key methods: ~fork~, ~append~, and ~free~. The ~fork~
+        method creates a new sequence from an existing one. The ~append~ method appends a new token to the
+        sequence. Finally, the ~free~ method deletes the sequence.
+
+        For instance, in parallel sampling, vLLM creates multiple output sequences from the single input
+        sequence using the ~fork~ method. It then adds new tokens to these sequences in every iteration with
+        append, and deletes sequences that meet a stopping condition using free. The same strategy is also
+        applied in beam search and prefix sharing by vLLM. We believe future decoding algorithms can also be
+        supported by combining these methods.
+* Evaluation
+        the ShareGPT dataset has 8.4× longer input prompts and 5.8× longer outputs on average than the Alpaca
+        dataset, with higher variance. 
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/446.png]]
+
+        vLLM’s PagedAttention can efficiently manage the memory usage and thus enable batching more requests
+        than Orca. 
+* Ablation Studies
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f18
+        #+CAPTION: 
+        [[../images/papers/447.png]]
+
+        GPU kernels involve extra overheads of accessing the block table, executing extra branches, and
+        handling variable sequence lengths. As shown in Fig. [[ref:f18]]a, this leads to 20–26% higher attention
+        kernel latency, compared to the highly-optimized FasterTransformer implementation.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/448.png]]
+
+        vLLM supports both recomputation and swapping as its recovery mechanisms. To understand the tradeoffs
+        between the two methods, we evaluate their end-to-end performance and microbenchmark their overheads.
+
+        Our results reveal that swapping incurs excessive overhead with small block sizes. This is because
+        small block sizes often result in numerous small data transfers between CPU and GPU, which limits the
+        effective PCIe bandwidth. In contrast, the overhead of recomputation remains constant across dif-
+        ferent block sizes, as recomputation does not utilize the KV blocks. Thus, recomputation is more
+        efficient when the block size is small, while swapping is more efficient when the block size is large,
+        though recomputation overhead is never higher than 20% of swapping’s latency. For medium block sizes
+        from 16 to 64, the two methods exhibit comparable end-to-end performance.
 * Problems
 
 

@@ -1,0 +1,96 @@
+#+title: FalconFS: Distributed File System for Large Scale Deep Learning Pipeline
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/falconfs.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        The tree-structured organization requires frequent path resolution in DFSs. Before any file operation,
+        the DFS client must resolve the complete path to locate the target file’s inode, which involves
+        verifying the existence and permissions of every directory along the path
+
+        As modern DFSs typically distribute directory metadata across multiple metadata servers for
+        scalability, path resolution entails multiple round-trips between the client and metadata servers.
+        This leads to significant request amplifica- tion: a single file operation entails multiple network
+        requests.
+
+        To mitigate path resolution overhead, existing DFSs employ client-side metadata caching, where clients
+        maintain a local cache of directory/file metadata to avoid frequent remote lookups. We refer to
+        clients with client-side caching as *stateful clients*, as they maintain metadata state locally. By
+        caching resolved paths, stateful clients reduce network round-trips for previously resolved and
+        locally cached file operations, improving performance.
+
+        However, this stateful-client architecture is inefficient for DL training workloads. Unlike
+        general-purpose workloads that exhibit strong locality and thus achieve high path resolution cache hit
+        rates, DL training workloads demonstrate multiple traversals of massive directory trees, containing
+        billions of directories and hundreds of billions of files in production environments, all accessed in
+        random order.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/449.png]]
+
+        
+
+* DL Pipelines: IO Patterns and Challenges
+
+** Deep Learning Pipeline
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/450.png]]
+
+        In the final archiving stage, the dataset is moved into low-cost storage systems such as cloud data
+        lakes for future reference 
+
+** Workload Patterns in DL Pipelines
+        Take DL pipeline for autonomous driving in Huawei as an example to present its unique workload
+        patterns.
+        * *Numerous small objects in large directories*: Multimodal data. a few KiB to a few MiB, mostly within
+          256KiB. Datasets hundreds of PBs, 300 billion small files
+        * *Random file traversal*: each file is accessed exactly once in each training epoch, and the access order is random.
+        * Burst file access
+        * Tight resource budget   
+** Challenge 1: Lookup Tax
+        we replay a trace of Resnet-50 model training on a small dataset, comprising 10 million 64KiB files in
+        1 million 7-level directories, stored in a CephFS instance with four MDSs and twelve OSDs. A total of
+        512 IO threads iterate through the files in random order. As shown in Fig [[ref:f2]]
+
+        When all directories are cached, all directory lookups are served by the cache, reducing each file
+        *open* operation to a single metadata lookup request. However, with a small cache size, the LRU policy
+        preferentially retains near-root directories, while the hit rate of last-level directories — which
+        constitute 90% of accesses in the experiment —- is propor- tional to the cache size.
+** Challenge 2: Transient Skewness
+        During the labeling stage, inference tasks scan and load/store data objects in a per-directory manner,
+        accessing all the files in one directory and then another. This per-directory IO pattern causes
+        transient load imbalances, which limit performance scalability.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f4
+        #+CAPTION: 
+        [[../images/papers/451.png]]
+
+        We observe that when the directory size exceeds the IO parallelism of the tasks, the DFS’s performance
+        degrades.
+
+        Analysis of load distribution (Fig. [[ref:f4]](b)) shows that at a directory size of 100, the MDSs
+        experience severe load imbalance during read operations. This issue arises because CephFS tends to
+        store metadata for files within the same directory together; consequently, burst operations on files
+        in the same directory can congest a single MDS, leading to performance bottlenecks.
+
+        Challenge 2: Concurrent operations on files within the same directory suffer from MDS congestion,
+        hindering performance scalability.
+* Proposal: DFS with Stateless Client
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+
