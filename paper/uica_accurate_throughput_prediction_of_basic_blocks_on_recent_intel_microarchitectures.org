@@ -1,0 +1,324 @@
+#+title: uiCA: Accurate Throughput Prediction of Basic Blocks on Recent Intel Microarchitectures
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/uica_accurate_throughput_prediction_of_basic_blocks_on_recent_intel_microarchitectures.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+#+LATEX_HEADER: \definecolor{mintedbg}{rgb}{0.99,0.99,0.99}
+#+LATEX_HEADER: \usepackage[cachedir=\detokenize{~/miscellaneous/trash}]{minted}
+#+LATEX_HEADER: \setminted{breaklines,
+#+LATEX_HEADER:   mathescape,
+#+LATEX_HEADER:   bgcolor=mintedbg,
+#+LATEX_HEADER:   fontsize=\footnotesize,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   linenos}
+
+* Introduction
+
+* Related Work
+** Models of Performance Prediction
+        Existing basic-block throughput models roughly fall into three camps:
+        1. simulation-based models
+        2. analytical models
+        3. machine-learning-based models.
+
+        The Intel Architecture Code Analyzer (IACA) is a tool developed by Intel that can statically analyze
+        the performance of loop kernels on several older microarchitectures. The tool generates a report which
+        includes throughput and port usage data of the analyzed loop kernel. As the tool is closed source, its
+        underlying model and prediction methodology are unknown. In April 2019, Intel announced IACA’s end of
+        life.
+
+        The Open Source Architecture Code Analyzer (OSACA) is an analytical performance prediction tool for
+        Intel, AMD, and ARM microarchitectures. It is based on a relatively coarse-grained model of these
+        microarchitectures; “accurately modeling the performance characteristics of the decode, reorder
+        buffer, register allocation/renaming, retirement and other stages, which all may limit the execution
+        throughput and impose latency penalties, is currently out of scope for OSACA.”
+
+        The LLVM Machine Code Analyzer (llvm-mca) is a simulation-based tool that predicts the performance of
+        machine code using scheduling models available in the LLVM compiler. It supports processors for which
+        a scheduling model is available in LLVM. llvm-mca does not model performance bottlenecks in the front
+        end. It also does not model techniques such as micro/macro fusion or move elimination.
+
+        Within the MAQAO framework, two performance analysis tools have been proposed: CQA and UFS.
+
+        The Code
+        Quality Analyzer (CQA) is a simulation-based tool that analyzes the performance of innermost loops. In
+        addition to computing throughput predictions, it provides high-level code quality metrics like the
+        vectorization ratio. CQA uses a front-end model that is more detailed than those of most other
+        previous tools; however, it does not model the core of the execution engine “because of its complexity
+        and lack of documentation.”
+
+        UFS is a throughput predictor that uses a relatively detailed model of the back end of the Sandy
+        Bridge microarchitecture, but only a very coarse-grained model of its front end. UFS exists only as a
+        prototype that is not publicly available.
+
+        Ithemal is a basic-block throughput predictor that is based on a deep neural network. This neural
+        network has been trained using training data obtained from measurements on the actual hardware. This
+        data-driven approach holds the promise of alleviating the tedious modeling effort required to build
+        conventional simulators. Unlike most of the other tools discussed in this section, it predicts a basic
+        block’s throughput but does not provide other insights into how the code is executed, which may be
+        useful for performance engineers. 
+** Microbenchmarking
+        One approach to construct detailed performance models is to reverse engineer the relevant parameters
+        by microbenchmarking.
+        
+        Agner Fog provides a measurement tool and a set of test scripts that generate microbenchmarks to
+        analyze various properties of microarchitectures. He maintains a set of tables with instruction
+        latencies, throughputs and micro-operation breakdowns, as well as a document with detailed
+        descriptions of many recent microarchitectures.
+        
+        nanoBench is a tool for evaluating small microbenchmarks on x86 systems using hardware performance
+        counters. nanoBench is used to evaluate the microbenchmarks for obtaining the latency, throughput, and
+        port usage data that is available at uops.info, which we extend in this work and employ in our tool.
+        
+        PMEvo is a framework by Ritter and Hack that can automatically infer port mappings based on measured
+        execution times of short code sequences. A related approach that also takes into account other
+        limiting resources besides execution ports was recently proposed by Derumigny et al.. The models
+        obtained by these two approaches may be used to predict the throughput of dependency-free basic
+        blocks.
+* Basic-Block Throughput Prediction
+** Notions of Throughput
+        The throughput of a basic block is commonly defined as the average number of clock cycles per
+        iteration when executing the basic block repeatedly in a steady state.
+
+        For basic blocks that end in a branch instruction that jumps back to the beginning of the block,
+        “executing the basic block repeatedly” can reasonably be interpreted to mean executing the block in a
+        way that the branch is always taken; this corresponds to executing the basic block as an infinite
+        loop. In the following, we will refer to this notion of throughput as \(TP_L\).
+
+        Basic blocks that do not end in a branch instruction cannot be executed in this way. For such blocks,
+        a way to “execute the basic block repeatedly” is to unroll the basic block a sufficient number of
+        times to reach a steady state. In the following, we will refer to this notion of throughput as
+        \(TP_U\).
+
+        An important difference between the two notions is that for \(TP_L\) , the µops of many benchmarks are
+        delivered by the µOP cache (DSB) or the loop stream detector, whereas for \(TP_U\), all µops have to
+        go through the decoders, which can be significantly slower. As an example, consider the basic block
+        #+begin_src asm
+    ADD AX, 0x1234
+    DEC R15
+        #+end_src
+        When unrolling this code sequence multiple times, the average execution time on a Skylake CPU is 3.44
+        cycles per iteration; the bottleneck here is a stall in the predecoder. On the other hand, the code
+        sequence
+        #+begin_src asm
+loop:
+    ADD AX, 0x1234
+    DEC R15
+    JNZ loop
+        #+end_src
+        is served from the µOP cache (DSB) and requires, on average, only one cycle per loop iteration, even
+        though it has an additional instruction.
+
+        In this work, we develop a throughput predictor that can predict the throughput under both notions.
+        For basic blocks that end in a branch instruction, we use \(TP_L\) ; for other blocks, we use \(TP_U\).
+** Common Modeling Assumptions
+* A Parametric Pipeline Model
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/454.png]]
+** Pipeline Properties
+*** Front End
+        The predecoder fetches aligned 16-byte blocks from the instruction cache (at most one such block per
+        cycle), and it is mainly responsible for detecting where each instruction begins. This is not
+        completely straightforward, as an instruction can be between 1 and 15 bytes long, and detecting its
+        length can require inspecting several bytes of the instruction. The predecoded instructions are
+        inserted into the *instruction queue*
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+According to our experiments, the predecoder can predecode at most five instructions per cycle. If there are,
+e.g., six instructions in a 16-byte block, in the first cycle, five instructions would be predecoded, and in
+the next cycle, only one instruction would be predecoded.
+
+Several sources incorrectly claim that the predecoding limit is six instructions per cycle; the source for
+this might be a section in Intel’s optimization manual that mentions such a limit; however, this section only
+applies to old Intel Core 2 CPUs, which did not have a µop cache, and thus decoding was a more significant
+bottleneck. 
+        #+END_remark
+
+        A special case are instructions with a so called *length-changing prefix* (LCP). For such instructions,
+        the predecoder has to use a slower length-decoding algorithm. This results in a penalty of three
+        cycles for each such instruction.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        For building an accurate simulator, it is important to know how instructions that cross a 16-byte
+        boundary are predecoded; however, this is undocumented. Our experiments show that instructions are
+        predecoded with the 16-byte block in which they end; they count toward the limit of five instructions
+        in the corresponding cycle. We found that there is a one cycle penalty if five instructions were
+        predecoded in the current cycle, the next instruction crosses a 16-byte boundary, but the primary
+        opcode is contained in the current 16-byte block; if there are only prefixes or escape opcodes of the
+        next instruction in the current block, there is no penalty. 
+        #+END_remark
+
+        The decoding unit fetches up to four instructions per cycle from the IQ. It decodes the instructions
+        into a sequence of µops and sends them to the *Instruction Decode Queue* (IDQ).
+
+        The decoding unit consists of one complex decoder and three simple decoders. The simple decoders can
+        only decode instructions with a single µop. The complex decoder always decodes the first of the
+        fetched instructions, and it can generate up to four µops. Several sources incorrectly claim that with
+        the Skylake microarchitecture, the number of simple decoders was increased from three to four; this
+        might be based on a misinterpretation of the fact that with Skylake, the number of µops that can be
+        delivered from the decoding unit to the IDQ was increased from four to five.
+
+        Instructions with more than four µops are (at least partially) handled by the *Microcode Sequencer*
+        (MS).
+
+        The sizes of the IQ and the IDQ, whether a macro-fusible instruction can be decoded on the last
+        decoder or when the instruction queue is empty, whether pop instructions require the complex decoder
+        if registers ~rsp~ or ~r12~ are used, and whether any other instructions can be decoded in the same cycle
+        are parameters of our model.
+        
+        Decoded µops are also stored in the *Decoded Stream Buffer* (DSB, also: µOP cache), subject to certain
+        conditions. This can allow for a higher throughput of loops for which decoding is the bottleneck.
+
+
+        A
+        cache line in the DSB of a pre-Ice Lake CPUs can store at most six µops that need to be contained in
+        the same 32-byte aligned code block. There can be at most three cache lines that contain µops from a
+        specific 32-byte block. If a 32-byte block contains more than three cache lines, no µop of this block
+        will be stored in the DSB. There are a number of other restrictions; e.g., some µops require two slots
+        in a cache line. These restrictions are not described in the official manuals, but they have been
+        reverse engineered by Agner Fog
+
+        The block size of the DSB, the maximum number of µops that the DSB can deliver per cycle, whether a 32
+        byte block can only be in the DSB if the other 32 byte block in the same 64 byte block is also
+        cacheable, the number of stall cycles when switching from DSB to MS, and whether a branch instruction
+        can be the last instruction in a block that is cached by the DSB are parameters of our model.
+        
+        The *Loop Stream Detector* (LSD) detects loops whose µops fit entirely into the IDQ. In this case, it
+        locks the µops in the IDQ, and streams them continuously without requiring the DSB or the decoders.
+        The first µop of a loop iteration cannot be streamed in the same cycle as the last µop of the previous
+        iteration. As this could be a significant bottleneck for small loops, the LSD can automatically unroll
+        the loop. While this unrolling is briefly mentioned in the manual, no details are provided.
+*** Renamer/Allocator
+        The *renamer* (also called *Resource Allocation Table* (RAT)) maps architectural registers to physical
+        registers. It also allocates resources for loads and stores, and it assigns execution ports to the
+        µops.
+
+        The renamer fetches µops from the IDQ. It stores all µops in the reorder buffer, and it issues them to
+        the scheduler. We call the maximum number of µops that the renamer can handle per cycle the *issue
+        width*.
+        
+        All µops remain in the reorder buffer until they are ready to retire. A µop is ready to *retire* if it
+        has finished execution and all older µops (in program order) are ready to retire.
+
+        The renamer can directly execute certain classes of µops like register moves, NOPs, or zero (one)
+        idioms; such µops are sent to the reorder buffer but not to the scheduler. Zero (one) idioms are
+        instructions that always set the target register to 0 (1), independently of the values in the source
+        registers. An example is an XOR of a register with itself.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        In the following, we describe our findings for CPUs with eight ports; such CPUs are currently most
+        widely used. These CPUs can issue up to four µops per cycle.
+        
+        In the following, we will call the position of a µop within a cycle an *issue slot*; e.g., the oldest
+        instruction issued in a cycle would occupy issue slot 0.
+        
+        The port that a µop is assigned depends on its issue slot and on the ports assigned to µops that have
+        not been executed and were issued in a previous cycle. In the following, we will only consider µops
+        that can use more than one port.
+        
+        For a given µop \(m\), let \(P_{min}\) be the port to which the fewest non-executed µops have been
+        assigned to from among the ports that \(m\) can use. Let \(P_{min'}\) be the port with the second
+        smallest usage so far. If there is a tie among the ports with the smallest (or second smallest,
+        respectively) usage, let \(P_{min}\) (or \(P_{min'}\)) be the port with the highest port number from
+        among these ports (the reason for this choice is probably that ports with higher numbers are connected
+        to fewer functional units). If the difference in the usage between \(P_{min}\) and \(P_{min'}\) is
+        greater or equal to 3, we set \(P_{min'}\) to \(P_{min}\) . The µops in issue slots 0 and 2 are
+        assigned to port \(P_{min}\) . The µops in issue slots 1 and 3 are assigned to port \(P_{min'}\).
+        
+        A special case are µops that can use port 2 and port 3. These ports are used by µops that handle
+        memory accesses, and both ports are connected to the same types of functional units. For such µops,
+        the port assignment algorithm alternates between port 2 and port 3.
+        #+END_remark
+*** Scheduler
+        The *scheduler* (also called the *reservation station*) keeps track of the dependencies of the µops. Once
+        all operands of a µop are ready, the scheduler dispatches it to its assigned port.
+
+        Each port is connected to a set of different functional units, such as an ALU, an address-generation
+        unit (AGU), or a unit for vector multiplications. Each port can accept at most one µop in every cycle.
+        However, as most functional units are fully pipelined, a port can typically accept a new µop in every
+        cycle, even though the corresponding functional unit might not have finished executing a previous µop.
+*** Move Elimination
+        Check [[https://easyperf.net/blog/2018/04/22/What-optimizations-you-can-expect-from-CPU][What optimizations you can expect from CPU?]] for example.
+        
+        Starting with the Ivy Bridge microarchitecture, certain register-to-register move instructions can be
+        executed by the renamer
+
+        However, this *move elimination* is not always successful. Intel’s manual mentions “internal resource
+        constraints” that may prevent eliminations, and provides an example in which only 50% of the moves
+        could be eliminated, but it does not describe these internal resources in more detail.
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_remark
+        The following model agrees with our observations. The processor keeps track of the physical registers
+        that are used by more than one architectural register. We say that each such physical register
+        occupies one *elimination slot*. An elimination slot is released again after the corresponding registers
+        have been overwritten. The number of move instructions that can be eliminated in a cycle depends both
+        on the number of available elimination slots, and on the number of successful eliminations in the
+        previous cycle.
+        
+        We have discovered that on Tiger Lake and Ice Lake CPUs with a recent microcode, move elimination for
+        general-purpose registers is disabled. On Ice Lake CPUs with an older microcode, move elimination is
+        enabled. This is probably due to the ICL065 erratum 
+        #+END_remark
+*** Macro Fusion
+        Instruction Queue (IQ) can merge specific pairs of instructions; such “macro-fused” instruction pairs
+        are treated as single instructions in the rest of the pipeline. The first instruction of such a pair
+        is always an arithmetic or logic instruc- tion that updates the status flags, and the second
+        instruction is a conditional jump instruction.
+*** Micro Fusion
+        Micro fusion is an optimization in which two µops of the same instruction are fused together in the
+        stage and treated as one µop in the early parts of the pipeline; they are split into two µops before
+        execution in the back end. All decoders (including the simple decoders) can emit micro-fused µops.
+        Only specific types of µops can be fused; one of the µops must be a load or store µop.
+
+        There are two possible locations in the pipeline where micro-fused µops may be split into their
+        components. In most cases, micro-fused µops are split when they enter the scheduler; however, they
+        take only one slot in the reorder buffer. In some cases, micro-fused µops from instructions that use
+        an indexed addressing mode are split already by the renamer; Intel’s optimization manual refers to
+        this as *unlamination*. Unlaminated µops require two slots in the reorder buffer.
+** Properties of Individual Instructions
+        * How many µops of an instruction are micro fused, and whether they are unlaminated by the renamer.
+        * How many µops of an instruction are delivered from the decoders (or the DSB) and how many from the MS.
+        * Whether an instruction requires the complex decoder.
+        * For each instruction that requires the complex decoder, we determine the number of instructions that
+          can be handled by simple decoders in the same cycle.
+        * The pairs of instructions that can be macro fused (these pairs are microarchitecture-specific and
+          undocumented for post-Haswell processors).
+** Basic-Block Throughput Predictor
+        Throughput predictions for a basic block are obtained as follows. The tool simulates the repeated
+        execution of the basic block for at least 500 cycles and until at least 10 iterations have been
+        completed. Let \(n\) be the number of completed iterations. Let \(t\) be the cycle in which the last
+        instruction of the \(n\)-th iteration was retired, and \(t'\) be the cycle in which the last
+        instruction of the \(\frac{n}{2}\)-th iteration was retired. The tool then predicts
+        \(\frac{2(t-t')}{n}\) as the throughput.
+* Benchmarks and Measurements
+        The BHive suite contains more than 300,000 basic blocks that were extracted  applications from
+        different domains, including numerical computa- tion, databases, compilers, machine learning, and
+        cryptography.
+
+        The following sections describe the shortcomings of BHive
+** In-Scope Benchmarks
+        Filter out some tests in BHive as they do not fit assumption
+** Loop-Based Benchmarks
+        Add loop to original BHive tests
+** Performing Accurate Measurements
+* Experimental Evaluation
+** Comparison with Other Tools
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

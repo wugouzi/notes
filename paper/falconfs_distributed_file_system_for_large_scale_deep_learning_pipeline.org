@@ -85,6 +85,61 @@
         Challenge 2: Concurrent operations on files within the same directory suffer from MDS congestion,
         hindering performance scalability.
 * Proposal: DFS with Stateless Client
+        Observations:
+        1. A typical DL cluster usually has far more clients than metadata servers. In Huawei’s deployment
+           environment, the ratio of clients to servers exceeds 40:1. Considering that all clients share the
+           same dataset in DL pipelines, a server-side dentry can serve more clients than a client-side cache.
+        2. Stateful-client DFSs typically use VFS dcache and inode cache to cache directory attributes, which
+           takes 800 bytes for each directory. On the server side, a directory entry can be maintained in a
+           custom format that takes less than 100 bytes. 
+        3. Server has more memory resources than the clients
+
+
+        How to find the right server? Find the correct metadata server that stores the target file’s inode.
+        * *Path-walk indexing*.  Most DFSs use indexing methods that are related to the parent directories, for
+          example, using the parent directory ID as (part of) the key for hashing, or indexing files in
+          different directories with different hashing rules.
+
+          These approaches require a full-path walk to resolve inode location, and need caching directory
+          entries on clients to achieve better performance, 
+        * *Full-path hashing* determines the target inode location by hashing the full path. It does not require
+          cache, but makes directory rename prohibitively expensive due to the relocation of all inodes in the
+          subtree. 
+* System Design
+** FalconFS Overview
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f5
+        #+CAPTION: 
+        [[../images/papers/452.png]]
+
+        FalconFS’s *client module* is a kernel module that provides POSIX interfaces through Linux VFS. It
+        shortcuts VFS path walk and forwards the operation request with full path to MNodes according to
+        hybrid metadata indexing
+
+        Metadata nodes (MNode) are PostgreSQL databases with customized extensions. We manage metadata for
+        FalconFS in the extensions using the database’s table and transaction management, B-link tree index,
+        xlog (write-ahead logging), and primary-secondary replication.
+
+        Each MNode maintains a lazily synchronized directory tree structure (namespace replica) and a
+        partition of file attributes (inodes). Leveraging the merits of central location as servers, MNode
+        merges concurrent requests to de-duplicate shareable execution processes for higher throughput.
+
+        The central coordinator is responsible for managing namespace changes. It also runs a load balancing
+        algorithm to balance inode distribution across MNodes
+
+        File Store is a distributed block storage system that stores file data.
+
+        FalconFS replicates the file system directory structure across all MNodes, enabling each MNode to
+        resolve file paths and check permissions locally. The namespace replica contains entries of directory
+        attributes required for path resolution, i.e., dentries in Tab. 1, and does not include file
+        attributes. With one billion directories, the storage footprint for the namespace replica is less than
+        100 GiB per MNode, which is acceptable.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/453.png]]
+
 * Problems
 
 
