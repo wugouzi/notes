@@ -1,0 +1,335 @@
+#+title: The Google File System
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/google_file_system.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Observation:
+        1. component failures are the norm
+        2. files are huge
+        3. most files are mutated by appending new data rather than overwriting existing data
+        4. co-designing the applications and the ﬁle system API beneﬁts the overall system by increasing our
+           ﬂexibility.  
+* Design Overview
+** Assumption
+        * The system stores a modest number of large ﬁles. We expect a few million ﬁles, each typically 100 MB
+          or larger in size. Multi-GB ﬁles are the common case and should be managed efficiently.
+
+          Small ﬁles must be supported, but we need not optimize for them.
+        * The workloads primarily consist of two kinds of reads: large streaming reads and small random reads.
+
+          In large streaming reads, individual operations typically read hundreds of KBs, more commonly 1 MB
+          or more. Successive operations from the same client often read through a contiguous region of a ﬁle.
+
+          A small random read typically reads a few KBs at some arbitrary oﬀset. Performance-conscious
+          applications often batch and sort their small reads to advance steadily through the ﬁle rather than
+          go back and forth. 
+        * The workloads also have many large, sequential writes that append data to ﬁles. Typical operation
+          sizes are similar to those for reads. Once written, ﬁles are seldom modiﬁed again. Small writes at
+          arbitrary positions in a ﬁle are supported but do not have to be eﬃcient.
+        * The system must eﬃciently implement well-deﬁned semantics for multiple clients that concurrently
+          append to the same ﬁle.
+
+          Our ﬁles are often used as producer-consumer queues or for many-way merging. Hundreds of producers,
+          running one per machine, will concurrently append to a ﬁle. Atomicity with minimal synchronization
+          overhead is essential. The ﬁle may be read later, or a consumer may be reading through the ﬁle simultaneously.
+        * High sustained bandwidth is more important than low latency. Most of our target applications place a
+          premium on processing data in bulk at a high rate, while few have stringent response time
+          requirements for an individual read or write.
+** Interface
+        /create/, /delete/, /open/, /close/, /read/, /write/, /snapshot/, /record append/
+
+        Snapshot creates a copy of a ﬁle or a directory tree at low cost. Record append allows multiple
+        clients to append data to the same ﬁle concurrently while guaranteeing the atomicity of each
+        individual client’s append. 
+** Architecture
+        single *master* and multiple *chunkservers* and is accessed by multiple clients
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/455.png]]
+
+        Files are divided into ﬁxed-size *chunks*. Each chunk is identiﬁed by an immutable and globally unique
+        64 bit *chunk handle* assigned by the master at the time of chunk creation. Chunkservers store chunks on
+        local disks as Linux ﬁles and read or write chunk data speciﬁed by a chunk handle and byte range. For
+        reliability, each chunk is replicated on multiple chunkservers. By default, we store three replicas,
+        though users can designate diﬀerent replication levels for diﬀerent regions of the ﬁle namespace.
+        
+        The master maintains all ﬁle system metadata. This includes the namespace, access control information,
+        the mapping from ﬁles to chunks, and the current locations of chunks. It also controls system-wide
+        activities such as chunk lease management, garbage collection of orphaned chunks, and chunk migration
+        between chunkservers. The master periodically communicates with each chunkserver in *HeartBeat* messages
+        to give it instructions and collect its state.
+
+        GFS client code linked into each application implements the ﬁle system API and communicates with the
+        master and chunkservers to read or write data on behalf of the application. Clients interact with the
+        master for metadata operations, but all data-bearing communication goes directly to the chunkservers.
+        We do not provide the POSIX API and therefore need not hook into the Linux vnode layer.
+        
+        Neither the client nor the chunkserver caches ﬁle data. Client caches oﬀer little beneﬁt because most
+        applications stream through huge ﬁles or have working sets too large to be cached. Not having them
+        simpliﬁes the client and the overall system by eliminating cache coherence issues. (Clients do cache
+        metadata, however.) Chunkservers need not cache ﬁle data because chunks are stored as local ﬁles and
+        so Linux’s buﬀer cache already keeps frequently accessed data in memory. 
+** Single Master
+** Chunk Size
+        64MB chunk
+
+        Large chunk size
+
+        pro:
+        1. it reduces clients’ need to interact with the master because reads and writes on the same chunk
+           require only one initial request to the master for chunk location information. The reduction is
+           especially signiﬁcant for our workloads because applications mostly read and write large ﬁles
+           sequentially. Even for small random reads, the client can comfortably cache all the chunk location
+           information for a multi-TB working set.
+        2. since on a large chunk, a client is more likely to perform many operations on a given chunk, it can
+           reduce network overhead by keeping a persistent TCP connection to the chunkserver over an extended
+           period of time.
+        3. it reduces the size of the metadata stored on the master. This allows us to keep the metadata in
+           memory
+
+        Con: A small ﬁle consists of a small number of chunks, perhaps just one. The chunkservers storing
+        those chunks may become hot spots if many clients are accessing the same ﬁle.
+** Metadata
+        the ﬁle and chunk namespaces, the mapping from ﬁles to chunks, and the locations of each chunk’s
+        replicas.
+
+        All metadata is kept in the master’s memory. The ﬁrst two types are also kept persistent by logging
+        mutations to an operation log stored on the master’s local disk and replicated on remote machines. The
+        master does not store chunk location information persistently. Instead, it asks each chunkserver about
+        its chunks at master startup and whenever a chunkserver joins the cluster.
+*** In-Memory Data Structures
+*** Chunk Locations
+*** Operation Log
+        we replicate it on multiple remote machines and respond to a client operation only after ﬂushing the
+        corresponding log record to disk both locally and remotely. The master batches several log records
+        together before ﬂushing thereby reducing the impact of ﬂushing and replication on overall system
+        throughput.
+
+        The master recovers its ﬁle system state by replaying the operation log. To minimize startup time, we
+        must keep the log small. The master checkpoints its state whenever the log grows beyond a certain size
+        so that it can recover by loading the latest checkpoint from local disk and replaying only the limited
+        number of log records after that. The checkpoint is in a compact B-tree like form that can be directly
+        mapped into memory and used for namespace lookup without extra parsing. This further speeds up
+        recovery and improves availability.
+
+        Because building a checkpoint can take a while, the master’s internal state is structured in such a
+        way that a new checkpoint can be created without delaying incoming mutations. The master switches to a
+        new log ﬁle and creates the new checkpoint in a separate thread. The new checkpoint includes all
+        mutations before the switch. It can be created in a minute or so for a cluster with a few million
+        ﬁles.
+** Consistency Model
+        <<2.7>>
+*** Guarantees by GFS
+        File namespace mutations (e.g., ﬁle creation) are atomic. They are handled exclusively by the master:
+        namespace locking guarantees atomicity and correctness; the master’s operation log deﬁnes a global
+        total order of these operations
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/456.png]]
+
+        * A ﬁle region is *consistent* if all clients will always see the same data, regardless of which
+          replicas they read from.
+        * A region is *deﬁned* after a ﬁle data mutation if it is consistent and clients will see what the
+          mutation writes in its entirety.
+        * When a mutation succeeds without interference from concurrent writers, the aﬀected region is deﬁned
+          (and by implication consistent): all clients will always see what the mutation has written.
+        * Concurrent successful mutations leave the region undeﬁned but consistent: all clients see the same
+          data, but it may not reﬂect what any one mutation has written. Typically, it consists of mingled
+          fragments from multiple mutations.
+        * A failed mutation makes the region inconsistent (hence also undeﬁned): diﬀerent clients may see
+          diﬀerent data at diﬀerent times.
+
+        We describe below how our applications can distinguish deﬁned regions from undeﬁned regions.
+
+        Data mutations may be *writes* or *record appends*. A write causes data to be written at an
+        application-speciﬁed ﬁle oﬀset. A record append causes data (the “record”) to be appended *atomically
+        at least once* even in the presence of concurrent mutations, but at an oﬀset of GFS’s choosing (In
+        contrast, a “regular” append is merely a write at an oﬀset that the client believes to be the current
+        end of ﬁle.) The oﬀset is returned to the client and marks the beginning of a deﬁned region that
+        contains the record. In addition, GFS may insert padding or record duplicates in between. They occupy
+        regions considered to be inconsistent and are typically dwarfed by the amount of user data.
+
+        After a sequence of successful mutations, the mutated ﬁle region is guaranteed to be deﬁned and
+        contain the data written by the last mutation. GFS achieves this by
+        1. applying mutations to a chunk in the same order on all its replicas ([[ref:3.1]])
+        2. using chunk version numbers to detect any replica that has become stale because it has missed
+           mutations while its chunkserver was down (Section [[ref:4.5]]). Stale replicas will never be involved
+           in a mutation or given to clients asking the master for chunk locations. They are garbage collected
+           at the earliest opportunity. 
+
+        Since clients cache chunk locations, they may read from a stale replica before that information is
+        refreshed. This window is limited by the cache entry’s timeout and the next open of the ﬁle, which
+        purges from the cache all chunk information for that ﬁle. Moreover, as most of our ﬁles are
+        append-only, a stale replica usually returns a premature end of chunk rather than outdated data. When
+        a reader retries and contacts the master, it will immediately get current chunk locations.
+        
+        Long after a successful mutation, component failures can of course still corrupt or destroy data. GFS
+        identiﬁes failed chunkservers by regular handshakes between master and all chunkservers and detects
+        data corruption by checksumming (Section [[ref:5.2]]). Once a problem surfaces, the data is restored from
+        valid replicas as soon as possible (Section [[ref:4.3]]). A chunk is lost irreversibly only if all its
+        replicas are lost before GFS can react, typically within minutes. Even in this case, it becomes
+        unavailable, not corrupted: applications receive clear errors rather than corrupt data.
+*** Implications for Applications
+        GFS applications can accommodate the relaxed consis- tency model with a few simple techniques already
+        needed for other purposes: relying on appends rather than overwrites, checkpointing, and writing
+        self-validating, self-identifying records.
+
+        To eliminate duplicates (append-at-least-once semantics)
+        * checksum for validity
+        * unique identifiers for filtering out duplicates
+
+        These machinaries are provided by clients
+* System Interactions
+** Leases and Mutation Order
+        <<3.1>>
+        A mutation is an operation that changes the contents or metadata of a chunk such as a write or an
+        append operation. Each mutation is performed at all the chunk’s replicas.
+
+        We use leases to maintain a consistent mutation order across replicas. The master grants a chunk lease
+        to one of the replicas, which we call the *primary*. The primary picks a serial order for all mutations
+        to the chunk. All replicas follow this order when applying mutations. Thus, the global mutation order
+        is deﬁned ﬁrst by the lease grant order chosen by the master, and within a lease by the serial numbers
+        assigned by the primary.
+        
+        The lease mechanism is designed to minimize management overhead at the master. A lease has an initial
+        timeout of 60 seconds. However, as long as the chunk is being mutated, the primary can request and
+        typically receive extensions from the master indeﬁnitely. These extension requests and grants are
+        piggybacked on the HeartBeat messages regularly exchanged between the master and all chunkservers.
+        
+        The master may sometimes try to revoke a lease before it expires (e.g., when the master wants to
+        disable mutations on a ﬁle that is being renamed). Even if the master loses communication with a
+        primary, it can safely grant a new lease to another replica after the old lease expires.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/457.png]]
+
+        1. The client asks the master which chunkserver holds the current lease for the chunk and the
+           locations of the other replicas. If no one has a lease, the master grants one to a replica it chooses
+        2. The master replies with the identity of the primary and the locations of the other (*secondary*)
+           replicas. The client caches this data for future mutations. It needs to contact the master again
+           only when the primary becomes unreachable or replies that it no longer holds a lease.
+        3. The client pushes the data to all the replicas. A client can do so in any order. Each chunkserver
+           will store the data in an internal LRU buﬀer cache until the data is used or aged out. By
+           decoupling the data ﬂow from the control ﬂow, we can improve performance by scheduling the
+           expensive data ﬂow based on the network topology regardless of which chunkserver is the primary.
+        4. Once all the replicas have acknowledged receiving the data, the client sends a write request to the
+           primary. The request identiﬁes the data pushed earlier to all of the replicas. The primary assigns
+           consecutive serial numbers to all the mutations it receives, possibly from multiple clients, which
+           provides the necessary serialization. It applies the mutation to its own local state in serial number order.
+        5. The primary forwards the write request to all secondary replicas. Each secondary replica applies
+           mutations in the same serial number order assigned by the primary.
+        6. The secondaries all reply to the primary indicating that they have completed the operation.
+        7. The primary replies to the client. Any errors encountered at any of the replicas are reported to
+           the client. In case of errors, the write may have succeeded at the primary and an arbitrary subset
+           of the secondary replicas. (If it had failed at the primary, it would not have been assigned a
+           serial number and forwarded.) The client request is considered to have failed, and the modiﬁed
+           region is left in an inconsistent state. Our client code handles such errors by retrying the failed
+           mutation. It will make a few attempts at steps (3) through (7) before falling back to a retry from
+           the beginning of the write.
+
+        If a write by the application is large or straddles a chunk boundary, GFS client code breaks it down
+        into multiple write operations. They all follow the control ﬂow described above but may be interleaved
+        with and overwritten by concurrent operations from other clients. Therefore, the shared ﬁle region may
+        end up containing fragments from diﬀerent clients, although the replicas will be identical because the
+        individual operations are completed successfully in the same order on all replicas. This leaves the
+        ﬁle region in consistent but undeﬁned state as noted in Section [[ref:2.7]].
+
+        #+LATEX: \wu{
+        Suppose:
+        * A: A1 -> A2
+        * B: B1 -> B2
+        Primary will order A1, A2, B1, B2. So A & B are interleaved
+        #+LATEX: }
+** Data Flow
+        <<3.2>>
+        Data is pushed linearly along a carefully picked chain of chunkservers in a pipelined fashion. Our
+        goals are to fully utilize each machine’s network bandwidth, avoid network bottlenecks and
+        high-latency links, and minimize the latency to push through all the data.
+
+        To fully utilize each machine’s network bandwidth, the data is pushed linearly along a chain of
+        chunkservers. Each machine forwards the data to the “closest” machine in the network topology that has
+        not received it.
+** Atomic Record Appends
+        GFS provides an atomic append operation called *record append*.
+
+        In a traditional write, the client speciﬁes the offset at which data is to be written. Concurrent
+        writes to the same region are not serializable: the region may end up containing data fragments from
+        multiple clients.
+
+        In a record append, however, the client speciﬁes only the data. GFS appends it to the ﬁle at least
+        once atomically (i.e., as one continuous sequence of bytes) at an offset of GFS’s choosing and returns
+        that offset to the client.
+
+        Record append is a kind of mutation and follows the control ﬂow in Section [[ref:3.1]] with only a little
+        extra logic at the primary. The client pushes the data to all replicas of the last chunk of the ﬁle.
+        Then, it sends its request to the primary. The primary checks to see if appending the record to the
+        current chunk would cause the chunk to exceed the maximum size (64 MB). If so, it pads the chunk to
+        the maximum size, tells secondaries to do the same, and replies to the client indicating that the
+        operation should be retried on the next chunk. (Record append is restricted to be at most one-fourth
+        of the maximum chunk size to keep worst-case fragmentation at an acceptable level.) If the record ﬁts
+        within the maximum size, which is the common case, the primary appends the data to its replica, tells
+        the secondaries to write the data at the exact oﬀset where it has, and ﬁnally replies success to the
+        client.
+        
+        If a record append fails at any replica, the client retries the operation. As a result, replicas of
+        the same chunk may contain diﬀerent data possibly including duplicates of the same record in whole or
+        in part. GFS does not guarantee that all replicas are bytewise identical. It only guarantees that the
+        data is written at least once as an atomic unit. This property follows readily from the simple
+        observation that for the operation to report success, the data must have been written at the same
+        oﬀset on all replicas of some chunk.
+
+        #+LATEX: \wu{
+        And we have deduplication mechanism in reader
+        #+LATEX: }
+
+        Furthermore, after this, all replicas are at least as long as the end of record and therefore any
+        future record will be assigned a higher oﬀset or a diﬀerent chunk even if a diﬀerent replica later
+        becomes the primary. In terms of our consistency guarantees, the regions in which successful record
+        append operations have written their data are deﬁned (hence consistent), whereas intervening regions
+        are inconsistent (hence undeﬁned).
+** Snapshot
+        We use standard copy-on-write techniques to implement snapshots. When the master receives a snapshot
+        request, it ﬁrst revokes any outstanding leases on the chunks in the ﬁles it is about to snapshot.
+        This ensures that any subsequent writes to these chunks will require an interaction with the master to
+        ﬁnd the lease holder. This will give the master an opportunity to create a new copy of the chunk ﬁrst.
+
+        After the leases have been revoked or have expired, the master logs the operation to disk. It then
+        applies this log record to its in-memory state by duplicating the metadata for the source ﬁle or
+        directory tree. The newly created snapshot ﬁles point to the same chunks as the source ﬁles.
+
+        The ﬁrst time a client wants to write to a chunk C after the snapshot operation, it sends a request to
+        the master to ﬁnd the current lease holder. The master notices that the reference count for chunk C is
+        greater than one. It defers replying to the client request and instead picks a new chunk handle C'. It
+        then asks each chunkserver that has a current replica of C to create a new chunk called C’. From this
+        point, request handling is no different from that for any chunk: the master grants one of the replicas
+        a lease on the new chunk C’ and replies to the client, which can write the chunk normally, not knowing
+        that it has just been created from an existing chunk.
+* Master Operation
+        The master executes all namespace operations. In addition, it manages chunk replicas throughout the
+        system: it makes placement decisions, creates new chunks and hence replicas, and coordinates various
+        system-wide activities to keep chunks fully replicated, to balance load across all the chunkservers,
+        and to reclaim unused storage. We now discuss each of these topics.
+** Namespace Management and Locking
+        Many master operations can take a long time: for example, a snapshot operation has to revoke
+        chunkserver leases on all chunks covered by the snapshot. We do not want to delay other master
+        operations while they are running. Therefore, we allow multiple operations to be active and use locks
+        over regions of the namespace to ensure proper serialization.
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
