@@ -1,0 +1,246 @@
+#+title: Facebook's Tectonic Filesystem: Efficiency from Exascale
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/facebook_tectonic_filesystem.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Introduction
+        Tectonic is Facebook’s distributed filesystem. It currently serves around ten tenants, including blob
+        storage and data warehouse, both of which store exabytes of data.
+
+        Prior to Tectonic, Facebook’s storage infrastructure consisted of a constellation of smaller,
+        specialized storage systems. Blob storage was spread across Haystack and f4. Data warehouse
+        was spread across many HDFS instances.
+
+        The constellation approach was operationally complex, requiring many different systems to be
+        developed, optimized, and managed. It was also inefficient, stranding resources in the specialized
+        storage systems that could have been reallo- cated for other parts of the storage workload.
+
+        For instance, Haystack was the storage system specialized for new blobs; it bottlenecked on hard disk
+        IO per second (IOPS) but had spare disk capacity. f4, which stored older blobs, bottlenecked on disk
+        capacity but had spare IO capacity. Tectonic requires fewer disks to support the same workloads
+        through consolidation and resource sharing.
+
+        Challenges:
+        * scaling to exabyte-scale
+        * prodividng performance isolation between tenants
+        * enabling tenant-specific optimizations
+
+        To scale metadata, Tectonic disaggregates the filesystem metadata into independently-scalable layers.
+        Tectonic hash-partitions each metadata layer rather than using range partitioning. Hash partitioning
+        effectively avoids hotspots in the metadata layer.
+
+        Tectonic uses tenant-specific optimizations to match the performance of specialized storage systems.
+        These optimizations are enabled by a client-driven microservice architecture that includes a rich set
+        of client-side configurations for controlling how tenants interact with Tectonic. Data warehouse, for
+        instance, uses Reed-Solomon (RS)-encoded writes to improve space, IO, and networking efficiency for
+        its large writes. Blob storage, in contrast, uses a replicated quorum append protocol to minimize
+        latency for its small writes and later RS-encodes them for space efficiency.
+
+        
+
+* Facebook's Previous Storage Infrastructure
+
+** Blob Storage
+        binary large objects. Blobs are immutable and opaque. They vary in size from several kilobytes for
+        small photos to several megabytes for high-definition video chunks. Blob storage expects low-latency
+        reads and writes as blobs are often on path for interactive Facebook applications.
+
+        *Haystack and f4*. Before Tectonic, blob storage consisted of two specialized systems, Haystack and f4.
+        Haystack handled “hot” blobs with a high access frequency. It stored data in replicated form for
+        durability and fast reads and writes.
+
+        As Haystack blobs aged and were accessed less frequently, they were moved to f4, the “warm” blob
+        storage. f4 stored data in RS-encoded form, which is more space-efficient but has lower throughput
+        because each blob is directly accessible from two disks instead of three in Haystack. f4’s lower
+        throughput was acceptable because of its lower request rate.
+
+        However, separating hot and warm blobs resulted in poor resource utilization, a problem exacerbated by
+        hardware and blob storage usage trends. Haystack’s ideal effective replication factor was 3.6x (i.e.,
+        each logical byte is replicated 3x, with an additional 1.2x overhead for RAID-6 storage). However,
+        because IOPS per hard drive has remained steady as drive density has increased, IOPS per terabyte of
+        storage capacity has declined over time.
+        #+LATEX: \wu{
+        iops per disk are not changed. capacity per disk increase. therefore iops per capacity decreases.
+        #+LATEX: }
+        
+        As a result, Haystack became IOPS-bound; extra hard drives had to be provisioned to handle the high
+        IOPS load of hot blobs. The spare disk capacity resulted in Haystack’s effective replication factor
+        increasing to 5.3x.
+
+        In contrast, f4 had an effective replication factor of 2.8x (using RS(10,4) encoding in two different
+        datacenters). Furthermore, blob storage usage shifted to more ephemeral media that was stored in
+        Haystack but deleted before moving to f4. As a result, an increasing share of the total blob data was
+        stored at Haystack’s high effective replication factor.
+        
+        Finally, since Haystack and f4 were separate systems, each stranded resources that could not be shared
+        with other systems. Haystack overprovisioned storage to accommodate peak IOPS, whereas f4 had an
+        abundance of IOPS from storing a large volume of less frequently-accessed data. Moving blob storage to
+        Tectonic harvested these stranded resources and resulted in an effective replication factor of ~2.8x.
+** Data Warehouse
+        Data warehouse applications store objects like massive map-reduce tables, snapshots of the social
+        graph, and AI training data and models. Multiple compute engines, including Presto, Spark,
+        and AI training pipelines access this data, process it, and store derived data. Warehouse data is
+        partitioned into datasets that store related data for different product groups like Search, Newsfeed,
+        and Ads.
+
+        Data warehouse storage prioritizes read and write throughput over latency, since data warehouse
+        applications often batch-process data. Data warehouse workloads tend to issue larger reads and writes
+        than blob storage, with reads averaging multiple megabytes and writes averaging tens of megabytes.
+
+        HDFS for data warehouse storage. Before Tectonic, data warehouse used the Hadoop Distributed File
+        System (HDFS). However, HDFS clusters are limited in size because they use a single machine to store
+        and serve metadata.
+* Architecture and Implementation
+** Tectonic: A Bird's-Eye View
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/458.png]]
+        A *cluster* is the top-level Tectonic deployment unit. Tectonic clusters are datacenter-local, providing
+        durable storage that is resilient to host, rack, and power domain failures. Tenants can build
+        geo-replication on top of Tectonic for protection against datacenter failures
+
+        A Tectonic cluster is made up of storage nodes, metadata nodes, and stateless nodes for background
+        operations. The Client Library orchestrates remote procedure calls to the metadata and storage nodes.
+
+        Tectonic clusters are *multitenant*, supporting around ten tenants on the same storage fabric. Tenants
+        are distributed systems that will never share data with one another; tenants include blob storage and
+        data warehouse. These tenants in turn serve hundreds of applications,
+
+        Tectonic clusters support any number of arbitrarily-sized *namespaces*, or filesystem directory
+        hierarchies, on the same storage and metadata components. Each tenant in a cluster typically owns one
+        namespace. Namespace sizes are limited only by the size of the cluster.
+
+
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/459.png]]
+** Chunk Store: Exabyte-Scale Storage
+        The Chunk Store has two features that contribute to Tectonic’s scalability and ability to support
+        multiple tenants.
+        1. the Chunk Store is flat; the number of chunks stored grows linearly with the number of storage
+           nodes.
+        2. it is oblivious to higher-level abstractions like blocks or files; these abstractions are
+           constructed by the Client Library using the Metadata Store.
+
+        Separating data storage from filesystem abstractions simplifies the problem of supporting good
+        performance for a diversity of tenants on one storage cluster. This separation means reading to and
+        writing from storage nodes can be specialized to tenants’ performance
+
+        *Storing chunks efficiently*. Individual chunks are stored as files on a cluster’s storage nodes, which
+        each run a local instance of XFS
+        * Storage nodes expose core IO APIs to get, put, append to, and delete chunks, along with APIs for
+          listing chunks and scanning chunks.
+        * Storage nodes are responsible for ensuring that their own local resources are shared fairly among
+          Tectonic tenants
+        * Each storage node has 36 hard drives for storing chunks. Each node also has a 1 TB SSD, used for
+          storing XFS metadata and caching hot chunks.
+        * Storage nodes run a version of XFS that stores local XFS metadata on flash. This is particularly
+          helpful for blob storage, where new blobs are written as appends, updating the chunk size. The SSD
+          hot chunk cache is managed by a cache library which is flash endurance-awarep
+
+        *Blocks as the unit of durable storage*. blocks are composed of chunks which together provide block
+        durability.
+
+        Tectonic provides per-block durability to allow tenants to tune the tradeoff between storage capacity,
+        fault tolerance, and performance. Blocks are either Reed-Solomon encoded or replicated for durability.
+        For RS(\(r\), \(k\)) encoding, the block data is split into \(r\) equal chunks (potentially by padding
+        the data), and \(k\) parity chunks are generated from the data chunks.
+        
+        For replication, data chunks are the same size as the block and multiple copies are created. Chunks in
+        a block are stored in different fault domains (e.g., different racks) for fault tolerance. Background
+        services repair damaged or lost chunks to maintain durability
+** Metadata Store: Naming Exabytes of Data
+        Filesystem metadata is first disaggregated, meaning the naming, file, and block layers are logically
+        separated. Each layer is then hash partitioned.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/460.png]]
+
+        *Storing metadata in a key-value store for scalability and operational simplicity*. Tectonic delegates
+        filesystem metadata storage to ZippyDB, a linearizable, fault-tolerant, sharded key-value store. The
+        key-value store manages data at the shard granularity: all operations are scoped to a shard, and
+        shards are the unit of replication.
+
+        #+LATEX: \wu{
+        ZippyDB uses Paxos/Async replication to replicate.
+        [[https://engineering.fb.com/2021/08/06/core-infra/zippydb/][ZippyDB]] 
+        #+LATEX: }
+
+        The key-value store nodes internally run RocksDB. Any replica can serve reads, though reads that must
+        be strongly consistent are served by the primary. The key-value store does not provide cross-shard
+        transactions, limiting certain filesystem metadata operations. Shards are sized so that each metadata
+        node can host several shards. This allows shards to be redistributed in parallel to new nodes in case
+        a node fails, reducing recovery time. It also allows granular load balancing; the key-value store will
+        transparently move shards to control load on each node.
+
+        *Filesystem metadata layers*.  The Block layer also contains the reverse index of disks to the blocks
+        whose chunks are stored on that disk, used for maintenance operations.
+
+        Name and File layer and disk to block list maps are *expanded*. A key mapped to a list is expanded by
+        storing each item in the list as a key, prefixed by the true key. For example, if directory ~d1~
+        contains files ~foo~ and ~bar~, we store two keys ~(d1, foo)~ and ~(d1, bar)~ in ~d1~'s Name shard. Expanding
+        allows the contents of a key to be modified without reading and then writing the entire list.
+
+        *Fine-grained metadata partitioning to avoid hotspots*. In a filesystem, directory operations often
+        cause hotspots in metadata stores. This is particularly true for data warehouse workloads where
+        related data is grouped into directories; many files from the same directory may be read in a short
+        time, resulting in repeated accesses to the directory.
+
+        Tectonic’s layered metadata approach naturally avoid hotspots in directories and other layers by
+        separating searching and listing directory contents (Name layer) from reading file data (File and
+        Block layers).
+
+        *Caching sealed object metadata to reduce read load.* Metadata shards have limited available throughput,
+        so to reduce read load, Tectonic allows blocks, files, and directories to be *sealed*. Directory sealing
+        does not apply recursively, it only prevents adding objects in the immediate level of the directory.
+
+        The contents of sealed filesystem objects cannot change; their metadata can be cached at metadata
+        nodes and at clients without compromising consistency. The exception is the block-to-chunk mapping;
+        chunks can migrate among disks, invalidating the Block layer cache. A stale Block layer cache can be
+        detected during reads, triggering a cache refresh.
+
+        *Providing consistent metadata operations.* Tectonic relies on the key-value store’s strongly-consistent
+        operations and atomic read-modify-write in-shard transactions for strongly-consistent same-directory
+        operations. More specifically, Tectonic guarantees read-after-write consistency for data operations
+        (e.g., appends, reads), file and directory operations involving a single object (e.g., create, list),
+        and move operations where the source and destination are in the same parent directory. Files in a
+        directory reside in the directory’s shard, so metadata operations like file create, delete, and moves
+        within a parent directory are consistent.
+        
+        The key-value store does not support consistent cross-shard transactions, so Tectonic provides
+        non-atomic cross-directory move operations. Moving a directory to another parent directory on a
+        different shard is a two-phase process.
+        1. we create a link from the new parent directory
+        2. delete the link from the previous parent.
+        The moved directory keeps a backpointer to its parent directory to detect pending moves.
+        This ensures only one move operation is active for a directory at a time.
+
+        Similarly, cross directory file moves involve copying the file and deleting it from the source
+        directory. The copy step creates a new file object with the underlying blocks of the source file,
+        avoiding data movement.
+        
+        In the absence of cross-shard transactions, multi-shard metadata operations on the same file must be
+        carefully implemented to avoid race conditions.
+** Client Libarary
+* Tenant-Specific Optimizations
+** Data Warehouse Write Optimizations
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

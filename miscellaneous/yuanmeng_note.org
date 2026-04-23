@@ -316,12 +316,17 @@ plt.show()
 
         这里横轴的k指的就是\(\Delta t\) ，可以发现，距离是对成分布的，且总体来说， 越大或者越小的时候，内积也
         越小，可以反馈距离的远近。也就是说，虽然位置向量的点积可以用于表示距离 (distance-aware)，但是它却不能
-        用来表示位置的方向性(lack-of-directionality) 
+        用来表示位置的方向性(lack-of-directionality)
 
-        当位置编码随着input被喂进attention层时，采用的映射方其实是：
-        \(PE_t^TW_Q^TW_KPE_{t+k}\)
-        这里\(W_Q^T\)和\(W_K\)表示self-attention中的query和key参数矩阵，他们可以被简写成 \(W\)表示attention
-        score的矩阵，到这里看不懂也没事，在self-attention的笔记里会说明的）。我们可以随机初始化两组\(W_1\),
+        考虑
+        \begin{align*}
+        q_t^T*k_{t+\Delta t}&=[W_Q*(x_t+PE_t)]^T[W_K*(x_{t+\Delta t}+PE_{t+\Delta t})]\\
+        &=[x_t^TW_Q^T+PE_t^TW_Q^T][W_Kx_{t+\Delta t}+W_KPE_{t+\Delta t}]
+        \end{align*}
+
+        因此只需关注
+        \(PE_t^TW_Q^TW_KPE_{t+k}\)。
+        我们可以随机初始化两组\(W_1\),
         \(W_2\)然后将\(PE_t^TW_1PE_{t+k}\),\(PE_t^TW_2PE_{t+k}\)和\(PE_t^TPE_{t+k}\) 这三个内积进行比较，得到
         的结果如下：
         #+ATTR_LATEX: :width .6\textwidth :float nil
@@ -330,6 +335,51 @@ plt.show()
         [[../images/papers/374.png]]
         绿色和黄色即是 \(W_1\)和 \(W_2\)的结果。可以发现，进入attention层之后，内积的距离意识(distance-aware)
         的模式也遭到了破坏
+** RoPE
+        问题：attention的计算会破坏输入层的位置编码。一个想法：attention层加位置信息，
+
+        for \(q_m^Tk_n\), goal:
+        * \(\abs{n-m}\)较小则\(q_m^Tkn\)较小
+        * 反之亦然
+
+        考虑分别把\(q_m\), \(k_n\)逆时针旋转\(m\)和\(n\)度，那么离得越远差得越大（要一个足够大的分母保证旋转得
+        不多）
+
+        考虑逆时针正交矩阵
+        \begin{equation*}
+        \calr_i=
+        \begin{pmatrix}
+        \cos i\theta&-\sin i\theta\\
+        \sin i\theta&\cos i\theta
+        \end{pmatrix}
+        \end{equation*}
+        其中\(i\)表示绝对位置，则有
+
+        \begin{align*}
+        (\calr_mq_m)^T(\calr_nk_n)&=q_m^T\calr_{n-m}k_n
+        \end{align*}
+
+        高维情况下，两两配对
+        \begin{equation*}
+        \calr_mq=
+        \begin{pmatrix}
+        \begin{bmatrix}
+        \cos(m\theta_0)&-\sin(m\theta_0)\\
+        \sin(m\theta_0)&\cos(m\theta_0)
+        \end{bmatrix}&\dots&0\\
+        \dots&\dots&\dots\\
+        0&\dots&
+        \begin{bmatrix}
+        \cos(m\theta_{d/2-1})&-\sin(m\theta_{d/2-1})\\
+        \sin(m\theta_{d/2-1})&\cos(m\theta_{d/2-1})
+        \end{bmatrix}        
+        \end{pmatrix}
+        \end{equation*}
+
+        取
+        \(\theta_i=10000^{-2i/d}\)
+
+        训练的时候就是最佳情况就是让每组都转满一周
 ** Attention Score
 *** Attention的基本运作方式
         #+ATTR_LATEX: :width .6\textwidth :float nil

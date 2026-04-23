@@ -1,0 +1,285 @@
+#+TITLE: cs336
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+
+* Lec 03
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/462.png]]
+
+        Standard transformer:
+        * position embedding:
+          \begin{align*}
+          PE_{(pos,2i)}&=\sin(pos/10000^{2i/d_{model}})\\
+          PE_{(pos,2i+1)}&=\cos(pos/10000^{2i/d_{model}})
+          \end{align*}
+        * FFN: ReLU
+          \begin{equation*}
+          FFN(x)=\max(0,xW_1+b_1)W_2+b_2
+          \end{equation*}
+        * norm type: post-norm, layernorm
+
+        What we implemented:
+        * pre-norm
+        * Rotary position embeddings
+        * SwiGLU
+        * Linear layers have no bias term
+
+        all modern LMs use pre-norm
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/463.png]]
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/464.png]]
+
+        * original stated advantage: removing warmup
+        * Today: stability and larger LRs for large networks
+
+        
+        If putting LayerNorms in residual streams is bad.. Why not post-norm outside the stream?
+
+        Recent models: Grok, Gemma 2. Olmo 2 only does non-residual post norm
+
+        LayerNorm: normalizes the mean and variance across \(d_{model}\)
+        \begin{equation*}
+        y=\frac{x-E[x]}{\sqrt{Var[x]+\epsilon}}*\gamma+\beta
+        \end{equation*}
+
+        GPT-3/2/1, OPT, GPT-J
+
+        RMSNorm - does not subtract mean or add a bias term
+        \begin{equation*}
+        y=\frac{x}{\sqrt{\norm{x}_2^2+\epsilon}}*\gamma
+        \end{equation*}
+
+        LLaMA-family, PaLM, Chinchilla, T5
+
+        Explanaion: faster and just as good
+        * no mean calculation
+        * fewer parameters
+
+
+        Does it make sense?
+         #+ATTR_LATEX: :width .6\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/466.png]]
+
+         FLOPS are not runtime.  RMSNorm still matter due to the importance of *data movement*
+
+         #+ATTR_LATEX: :width .6\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/467.png]]
+
+         Modern transformers don't have bias term: memory and optimization stability
+
+
+         RECAP:
+         Basically everyone does non-residual norm (often prenorm)
+         * Intuition – keep the good parts of residual connections
+         * Observations – nicer gradient propagation, fewer spike
+        * Some people add a second norm outside the residual stream
+
+        Most people do RMSnorm
+        * In practice, works as well as LayerNorm
+        * But, has fewer parameters to move around, which saves on wallclock time
+        * People more generally drop bias terms since the compute/param tradeoffs are not great.
+
+
+        ReLU: original transformer, T5, Gopher, Chinchilla, OPT
+        \begin{equation*}
+        FF(x)=\max(0,xW_1)W_2
+        \end{equation*}
+         
+
+        GeLU: GPT1/2/3, GPTJ, GPT-Neox, Bloom
+        \begin{align*}
+        FF(x)&=GELU(xW_1)W_2\\
+        GELU(x)&=x\Phi(x)
+        \end{align*}
+
+        gated activations:
+        \begin{equation*}
+        FF_{ReGLU}(x)=(\max(0,xW_1)\otimes xV)W_2
+        \end{equation*}
+
+        GeGLU: T5 v1.1, mT5, LaMDA, Phi3, Gemma2/3/4
+        \begin{equation*}
+        FFN_{GEGLU}(x,W,V,W_2)=(GELU(xW)\otimes xV)W_2
+        \end{equation*}
+
+        SwiGLU (swish is \(x sigmoid(x)\)) LLaMa 1/2/3, Mistral, most models post 2023
+        \begin{equation*}
+        FFN_{SwiGLU}(x,W,V,W_2)=(Switch(xW)\otimes xV)W_2
+        \end{equation*}
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/468.png]]
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/469.png]]
+
+        Can we parallelize the transformer block?
+        Concurrent FFN and attention, and laynorm can be shared, matrix multiplies can be fused
+
+        But most models use serial layers
+
+
+        Many variations in position embeddings
+
+        Absolute embeddings: GPT1/2/3
+        \begin{equation*}
+        Embed(x,i)=v_x+u_i
+        \end{equation*}
+
+        Relative embedding: add a vector to the attention computation
+        \begin{equation*}
+        e_{ij}=\frac{x_iW^Q(x_jW^K+a_{ij}^K)^T}{\sqrt{d_z}}
+        \end{equation*}
+
+        RoPE: most 2024+ model
+
+        Motivation: a *relative* position embedding should be some \(f(x,i)\) s.t.
+        \begin{equation*}
+        \la f(x,i),f(y,j)\ra=g(x,y,i-j)
+        \end{equation*}
+
+        How can we solve this problem?
+        * We want our embeddings to be invariant to absolute position
+        * We know that inner products are invariant to arbitrary rotation.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/470.png]]
+
+
+        Most GLU variants have
+        \begin{equation*}
+        d_{ff}=\frac{8}{3}d_{model}
+        \end{equation*}
+
+        Most models follow:
+        head-dimension = model-dim / num-heads
+
+        | Num heads      | Head dim | Model dim | Ratio |      |
+        | GPT3           |       96 |       128 | 12288 |    1 |
+        | T5             |      128 |       128 |  1024 |   16 |
+        | T5 v1.1        |       64 |        64 |  4096 |    1 |
+        | LaMDA          |      128 |       128 |  8192 |    2 |
+        | PaLM           |       48 |       258 | 18432 | 1.48 |
+        | LLaMA2         |       64 |       128 |  8192 |    1 |
+        | Qwen 3.5 (27B) |       24 |       256 |  5120 |  1.2 |
+
+
+        | Model                      | \(d_{model}/n_{layer}\) |
+        | BLOOM                      |                     205 |
+        | T5 v1.1                    |                     171 |
+        | PaLM (540B)                |                     156 |
+        | GPT3/OPT/Mistral/Qwen/OLMo |                    3128 |
+        | LLaMA / LLaMA2             |                     102 |
+        | Gemma 3                    |                      87 |
+        | Gemma 4                    |                      61 |
+        | T5 (11B)                   |                      33 |
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/471.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/472.png]]
+
+        Do we need regularization(dropout...) during pretraining?
+
+        Arguments against:
+        * a lot of data, more than parameters
+        * SGD only does a single pass on a corpus (hard to memorize)
+
+        But
+        | Model                | Dropout* | Weight decay |
+        | Original transformer |      0.1 |            0 |
+        | GPT2                 |      0.1 |          0.1 |
+        | T5                   |      0.1 |            0 |
+        | GPT3                 |      0.1 |          0.1 |
+        | T5 v1.1              |        0 |            0 |
+        | PaLM                 |        0 |   (variable) |
+        | OPT                  |      0.1 |          0.1 |
+        | LLaMA                |        0 |          0.1 |
+        | Qwen 14B             |      0.1 |          0.1 |
+
+
+        Why weight decaying?
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/473.png]]
+
+        softmax can be ill-behaved due to exponentials/division by zero
+
+        Attention heads:
+
+        GQA / MQA : Saving inference costs by reducing the number of heads
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/474.png]]
+
+        batch \(b\), hidden dim \(d\), length \(n\), heads \(h\), head dim \(k\)
+        
+        Total arithmetic operations (\(bnd^2\)), total memory accesses (\(bnd + bhn^2+d^2\))
+        #+LATEX: \wu{
+        QKV: \((bn,d)\times(d,d)\to bnd^2\)
+
+        Attention: QK, \(Q\in(b,h,n,k)\), \((n,k)\times(k,n)\to(n^2k)\), total is \(bhn^2k=bdn^2\)
+        #+LATEX: }
+
+        arithmetic intensity is high \(O\left(\left(\frac{1}{k}+\frac{1}{bn}\right)^{-1}\right)\)
+
+        For incremental case when we generate text: arithmetic \(bnd^2\), memory \(bn^2d+nd^2\)
+
+        MQA: have multiple queries, but just one dimension for keys and values
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/475.png]]
+        share KV for each head
+
+        GQA: multiple head share one KV
+        
+        
+        Sparse or sliding window attention (GPT4/Mistral): restricting the attention pattern to reduce compute
+        cost
+
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/476.png]]
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

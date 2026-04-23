@@ -325,6 +325,219 @@
         chunkserver leases on all chunks covered by the snapshot. We do not want to delay other master
         operations while they are running. Therefore, we allow multiple operations to be active and use locks
         over regions of the namespace to ensure proper serialization.
+
+        Unlike many traditional ﬁle systems, GFS does not have a per-directory data structure that lists all
+        the ﬁles in that directory. Nor does it support aliases for the same ﬁle or directory (i.e, hard or
+        symbolic links in Unix terms). GFS logically represents its namespace as a lookup table mapping full
+        pathnames to metadata. With preﬁx compression, this table can be eﬃciently represented in memory. Each
+        node in the namespace tree (either an absolute ﬁle name or an absolute directory name) has an
+        associated read-write lock.
+
+        Each master operation acquires a set of locks before it runs. Typically, if it involves
+        ~/d1/d2/.../dn/leaf~, it will acquire read-locks on the directory names ~/d1~, ~/d1/d2~, ..., ~/d1/d2/.../dn~,
+        and either a read lock or a write lock on the full pathname ~/d1/d2/.../dn/leaf~. Note that leaf may be
+        a ﬁle or directory depending on the operation.
+
+        We now illustrate how this locking mechanism can prevent a ﬁle ~/home/user/foo~ from being created while
+        ~/home/user~ is being snapshotted to ~/save/user~. The snapshot operation acquires read locks on ~/home~ and
+        ~/save~, and write locks on ~/home/user~ and ~/save/user~. The ﬁle creation acquires read locks on ~/home~ and
+        ~/home/user~, and a write lock on ~/home/user/foo~. The two operations will be serialized properly because
+        they try to obtain conﬂicting locks on ~/home/user~. File creation does not require a write lock on the
+        parent directory because there is no “directory”, or inode-like, data structure to be protected from
+        modiﬁcation. The read lock on the name is suﬃcient to protect the parent directory from deletion.
+        
+        One nice property of this locking scheme is that it allows concurrent mutations in the same directory.
+
+        Since the namespace can have many nodes, read-write lock objects are allocated lazily and deleted once
+        they are not in use. Also, locks are acquired in a consistent total order to prevent deadlock: they
+        are ﬁrst ordered by level in the namespace tree and lexicographically within the same level.
+** Replica Placement
+        A GFS cluster is highly distributed at more levels than one. It typically has hundreds of chunkservers
+        spread across many machine racks. These chunkservers in turn may be accessed from hundreds of clients
+        from the same or diﬀerent racks. Communication between two machines on diﬀerent racks may cross one or
+        more network switches. Additionally, bandwidth into or out of a rack may be less than the aggregate
+        bandwidth of all the machines within the rack. Multi-level distribution presents a unique challenge to
+        distribute data for scalability, reliability, and availability.
+        
+        The chunk replica placement policy serves two purposes: maximize data reliability and availability,
+        and maximize network bandwidth utilization. For both, it is not enough to spread replicas across
+        machines, which only guards against disk or machine failures and fully utilizes each machine’s network
+        bandwidth. We must also spread chunk replicas across racks. This ensures that some replicas of a chunk
+        will survive and remain available even if an entire rack is damaged or oﬄine (for example, due to
+        failure of a shared resource like a network switch or power circuit). It also means that traﬃc,
+        especially reads, for a chunk can exploit the aggregate bandwidth of multiple racks. On the other
+        hand, write traﬃc has to ﬂow through multiple racks, a tradeoﬀ we make willingly.
+** Creation, Re-replication, Rebalancing
+        Chunk replicas are created for three reasons: chunk creation, re-replication, and rebalancing.
+
+        When the master creates a *chunk*, it chooses where to place the initially empty replicas. It considers
+        several factors.
+        1. We want to place new replicas on chunkservers with below-average disk space utilization. Over time
+           this will equalize disk utilization across chunkservers.
+        2. We want to limit the number of “recent” creations on each chunkserver. Although creation itself is
+           cheap, it reliably predicts imminent heavy write traﬃc because chunks are created when demanded by
+           writes, and in our append-once-read-many workload they typically become practically read-only once
+           they have been completely written.
+        3. We want to spread replicas of a chunk across racks.
+
+        The master *re-replicates* a chunk as soon as the number of available replicas falls below a
+        user-speciﬁed goal. This could happen for various reasons:
+        * a chunkserver becomes unavailable,
+        * it reports that its replica may be corrupted,
+        * one of its disks is disabled because of errors
+        * the replication goal is increased.
+        Each chunk that needs to be re-replicated is prioritized based on several factors.
+        * how far it is from its replication goal. For example, we give higher priority to a chunk that has
+          lost two replicas than to a chunk that has lost only one.
+        * prefer to ﬁrst re-replicate chunks for live ﬁles as opposed to chunks that belong to recently
+          deleted ﬁles
+        * to minimize the impact of failures on running applications, we boost the priority of any chunk that
+          is blocking client progress.
+
+        The master picks the highest priority chunk and “clones” it by instructing some chunkserver to copy
+        the chunk data directly from an existing valid replica. The new replica is placed with goals similar
+        to those for creation: equalizing disk space utilization, limiting active clone operations on any
+        single chunkserver, and spreading replicas across racks. To keep cloning traﬃc from overwhelming
+        client traﬃc, the master limits the numbers of active clone operations both for the cluster and for
+        each chunkserver. Additionally, each chunkserver limits the amount of bandwidth it spends on each
+        clone operation by throttling its read requests to the source chunkserver.
+        
+        Finally, the master *rebalances* replicas periodically: it examines the current replica distribution and
+        moves replicas for better disk space and load balancing. Also through this process, the master
+        gradually ﬁlls up a new chunkserver rather than instantly swamps it with new chunks and the heavy
+        write traﬃc that comes with them. The placement criteria for the new replica are similar to those
+        discussed above. In addition, the master must also choose which existing replica to remove. In
+        general, it prefers to remove those on chunkservers with below-average free space so as to equalize
+        disk space usage. 
+** Garbage Collection
+        After a ﬁle is deleted, GFS does not immediately reclaim the available physical storage. It does so
+        only lazily during regular garbage collection at both the ﬁle and chunk levels.
+*** Mechanism
+        When a ﬁle is deleted by the application, the master logs the deletion immediately just like other
+        changes. However instead of reclaiming resources immediately, the ﬁle is just renamed to a hidden name
+        that includes the deletion timestamp. During the master’s regular scan of the ﬁle system namespace, it
+        removes any such hidden ﬁles if they have existed for more than three days (the interval is
+        conﬁgurable). Until then, the ﬁle can still be read under the new, special name and can be undeleted
+        by renaming it back to normal. When the hidden ﬁle is removed from the namespace, its in-memory
+        metadata is erased. This eﬀectively severs its links to all its chunks.
+        
+        In a similar regular scan of the chunk namespace, the master identiﬁes orphaned chunks (i.e., those
+        not reachable from any ﬁle) and erases the metadata for those chunks. In a /HeartBeat/ message regularly
+        exchanged with the master, each chunkserver reports a subset of the chunks it has, and the master
+        replies with the identity of all chunks that are no longer present in the master’s metadata. The
+        chunkserver is free to delete its replicas of such chunks.
+*** Discussion
+        We can easily identify all references to chunks: they are in the file-to-chunk mappings maintained
+        exclusively by the master. We can also easily identify all the chunk replicas: they are Linux ﬁles
+        under designated directories on each chunkserver. Any such replica not known to the master is
+        “garbage.”
+
+        The garbage collection approach to storage reclamation oﬀers several advantages over eager deletion.
+        1. it is simple and reliable in a large-scale distributed system where component failures are common.
+           Chunk creation may succeed on some chunkservers but not others, leaving replicas that the master
+           does not know exist. Replica deletion messages may be lost, and the master has to remember to
+           resend them across failures, both its own and the chunkserver’s. Garbage collection provides a
+           uniform and dependable way to clean up any replicas not known to be useful.
+        2. it merges storage reclamation into the regular background activities of the master, such as the
+           regular scans of namespaces and handshakes with chunkservers. Thus, it is done in batches and the
+           cost is amortized. Moreover, it is done only when the master is relatively free. The master can
+           respond more promptly to client requests that demand timely attention.
+        3. the delay in reclaiming storage provides a safety net against accidental, irreversible deletion.
+
+        In our experience, the main disadvantage is that the delay sometimes hinders user eﬀort to ﬁne tune
+        usage when storage is tight. Applications that repeatedly create and delete temporary ﬁles may not be
+        able to reuse the storage right away. We address these issues by expediting storage reclamation if a
+        deleted ﬁle is explicitly deleted again.
+** State Replica Detection
+        Chunk replicas may become stale if a chunkserver fails and misses mutations to the chunk while it is
+        down. For each chunk, the master maintains a *chunk version number* to distinguish between up-to-date
+        and stale replicas.
+
+        Whenever the master grants a new lease on a chunk, it increases the chunk version number and informs
+        the up-to-date replicas. The master and these replicas all record the new version number in their
+        persistent state. This occurs before any client is notiﬁed and therefore before it can start writing
+        to the chunk. If another replica is currently unavailable, its chunk version number will not be
+        advanced. The master will detect that this chunkserver has a stale replica when the chunkserver
+        restarts and reports its set of chunks and their associated version numbers. If the master sees a
+        version number greater than the one in its records, the mas- ter assumes that it failed when granting
+        the lease and so takes the higher version to be up-to-date.
+        
+        The master removes stale replicas in its regular garbage collection. Before that, it eﬀectively
+        considers a stale replica not to exist at all when it replies to client requests for chunk
+        information. As another safeguard, the master includes the chunk version number when it informs
+        clients which chunkserver holds a lease on a chunk or when it instructs a chunkserver to read the
+        chunk from another chunkserver in a cloning operation. The client or the chunkserver veriﬁes the
+        version number when it performs the operation so that it is always accessing up-to-date data.
+* Fault Tolerance and Diagnosis
+** High Availability
+*** Fast Recovery
+        Both the master and the chunkserver are designed to restore their state and start in seconds no matter
+        how they terminated.
+*** Chunk Replication    
+*** Master Replication
+        The master state is replicated for reliability. Its operation log and checkpoints are replicated on
+        multiple machines. A mutation to the state is considered committed only after its log record has been
+        ﬂushed to disk locally and on all master replicas. For simplicity, one master process remains in
+        charge of all mutations as well as background activities such as garbage collection that change the
+        system internally. When it fails, it can restart almost instantly. If its machine or disk fails,
+        monitoring infrastructure outside GFS starts a new master process elsewhere with the replicated
+        operation log.
+
+        Clients use only the canonical name of the master (e.g. gfs-test), which is a DNS alias that can be
+        changed if the master is relocated to another machine.
+
+        Moreover, “shadow” masters provide read-only access to the ﬁle system even when the primary master is
+        down. They are shadows, not mirrors, in that they may lag the primary slightly, typically fractions of
+        a second. They enhance read availability for ﬁles that are not being actively mutated or applications
+        that do not mind getting slightly stale results. In fact, since ﬁle content is read from chunkservers,
+        applications do not observe stale ﬁle content. What could be stale within short windows is ﬁle
+        metadata, like directory contents or access control information.
+** Data Integrity
+        Each chunkserver uses checksumming to detect corruption of stored data. Given that a GFS cluster often
+        has thousands of disks on hundreds of machines, it regularly experiences disk failures that cause data
+        corruption or loss on both the read and write paths. We can recover from corruption using other chunk
+        replicas, but it would be impractical to detect corruption by comparing replicas across chunkservers.
+        Moreover, divergent replicas may be legal: the semantics of GFS mutations, in particular atomic record
+        append as discussed earlier, does not guarantee identical replicas. Therefore, each chunkserver must
+        independently verify the integrity of its own copy by maintaining checksums.
+
+        A chunk is broken up into 64 KB blocks. Each has a corresponding 32 bit checksum. Like other metadata,
+        checksums are kept in memory and stored persistently with logging, separate from user data.
+
+        For reads, the chunkserver veriﬁes the checksum of data blocks that overlap the read range before
+        returning any data to the requester, whether a client or another chunkserver. Therefore chunkservers
+        will not propagate corruptions to other machines. If a block does not match the recorded checksum, the
+        chunkserver returns an error to the requestor and reports the mismatch to the master. In response, the
+        requestor will read from other replicas, while the master will clone the chunk from another replica.
+        After a valid new replica is in place, the master instructs the chunkserver that reported the mismatch
+        to delete its replica.
+        
+        Checksumming has little eﬀect on read performance for several reasons. Since most of our reads span at
+        least a few blocks, we need to read and checksum only a relatively small amount of extra data for
+        veriﬁcation. GFS client code further reduces this overhead by trying to align reads at checksum block
+        boundaries. Moreover, checksum lookups and comparison on the chunkserver are done without any I/O, and
+        checksum calculation can often be overlapped with I/Os.
+        
+        Checksum computation is heavily optimized for writes that append to the end of a chunk (as opposed to
+        writes that overwrite existing data) because they are dominant in our workloads. We just incrementally
+        update the checksum for the last partial checksum block, and compute new checksums for any brand new
+        checksum blocks ﬁlled by the append. Even if the last partial checksum block is already corrupted and
+        we fail to detect it now, the new checksum value will not match the stored data, and the corruption
+        will be detected as usual when the block is next read.
+        
+        In contrast, if a write overwrites an existing range of the chunk, we must read and verify the ﬁrst
+        and last blocks of the range being overwritten, then perform the write, and ﬁnally compute and record
+        the new checksums. If we do not verify the ﬁrst and last blocks before overwriting them partially, the
+        new checksums may hide corruption that exists in the regions not being overwritten.
+
+        During idle periods, chunkservers can scan and verify the contents of inactive chunks. This allows us
+        to detect corruption in chunks that are rarely read. Once the corruption is detected, the master can
+        create a new uncorrupted replica and delete the corrupted replica. This prevents an inactive but
+        corrupted chunk replica from fooling the master into thinking that it has enough valid replicas of a
+        chunk. 
+** Diagnostic Tools
+* Measurement
+** Micro-benchmarks
 * Problems
 
 

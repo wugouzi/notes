@@ -29,8 +29,49 @@
         #+CAPTION: 
         [[../images/papers/432.png]]
 
+     For each request, the global scheduler (Conductor) needs to select a pair of prefill and decoding
+     instances and schedule the request in the following steps:
+     1. transfer as much reusable KVCache as possible to the selected prefill instance;
+     2. complete the prefill stage in chunks/layers and continuously stream the output KVCache to the
+        corresponding decoding instance;
+     3. load the KVCache and add the request to the continuous batching process at the decoding instance for
+        generating request outputs.
         
+     Although this process seems straightforward, the selection policy is complex due to many restrictions.
+     * In the prefill stage, the main objective is to reuse the KVCache as much as possible to avoid redundant
+       computation. However, waiting for KVCache stored on lower-tier storage may violate the TTFT SLO
+     * High demand on the KVCache server can lead to network congestion, prolonging the waiting time. Thus
+       Conductor is also responsible for predicting the future usage of KVCache blocks and executing
+       scheduling operations such as swapping and replication accordingly. The hottest blocks should be
+       replicated to multiple nodes to avoid fetching congestion, while the coldest ones should be swapped out
+       to reduce reserving costs.
+     * Prefill scheduling is also constrained by the availability of DRAM space in the prefill node,
+       especially when much of the memory is reserved for the global KVCache pool.
+       
+     In contrast, the decoding stage has different optimization goals and constraints. The aim is to aggregate
+     as many tokens as possible in a decoding batch to improve MFU. However, this objective is restricted not
+     only by the TBT SLO but also by the total size of the aggregated KVCache that can be contained in the
+     VRAM.
+     
+     More importantly, existing research on LLM serving assumes sufficient resources and focuses on improving
+     resource utilization. In contrast, the current GPU/accelerator supply is limited, and many MaaS providers
+     face severe overload problems, especially during peak times. Scheduling in such scenarios presents unique
+     challenges that existing works have not explored.
+* Preliminary and Problem Definition
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/461.png]]
 
+        Continuous batching: Before each iteration, the scheduler checks the status of all requests, adding
+        newly arrived requests to the batch’s prefill stage while removing completed requests.
+
+        Due to the distinct characteristics of the prefill and decoding stages, MaaS providers set different
+        metrics to measure their corresponding Service Level Objectives (SLOs). Specifically, the prefill
+        stage is mainly concerned with the latency between the request arrival and the generation of the first
+        token, known as the time to first token (TTFT). On the other hand, the decoding stage focuses on the
+        latency between successive token generations for the same request, referred to as the time between
+        tokens (TBT). 
 * Problems
 
 
