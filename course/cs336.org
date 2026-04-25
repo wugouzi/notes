@@ -275,6 +275,405 @@
         #+CAPTION: 
         [[../images/papers/476.png]]
 
+
+* Lec 04
+** Motivation
+        Cost of attention rises with large context sizes, how do we control those costs
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/477.png]]
+
+        * MQA, GQA
+        * system engineering
+          #+ATTR_LATEX: :width .6\textwidth :float nil
+          #+NAME: 
+          #+CAPTION: 
+          [[../images/papers/478.png]]
+** Linear attention
+        Given \(Q,V\in R^{n\times d_k}\), \(K\in R^{n\times d_k}\),
+        \begin{equation*}
+        Attn(Q,K,V)=\rho(QK^T)V
+        \end{equation*}
+        This is quadratic due to \(QK^T\) (\(n^2d_k\)), can we do better?
+
+        If \(\rho\) is identity, we can have
+        \begin{equation*}
+        \rho(QK^T)V=Q(K^TV)
+        \end{equation*}
+        We have cost \(n^2d_k+n^2d_v\to2nd_vd_k\)
+
+        This looks like a RNN:
+        \begin{gather*}
+        S_t=\sum_{i\le t} k_tv_t^T\\
+        S_t=S_{t-1}+k_tv_t^T \\
+        y_t=q_t^TS_t
+        \end{gather*}
+
+        Therefore we can save \(S_T\) only need to calculate \(k_tv_t^T\) in each step.
+
+        This ‘duality’ allows us to train efficiently (using the parallel, quadratic form) and inference
+        efficiently (using the serial, linear form)
+        #+LATEX: \wu{
+        In training, we use \((QK^T)V\) and in inference we use \(Q(K^TV)\)
+        #+LATEX: }
+
+        Minimax M1 (and minimax-text-01) use a 7-to-1 hybrid (7 linear, 1 full) linear attention.
+
+        Performance (generally) seems strong, and they show linear scaling in context length
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/479.png]]
+** From linear attention to Mamba-2
+        we can generalize linear attention a little bit and add per-position weights
+        \begin{gather*}
+        S_t=S_{t-1}+k_tv_t^T \text{ and }y_t=q_t^TS_t\text{( Linear attention)}\\
+        S_t=\gamma_tS_{t-1}+k_tv_t^T \text{ and } y_t=q_t^TS_t+v_t^TD\text{ with }\gamma_t=f(x_t)\text{ (Mamba-2)}
+        \end{gather*}
+
+        There is a lot more words to justify this (go read the mamba 2 paper) but the mechanics is that we can
+        make linear attention more expressive via gating (gating is good!)
+
+        Nemotron 3
+** Gated delta net (and friends)
+        Generalize again!
+        \begin{gather*}
+        S_t=\gamma_t(I-\beta_tk_tk_t^T)S_{t-1}+\beta_tk_tv_t^T\\
+        y=q_t^TS_t\text{ with }\gamma_t=f(x_t),\beta_t=f(x_t)
+        \end{gather*}
+
+        The gated delta net adds a ‘no input operation’ gate (\(\beta=0\)) And erases anything in the
+        direction of the current key (\(I-\beta_tk_tk_t^T\))
+
+        The newest qwen are 3-1 GDN / Attention hybrids.
+** Alternative to hybrids: sparse adaptation
+        DS 3.2, GLM
+** Mixture of experts
+        Replace big feedforward with (many) big feedforward networks and a selector layer
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/480.png]]
+
+        Why are MOEs getting popular?
+
+        Same FLOP, more param does better
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/481.png]]
+
+        Faster to train MoEs
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/482.png]]
+
+        Parallelizable to many devices
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/483.png]]
+
+        Why haven't MoEs been more popular?
+
+        * Infrastructure is complex / advantages on multi node
+          #+ATTR_LATEX: :width .6\textwidth :float nil
+          #+NAME: 
+          #+CAPTION: 
+          [[../images/papers/484.png]]
+        * Training objectives are somewhat heuristic (and sometimes unstable)
+          #+ATTR_LATEX: :width .6\textwidth :float nil
+          #+NAME: 
+          #+CAPTION: 
+          [[../images/papers/485.png]]
+
+          Typical: replace MLP with MoE layer
+
+          Less common: MoE for attention heads
+
+*** Routing function
+        many of the routing algorithms boil down to "choose top \(k\)"
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/486.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/487.png]]
+        EC: expert-level compute
+
+        TC: token-level compute
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/488.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/489.png]]
+
+
+        /Most/ papers do the old and classic top-k routing.
+
+        DS v1/2, Grok, Gwen
+        \begin{equation*}
+        \bh_t^l=\sum_{i=1}^n\left(g_{i,t}FFN_i(\bu_t^l)\right)+\bu_t^l
+        \end{equation*}
+
+        Mixtral, DBRX, DS v3, softmaxes after the topk
+        \begin{align*}
+        g_{i,t}&=
+        \begin{cases}
+        s_{i,t}&s_{i,t}\in TopK(\{s_{j,t}\mid 1\le j\le N\},K)\\
+        0&\text{otherwise}
+        \end{cases}\\
+        s_{i,t}&=softmax_i((\bu_t^l)^T\be_i^l)
+        \end{align*}
+
+        Recent progress
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/490.png]]
+
+        More experts, shared experts all seem to generally help
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/491.png]]
+
+        Gains from fine-grained experts, none from shared experts
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/492.png]]
+
+        | Model              | Routed | Active | Shared | Fine-grained ratio |
+        |--------------------+--------+--------+--------+--------------------|
+        | GShard             |   2048 |      2 |      0 |                    |
+        | Switch Transformer |     64 |      1 |      0 |                    |
+        | ST-MOE             |     64 |      2 |      0 |                    |
+        | Mixtral            |      8 |      2 |      0 |                    |
+        | DBRX               |     16 |      4 |      0 |                    |
+        | Grok               |      8 |      2 |      0 |                    |
+        | DeepSeek v1        |     64 |      6 |      2 | 1/4                |
+        | Qwen 1.5           |     60 |      4 |      4 | 1/8                |
+        | DeepSeek v3        |    256 |      8 |      1 | 1/14               |
+        | OlMoE              |     64 |      8 |      0 | 1/8                |
+        | MiniMax            |     32 |      2 |      0 | ~1/4               |
+        | Llama 4 (maverick) |    128 |      1 |      1 | 1/2                |
+
+*** Training objective
+        Major challenge: we need sparsity for training-time efficiency…But sparse gating decisions are not
+        differentiable!
+
+        #+LATEX: \wu{
+        \begin{equation*}
+        g_i=
+        \begin{cases}
+        1&\argmax_js_j\\
+        0&
+        \end{cases}
+        \end{equation*}
+        So
+        \begin{equation*}
+        \frac{\partial g_i}{\partial s_j}=0
+        \end{equation*}
+        almost everywhere
+        #+LATEX: }
+
+        Solutions?
+
+        Reinforcment learning to optimize gating policies:
+        not much better
+           #+ATTR_LATEX: :width .6\textwidth :float nil
+           #+NAME: 
+           #+CAPTION: 
+           [[../images/papers/493.png]]
+
+        Stochastic perturbations
+        \begin{gather*}
+           G(x)=Softmax(KeepTopK(H(x),k))\\
+           H(x)_i=(x\cdot W_g)_i+StandardNormal()\cdot Softplus((x\cdot W_{noise})_i)\\
+           KeepTopK(v,k)_i=
+           \begin{cases}
+           v_i&v_i\text{ is in the top $k$ elements of $v$}\\
+           -\infty&\text{otherwise}
+           \end{cases}
+        \end{gather*}
+
+        1. This naturally leads to experts that are a bit more robust.
+        2. The softmax means that the model learns how to rank K experts
+        
+        Heuristic ‘balancing’ losses:
+
+        system efficiency requires that we use experts evenly
+
+        Deekseek v1-2
+        * per-expert balancing - same as the switch transformer
+          \begin{align*}
+          \call_{ExpBal}&=\alpha_1\sum_{i=1}^{N'}f_iP_i\\
+          f_i&=\frac{N'}{K'T}\sum_{t=1}^T\bone(\text{Token $i$ selects Expert $i$})\\
+          P_i&=\frac{1}{T}\sum_{t=1}^Ts_{i,t}
+          \end{align*}
+
+        * per-device balancing - aggregated by device
+          \begin{align*}
+          \call_{DevBal}&=\alpha_2\sum_{i=1}^Df_i'P_i'\\
+          f_i'&=\frac{1}{\abs{\cale_i}}\sum_{j\in\cale_i}f_j\\
+          P_i'&=\sum_{j\in\cale}P_j
+          \end{align*}
+
+        Deepseek v3 variation - per-expert bias
+
+        Set up a per-expert bias (making it more likely to get tokens) and use online learning
+        \begin{equation*}
+        g_{i,t}'=
+        \begin{cases}
+        s_{i,t}&s_{i,t}+b_i\in TopK(\{s_{j,t}+b_j\mid 1\le j\le N_r\}, K_r)\\
+        0&\text{otherwise}
+        \end{cases}
+        \end{equation*}
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/494.png]]
+
+        MoE routing allows for parallelism, but also some complexities
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/495.png]]
+
+        In LatentMoE, tokens are projected from the model hidden dimension \(d\) into a smaller latent dimension \(l\)
+        for expert routing and computation, which reduces routed parameter loads and all-to-all traffic by a
+        factor of \(d/l\) (typically about 4×).
+
+        MoEs can have additional stochasticity beyond normal models.
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/497.png]]
+
+        Token dropping from routing happens at a batch level – this means that other people’s queries can drop
+        your token!
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/498.png]]
+
+        Solution: Use Float 32 just for the expert router (sometimes with an aux z-loss)
+        \begin{equation*}
+        L_z(x)=\frac{1}{B}\sum_{i=1}^B\left(\log\sum_{j=1}^Ne^{x_j^{(i)}}\right)^2
+        \end{equation*}
+        Why only for expert:
+        * no norm on router logits
+        * discrete decision
+
+        for each token's router logits \(x\in\R^N\), we use \(L_z(x)\) to prevent it from going wild, so total
+        loss is
+        \begin{equation*}
+        L=L_{task}+\lambda_z\cdot L_z(x)
+        \end{equation*}
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/499.png]]
+
+        Issues with MoEs - fine-tuning
+        Sparse MoEs can overfit on smaller fine-tuning data
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/500.png]]
+
+        DeepSeek solution: use lots of data 1.4M SFT(supervised fine-tuning)
+
+        other training methods - upscycling
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/501.png]]
+
+        transform a pretrained dense transformer into a MoE style transformer
+
+        Qwen MoE initialized from the Qwen 1.8B model top-k=4, 60 experts w/ 4 shared
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/502.png]]
+
+        first success upcycling
+
+*** DeepSeek
+        V1 16B, 2.8 active
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/503.png]]
+
+        V2 236B, 21 active
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/504.png]]
+
+        top-m device routing
+
+        communication balancing loss
+
+        V3 671B - 37 active
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/505.png]]
+
+        Sigmoid + Softmax topK + topM
+
+        Aux-loss-free + seq-wise aux
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/506.png]]
+
+        (MLA) multihead latent attention
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/507.png]]
+
+        expression the Q,K,V as functions of a lower-dim, 'latent' activation
+
+        \begin{align*}
+        \bc_t^{KV}&=W^{DKV}\bh_t\\
+        \bk_t^C&=W^{UK}\bc_t^{KV}\\
+        \bv_t^C&=W^{UV}\bc_t^{KV}
+        \end{align*}
+        
+        Benefits: when KV-caching, we only need to store \(c_t^{KV}\), which can be much smaller
+
+        Also \(W^{UK}\) can be merged into the Q projection:
+        \begin{equation*}
+       QK^T=xW_Q^TW^{UK}x=(x(W^{UK}^TW_Q))x
+        \end{equation*}
+
+        
 * Problems
 
 
