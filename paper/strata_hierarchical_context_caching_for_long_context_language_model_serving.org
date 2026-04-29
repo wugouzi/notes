@@ -1,0 +1,84 @@
+#+title: Strata: Hierarchical Context Caching for Long Context Language Model Serving
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/strata_hierarchical_context_caching_for_long_context_language_model_serving.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        With larger context window, transferring large cached contexts back introduces a major performance
+        bottleneck.
+        1. paged attention causes data fragmentation, resulting small data transfers, that fail to saturate
+           PCIe bandwidth
+        2. caching loading time can exceed prefill time
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/508.png]]
+* Background
+** Memory Management of KV Cache
+        PagedAttention avoids reserving large contiguous blocks for KV caches by using dynamic, page-based
+        allocation. The cache is partitioned into small fixed-size pages that preserve logical sequence order
+        but can be placed non-contiguously in memory, improving utilization. Typical page sizes are
+        small—e.g., 32, 16, and 1 tokens in TensorRT-LLM, vLLM, and SGLang—where each token may span from tens
+        of kilobytes to several megabytes. 
+** Context Caching in LLM Serving
+        Systems exploit context caching across requests by identifying common prefixes using structures like
+        prefix trees or hash maps 
+* Challenges of Long Context Caching
+** Low Bandwidth Utilization in KV Cache Transfers
+        * \(\lambda\): arrival rate of I/O operations
+        * \(C\): average number of concurrent I/O operations
+        * \(L\): average latency per operations
+        * \(X\): sustained data throughput (e.g., in GB/s)
+        * \(S\): average data size per I/O operation
+
+        By little's law, we have
+        \begin{gather*}
+        C=\lambda\cdot L\\
+        X=\lambda\cdot S\\
+        X=C\cdot S/L
+        \end{gather*}
+
+        * To transfer data between CPU and GPU memory, asynchronous operations like cudaMemcpyAsync are
+          typically used to engage the GPU’s Direct Memory Access (DMA) engine. However, the latency (\(L\))
+          in this scenario includes non-negligible CPU-GPU communication overhead and scheduling delays.
+        * While concurrency (\(C\)) can be increased by launching numerous asynchronous I/O operations,
+          practical limits arise from the available application-level parallelism (e.g., on the CPU) and the
+          queue capacities within the GPU driver (e.g., CUDA driver) and hardware.
+        * Consequently, increasing the transfer size (\(S\)) often becomes the most practical lever for
+          improving bandwidth utilization. Saturating modern high-bandwidth interconnects underscores this
+          point;
+
+          For example, achieving 75-80% of theoretical PCIe 5.0 bandwidth necessitates transfer sizes (\(S\))
+          in the megabyte range (i.e., 1-2MB). This principle is not limited to CPU-GPU transfers; achieving
+          high throughput on other media like SSDs or network interfaces often demands even large transfer
+          sizes
+
+        *Cost of Large Pages*. Smaller pages, e.g., in the range of 1-32 tokens, generally lead to better memory
+        utilization and can improve cache hit rate.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/509.png]]
+
+        This preference for small pages results in significantly small effective transfer sizes (\(S\)) for KV
+        cache operations.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/510.png]]
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

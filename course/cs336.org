@@ -276,7 +276,7 @@
         [[../images/papers/476.png]]
 
 
-* Lec 04
+* Lec 04 MoE
 ** Motivation
         Cost of attention rises with large context sizes, how do we control those costs
         #+ATTR_LATEX: :width .6\textwidth :float nil
@@ -666,14 +666,332 @@
         \bv_t^C&=W^{UV}\bc_t^{KV}
         \end{align*}
         
-        Benefits: when KV-caching, we only need to store \(c_t^{KV}\), which can be much smaller
+        Benefits: when KV-caching, we only need to store \(c_t^{KV}\), which can be much smaller. \(W^{UK}\)
+        can be merged into the Q projection
+
+        D: down-projection; U: up-projection
 
         Also \(W^{UK}\) can be merged into the Q projection:
         \begin{equation*}
-       QK^T=xW_Q^TW^{UK}x=(x(W^{UK}^TW_Q))x
+       QK^T=xW_Q^TW^{UK}x=(x((W^{UK})^TW_Q))x
+
         \end{equation*}
 
         
+
+        Without RoPE (here \(hW^Q\) is row and \(W^{UK}c_t^{KV}\) is column vector. a bit weird)
+        \begin{equation*}
+        \la Q,K\ra=\la hW^Q,W^{UK}c_t^{KV}\ra=\la hW^QW^{UK},c_t^{KV}\ra
+        \end{equation*}
+
+        With RoPE
+        \begin{equation*}
+        \la QR_q,R_kK\ra=\la hW^QR_q,R_kW^{UK}c_t^{KV}\ra=
+        \la hW^QR_qR_kW^{UK},c_t^{KV}\ra
+        \end{equation*}
+
+
+        MTP (multi-token prediction): have small, lightweight models that predict multiple steps ahead
+
+        For MTP, we use loss
+        \begin{equation*}
+        \call=\sum_{k=1}^K-\log p(x_{t+k}\mid x_{\le t+k-1})
+        \end{equation*}
+* Lec 05 CUDA & GPU
+** GPUs in depth
+        Parallel scaling continues
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/511.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/512.png]]
+
+        GPUs have many *SM* (streaming multiprocessors) that independently execute "blocks" (jobs)
+
+        Each SM further contains many *SPs* (streaming processor) that can execute 'threads' in parallel
+
+        L1 and shared memory is *inside* the SM. L2 cache is on die, and global memory are the memory chips next
+        to the GPU
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/513.png]]
+
+        There are 3 important players in the execution model
+        * *Threads*: Threads ‘do the work’ in parallel – all threads execute the same instructions but with different inputs (SIMT).
+        * *Blocks*: Blocks are groups of threads. Each block runs on a SM w/ its own shared memory.
+        * *Warp*: Threads always execute in a ‘warp’ of 32 consecutively numbered threads each.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/514.png]]
+
+        Each thread can access its own register, and shared memory within the block. Information that goes
+        across blocks need to be read/written to global memory (slow)
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/515.png]]
+
+        Strengths of the GPU model:
+        * Easily scales up hard workloads by adding more SMs
+        * Easy (?) to program due to the SIMT model
+        * Threads are 'lightweight' and can be stopped and started
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/516.png]]
+        Tensor cores are specialized matrix multiplication circuits
+
+        Compute scaling is faster than memory scaling
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/517.png]]
+** How to think about GPUs
+*** What is a GPU
+        [[https://jax-ml.github.io/scaling-book/gpus/][how to think about gpus]], better source
+
+        A modern ML GPU (e.g. H100, B200) is basically a bunch of compute cores that specialize in matrix
+        multiplication (called *Streaming Multiprocessors* or *SMs*) connected to a stick of fast memory (called
+        *HBM*). Here’s a diagram:
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/519.png]]
+
+
+        Each SM has a dedicated matrix multiplication core (*Tensor Core*), a vector arithmetic unit (called a *Warp Scheduler*), and a fast on-chip cache
+        (called *SMEM*). A modern GPU has more than 100 SMs (132 on an H100). Each of these SMs is much less powerful than a TPU Tensor Core but the
+        system overall is more flexible. Each SM is more or less totally independent, so a GPU can do hundreds
+        of separate tasks at once
+
+        Each SM is broken up into 4 identical quadrants, which NVIDIA calls *SM subpartitions*, each containing
+        a Tensor Core, 16k 32-bit registers, and a SIMD/SIMT vector arithmetic unit called a Warp Scheduler,
+        whose lanes (ALUs) NVIDIA calls *CUDA Cores*. The core component of each partition is arguably the
+        Tensor Core, which performs matrix multiplications and makes up the vast majority of its FLOPs/s, but
+        it’s not the only component worth noting.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/518.png]]
+
+        * *CUDA Cores*: each subpartition contains a set of ALUs called CUDA Cores that do SIMD/SIMT vector
+          arithmetic. Each ALU can generally do 1 arithmetic op each cycle, e.g. f32.add Each subpartition
+          contains 32 fp32 cores (and a smaller number of int32 and fp64 cores) that all execute the same
+          instruction in each cycle. Like the TPU’s VPU, CUDA cores are responsible for ReLUs, pointwise
+          vector operations, and reductions (sums).
+        * *Tensor Core (TC)*: each subpartition has its own Tensor Core, which is a dedicated matrix
+          multiplication unit like a TPU MXU. The Tensor Core represents the vast majority of the GPU’s
+          FLOPs/s (e.g. on an H100, we have 990 bf16 TC TFLOP/s compared to just 66 TFLOPs/s from the CUDA
+          cores).
+          * 990 bf16 TFLOPs/s with 132 SM running at 1.76GHz means each H100 TC can do 7.5e12 / 1.76e9 / 4 ~
+            1024 bf16 FLOPs/cycle, roughly an 8x8x8 matmul 
+          * Like TPUs, GPUs can do lower precision matmuls at higher throughput (e.g. H100 has 2x fp8 FLOPs/s
+            vs. fp16). Low-precision training or serving can be significantly faster. 
+          * Each GPU generation since Volta has increased the TC size over the previous generation. With B200
+            the TC has gotten so large it can no longer fit its inputs in SMEM, so B200s introduce a new
+            memory space called TMEM.
+
+
+        SMs run a bit like multi-threaded CPUs, in the sense that they can “schedule” many programs (warps)
+        concurrently (up to 64 per SM) but each Warp Scheduler only ever executes a single program in each
+        clock cycle. The Warp Scheduler automatically switches between active warps to hide I/O operations
+        like memory loads.
+
+        * *Registers*: Each subpartition has its own register file containing 16,384 32-bit words on H100/B200
+          (4 * 16384 * 4 = 256kiB per SM) accessible by the CUDA cores. 
+          * Each CUDA core can only access up to 256 registers at a time, so although we can schedule up to 64
+            “resident warps” per SM, you can only fit 8 (256 * 1024 / (4 * 32 * 256)) at a time if each thread
+            uses 256 registers. 
+        * *SMEM (L1 Cache)*: each SM has its own 256kB on-chip cache called SMEM, which can either be programmer
+          controlled as “shared memory” or used by the hardware as an on-chip cache. SMEM is used for storing
+          activations and inputs to TC matmuls. 
+        * *L2 Cache*: all SMs share a relatively large ~50MB L2 cache used to reduce main memory accesses.
+          * NVIDIA does not publish the L2 bandwidth for their chips, but it’s been measured to be about
+            5.5TB/s. This is roughly 1.6x the HBM bandwidth but it’s full-duplex, so the effective
+            bidirectional bandwidth is closer to 3x. By comparison, a TPU’s VMEM is 2x larger and has much
+            more bandwidth (around 40TB/s). 
+        * *HBM*: the main GPU memory, used for storing model weights, gradients, activations, etc.
+          * The HBM size has increased a lot from 32GB in Volta to 192GB in Blackwell (B200).
+          * The bandwidth from HBM to the CUDA Tensor Core is called HBM bandwidth or memory bandwidth, and is
+            about 3.35TB/s on H100 and 9TB/s on B200. 
+
+
+
+        Specs:
+        | GPU  | Generation | Clock Speed     | SMs/chip | SMEM capacity/SM | L2 capacity/chip | HBM capacity/chip |
+        |------+------------+-----------------+----------+------------------+------------------+-------------------|
+        | V100 | Volta      | 1.25GHz/1.38GHz |       80 | 96kB             | 6MB              | 32GB              |
+        | A100 | Ampere     | 1.10GHz/1.41GHz |      108 | 192kB            | 40MB             | 80GB              |
+        | H100 | Hopper     | 1.59GHz/1.98GHz |      132 | 256kB            | 50MB             | 80GB              |
+        | H200 | Hopper     | 1.59GHz/1.98GHz |      132 | 256kB            | 50MB             | 141GB             |
+        | B200 | Blackwell  | ?               |      148 | 256kB            | 126MB            | 192GB             |
+
+        | GPU  | Generation | HBM BW/chip | FLOPs/s/chip (bf16/fp16) | FLOPs/s/chip (fp8/int8) | FLOPs/s/chip (fp4) |
+        |------+------------+-------------+--------------------------+-------------------------+--------------------|
+        | V100 | Volta      |      9.0e11 |                        — |                       — | —                  |
+        | A100 | Ampere     |      2.0e12 |                   3.1e14 |                  6.2e14 | —                  |
+        | H100 | Hopper     |      3.4e12 |                   9.9e14 |                  2.0e15 | —                  |
+        | H200 | Hopper     |      4.8e12 |                   9.9e14 |                  2.0e15 | —                  |
+        | B200 | Blackwell  |      8.0e12 |                   2.3e15 |                  4.5e15 | 9.0e15             |
+
+        A single H100 has 132 SMs and runs at a clock speed of 1.59GHz (up to 1.98GHz boost). Assume it can do
+        one vector op per cycle per ALU. It can achieve 132 * 4 * 32 * 1.59e9 = 26.9TFLOPs/s, which is half of
+        what's reported in the spec sheet because technically we can do an FMA (fused-multiply-add) on one
+        cycle which counts as two FLOPs.
+*** Networking
+        GPUs use a traditional hierarchical tree-based switching network. Sets of 8
+        GPUs called *nodes* (up to 72 for GB200) are connected within 1 hop of each other using high-bandwidth
+        interconnects called NVLinks, and these nodes are connected into larger units (called *SUs* or Scalable
+        Units) with a lower bandwidth InfiniBand (IB) or Ethernet network using NICs attached to each GPU.
+        These in turn can be connected into arbitrarily large units with higher level switches.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/520.png]]
+
+        A GPU node is a small unit, typically of 8 GPUs (up to 72 for GB200), connected with all-to-all,
+        full-bandwidth, low latency NVLink interconnects. Each node contains several high-bandwidth
+        NVSwitches which switch packets between all the local GPUs. The actual node-level topology has changed
+        quite a bit over time, including the number of switches per node, but for H100, we have 4 NVSwitches
+        per node with GPUs connected to them in a 5 + 4 + 4 + 5 link pattern, as shown:
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/521.png]]
+
+        For the Hopper generation (NVLink 4.0), each NVLink link has 25GB/s of full-duplex16 bandwidth (50GB/s
+        for B200), giving us 18 * 25=450GB/s of full-duplex bandwidth from each GPU into the network. The
+        massive NVSwitches have up to 64 NVLink ports, meaning an 8xH100 node with 4 switches can handle up to
+        64 * 25e9 * 4=6.4TB/s of bandwidth. Here’s an overview of how these numbers have changed with GPU
+        generation:
+
+        | NVLink Gen | NVSwitch Gen | GPU Generation | NVLink Bandwidth (GB/s, full-duplex) | NVLink Ports / GPU | Node GPU to GPU bandwidth (GB/s full-duplex) | Node size (NVLink domain) | NVSwitches per node |
+        |------------+--------------+----------------+--------------------------------------+--------------------+----------------------------------------------+---------------------------+---------------------|
+        |        3.0 |          2.0 | Ampere         |                                   25 |                 12 |                                          300 |                         8 |                   6 |
+        |        4.0 |          3.0 | Hopper         |                                   25 |                 18 |                                          450 |                         8 |                   4 |
+        |        5.0 |          4.0 | Blackwell      |                                   50 |                 18 |                                          900 |                      8/72 |                2/18 |
+*** Beyond the node level
+        Beyond the node level, the topology of a GPU network is less standardized
+
+        Here is a diagram for a reference 1024 GPU H100 system, where each box in the bottom row is a single
+        8xH100 node with 8 GPUs, 8 400Gbps CX7 NICs (one per GPU), and 4 NVSwitches.
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/522.png]]
+
+        *Scalable Units*: Each set of 32 nodes is called a “Scalable Unit” (or SU), under a single set of 8 leaf
+        InfiniBand switches. This SU has 256 GPUs with 4 NVSwitches per node and 8 Infiniband leaf switches.
+        All the cabling shown is InfiniBand NDR (50GB/s full-duplex) with 64-port NDR IB switches (also 50GB/s
+        per port). Note that the IB switches have 2x the bandwidth of the NVSwitches (64 ports with 400 Gbps
+        links). 
+
+        *SuperPod*: The overall SuperPod then connects 4 of these SUs with 16 top level “spine” IB switches,
+        giving us 1024 GPUs with 512 node-level NVSwitches, 32 leaf IB switches, and 16 spine IB switches, for
+        a total of 512 + 32 + 16 = 560 switches. Leaf switches are connected to nodes in sets of 32 nodes, so
+        each set of 256 GPUs has 8 leaf switches. All leaf switches are connected to all spine switches. 
+
+        *How much bandwidth do we have?* The overall topology of the InfiniBand network (called the “scale out
+         network”) is that of a *fat tree*, with the cables and switches guaranteeing full bisection bandwidth
+         above the node level (here, 400GB/s). That means if we split the nodes in half, each node can egress
+         400GB/s to a node in the other partition at the same time. More to the point, this means we should
+         have a roughly constant AllReduce bandwidth in the scale out network! While it may not be implemented
+         this way, you can imagine doing a ring reduction over arbitrarily many nodes in the scale-out
+         network, since you can construct a ring including every one.
+
+         | Level | GPUs | Switches per Unit | Switch Type | Bandwidth per Unit (TB/s, full-duplex) | GPU-to-GPU Bandwidth (GB/s, full-duplex) | Fat Tree Bandwidth (GB/s, full-duplex) |
+         |-------+------+-------------------+-------------+----------------------------------------+------------------------------------------+----------------------------------------|
+         | Node  |    8 |                 4 | NVL         |                                    3.6 |                                      450 |                                    450 |
+         | Leaf  |  256 |                 8 | IB          |                                   12.8 |                                       50 |                                    400 |
+         | Spine | 1024 |                16 | IB          |                                   51.2 |                                       50 |                                    400 |
+*** How do collectives work on GPUs
+**** Intra-node collectives
+        *AllGather or ReduceGather*. For an AllGather or ReduceScatter at the node level, you can perform them
+        around a ring using the full GPU-to-GPU bandwidth at each hop. Order the GPUs arbitrarily and send a portion
+        of the array around the ring using the full GPU-to-GPU bandwidth. The cost of each hop is
+        \begin{equation*}
+        T_{hop}=bytes/(N*\text{GPU egress bandwidth})
+        \end{equation*}
+        so the overall cost is
+        \begin{equation*}
+        T_{\text{AG or RS comms}}=\frac{bytes\cdot(N-1)}{N\cdot\text{GPU egress bandwidth}}\to\frac{bytes}{\text{GPU egress bandwidth}}
+        \end{equation*}
+        
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/523.png]]
+
+        If you’re concerned about latency (e.g. if your array is very small), you can do a tree reduction,
+        where you AllReduce within pairs of 2, then 4, then 8 for a total of  \(\log(N)\) hops
+
+        *Empirical measurements*: here is an empirical measurement of AllReduce bandwidth over an 8xH100 node.
+        The Algo BW is the measured bandwidth (bytes / runtime) and the Bus BW is calculated as 2⋅W⋅(8−1)/8,
+        theoretically a measure of the actual link bandwidth. You’ll notice that we do achieve close to
+        370GB/s, less than 450GB/s but reasonably close, although only around 10GB/device. This means although
+        these estimates are theoretically correct, it takes a large message to realize it.
+
+        #+LATEX: \wu{
+        For allreduce, originally, we have
+        * gpu0: [a1, b1]
+        * gpu1: [a2, b2]
+        We need to first do a reduce-scatter so
+        * gpu0 get a2, compute (a1,a2)
+        * gpu1 get b1, compute (b1, b2)
+        And then we do a allgather
+
+        So
+        \begin{equation*}
+         T_{\text{AR comms}}=\frac{2\cdot bytes\cdot (N-1)}{N\cdot\text{GPU egress bandwidth}}
+        \end{equation*}
+          
+        #+LATEX: }
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/524.png]]
+
+        *In network reductions*: Since the Hopper generation, NVIDIA switches have supported “SHARP” (Scalable
+         Hierarchical Aggregation and Reduction Protocol) which allows for “in-network reductions”. This means
+         the network switches themselves can do reduction operations and multiplex or “MultiCast” the result
+         to multiple target GPUs:
+
+         #+ATTR_LATEX: :width .7\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/525.png]]
+
+         Though
+         \begin{align*}
+        T_{\text{SHARP AR comms}}&=\frac{bytes}{\text{GPU egress bandwidth}}
+         \end{align*}
+         In practice we see about a 30% increase in bandwidth with SHARP enabled, compared to the predicted
+         75%. This gets us up merely to about 480GB/s effective collective bandwidth, not nearly 2x.
+         #+ATTR_LATEX: :width .7\textwidth :float nil
+         #+NAME: 
+         #+CAPTION: 
+         [[../images/papers/526.png]]
+**** Cross-node collectives
+** Understanding GPU performance
+** Putting it together - unpacking FlashAttention
+
 * Problems
 
 
