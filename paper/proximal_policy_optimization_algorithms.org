@@ -1,0 +1,75 @@
+#+title: Proximal Policy Optimization Algorithms
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/ppo.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Background
+** Policy Gradient Method
+        Policy gradient methods work by computing an estimator of the policy gradient and plugging it into a
+        stochastic gradient ascent algorithm. The most commonly used gradient estimator has the form
+        \begin{equation*}
+        \hatg=\hat{\E}_t\left[\nabla_\theta\log\pi_\theta(a_t|s_t)\hatA_t\right]
+        \end{equation*}
+        where \(\pi_\theta\) is a stochastic policy and \(\hatA_t\) is an estimator of the advantage function at timestep \(t\).
+
+        #+LATEX: \wu{
+        \(\pi_\theta(a_t|s_t)\) is the policy: given state \(s_t\), how likely is the agent, with settings \(\theta\), to
+        choose action \(a_t\)
+
+        \(\hat A_t\) is the advantage estimate:
+        * \(\hat A_t > 0\): this action was better than expected → make it more likely.
+        * \(\hat A_t < 0\): this action was worse than expected → make it less likely.
+        * \(\hat A_t \approx 0\): it was about as good as expected → barely change anything.
+
+        \(\hat{\mathbb E}\) means an estimated average. Normally, \(\mathbb E[X]\) means “the true average value of \(X\) across every possible
+        outcome.” But we can’t observe every possible future, so we collect a finite batch of examples and
+        average those instead.
+
+        Suppose \(\theta=(a_1,\dots,a_n)\)
+        \begin{equation*}
+        \nabla_\theta f(\theta)=
+        \begin{bmatrix}
+        \frac{\partial f}{\partial a_1}\\\vdots\\\frac{\partial{f}}{\partial a_n}
+        \end{bmatrix}
+        \end{equation*}
+        #+LATEX: }
+
+        Implementations that use automatic differentiation software work by constructing an objective function
+        whose gradient is the policy gradient estimator; the estimator \(\hatg\) is obtained by differentiating the
+        objective
+        \begin{equation*}
+        L^{PG}(\theta)=\hat{\E}_t\left[\log\pi_\theta(a_t|s_t)\hatA_t\right]
+        \end{equation*}
+** Trust Region Methods
+        In TRPO, an objective functon (the “surrogate” objective) is maximized subject to a constraint on the
+        size of the policy update. Specifically,
+        \begin{gather*}
+        \text{maximize}_{\theta}\quad\hat{\E}_t\left[\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}\hatA_t\right]\\
+        \text{subject to }\quad\hat{\E}_t[KL[\pi_{\theta_{old}}(\cdot|s_t),\pi_\theta(\cdot|s_t)]]\le\delta
+        \end{gather*}
+
+        #+LATEX: \wu{
+        \begin{equation*}
+        \mathrm{KL}(P,Q)=\sum_a P(a)\log\frac{P(a)}{Q(a)}
+        \end{equation*}
+        #+LATEX: }
+
+        The theory justifying TRPO actually suggests using a penalty instead of a constraint, i.e., solving
+        the unconstrained optimization problem
+        \begin{equation*}
+        \text{maximize}_\theta\hat{\E}_t\left[
+        \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}\hat{A}_t-\beta\mathrm{KL}
+        [\pi_{\theta_{old}}(\cdot|s_t),\pi_\theta(\cdot|s_t)]\right]
+        \end{equation*}
+        for some coefficient \(\beta\).
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

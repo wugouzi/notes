@@ -1,0 +1,180 @@
+#+title: Provisioning to Runtime Optimization of a 100 MW-Scale AI Cluster
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/100mw_scale_ai_cluster.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        Our contributions in this paper are not only to share real-world experience in end-to-end power
+        planning and management, but also to report a set of interesting or surprising findings that can help
+        guide future practitioners.
+
+
+        1. in the datacenter-planning phase, we do not use the accelerator’s Thermal Design Power (TDP) to
+           determine the maximum number of accelerators that can fit within the datacenter’s power budget.
+           Instead, we assume a lower power limit based on the accelerator’s projected power-performance
+           curve, minimizing performance loss while maximizing the number of accelerators and overall compute
+           capacity. This has led the industry to adopt offerings with different power limits products or
+           operation points to signify cluster throughput vs max GPU performance.
+        2. different sub-areas of a datacenter contain a complex, uneven mix of hardware, such as GPU-server
+           racks, Network racks, CPU-server and storage racks, and cooling devices. Even with identical,
+           static workloads on similar racks, hardware heterogeneity causes considerable power imbalances
+           across different power delivery paths, limiting dynamic power management. 
+        3. accelerator performance does not scale uniformly with the power limit; the relationship is complex.
+           For example, GB200’s HBM bandwidth stays constant as the power limit decreases from 1200 Watt (W)
+           to 1000 W, but drops sharply by 15% when further reduced to 800 W. Additionally, matrix
+           multiplication performance is affected not only by the power limit but also by the operation’s
+           arithmetic intensity, which is workload dependent.
+        4. in large-scale synchronous AI training, allowing individual accelerators and racks to manage power
+           settings locally is ineffective, as stragglers slow down the entire job. Instead, when a
+           power-delivery device nears its limit, we lower the power limits for all accelerators it governs,
+           ensuring consistent and collaborative performance reduction.
+        5. we do not directly use the Power Supply Unit (PSU)’s rack power measurement, as it consistently
+           overestimates power usage to ensure safe operation within the power budget. Instead, we rely on
+           sensors at the reactor power panel (RPP) level, which more accurately report aggregate power
+           consumption across multiple racks. We use this data to calibrate and adjust the PSU readings.
+        6. to maximize compute capacity within a datacenter’s power budget, it is often best to choose the
+           latest accelerators. For example, compared with H100, GB200 delivers twice the performance per
+           watt, thanks to its higher FLOPS, greater network bandwidth, and larger scale-up domains.
+* Hosting AI Workloads
+** AI Workloads and Power-Performance Trade-offs
+        *Workloads*. Given the cluster can be used for either training or inference jobs, of the three power
+        management phases, the first two (planning and deployment validation) must assume the most
+        power-hungry workload, which is pre-training, as it requires the largest scale of accelerators per job
+        and presenting the most stringent power demands at the datacenter level. The operational phase will
+        behave differently for inference vs pre-training. Hence in this work, we focus on pre-training and
+        consider a range of Mixture of Expert Models.
+
+        *Bottleneck resources*.
+        * Compute-bound: typically leveraging specialized hardware (e.g. Tensor Cores), and are power bound
+        * Memory-bound: limited by the rate at which data can be moved between high-bandwidth memory (HBM) and
+          the compute units. HBM bandwidth in GB200 genration is not power bound in the power limit range if
+          interest.
+        * Communication-bound: data exchange across nodes, often over high-speed interconnects, and are
+          integral part of distributed training. Typically these phase of operation is not power bound.
+** AI Cluster Architecture and Performance Metric
+        *Datacenter*. The AI datadenter is one of our company’s traditional data centers, featuring air-cooled
+        hardware and no facility based liquid cooling. The region consists of 5 buildings, each with around 30
+        MW. Each building contains 4 data halls, which are failure domains with 3 Main Switch Board (MSB)
+        each. This 150 MW AI datacenter is part of the larger 1 GW AI cluster buildout.
+        
+        *Cluster Composition*. An AI cluster is an integrated system comprising several interdependent hardware
+        subsystems connected via a dual-network architecture.
+        1. a high-throughput, low-latency back-end network based on RDMA provides 800 Gbps per GB200 GPU for
+           internode communication among GPUs.
+        2. a front-end TCP/IP Ethernet offers 200 Gbps per GPU for general connectivity.
+        3. the datacenter includes various supporting services, such as high-performance storage for massive
+           datasets, CPU servers for data processing, and the network fabric required to deliver data to
+           accelerators at line rate.
+
+        *Channel Island Catalina Rack (GB200)*. The core of an AI cluster are accelerator-enabled compute racks,
+        which for this study is powered by the Catalina pod.
+
+        The Catalina pod architecture is different from
+        NVIDIA’s GB200 reference design, as it contains 2 IT racks each hosting 36 GB200 GPUs. The racks are
+        connected through trunk cables connecting NVSwitches in each rack to form a 72-GPU NVLink scale up
+        domain (2x36). The primary reason for this specific configuration is to enable 100 GB/s of scale out
+        RDMA bandwidth per GPU, instead of 50 GB/s in the reference design. As shown in Figure [[ref:f1]], this is made
+        possible by connecting two 400 Gbps CX7 NIC per Grace CPU for the backend network.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/532.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/533.png]]
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f3
+        #+CAPTION: 
+        [[../images/papers/534.png]]
+        
+        Due to limited IO per Grace CPU, this is only possible by using one CPU per GPU, resulting in a host
+        with 2+2 GPU+CPU instead of 4+2 in the reference design. Figure [[ref:f3]] shows the projected impact of
+        100 GB/s vs 50 GB/s scale out bandwidth per GPU. Given we expect this cluster to be part of the larger
+        1 GW buildout, we optimized this platform for 100 GB/s capability per GPU. The back end network is
+        comprised of 3 levels of switches as shown in Figure [[ref:f2]].
+* Power for AI Infrastructures
+** Power Delivery Hierarchy and Constraints
+** The Three Phases
+        *Provisioning Phase*. Before new AI accelerators are deployed at scale, the datacenter must undergo a
+         power provisioning phase. During this stage, infrastructure teams use projection models to estimate
+         the power and performance characteristics of the upcoming hardware. The main goal is to determine how
+         many accelerators can be supported within the available power budget. This involves setting an
+         initial per-accelerator power allocation and defining the operational power-limit range for the
+         accelerators. These early decisions shape the cluster’s architecture and set the power-performance
+         upper bound.
+
+        *Deployment Validation Phase*. Once the hardware is deployed, we have the opportunity to validate and
+        refine the assumptions established during provisioning. Datacenter operators can analyze power
+        consumption data and workload performance to make informed adjustments to GPU power limits and margins
+        across power delivery hierarchy, ensuring they align with real-world conditions.
+
+        *Operational Phase*. In the operational phase, the focus shifts to real-time power man- agement with the
+        objective of capturing the last percentage of stranded power, while ensuring safety of power delivery
+        system. 
+* Phase 1: Planning and Provisioning
+** Model and Methodology
+        The primary goal during the power provisioning phase is to determine the optimal cluster configuration
+        that maximizes overall throughput (\(T(p)\) at the datacenter level within the fixed power budget
+        (\(P_{total}\)). This process requires selecting the total number of accelerators, which directly
+        determines the permissible power limit (\(p\)) for each unit and the resulting power allocated per
+        rack. Inputs to this optimization process include the operational power-limit range of the
+        accelerators, their performance characteristics (\(f(p)\)) at different power levels, and both
+        rack-level power consumption and cluster-wide performance. Note that at this stage the accelerator is
+        not operationalized and these inputs are mainly based on predictive models. Overall, we formulate the
+        goal as:
+        \begin{equation*}
+        \max_pT(p)=N(p)\cdot f(p)
+        \end{equation*}
+        where \(N(p)=\floor{\frac{P_{total}}{g(p)}}\)
+
+        some formal staffs...
+** Empirical Data
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f6
+        #+CAPTION: 
+        [[../images/papers/535.png]]
+
+        We use performance projections based on simulations to analyze how changes in accelerator power affect
+        computa- tional throughput for large-scale pre-training workloads.
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f9
+        #+CAPTION: 
+        [[../images/papers/536.png]]
+
+        Then we need to model rack power since it contains a lot of components other than gpu.
+
+        after some calculations, choose 960W
+* Phase 2: Deployment Validation
+** Static Power Imbalance in an AI Datacenter
+** Managing Power Swings
+        The synchronous nature of contemporary distributed training algorithms, characterized by distinct
+        periods of exposed communication that do not overlap with computation, induces large, synchronized
+        power oscillations. When a considerable majority of GPUs in a cluster are allocated to a single
+        pretraining job, these power fluctuations at the accelerator level aggregate, creating substantial
+        power swings at the data center scale. The magnitude and frequency of these transients can pose a risk
+        to the stability of the power utility grid and may potentially damage the power delivery
+        infrastructure.
+
+        We explore a software scheme to manage the power swings. This requires the workload to be aware of
+        moments when power usage dips sharply before returning to higher levels. During these periods, the
+        system can proactively launch dummy computational kernels to keep the GPU active. This “gap filling"
+        technique maintains a higher, more stable power draw, thereby smoothing the overall load profile. The
+        focus of the solution is to reduce the transients up to a safe level and minimize the performance overhead.
+* Phase 3: Active Operation Phase
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

@@ -1,0 +1,70 @@
+#+title: FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/flashattention2.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        However, context length increases even more, FlashAttention is still not nearly as efficient as other
+        primitives such as matrix-multiply (GEMM). In particular, while FlashAttention is already 2-4× faster
+        than a standard attention implementation, the forward pass only reaches 30-50% of the theoretical
+        maximum FLOPs/s of the device, while the backward pass is even more challenging, reaching only 25-35%
+        of maximum throughput on A100 GPU.
+
+        In contrast, optimized GEMM can reach up to 80-90% of the theoretical maximum device throughput.
+        Through careful profiling, we observe that FlashAttention still has suboptimal work partitioning
+        between different thread blocks and warps on the GPU, causing either low-occupancy or unnecessary
+        shared memory reads/writes.
+* FlashAttention-2: Algorithm, Parallelism, and Work Partitioning
+** Algorithm
+        We tweak the algorithm from FlashAttention to reduce the number of non-matmul FLOPs. This is because
+        modern GPUs have specialized compute units (e.g., Tensor Cores on Nvidia GPUs) that makes matmul much
+        faster. 
+*** Forward pass
+        Two tweaks:
+        1. We do not have to rescale both terms of the output update by \(diag(l^{(2)})^{-1}\):
+           \begin{equation*}
+           \bO^{(2)}=diag(l^{(1)}/l^{(2)})^{-1}\bO^{(1)}+diag(l^{(2)})^{-1}e^{\bS^{(2)-m^{(2)}}}\bV^{(2)}
+           \end{equation*}
+           We can instead maintain an "un-scaled" version of \(\bO^{(2)}\) and keep around the statistics
+           \(l^{(2)}\)
+           \begin{equation*}
+           \tilde{\bO}^{(2)}=diag(l^{(1)})^{-1}\bO^{(1)}+e^{\bS^{(2)}-m^{(2)}}\bV^{(2)}
+           \end{equation*}
+        2. We do not have to save both the \(\max m^{(j)}\) and the sum of exponentials \(l^{(j)}\) for the
+           backward pass. We only need to store the \(logsumexp\;L^{(j)}=m^{(j)+\log(l^{(j)})}\)
+
+
+        *Casual masking*.
+        1. As FlashAttention and FlashAttention-2 already operate by blocks, for any blocks where all the
+           column indices are more than the row indices (approximately half of the blocks for large sequence
+           length), we can skip the computation of that block. This leads to around 1.7-1.8× speedup compared
+           to attention without the causal mask. 
+        2. We do not need to apply the causal mask for blocks whose row indices are guaranteed to be strictly
+           less than the column indices. This means that for each row, we only need apply causal mask to 1
+           block (assuming square block).
+*** Backward pass
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/531.png]]
+** Parallelism
+        FlashAttention parallelizes over batch size and number of heads. We use 1 thread block to process one
+        attention head, and there are overall batch size · number of heads thread blocks. Each thread block is
+        scheduled to run on a streaming multiprocessor (SM), and there are 108 of these SMs on an A100 GPU.
+
+        In the case of long sequences (which usually means small batch sizes or small number of heads), to
+        make better use of the multiprocessors on the GPU, we now additionally parallelize over the sequence
+        length dimension. This results in significant speedup for this regime.
+
+        
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

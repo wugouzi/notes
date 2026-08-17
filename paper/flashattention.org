@@ -1,0 +1,203 @@
+#+title: FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/flashattention.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        We propose FlashAttention, a new attention algorithm that computes exact attention with far fewer
+        memory accesses.
+
+        This requires
+        1. computing the softmax reduction without access to the whole input
+        2. not storing the large intermediate attention matrix for the backward pass.
+
+        We apply two well-established techniques to address these challenges.
+        1. We restructure the attention computation to split the input into blocks and make several passes
+           over input blocks, thus incrementally performing the softmax reduction (also known as tiling).
+        2. We store the softmax normalization factor from the forward pass to quickly recompute attention
+           on-chip in the backward pass, which is faster than the standard approach of reading the
+           intermediate attention matrix from HBM.
+* FlashAttention: Algorithm, Analysis, and Extensions
+** An Efficient Attention Algorithm With Tiling and Recomputation
+        Given \(\bQ,\bK,\bV\in\R^{N\times d}\) in HBM, we aim to compute the attention output
+        \(\bO\in\R^{N\times d}\) and write it to HBM
+
+        Main idea is that we split the inputs \(\bQ,\bK,\bV\) into blocks, load them from slow HBM to fast
+        SRAM, then compute the attention output w.r.t. those blocks. By scaling the output of each block by
+        the right normalization factor before adding them up, we get the correct result at the end.
+
+        *Tiling*. Softmax couples columns of \(\bK\), so we decompose the large softmax with scaling. For
+        numerical stability, the softmax of vector \(x\in\R^B\) is computed as:
+        \begin{gather*}
+        m(x):=\max_ix_i\\
+        f(x):=\left[ e^{x_1-m(x)}\quad\dots\quad e^{x_B-m(x)} \right]\\
+        l(x):=\sum_if(x)_i\\
+        softmax(x):=\frac{f(x)}{l(x)}
+        \end{gather*}
+        For vectors \(x^{(1)},x^{(2)}\in\R^B\), we can decompose the softmax of the concatenated
+        \(x=\left[x^{(1)}\;x^{(2)} \right]\in\R^{2B}\)  as
+        \begin{align*}
+        m(x)&=m(\left[x^{(1)}\;x^{(2)} \right])=\max(m(x^{(1)}), m(x^{(2)}))\\
+        f(x)&=\left[ e^{m(x^{(1)})-m(x)}f(x^{(1)})\quad e^{m(x^{(2)})-m(x)}f(x^{(2)}) \right]\\
+        l(x)&=l(\left[x^{(1)}\;x^{(2)} \right])\\
+        softmax(x)&=\frac{f(x)}{l(x)}
+        \end{align*}
+        Therefore if we keep track of some extra statistics \((m(x),l(x))\), we can compute softmax one block
+        at a time.
+
+        *Recomputation*. One of our goals is to not store \(O(N^2)\) intermediate values for the backward pass.
+        The backward pass typically requires the matrices \(\bS,\bP\in\R^{N\times N}\) to compute the
+        gradients with respect to \(\bQ,\bK,\bV\). However, by storing the output \(\bO\) and the softmax
+        normalization statistics \((m,l)\), we can recompute the attention matrix \(\bS\) and \(\bP\) easily
+        in the backward pass from blocks of \(\bQ,\bK,\bV\) in SRAM.
+
+        Implementation details: *Kernel fusion*. Tiling enables us to implement our algorithm in one CUDA
+        kernel, loading input from HBM, performing all the computation steps (matrix multiply, softmax,
+        optionally masking and dropout, matrix multiply), then write the result back to HBM
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/529.png]]
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Algorithm returns \(\bO=softmax(\bQ\bK^T)\bV\) with \(O(N^2d)\) FLOPs and requires \(O(N)\) additional
+        memory beyond inputs and output
+        #+END_theorem
+** Analysis: IO Complexity of FlashAttention
+        #+ATTR_LATEX: :options []
+        #+BEGIN_theorem
+        Let \(N\) be the sequence length, \(d\) be the head dimension, and \(M\) be size of SRAM with
+        \(d\le M\le Nd\). Standard attention requires \(\Theta(Nd+N^2)\) HBM accesses, while FlashAttention
+        requires \(\Theta(N^2d^2M^{-1})\) HBM accesses
+        #+END_theorem
+
+        The main idea of the proof is that given the SRAM size of \(M\), we can load blocks of \(\bK\),
+        \(\bV\) of size \(\Theta(M)\) each. For each block of \(\bK\) and \(\bV\), we iterate over all blocks
+        of \(\bQ\) to compute the intermediate values, resulting in \(\Theta(NdM^{-1})\) passes over \(\bQ\).
+        Each pass loads \(\Theta(Nd)\) elements, which amounts to \(\Theta(N^2d^2M^{-1})\) HBM accesses. We
+        similarly prove that the backward pass of standard attention requires \(\Theta(Nd+N^2)\) HBM accesses
+        while the backward pass of FlashAttention requires \(\Theta(N^2d^2M^{-1})\) HBM accesses
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Let \(N\) be the sequence length, \(d\) be the head dimension, and \(M\) be size of SRAM with
+        \(d\le M\le Nd\). There does not exist an algorithm to compute exact attention with
+        \(o(N^2d^2M^{-1})\) HBM accesses for all \(M\)in the range \([d,Nd]\)
+        #+END_proposition
+
+        #+BEGIN_proof
+        Suppose inside SRAM, without IO, we can process \(\abs{R}\) queriess and \(\abs{C}\) keys. Then
+        \begin{equation*}
+        \abs{R}+\abs{C}\le\frac{M}{d}
+        \end{equation*}
+        Therefore
+        \begin{equation*}
+        \abs{R}\abs{C}\le\frac{(\abs{R}+\abs{C})^2}{2}\le\frac{M^2}{2d^2}=\Theta\left(\frac{M^2}{d^2}\right)
+        \end{equation*}
+
+        
+        Now we need to compute \(\frac{N^2}{\abs{R}\abs{C}}\) times, each time we need to load \(M\) data,
+        therefore we need
+        \(\Omega(M\cdot\frac{N^2}{M^2/d^2})=\Omega(\frac{N^2d^2}{M})\)
+
+        #+END_proof
+** Extension: Block-Sparse FlashAttention
+        We extend FlashAttention to approximate attention: we propose block-sparse FlashAttention, whose IO
+        complexity is smaller than FlashAttention by a factor proportional to the sparsity.
+
+        Given inputs \(\bQ,\bK,\bV\in\R^{N\times d}\) and a mask matrix \(\tilde{\bM}\in\{0,1\}^{N\times N}\),
+        we want to compute
+        \begin{align*}
+        \bS&=\bQ\bK^T\in\R^{N\times N}\\
+        \bP&=softmax(\bS\otimes\bone_{\tilde{\bM}})\in\R^{N\times N}\\
+        \bO&=\bP\bV\in\R^{N\times d}
+        \end{align*}
+        We require \(\tilde{\bM}\) to have block from: for some blocks sizes \(B_r,B_c\), for all \(k,l\),
+        \(\tilde{\bM}_{kl}=\bM_{ij}\) with \(i=\floor{k/B_r}\), \(j=\floor{l/B_c}\) for some
+        \(\bM\in\{0,1\}^{N/B_r\times N/B_c}\)
+
+        #+ATTR_LATEX: :options []
+        #+BEGIN_proposition
+        Let \(N\) be the sequence length, \(d\) be the head dimension, and \(M\) be size of SRAM with
+        \(d\le M\le Nd\). Block-sparse FlashAttention requires \(\Theta(Nd+N^2d^2M^{-1}s)\) HBM accesses where
+        \(s\) is the fraction of nonzero blocks in the block-sparsity mask. 
+        #+END_proposition
+** Memory-Efficient backward pass
+        Suppose that there is a scalar loss function \(\phi\), and let the output gradient be
+        \(\bd\bO\in\R^{n\times d}\) (where \(\bd\bO\) denotes \(\frac{\partial\phi}{\partial\bO}\). We want to
+        compute the input gradients  \(\bd\bQ,\bd\bK,\bd\bV\in\bR^{n\times d}\) where \(\bd\bQ,\bd\bK,\bd\bV\)
+        denote \(\frac{\partial \phi}{\partial\bQ}\), \(\frac{\partial\phi}{\partial\bK}\),
+        \(\frac{\partial\phi}{\partial\bV}\)
+
+        As \(\bd\bV=\bP^T\bd\bO\)
+        #+LATEX: \wu{
+        We have
+        \begin{equation*}
+        d\bO=\bP d\bV 
+        \end{equation*}
+
+        Define frobenius inner product as
+        \begin{equation*}
+        \la A,B\ra_F=\sum_{ij}A_{ij}B_{ij}=tr(A^TB)
+        \end{equation*}
+        where \(tr(A)=\sum_iA_{ii}\).
+
+        We know for \(L=L(x)\),
+        \begin{align*}
+        dL&=L'(x)dx\\
+        dL&=\frac{dL}{dx}dx
+        \end{align*}
+
+        For \(L=L(x_1,\dots,x_n)\), by Taylor expansion
+        \begin{equation*}
+        L(x+dx)=L(x)+\sum_i\frac{\partial L}{\partial x_i}dx_i+o(\norm{dx})
+        \end{equation*}
+        where \(f(dV)=o(\norm{dV})\) means
+        \begin{equation*}
+        \lim_{dV\to 0}\frac{f(dV)}{\norm{dV}}=0
+        \end{equation*}
+        Why norm? since there is no order between matrix
+        \begin{align*}
+        dL&=\sum_i\frac{\partial L}{\partial x_i}dx_i\\
+        dL&=\nabla L^Tdx\\
+        dL&=\la\nabla L,dx\ra
+        \end{align*}
+
+        
+
+        
+        Now suppose \(L=L(\bV)\), then
+        \begin{align*}
+        L(V+dV)&=L(V)+\sum_{ij}\frac{\partial L}{\partial V_{ij}}dV_{ij}+o(\norm{d\bV})\\
+        dL&:=\sum_{ij}\frac{\partial L}{\partial V_{ij}}dV_{ij}\\
+        dL&=\la\frac{\partial L}{\partial V},d\bV\ra_F=\la\bd\bV,d\bV\ra
+        \end{align*}
+
+        Now we have
+        \begin{align*}
+        dL&=tr\left( \bd\bO^Td\bO  \right)\\&=tr\left( \bd\bO^T\bP d\bV \right)\\&=
+        tr(d\bV(\bd\bO^T\bP))\\
+        &=tr((\bd\bO^T\bP)^T(d\bV)^T)\\
+        &=
+        tr\left( \bd\bV^Td\bV  \right)
+        \end{align*}
+        
+        #+LATEX: }
+        , we have
+        \begin{equation*}
+        dv_j=\sum_iP_{ij}do_i=\sum_i\frac{e^{q_i^Tk_j}}{L_i}do_i
+        \end{equation*}
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
+

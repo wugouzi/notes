@@ -1,0 +1,62 @@
+#+title: How to Write to SSDs
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{/Users/wu/notes/preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/how_to_write_to_ssds.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Introduction
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f1
+        #+CAPTION: 
+        [[../images/papers/538.png]]
+
+* The case for out-of-place writes
+        SSDs differ from disks in two properties that matter for write-heavy workloads
+        1. flash cells only endure a limited number of program/erase cycles; each write gradually wears the
+           cells, so device lifetime is tied to the volume of physical writes
+        2. Second, SSDs exhibit write amplification because writes are performed at the page level (4-16 KiB),
+           whereas erases reclaim entire blocks (many pages). When a block containing still-valid pages must
+           be erased to free space, the SSD first relocates those pages, increasing internal physical writes
+           relative to host writes
+
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/537.png]]
+
+        *DB WAF*: User writes transformed by the DBMS. To understand more about the source of WAs in Figure
+        [[ref:f1]], we first examine the DBMS write path. The DBMS persists a safe page copy before overwriting
+        the target, a mechanism known as *doublewrite buffering* (DWB). For this reason, in-place systems such
+        as MySQL, PostgreSQL, XtraDB, and CedarDB incur roughly 2× the logical DB writes due to DWB. Without
+        DWB, the system cannot recover from partial page writes. Some SSDs expose limited atomic-write
+        primitives but typically only for 512- or 4,096-byte units and thus are not widely relied upon.
+
+        *SSD WAF: DBMS writes transformed by the SSD.* On disks, logical and physical addresses mostly coincide
+        (Figure [[ref:f2]]a); on SSDs, writes are inherently out-of-place (Figure [[ref:f2]]b), breaking this fixed
+
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: f2
+        #+CAPTION: 
+        [[../images/papers/539.png]]
+
+* Reducing Writes with Compression
+
+** Page-Wise Compression
+
+** Page Packing After 4 KiB Compression
+        #+ATTR_LATEX: :width .6\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/540.png]]
+
+
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}

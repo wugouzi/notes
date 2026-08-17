@@ -51,12 +51,32 @@
         of a memory location at the start of an epoch is the same as the value of the memory location at the
         end of its last read-write epoch.
 
-        A core can perform loads and stores at various granularities, often ranging from 1–64 bytes. In
-        theory, coherence could be performed at the ﬁnest load/store granularity. However, in practice
+        A core can perform loads and stores at various granularities, often ranging from 1–64 bytes. In practice
         coherence is usually maintained at the granularity of cache blocks. That is, the hardware enforces
         coherence on a cache block by cache block basis. In practice, the SWMR invariant is likely to be that,
         for any block of memory, there is either a single writer or some number of readers.
+
+        
 * Memory Consistency: Motivation and Sequential Consistency
+** Problems with Shared Memory Behaviour
+        #+NAME: 3.1
+        #+CAPTION: Should r2 always be set to NEW?
+        | Core C1              | Core C2                   | Comments                          |
+        |----------------------+---------------------------+-----------------------------------|
+        | S1: Store data = NEW | L1: Load r1=data          | /* Initially, data & flag = SET */  |
+        | S2: Store flag = SET | B1: if (r1 ≠ SET) goto L1 | /* L1 & B1 may repeat many times */ |
+        |                      | L2: Load r2 = data        |                                   |
+
+
+        #+CAPTION: One possible execution of program in Table \ref{3.1}
+        | Cycle | Core C1              | Core C2          | Coherence State of Data | Coherence State of Flag |
+        |-------+----------------------+------------------+-------------------------+-------------------------|
+        |     1 | S2: Store flag = SET |                  | Read-only for C1        | Read-write for C1       |
+        |     2 |                      | L1: Load r1=flag | Read-only for C1        | Read-only for C2        |
+        |     3 |                      | B1:              | Read-only for C1        | Read-only for C2        |
+        |     4 | S1: Store data = NEW |                  | Read-write for C1       | Read-only for C2        |
+
+        
         #+ATTR_LATEX: :options [How a Core Might Reorder Memory Access]
         #+BEGIN_remark
         *Store-store reordering*: Two stores may be reordered if a core has a non-FIFO write buﬀer that lets
@@ -68,5 +88,161 @@
         order.
 
         *Load-store and store-load reordering*: Note that store-load reorderings may also arise due to local
-        bypassing in the commonly implemented FIFO write buﬀer, even with a core that executes all instructions in program order.
+        bypassing in the commonly implemented FIFO write buﬀer, even with a core that executes all
+        instructions in program order.
+
+        A reader might assume that hardware should not permit some or all of these behaviors, but without a
+        better understanding of what behaviors are allowed, it is hard to determine a list of what hardware
+        can and cannot do. 
         #+END_remark
+
+        #+CAPTION: Can both r1 and r2 be set to 0?
+        | Core C1      | Core C2      | Comments                     |
+        |--------------+--------------+------------------------------|
+        | S1: x = NEW; | S2: y = NEW; | /* Initially, x = 0 & y = 0 */ |
+        | L1: r1 = y;  | L2: r2 = x;  |                              |
+** Basic Idea of Sequential Consistency
+        It was ﬁrst formalized by Lamport
+        * a single processor (core) is *sequential* if “the result of an execution is the same as if the operations had been executed in the order speciﬁed by the program.”
+        * a multiprocessor is *sequentially consistent* if “the result of any execution is the same as if the
+          operations of all processors (cores) were executed in some sequential order, and the operations of
+          each individual processor (core) appear in this sequence in the order speciﬁed by its program.”
+          
+        This total order of operations is called *memory order*. In SC, memory order respects each core’s
+        program order, but other consistency models may permit memory orders that do not always respect the
+        program orders.
+
+        Under SC, memory order respects each core’s program order. “Respects” means that \(op_1 <_p op_2\) implies \(op_1 <_m op_2\).
+** A Little SC Formalism
+        An *SC execution* requires the following
+        1. All cores insert their loads and stores into the order \(<_m\) respecting their program order,
+           regardless of whether they are to the same or diﬀerent addresses. There are four cases:
+           * \(L(a) <_p L(b)\Rightarrow L(a)<_mL(b)\) )
+           * \(L(a)<_pS(b)\Rightarrow L(a)<_mS(b)\)
+           * \(S(a)<_pS(b)\Rightarrow S(a)<_mS(b)\)
+           * \(S(a)<_pL(b)\Rightarrow S(a)<_mL(b)\)
+        2. Every load gets its value from the last store before it (in global memory order) to the same
+           address:
+
+        Value of \(L(a)=\)Value of \(MAX_{<_m}\{S(a)\mid S(a)<_mL(a)\}\), where \(MAX_{<_m}\) denotes "latest
+        in memory order".
+** Naive SC Implementations
+        *The Multitasking Uniprocessor*
+
+        First, one can implement SC for multithreaded user-level software by executing all threads on a single
+        sequential core (a uniprocessor).
+
+        *The Switch*
+
+        Assume that each core presents memory operations to the switch one at a time in its program order.
+        Each core can use any optimizations that do not aﬀect the order in which it presents memory operations
+        to the switch. 
+** A Basic SC Implementation with Cache Coherence
+        Easy to implement using the switch
+
+        We provide some implementation intuition by opening the coherence block box slightly to reveal simple level-one (L1) caches that:
+        • use state /modiﬁed(M)/ to denote an L1 block that one core can write and read,
+        • use state /shared(S)/ to denote an L1 block that one or more cores can only read, and
+        • have /GetM/ and /GetS/ denote coherence requests to obtain a block in M and S, respectively.
+** Optimized SC Implementations with Cache Coherence
+        A *non-binding prefetch* for block B is a request to the coherent memory system to change B’s coherence
+        state in one or more caches. Most commonly, prefetches are requested by software, core hardware, or
+        the cache hardware to change B’s state in the level-one cache to permit loads (e.g., B’s state is M
+        or S) or loads and stores (B’s state is M) by issuing coherence requests such as GetS and GetM.
+
+        *Speculative Cores*
+
+        Consider a core that executes instructions in program order, but also does branch prediction wherein
+        subsequent instructions, including loads and stores, begin execution, but may be squashed (i.e., have
+        their eﬀects nulliﬁed) on a branch misprediction. These squashed loads and stores can be made to look
+        like non-binding prefetches, enabling this speculation to be correct because it has no eﬀect on SC.
+
+        A load after a branch prediction can be presented to the L1 cache, wherein it either misses (causing a
+        non-binding GetS prefetch) or hits and then returns a value to a register. If the load is squashed,
+        the core discards the register update, erasing any functional eﬀect from the load—as if it never
+        happened. The cache does not undo non-binding prefetches, as doing so is not necessary and prefetching
+        the block can help performance if the load gets re-executed. For stores, the core may issue a
+        non-binding GetM prefetch early, but it does not present the store to the cache until the store is
+        guaranteed to commit.
+
+        *Dynamically Scheduled Cores*. Many modern cores dynamically schedule instruction execution out of
+        program order to achieve greater performance
+** Atomic Operations with SC
+        One way.
+        Having a core obtain the block in state M in its cache, if the block is not already there in that
+        state. The core then needs to only load and store the block in its cache—without any coherence
+        messages or bus locking—as long as it waits to service any incoming coherence request for the
+
+        Another way.
+block until after the store.
+** Putting It ALL Together: MIPS R10000
+        The MIPS R10000 provides a venerable, but clean, commercial example for a speculative microprocessor
+        that implements SC in cooperation with a cache-coherent memory hierarchy.
+
+        The chip’s main system *interface bus* supports cache coherence for up to four processors.
+
+        During execution, an R10000 core issues (speculative) loads and stores in program order into an
+        *address queue*.
+        * A load obtains a (speculative) value from the last store before it to the same address or, if none,
+          the data cache.
+        * Loads and stores commit in program order and then remove their address queue entries.
+        * To commit a store, the L1 cache must hold the block in state M and the store’s value must be written
+          atomically with the commit.
+
+        Importantly, the eviction of a cache block that contains a load’s address in the address queue
+        squashes the load and all subsequent instructions, which then re-execute. Thus, when a load ﬁnally
+        commits, the loaded block was continuously in the cache between when it executed and when it commits,
+        so it must get the same value as if it executed at commit.
+* Total Store Order and the x86 Memory Model
+** Motivation for TSO/x86
+        fast
+** Basic Idea of TSO/x86
+        Recall that SC requires preserves the order of 
+        * Load \(\to\) Load
+        * Load \(\to\) Store
+        * Store \(\to\) Store
+        * Store \(\to\) Load
+
+        TSO does not satisfy the fourth.
+        #+LATEX: \wu{
+        the variable is in write buffer but not in the memory.
+        #+LATEX: }
+
+        
+        Consider
+        | Core C1              | Core C2                   | Comments                      |
+        |----------------------+---------------------------+-------------------------------|
+        | S1: Store data = NEW |                           | /Initially: data=0, flag≠SET/   |
+        | S2: Store flag = SET | L1: Load r1 = flag        | /L1 & B1 may repeat many times/ |
+        |                      | B1: if (r1 ≠ SET) goto L1 |                               |
+        |                      | L2: Load r2 = data        |                               |
+
+        TSO behaves the same as SC for common programming idioms that follow:
+        * C1 loads and stores to memory locations D1, . . ., Dn (often data),
+        * C1 stores to F (often a synchronization ﬂag) to indicate that the above work is complete,
+        * C2 loads from F to observe the above work is complete (sometimes spinning ﬁrst and often using a RMW
+          instruction), and
+        * C2 loads and stores to some or all of the memory locations D1, . . ., Dn
+** A Little TSO/x86 Formalism
+        An *TSO execution* requires the following
+        1. All cores insert their loads and stores into the order \(<_m\) respecting their program order,
+           regardless of whether they are to the same or diﬀerent addresses. There are four cases:
+           * \(L(a) <_p L(b)\Rightarrow L(a)<_mL(b)\) )
+           * \(L(a)<_pS(b)\Rightarrow L(a)<_mS(b)\)
+           * \(S(a)<_pS(b)\Rightarrow S(a)<_mS(b)\)
+        2. Every load gets its value from the last store before it (in global memory order) to the same
+           address:
+
+           Value of \(L(a)=\)Value of \(MAX_{<_m}\{S(a)\mid S(a)<_mL(a)\text{ or }S(a)<_pL(a)\}\)
+        3. FENCE:
+           * If \(L(a)<_pFENCE\Rightarrow L(a)<_mFENCE\)
+           * If \(S(a)<_pFENCE\Rightarrow S(a)<_mFENCE\)
+           * If \(FENCE<_pFENCE\Rightarrow FENCE<_mFENCE\)
+           * If \(FENCE<_pL(a)\Rightarrow FENCE<_mL(a)\)
+           * If \(FENCE<_pS(a)\Rightarrow FENCE<_mS(a)\)
+
+        It is widely believed that the x86 memory model is equivalent to TSO (for normal cacheable memory and
+        normal instructions), but to the best of our knowledge, neither AMD nor Intel have guaranteed this or
+        released a formal x86 memory model speciﬁcation. 
+** Implementing TSO/x86
+** Implementing Atomic Instructions

@@ -989,7 +989,84 @@
          #+CAPTION: 
          [[../images/papers/526.png]]
 **** Cross-node collectives
+        When doing a reduction over a tree, you can think of reducing from the bottom up, first within a node,
+        then at the leaf level, and then at the spine level, using the normal algorithm at each level. For an
+        AllReduce especially, you can see that this allows us to communicate less data overall, since after we
+        AllReduce at the node level, we only have to egress  \(B\) bytes up to the leaf instead of \(B*N\)
+
+        *Reductions when array is sharded over a separate axis*: Consider the cost of a reduction like
+        \begin{equation*}
+        AllReduce_X(A[I_Y,J]\{U_X\})
+        \end{equation*}
+        where we are AllReducing over an array that is itself sharded along another axis \(Y\). On GPUs, the
+        cost depends on which axis is the “inner” one (intra-node vs. inter-node) and whether each shard spans
+        more than a single node. Assuming \(Y\) is the inner axis, and the array has \(bytes\) total bytes,
+        the overall cost is reduced effectively by \(Y\), but only if \(Y\) spans multiple nodes:
+
+*** Rooflines for LLM Scaling on GPUs
+        Consider only the MLP block with operations
+        \begin{equation*}
+        MLP(x)\equiv x[B,D]*_DW_{in}[D,F]\cdot_FW_{out}[F,D]
+        \end{equation*}
+        where \(B\) is the global batch size in tokens (i.e.,
+        \(B=\text{batch size}\cdot\text{sequence length}\))
+
+        | Node Type   | GPUs per node | GPU egress bandwidth | Node egress bandwidth |
+        |-------------+---------------+----------------------+-----------------------|
+        | H100        |             8 |                450e9 |                 400e9 |
+        | B200        |             8 |                900e9 |                 400e9 |
+        | GB200 NVL72 |            72 |                900e9 |                3600e9 |
+
+        
+**** Data Parallelism
+        * Each GPU holds a full copy of the model
+        * Input batch is split across GPUs
+        * Gradients are synchronized via AllReduce
+
+        Example:
+        Suppose:
+        * \(N\) GPUs
+        * Each GPU stores:
+          * Full parameters \(\theta\)
+          * Full optimizer state
+        * input batch is split: \(B\to\{B_1,B_2,\dots,B_N\}\)
+        Per step:
+        1. *Forward (local)*: each GPU computes on its own mini-batch
+        2. *Backward (local)*: each GPU computes gradients \(g_i=\partial L_i/\partial\theta\)
+        3. *AllReduce (global)*:
+           \begin{equation*}
+           g=\frac{1}{N}\sum_{i=1}^Ng_i
+           \end{equation*}
+        4. *Update (local, identical)*: all GPUs apply the same update
+           
+          
 ** Understanding GPU performance
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/527.png]]
+        How do we avoid being memory bound?
+
+        Conditionals are fine, but lead to significant overhead from the execution model
+        #+ATTR_LATEX: :width .7\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/528.png]]
+
+        low precision improves arithmetic intensity. Consider elementwise ReLU (\(x=\max(0,x)\)) on a vector
+        of size \(n\)
+
+        Float32:
+        * Memory access: 1 read (x), 1 write (if x < 0), float 32 = 4 bytes per op
+        * Operations: 1 comparison op, 1 FLOP.
+        * Intensity: 8 bytes / FLOP
+
+        Float 16
+        * Memory access: 1 read (x), 1 write (if x < 0), float 16 = 2 bytes per op
+        * Operations: 1 comparison op, 1 FLOP.
+        * Intensity: 4 bytes / FLOP
+
+        
 ** Putting it together - unpacking FlashAttention
 
 * Problems
