@@ -63,7 +63,7 @@
         The following useful identity expresses the expected return of another policy \(\hat{\pi}\) in terms of the
         advantage over \(\pi\), accumulated over timesteps
         \begin{equation*}
-        \eta(\tilpi)=\eta(\pi)+\E_{s_0,a_0,\dots\sim\tilpi}\left[\sum_{i=0}^\infty\gamma^tA_\pi(s_t,a_t)\right]
+        \eta(\tilde{\pi})=\eta(\pi)+\E_{s_0,a_0,\dots\sim\tilde{\pi}}\left[\sum_{i=0}^\infty\gamma^tA_\pi(s_t,a_t)\right]
         \end{equation*}
 
         Let \(\rho_\pi\) be the *(unnormalized) discounted visitation frequencies*:
@@ -81,20 +81,20 @@
         \end{align*}
         #+LATEX: }
 
-        We can rewrite \(\eta(\tilpi)\) as
+        We can rewrite \(\eta(\tilde{\pi})\) as
         \begin{align}
-        \eta(\tilpi)&=\eta(\pi)+\sum_{t=0}^\infty\sum_sP(s_t=s|\tilpi)\sum_a\tilpi(a|s)\gamma^tA_\pi(s,a)\notag\\
-        &=\eta(\pi)+\sum_s\sum_{t=0}^\infty\gamma^tP(s_t=s|\tilpi)\sum_a\tilpi(a|s)A_\pi(s,a)\notag\\
-        &=\eta(\pi)+\sum_s\rho_{\tilpi}(s)\sum_{a}\tilpi(a|s)A_\pi(s,a)\label{eq2}
+        \eta(\tilde{\pi})&=\eta(\pi)+\sum_{t=0}^\infty\sum_sP(s_t=s|\tilde{\pi})\sum_a\tilde{\pi}(a|s)\gamma^tA_\pi(s,a)\notag\\
+        &=\eta(\pi)+\sum_s\sum_{t=0}^\infty\gamma^tP(s_t=s|\tilde{\pi})\sum_a\tilde{\pi}(a|s)A_\pi(s,a)\notag\\
+        &=\eta(\pi)+\sum_s\rho_{\tilde{\pi}}(s)\sum_{a}\tilde{\pi}(a|s)A_\pi(s,a)\label{eq2}
         \end{align}
-        This equation implies that any policy update \(\pi\to\tilpi\) that has a nonnegative expected advantage at *every*
-        state \(s\), i.e., \(\sum_a\tilpi(a|s)A_\pi(s,a)\ge 0\), is guaranteed to increase the policy performance \(\eta\), or leave
+        This equation implies that any policy update \(\pi\to\tilde{\pi}\) that has a nonnegative expected advantage at *every*
+        state \(s\), i.e., \(\sum_a\tilde{\pi}(a|s)A_\pi(s,a)\ge 0\), is guaranteed to increase the policy performance \(\eta\), or leave
         it constant in the case that the expected advantage is zero everywhere.
 
         This implies the classic result that the update performed by exact policy iteration, which uses the
         deterministic policy
         \begin{equation*}
-        \tilpi(s)=\argmax_aA_\pi(s,a),
+        \tilde{\pi}(s)=\argmax_aA_\pi(s,a),
         \end{equation*}
         
         improves the policy if there is at least one state-action pair with a positive advantage value and
@@ -102,10 +102,10 @@
 
         However, in the approximate setting, it will typically be unavoidable, due to estimation and
         approximation error, that there will be some states \(s\) for which the expected advantage is negative,
-        that is, \(\sum_a\tilpi(a|s)A_\pi(s,a)<0\). The complex dependency of \(\rho_{\tilpi}(s)\) on \(\tilpi\) makes Equation [[eqref:eq2]]  difficult to
+        that is, \(\sum_a\tilde{\pi}(a|s)A_\pi(s,a)<0\). The complex dependency of \(\rho_{\tilde{\pi}}(s)\) on \(\tilde{\pi}\) makes Equation [[eqref:eq2]]  difficult to
         optimize directly. Instead, we introduce the following local approximation to \(\eta\):
         \begin{equation*}
-        L_\pi(\tilpi)=\eta(\pi)+\sum_s\rho_\pi(s)\sum_a\tilpi(a|s)A_\pi(s,a)
+        L_\pi(\tilde{\pi})=\eta(\pi)+\sum_s\rho_\pi(s)\sum_a\tilde{\pi}(a|s)A_\pi(s,a)
         \end{equation*}
 
         If we have a parameterized policy \(\pi_\theta\), where \(\pi_\theta(a|s)\) is a differentiable function of the parameter vector
@@ -115,7 +115,7 @@
         \nabla_\theta L_{\pi_{\theta_0}}(\pi_\theta)|_{\theta=\theta_0}=\nabla_\theta\eta(\pi_\theta)|_{\theta=\theta_0}\label{eq4}
         \end{gather}
 
-        Equation [[eqref:eq4]] implies that a sufficiently small step \(\pi_{\theta_0}\to\tilpi\) that improves
+        Equation [[eqref:eq4]] implies that a sufficiently small step \(\pi_{\theta_0}\to\tilde{\pi}\) that improves
         \(L_{\pi_{\theta_{old}}}\) will also improve \(\eta\), but does not give us any guidance on how big of a step to take
 
         To address this issue, [[cite:&645531.656005]] proposed a policy updating scheme called *convervative
@@ -140,7 +140,7 @@
         The particular distance measure we use is the total variation divergence, which is defined by
         \(D_{TV}(p\parallel q)=\frac{1}{2}\sum_i\abs{p_i-q_i}\) for discrete probability densitiy \(p,q\). Define
         \begin{equation*}
-        D_{TV}^{max}(\pi,\tilpi)=\max_sD_{TV}(\pi(\cdot|s)\parallel \tilpi(\cdot|s))
+        D_{TV}^{max}(\pi,\tilde{\pi})=\max_sD_{TV}(\pi(\cdot|s)\parallel \tilde{\pi}(\cdot|s))
         \end{equation*}
 
         #+ATTR_LATEX: :options []
@@ -163,10 +163,10 @@
         \end{equation*}
         #+LATEX: }
         
-        Let \(D_{KL}^{max}(\pi,\tilpi)=\max_sD_{KL}(\pi(\cdot|s)\parallel \tilpi(\cdot|s))\). The following bound follows from Theorem [[ref:thm1]]
+        Let \(D_{KL}^{max}(\pi,\tilde{\pi})=\max_sD_{KL}(\pi(\cdot|s)\parallel \tilde{\pi}(\cdot|s))\). The following bound follows from Theorem [[ref:thm1]]
         \begin{equation}
         \label{eq9}
-        \eta(\tilpi)\ge L_\pi(\tilpi)-CD^{max}_{KL}(\pi,\tilpi)
+        \eta(\tilde{\pi})\ge L_\pi(\tilde{\pi})-CD^{max}_{KL}(\pi,\tilde{\pi})
         \end{equation}
         where \(C=\frac{4\epsilon\gamma}{(1-\gamma)^2}\)
 
@@ -187,28 +187,200 @@
         We now describe how to derive a practical algorithm from these theoretical foundations, under finite
         sample counts and arbitrary parameterizations.
 
-        Since we consider parameterized policies \(\pi_\theta(a|s)\)
+        Since we consider parameterized policies \(\pi_\theta(a|s)\) with parameter vector \(\theta\), we will overload our previous
+        notation to use functions of \(\theta\) rather than \(\pi\), e.g., \(\eta(\theta):=\eta(\pi_\theta)\),
+        \(L_\theta(\tiltheta):=L_{\pi_\theta}(\pi_{\tiltheta})\), and \(D_{KL}(\theta\parallel\tiltheta):=D_{KL}(\pi_\theta\parallel\pi_{\tilde{\pi}})\)
+
+        The preceding section showed that \(\eta(\theta)\ge L_{\theta_{old}}(\theta)-CD_{KL}^{max}(\theta_{old},\theta)\)
+        with equality at \(\theta=\theta_{old}\). Thus by performing the following maximization, we are guaranteed to improve
+        the true objective \(\eta\):
+        \begin{equation*}
+        \text{maximize}_\theta[L_{\theta_{old}}(\theta)-CD_{KL}^{max}(\theta_{old},\theta)]
+        \end{equation*}
+        
+        In practice, if we used the penalty coefficient C recommended by the theory above, the step sizes
+        would be very small. One way to take larger steps in a robust way is to use a constraint on the KL
+        divergence between the new policy and the old policy, i.e., a trust region constraint:
+        \begin{align*}
+        &\text{maximize}_\theta L_{\theta_{old}}(\theta)\\
+        &\text{subject to }D_{KL}^{max}(\theta_{old},\theta)\le\delta
+        \end{align*}
+        We can use a heuristic approximation which considers the average KL divergence
+        \begin{equation}
+        \label{eq12}
+        \barD^\rho_{KL}(\theta_1,\theta_2):=\E_{s\sim\rho}[D_{KL}(\pi_{\theta_1}(\cdot|s)\parallel\pi_{\theta_2}(\cdot|s))]
+        \end{equation}
+        
+        
+
+* Sample-Based Estimation of the Objective and Constraint
+        The previous section proposed a constrained optimization problem on the policy parameters (Equation
+        [[eqref:eq12]], which optimizes an estimate of the expected total reward \(\eta\) subject to a constraint on the
+        change in the policy at each update. This section describes how the objective and constraint functions
+        can be approximated using Monte Carlo simulation.
+
+        We seek to solve the following optimization problem, obtained by expanding \(L_{\theta_{old}}\) in Equation [[eqref:eq12]]
+        \begin{align}
+        &\text{maximize}_\theta\sum_s\rho_{\theta_{old}}(s)\sum_a\pi_\theta(a|s)A_{\theta_{old}}(s,a)\label{eq13}\\
+        &\text{subject to }\barD_{KL}^{\rho_{\theta_{old}}}(\theta_{old},\theta)\le\delta\notag
+        \end{align}
+
+        We first replace \(\sum_s\rho_{\theta_{old}}(s)[\dots]\) by the expectation \(\frac{1}{1-\gamma}\E_{s\sim\rho_{\theta_{old}}}\). Next we replace the advantage values
+        \(A_{\theta_{old}}\) by the \(Q\)-values \(Q_{\theta_{old}}\), which only changes the objective by a constant. Last, we replace the sum
+        over the actions by an importance sampling estimator. Using \(q\) to denote the sampling distribution, the
+        contribution of a single \(s_n\) to the loss function is
+        \begin{equation*}
+        \sum_a\pi_\theta(a|s_n)A_{\theta_{old}}(s_n,a)=\E_{a\sim q}
+        \left[ \frac{\pi_\theta(a|s_n)}{q(a|s_n)}A_{\theta_{old}}(s_n,a) \right]
+        \end{equation*}
+        Our opimization problem in Equation [[eqref:eq13]] is exactly equivalent to the following one, written in
+        terms of expectations:
+        \begin{align}
+        &\text{maximize}_\theta\E_{s\sim\rho_{\theta_{old}},a\sim q}\left[
+        \frac{\pi_\theta(a|s)}{q(a|s)}A_{\theta_{old}}(s_n,a) \right]\label{eq14}\\
+        &\text{subject to }\E_{s\sim\rho_{\theta_{old}}}[D_{KL}(\pi_{\theta_{old}}(\cdot|s)\parallel\pi_\theta(\cdot|s))]
+        \le\delta\notag
+        \end{align}
+
+        All that remains is to replace the expectations by sample averages and replace the \(Q\) value by an
+        empirical estimate. The following sections describe two different schemes for performing this estimation.
+
+** Single Path
+        In this estimation procedure, we collect a sequence of states by sampling \(s_0\sim\rho_0\) and then simulating the
+        policy \(\pi_{\theta_{old}}\) for some number of timesteps to generate a trajectory \(s_0,a_0,s_1,a_1,\dots,s_{T-1},a_{T-1},s_T\). Hence,
+        \(q(a|s)=\pi_{\theta_{old}}(a|s)\). \(Q_{\theta_{old}}(s,a)\) is computed at each state-action pair \((s_t,a_t)\) by taking the discounted
+        sum of future rewards along the trajectory.
+
+** Vine
+        In this estimation procedure, we first sample \(s_0\sim\rho_0\) and simulate the policy \(\pi_{\theta_i}\) to
+        generate a number of trajectories. We then choose a subset of \(N\) states along these trajectories,
+        denoted \(s_1,s_2,\dots,s_N\) , which we call the “rollout set”. For each state \(s_n\) in the rollout set, we sample
+        \(K\) actions according to \(a_{n,k}\sim q(\cdot|s_n)\). Any choice of \(q(\cdot|s_n)\) with a support that includes the support of
+        \(\pi_{\theta_i}(\cdot|s_n)\) will produce a consistent estimator.
+        #+LATEX: \wu{
+        Let \((X,\mathcal T)\) be a topological space, and let \(\mu\) be a probability measure on \(X\). The support of \(\mu\) is:
+        \begin{equation*}
+        \operatorname{supp}(\mu)=\left\{x\in X:\mu(U)>0\text{ for every open set }U\ni x\right\}
+        \end{equation*}
+
+        For a real-valued \(X\), “every open neighborhood” can be written as every open interval:
+        \begin{equation*}
+        x\in\operatorname{supp}(X)\iff P(X\in(x-\varepsilon,x+\varepsilon))>0\quad\text{for all }\varepsilon>0.
+        \end{equation*}
+        #+LATEX: }
+
+        In practice, we found that \(q(\cdot|s_n)=\pi_{\theta_i}(\cdot|s_n)\) works well on continuous problems, such as robotic
+        locomotion, while the uniform distribution works well on discrete tasks, such as the Atari games,
+        where it can sometimes achieve better exploration.
+
+        For each action \(a_{n,k}\) sampled at each state \(s_n\), we estimate \(\hatQ_{\theta_i}(s_n,a_n,k)\) by performing a rollout (i.e., a
+        short trajectory) starting with state \(s_n\) and action \(a_{n,k}\) . We can greatly reduce the variance of the
+        \(Q\)-value differences between rollouts by using the same random number sequence for the noise in each
+        of the \(K\) rollouts, i.e., common random numbers.
+
+        In small, finite action spaces, we can generate a rollout for every possible action from a given
+        state. The contribution to \(L_{\theta_{old}}\) from a single state \(s_n\) is as follows:
+        \begin{equation*}
+        L_n(\theta)=\sum_{k=1}^K\pi_\theta(a_k|s_n)\hatQ(s_n,a_k)
+        \end{equation*}
+        where the action space is \(\cala=\{a_1,\dots,a_K\}\).
+
+        In large or continuous state spaces, we can construct an estimator of the surrogate objective using
+        importance sampling. The self-normalized estimator of \(L_{\theta_{old}}\) obtained at a single state \(s_n\) is
+        \begin{equation*}
+        L_n(\theta)=\frac{\sum_{k=1}^K\frac{\pi_\theta(a_{n,k}|s_n)}{\pi_{\theta_{old}}(a_{n,k}|s_n)}\hatQ(s_n,a_{n,k})}
+        {\sum_{k=1}^K\frac{\pi_\theta(a_{n,k}|s_n)}{\pi_{\theta_{old}}(a_{n,k}|s_n)}}
+        \end{equation*}
+        assuming that we performed \(K\) actions \(a_{n,1},a_{n,2},\dots,a_{n,K}\) from state \(s_n\).
+        This self-normalized estimator removes the need to use a baseline for the \(Q\)-values. Averaging over
+        \(s_n\sim\rho(\pi)\), we obtain an estimator for \(L_{\theta_{old}}\), as well as its gradient.
+
+        #+LATEX: \wu{
+        Note that
+        \begin{equation*}
+        \mathbb E_{a\sim\pi_{\rm old}}\left[\frac{\pi_\theta(a\mid s)}{\pi_{\rm old}(a\mid s)}\right]=1
+        \end{equation*}
+        since
+        \begin{equation*}
+        \E_{a\sim\pi_{old}}\left[ \frac{\pi_{\theta}(a|s)}{\pi_{old}(a|s)} \right]=\sum_a\pi_{old}(a|s)\frac{\pi_{\theta}(a|s)}{\pi_{old}(a|s)}
+        =\sum_a\pi_\theta(a|s)=1
+        \end{equation*}
+
+        Self-normalized estimator is a standard monte carlo technique.
+
+        #+LATEX: }
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/542.png]]
+
+* Practical Algorithm
+        1. Use the /single path/ or /vine procedures/ to collect a set of state-action pairs along with Monte
+           Carlo estimates of their \(Q\)-values.
+        2. By averaging over samples, construct the estimated objective and constraint in Equation [[eqref:eq14]].
+        3. Approximately solve this constrained optimization problem to update the policy’s parameter vector
+           \(\theta\). We use the conjugate gradient algorithm followed by a line search, which is altogether only
+           slightly more expensive than computing the gradient itself
+
 * Appendix
         #+ATTR_LATEX: :options []
         #+BEGIN_lemma
-Given two policies \(\pi\), \(\hat{\pi}\)
+Given two policies \(\pi\), \(\tilde{\pi}\)
 \begin{equation*}
-\eta(\tilpi)=\eta(\pi)+\E_{\tau\sim\tilpi}\left[ \sum_{t=0}^\infty\gamma^tA_\pi(s_t,a_t) \right]
+\eta(\tilde{\pi})=\eta(\pi)+\E_{\tau\sim\tilde{\pi}}\left[ \sum_{t=0}^\infty\gamma^tA_\pi(s_t,a_t) \right]
 \end{equation*}
-This expectation is taken over trajectories \(\tau:=(s_0,a_0,s_1,a_1,\dots)\),a nd the notation \(\E_{\tau\sim\tilpi[\dots]}\)
-indicates actions are sampled from \(\tilpi\) to generate \(\tau\)
+This expectation is taken over trajectories \(\tau:=(s_0,a_0,s_1,a_1,\dots)\), and the notation \(\E_{\tau\sim\tilde{\pi}[\dots]}\)
+indicates actions are sampled from \(\tilde{\pi}\) to generate \(\tau\)
         #+END_lemma
 
         #+BEGIN_proof
         First note that \(A_\pi(s,a)=\E_{s'\sim P(s'|s,a)}[r(s)+\gamma V_\pi(s')-V_\pi(s)]\).
         \begin{align*}
-        &\E_{\tau|\tilpi}\left[ \sum_{t=0}^\infty\gamma^tA_\pi(s_t,a_t) \right]\\
-        &=\E_{\tau|\tilpi}\left[ \sum_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi(s_{t+1})-V_\pi(s_t)) \right]\\
-        &=\E_{\tau|\tilpi}\left[ -V_\pi(s_0)+\sum_{t=0}^\infty\gamma^tr(s_t) \right]\\
-        &=-\E_{s_0}[V_\pi(s_0)]+\E_{\tau|\tilpi}\left[ \sum_{i=0}^\infty\gamma^tr(s_t) \right]\\
-        &=-\eta(\pi)+\eta(\tilpi)
+        &\mathbb{E}_{\tau|\tilde{\pi}}\left[ \sum_{t=0}^\infty\gamma^tA_\pi(s_t,a_t) \right]\\
+        &=\mathbb{E}_{\tau|\tilde{\pi}}\left[ \sum_{t=0}^\infty\gamma^t(r(s_t)+\gamma V_\pi(s_{t+1})-V_\pi(s_t)) \right]\\
+        &=\mathbb{E}_{\tau|\tilde{\pi}}\left[ -V_\pi(s_0)+\sum_{t=0}^\infty\gamma^tr(s_t) \right]\\
+        &=-\mathbb{E}_{s_0}[V_\pi(s_0)]+\mathbb{E}_{\tau|\tilde{\pi}}\left[ \sum_{i=0}^\infty\gamma^tr(s_t) \right]\\
+        &=-\eta(\pi)+\eta(\tilde{\pi})
         \end{align*}
         #+END_proof
+
+** Efficiently Solving the Trust-Region Constrained Optimization Problem
+        Solve
+        \begin{equation*}
+        \text{maximize }L(\theta)\text{ subject to }\barD_{KL}(\theta_{old},\theta)\le\delta
+        \end{equation*}
+        1. compute a search direction, using a linear approximation to objective and quadratic approximation
+           to the constraint
+        2. perform a line search in that direction, ensuring that we improve the nonlinear objective while
+           satisfying the nonlinear constraint.
+
+        The search direction is computed by approximately solving the equation \(Ax=g\), where \(A\) is the Fisher
+        information matrix, i.e., the quadratic approximation to the KL divergence constraint:
+        \(\barD_{KL}(\theta_{old},\theta)\approx\frac{1}{2}(\theta-\theta_{old})^TA(\theta-\theta_{old})\), where
+        \(A_{ij}=\frac{\partial}{\partial\theta_i}\frac{\partial}{\partial \theta_j}\barD_{KL}(\theta_{old},\theta)\). In large-scale problems, it is prohibitively costly (with respect to computation
+        and memory) to form the full matrix \(A\) (or \(A^{-1}\)). However, the conjugate gradient algorithm allows us
+        to approximately solve the equation \(Ax=b\) without forming this full matrix, when we merely have
+        access to a function that computes matrix-vector products \(y\to Ay\)
+
+*** Computing the Fisher-Vector Product
+        Here we will describe how to compute the matrix-vector product between the averaged Fisher information
+        matrix and arbitrary vectors. This matrix-vector product enables us to perform the conjugate gradient
+        algorithm.
+
+        Suppose that the parameterized policy maps from the input \(x\) to “distribution parameter”
+        vector \(\mu_\theta(x)\), which parameterizes the distribution \(\pi(u|x)\). Now the KL divergence for a given input
+        \(x\) can be written as follows:
+        \begin{equation*}
+        D_{KL}(\pi_{\theta_{old}}(\cdot|x)\parallel\pi_\theta(\cdot|x))=kl(\mu_\theta(x),\mu_{old}(x))
+        \end{equation*}
+        where kl is the KL divergence between the distributions corresponding to the two mean parameter
+        vectors. Differentiating \(kl\) twice w.r.t. \(\theta\), we obtain
+        \begin{equation*}
+       \frac{\partial\mu_a(x)}{\partial\theta_i}\frac{\partial\mu_b(x)}{\partial\theta_j}kl''_{ab}(\mu_\theta(x),\mu_{old})+
+        \frac{\partial^2\mu_a(x)}{\partial\theta_i\partial\theta_j}kl'_a(\mu_\theta(x),\mu_{old})
+        \end{equation*}
+
 * Problems
 
 
