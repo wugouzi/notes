@@ -1,0 +1,112 @@
+#+title: Does Thinking More always Help? Understanding Test Time Scaling In Reasoning Models
+
+#+AUTHOR: 
+#+LATEX_HEADER: \input{../preamble.tex}
+#+EXPORT_FILE_NAME: ../latex/papers/understanding_test_time_scaling_in_reasonging_models.tex
+#+LATEX_HEADER: \graphicspath{{../../paper/}}
+#+OPTIONS: toc:nil
+#+STARTUP: shrink
+* Test-time Scaling Capability in LLMs for Reasoning
+        SHIT paper
+
+
+        * our empirical investigation uncovers a nuanced phenomenon: extending thinking at test-time initially
+          boosts model accuracy, but performance degrades subsequently with prolonged thinking
+
+
+        1. Why does additional thinking beyond a certain point degrade the model performance?
+        2. analyze a simple one-dimensional probabilistic framework
+        3. empirically assess the variance of reasoning-model outputs under extended thinking by measuring the
+           entropy of their output distributions. 
+        4. fix: Instead of continuing one thinking trace, we allocate the same token budget across multiple
+           independent thinking paths and select the final answer via majority voting.
+* Analysis of Test-Time Scaling in SoTA Reasoning LLMs
+        Thinking process
+        \begin{equation*}
+        x\to z\to y
+        \end{equation*}
+        where \(x\) is the input prompt, \(z\sim\pi(\cdot|x)\) is the intermediate thinking trace, \(y\sim\pi(\cdot|x,z)\) is
+        the final answer, and \(\pi\) denotes the language model. The RL objective for training reasoning model is:
+        \begin{equation*}
+        \max_\theta\E_{x,z\sim\pi_\theta(\cdot|x),y\sim\pi_\theta(\cdot|x,z)}[R(x,y)]
+        \end{equation*}
+        where \(\pi_\theta\) is the parameterized model and \(R(x,y)\) represents the true reward function.
+
+        *Test time scaling*. The test-time scaling extends the thinking process as
+        \begin{equation*}
+        x\to z_1\to z_2\to\cdots\to z_k\to y
+        \end{equation*}
+        where, given the prompt \(x\), the first thinking step is generated as \(z_1\sim\pi_\theta(\cdot|x)\).
+        Then, instead of directly producing the final answer, the model is instructed to continue thinking
+        using special tokens such as “Wait” or “Think more”, denoted as \(p\) with the next thinking step sampled
+        as \(z_2\sim\pi_\theta(\cdot|x,z_1,p)\). The process is continued iteratively for \(k\) steps, and the model generates the final
+        response as \(y\sim\pi_\theta(\cdot|x,z_1,p,z_2,p,\dots,z_k)\)
+        . For simplicity of representation, we just keep the thinking traces in the condition as
+        \(y\sim\pi_\theta(\cdot|x,z_1,z_2,\dots,z_k)\)
+** Test-Time Budget Control (TTBC)
+        * TTBC1: Wait & Think More
+        * TTBC 2: Exact thinking tokens
+** Experimental Setup
+        dataset: math
+
+        model ds
+
+        evaluation: 
+** Failure of Overthinking
+
+        TTBC 1
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/543.png]]
+
+        TTBC 2
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/544.png]]
+* Illution of Test-Time Scaling: An Alternative Explanation
+        Consider a simplified scenario. Assume the reward is fixed and unimodal, and the model samples answers
+        from the policy distribution \(y\sim\pi(\cdot|x)\). Sepcifically, we assume \(\pi(y|x)=\caln(\mu_\pi,\sigma^2_\pi)\) and reward function
+        follows a bell-curve as \(r(x,y)=\caln(\mu_r,\sigma_r^2)\). Hence, we can write
+        \begin{align*}
+        \E_{y\sim\pi(\cdot|x)}[r(x,y)]&=\int r(x,y)\cdot\pi(y|x)\cdot dy\\
+        &=\frac{1}{\sqrt{2\pi(\sigma_r^2+\sigma_\pi^2)}}\cdot\exp\left( -\frac{(\mu_r-\mu_\pi)^2}{2(\sigma_r^2+\sigma_\pi^2)} \right)
+        \end{align*}
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/545.png]]
+
+
+        Our simple illustration reveals a powerful insight: increasing the variance of the policy distribution
+        can initially boost expected reward, not because the policy has improved, but due to greater overlap
+        with the reward. 
+** Role of Variance in test-time scaling of reasoning models
+        #+LATEX: \wu{
+        lower the entropy, less the randomness
+        #+LATEX: }
+
+        #+ATTR_LATEX: :width .8\textwidth :float nil
+        #+NAME: 
+        #+CAPTION: 
+        [[../images/papers/546.png]]
+
+        We adopt the Wait & Think more setup, where we suppress the generation of the end-of-thinking
+        delimiter and append “Wait” to encourage the model for additional thinking. To measure the entropy of
+        the policy, after appending each “Wait”, we sample multiple answers \(y\sim\pi(\cdot|z_{1:i},x)\),  where
+        \(z_{1:i} =[z_1 , \dots, z_{i-1} , z_i ]\) denotes the cumulative sequence of thinking tokens
+        generated up to the \(i\)th-“Wait”, \(z_1\) denotes the initial thinking trace generated with standard
+        thinking, and \(x\) is the given prompt. We quantify policy uncertainty using the entropy of the distribution over final answers:
+        \begin{equation*}
+        \E_{y\sim\pi(\cdot|z_{1:i},x)}[-\log\pi(y|z_{1:i},x)]
+        \end{equation*}
+* Problems
+
+
+* References
+<<bibliographystyle link>>
+bibliographystyle:alpha
+
+\bibliography{/Users/wu/notes/notes/references.bib}
